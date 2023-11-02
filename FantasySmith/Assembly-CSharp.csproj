@@ -60,6 +60,7 @@
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\SkewTextExample.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\SimpleScript.cs" />
     <Compile Include="Assets\02.Scripts\Environment\ButtonCtrl.cs" />
+    <Compile Include="Assets\02.Scripts\Environment\SceneLoader.cs" />
     <Compile Include="Assets\Quantum Tek\Simple Menu\Scripts\SM_TabGroup.cs" />
     <Compile Include="Assets\Quantum Tek\Simple Menu\Scripts\SM_TabWindow.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\Benchmark01_UGUI.cs" />
@@ -82,11 +83,14 @@
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\TMP_TextEventCheck.cs" />
     <Compile Include="Assets\Quantum Tek\Simple Menu\Scripts\SM_Window.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\ShaderPropAnimator.cs" />
+    <Compile Include="Assets\02.Scripts\Environment\GraphicsSettings.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\WarpTextExample.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\TMP_DigitValidator.cs" />
     <Compile Include="Assets\Quantum Tek\Simple Menu\Scripts\SM_SaveSlider.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\Benchmark02.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\TextMeshSpawner.cs" />
+    <Compile Include="Assets\02.Scripts\Environment\SoundManager.cs" />
+    <Compile Include="Assets\02.Scripts\Environment\AutoClickButton.cs" />
     <Compile Include="Assets\Quantum Tek\Simple Menu\Scripts\SM_SaveToggle.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\Benchmark03.cs" />
     <Compile Include="Assets\Quantum Tek\Simple Menu\Scripts\SM_Menu.cs" />
@@ -106,10 +110,6 @@
     <Compile Include="Assets\Quantum Tek\Simple Menu\Scripts\SM_Tab.cs" />
     <Compile Include="Assets\02.Scripts\Environment\ExitCtrl.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\Benchmark01.cs" />
-    <Compile Include="Assets\02.Scripts\Environment\SoundManager.cs" />
-    <Compile Include="Assets\02.Scripts\Environment\SceneLoader.cs" />
-    <Compile Include="Assets\02.Scripts\Environment\GraphicsSettings.cs" />
-    <Compile Include="Assets\02.Scripts\Environment\AutoClickButton.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\Download\20 Logos PSD\Fonts\chunkfiveex\SIL Open Font License 1.1.txt" />

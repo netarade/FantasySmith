@@ -60,9 +60,10 @@
     <Compile Include="Assets\02.Scripts\Inventory\Drop.cs" />
     <Compile Include="Assets\02.Scripts\Inventory\ItemImageCollection.cs" />
     <Compile Include="Assets\02.Scripts\Inventory\CreateManager.cs" />
-    <Compile Include="Assets\02.Scripts\Inventory\Item.cs" />
+    <Compile Include="Assets\02.Scripts\Inventory\ItemData.cs" />
     <Compile Include="Assets\02.Scripts\Inventory\Drag.cs" />
     <Compile Include="Assets\02.Scripts\Inventory\ItemInfo.cs" />
+    <Compile Include="Assets\02.Scripts\Inventory\Issue.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="UnityEngine">

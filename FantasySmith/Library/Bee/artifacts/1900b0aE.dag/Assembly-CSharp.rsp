@@ -350,7 +350,8 @@
 "Assets/02.Scripts/Inventory/CreateManager.cs"
 "Assets/02.Scripts/Inventory/Drag.cs"
 "Assets/02.Scripts/Inventory/Drop.cs"
-"Assets/02.Scripts/Inventory/Item.cs"
+"Assets/02.Scripts/Inventory/Issue.cs"
+"Assets/02.Scripts/Inventory/ItemData.cs"
 "Assets/02.Scripts/Inventory/ItemImageCollection.cs"
 "Assets/02.Scripts/Inventory/ItemInfo.cs"
 -langversion:9.0

@@ -63,6 +63,7 @@
     <Compile Include="Assets\02.Scripts\Environment\SceneLoader.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\Benchmark01_UGUI.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\TMP_TextSelector_A.cs" />
+    <Compile Include="Assets\04.Models\NPC\Polytope Studio\Lowpoly_Characters\Sources\Scripts\PT_Create_Prefab.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\VertexShakeA.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\Benchmark04.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\ChatController.cs" />
@@ -98,7 +99,10 @@
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\VertexZoom.cs" />
     <Compile Include="Assets\02.Scripts\Environment\ExitCtrl.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\Benchmark01.cs" />
-    <Compile Include="Assets\04.Models\NPC\Polytope Studio\Lowpoly_Characters\Sources\Scripts\PT_Create_Prefab.cs" />
+    <Compile Include="Assets\04.Models\Icons\_Heathen Engineering\Samples\UX Examples\Flat Icons [Free]\ToggleSetAnimatorBoolean.cs" />
+    <Compile Include="Assets\02.Scripts\Environment\GameManager.cs" />
+    <Compile Include="Assets\02.Scripts\Environment\CursorChanger.cs" />
+    <Compile Include="Assets\02.Scripts\Environment\LoadingBar.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\Download\20 Logos PSD\Fonts\chunkfiveex\SIL Open Font License 1.1.txt" />
@@ -129,6 +133,7 @@
     <None Include="Assets\TextMesh Pro\Resources\LineBreaking Following Characters.txt" />
     <None Include="Assets\Download\20 Logos PSD\Fonts\molot\molot-eula.txt" />
     <None Include="Assets\04.Models\Player\Player\Stylized - Peasant Nolant\README.txt" />
+    <None Include="Assets\04.Models\Icons\_Heathen Engineering\Documentation\UX\Flat Icons [Free]\Read Me.txt" />
     <None Include="Assets\Download\20 Logos PSD\Fonts\Read Me.txt" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF-Mobile Masking.shader" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF Overlay.shader" />

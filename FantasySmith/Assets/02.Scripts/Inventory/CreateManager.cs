@@ -4,6 +4,8 @@ using UnityEngine;
 using ItemData;
 using System;
 using UnityEditor.UIElements;
+using UnityEngine.UIElements;
+using Unity.VisualScripting;
 
 /*
  * [작업 사항]
@@ -15,24 +17,116 @@ using UnityEditor.UIElements;
  * 1 - 아이템 클래스 기반으로 아이템 초기화, 구매, 제작, 숙련도 변화 예시를 만들어봄.
  * 2 - 기타 주석 처리
  * 
+ * <v2.0 - 2023_1103_최원준>
+ * 1 - 중복, 복잡한 로직 메서드화하여 간소화 및 재사용 가능하게 변경
+ * 
+ * 2 - playerInventory가 Item을 가지는 것이 아니라 GameObject를 가지도록 수정.
+ * playerInventory는 게임 시작 시 플레이어가 가지게 될 리스트 변수이며, 게임 종료와 시작 시 저장 및 로드해야 할 변수이다.
+ * 이 리스트에는 개념아이템이 아니라 아이템오브젝트를 보관해야 한다. 아이템 오브젝트에는 개념아이템 정보를 포함한다.
+ * 
+ * 
  */
+
+
+/// <summary>
+/// 아이템 생성에 관한 로직을 담당하는 클래스이며,<br/>
+/// 아이템을 활용하는 모든 씬에서 이 스크립트를 컴포넌트로 가지고 있는 오브젝트가 있어야 합니다.<br/>
+/// 원하는 시점에 인스턴스를 선언 및 참조하여 관련 메서드를 호출하면 됩니다.
+/// </summary>
 public class CreateManager : MonoBehaviour
 {
-    public ItemImageCollection iicMisc;                     // 인스펙터 뷰 상에서 등록할 잡화아이템 이미지 집합
-    public ItemImageCollection iicWeapon;                   // 인스펙터 뷰 상에서 등록할 무기아이템 이미지 집합
+    [SerializeField] ItemImageCollection iicMisc;           // 인스펙터 뷰 상에서 등록할 잡화아이템 이미지 집합
+    [SerializeField] ItemImageCollection iicWeapon;         // 인스펙터 뷰 상에서 등록할 무기아이템 이미지 집합
 
     Dictionary<string, Item> miscDic;                       // 게임 시작 시 넣어 둘 전체 잡화아이템 사전 
-    Dictionary<string, Item> weaponDic;                     // 게임 시작 시 넣어 둘 전체 무기아이템 사전 
-
+    Dictionary<string, Item> weaponDic;                     // 게임 시작 시 넣어 둘 전체 무기아이템 사전
     Dictionary<string, CraftProficiency> playerCraftDic;    // 제작 성공 시 증가하는 숙련도 목록
-    List<Item> playerInventory;                             // 아이템을 넣어서 관리하는 인벤토리
+
+    [SerializeField] Transform slotListTr;                  // 인벤토리의 슬롯 오브젝트의 트랜스폼 참조
 
 
+    GameObject itemPrefab;                                  // 리소스 폴더 또는 직접 드래그해서 복제할 오브젝트를 등록해야 한다.        
+    
+    
+    int inventoryMaxCount;                      // 인벤토리의 최대 칸수 - 시설 업그레이드 등에 따라 가변 될 수 있다.
+    List<GameObject> playerInventory;           // 아이템을 넣어서 관리하는 인벤토리
+    List<int> slotIndexList;                    // 사용자의 인벤토리 보관 목록
 
-    void Start()
-    {       
+
+    /// <summary>
+    /// 가장 가까운 슬롯에 원하는 아이템을 생성합니다.<br/>
+    /// 현재 인벤토리 슬롯에 빈자리가 없다면 false를 반환합니다.<br/>
+    /// * 이름이 일치하지 않을 경우 예외를 발생시킵니다. *
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="inventoryList">플레이어의 인벤토리 변수가 필요합니다. 해당 리스트에 아이템 오브젝트를 추가하여 줍니다.</param>
+    /// <param name="itemName">아이템 테이블을 참고하여 한글명을 기입해주세요. 띄어쓰기에 유의해야 합니다. ex)철, 철 검, 미스릴, 미스릴 검</param>
+    /// <param name="count">생성을 원하는 갯수입니다. 하나의 슬롯에 중첩하여 생성될 것입니다. 기본 값은 1이며, 장비류는 반드시 1개만 생성됩니다.</param>
+    /// <returns></returns>
+    public bool CreateItemToNearstSlot(List<GameObject> inventoryList, string itemName, int count = 1)
+    {
+        int findSlotIdx = FindNearstRemainSlotIdx();
+
+        if( findSlotIdx == -1 ) // 인벤토리의 남아있는 칸이 없다면 생성하지 못한다.
+            return false;
+                
         
-        #region 초기 아이템목록 초기화 예시
+        // 사전의 개념 아이템을 클론하여 (아이템 원형을 복제해서) 또 다른 개념 아이템을 생성한다.
+        Item itemClone;
+
+        if( weaponDic.ContainsKey( itemName ) )
+        {
+            itemClone=(ItemWeapon)weaponDic[itemName].Clone();
+        }
+        else if( miscDic.ContainsKey( itemName ) )
+        {
+            itemClone=(ItemMisc)miscDic[itemName].Clone();
+            ((ItemMisc)itemClone).InventoryCount=count;         // 중첩 갯수를 지정합니다.
+        }
+        else
+        {
+            throw new Exception("아이템 명이 정확하게 일치하지 않습니다. 확인하여 주세요.");
+        }
+                
+        // 개념 아이템의 슬롯의 인덱스 정보를 찾은 위치로 수정한다.
+        itemClone.SlotIndex = findSlotIdx;
+
+        // 슬롯리스트의 해당 슬롯에 게임 상에서 보여 질 오브젝트를 생성하여 배치한다.
+        GameObject itemObject = Instantiate( itemPrefab, slotListTr.GetChild(findSlotIdx) );                
+
+
+        // 스크립트 상의 item에 사전에서 클론한 아이템을 참조하게 한다.        
+        itemObject.GetComponent<ItemInfo>().item = itemClone;
+        itemObject.GetComponent<ItemInfo>().OnItemAdded(); // 복제 오브젝트에 아이템 참조값을 넣었다면 이미지를 반영해야한다.
+        inventoryList.Add(itemObject);    // 인벤토리는 GameObject 인스턴스를 보관함으로서 transform정보와 개념 아이템을 정보를 포함하게 된다.
+        
+        return true;
+    }
+
+    /// <summary>
+    /// 남아있는 슬롯 중에서 가장 작은 인덱스를 반환합니다. 슬롯이 꽉 찬경우 -1을 반환합니다.
+    /// </summary>
+    public int FindNearstRemainSlotIdx() 
+    {
+        int findIdx = -1;
+
+        for( int i = 0; i<slotListTr.childCount; i++ )
+        {
+            if( slotListTr.GetChild(i).childCount!=0 )  // 해당 슬롯리스트에 자식이 있다면 다음 슬롯리스트로 넘어간다.
+                continue;
+
+            findIdx = i;
+            break;
+        }
+
+        return findIdx;     // findIdx가 수정되지 않았다면 -1을 반환한다. 수정되었다면 0이상의 인덱스값을 반환한다.
+    }
+
+    /// <summary>
+    /// 월드의 모든 개념 아이템을 담아두는 딕셔너리를 초기화합니다.
+    /// </summary>
+    void CreateAllItemDic()
+    {
         // 플레이어와 상관없이 게임 시스템 자체가 들고 있어야할 집합이며,
         // 플레이어는 아이템이 생성될 때 이 집합에서 복제해서 들고있게 될 것이다.
 
@@ -45,49 +139,33 @@ public class CreateManager : MonoBehaviour
         };
         weaponDic=new Dictionary<string, Item>()
         {
-            { "철검", new ItemWeapon( ItemType.Weapon, WeaponType.Sword, "0001000", "철검", 10.0f, iicWeapon.icArrImg[0]) },
-            { "강철검", new ItemWeapon( ItemType.Weapon, WeaponType.Sword, "0001001", "강철검", 20.0f, iicWeapon.icArrImg[0]) }
+            { "철 검", new ItemWeapon( ItemType.Weapon, WeaponType.Sword, "0001000", "철 검", 10.0f, iicWeapon.icArrImg[0]) },
+            { "강철 검", new ItemWeapon( ItemType.Weapon, WeaponType.Sword, "0001001", "강철 검", 20.0f, iicWeapon.icArrImg[1]) }
         };
+    }
 
-        #endregion
 
+    void Start()
+    { 
+
+        itemPrefab = Resources.Load<GameObject>("ItemOrigin");  // 리소스 폴더에서 원본 프리팹 가져오기
+        inventoryMaxCount = 50;                                 // 인벤토리 최대 수치이며, 이는 게임 상에서 변경될 가능 성이 있다.
+        slotListTr = GameObject.Find("SlotList").transform;     // 슬롯리스트를 인식 시켜 남아있는 슬롯을 확인할 것이다.
+
+        // 인스펙터뷰 상에서 달아놓은 스프라이트 이미지 집합을 참조한다.
+        iicMisc = GameObject.Find("ImageCollections").transform.GetChild(0).GetComponent<ItemImageCollection>();
+        iicWeapon = GameObject.Find("ImageCollections").transform.GetChild(1).GetComponent<ItemImageCollection>();
+        
+        // 모든 월드 아이템 등록
+        CreateAllItemDic();
 
 
         #region 플레이어의 장비 아이템 복제 예시( 제작, 아이템 구매 등을 통해 인벤토리에 아이템이 생성된다.)
 
-        // 인벤토리 슬롯의 남아있는 칸을 확인하여야 한다.
-        int maxCount = 50;
-        if( playerInventory.Count >= maxCount )
-            return;
+        playerInventory = new List<GameObject>();
+        CreateItemToNearstSlot(playerInventory, "철", 5);
 
-        // 사전의 아이템을 클론하여 (아이템 원형을 복제해서) 아이템을 생성한다.
-        ItemWeapon weaponItem = (ItemWeapon)weaponDic["철검"].Clone();
-
-        /**** 1. 빈오브젝트 만들어서 컴포넌트 붙인다음 집어넣기 ****/
-        /*         
-        gameobject gameobject = new gameobject();     
-        gameobject.addcomponent<iteminfo>();
-        gameobject.getcomponent<iteminfo>().item = weaponitem;
-        //관리가 어려워 지므로 사용하지 않는다.
-        */
-
-        /**** 2. 이미 있는 오브젝트를 복제 생성하여 Item을 넣어주기 ****/
-        
-        GameObject itemPrefab = Resources.Load<GameObject>("ItemOrigin");   //start구문에서 이루어지는 동작
-        // 슬롯리스트의 해당 슬롯에 게임 상에서 보여 질 오브젝트를 생성하여 배치한다.
-        GameObject itemObject = Instantiate( itemPrefab, GameObject.Find( "Inventory" ).transform.GetChild(0).GetChild(0) );
-                                                            
-        // 스크립트 상의 item에 사전에서 클론한 아이템을 참조하게 한다.        
-        itemObject.GetComponent<ItemInfo>().item = weaponItem;
-        itemObject.GetComponent<ItemInfo>().OnItemAdded(); // 아이템 오브젝트에 아이템참조값을 넣었다면 이미지를 반영해야한다.
-
-        //gameObject.AddComponent();
-        playerInventory.Add(weaponItem);    // 개념적 인벤토리에 아이템을 넣어준다.
-        
         #endregion
-
-
-
 
 
 
@@ -98,18 +176,18 @@ public class CreateManager : MonoBehaviour
         string purchasedItemName = "미스릴";  // 잡화아이템 구매이름이라고 가정한다.
         int purchasedCnt = 5;                // 잡화아이템의 구매횟수이다.
 
-        foreach( Item item in playerInventory )
+        foreach( GameObject itemObj in playerInventory )
         {
-            if( item.Name==purchasedItemName )
-            {
-                ( (ItemMisc)item ).InventoryCount=purchasedCnt;  // 인벤토리의 아이템카운트만 올린다.                
-            }
-            else
-            {
-                ItemMisc purchasedItem = (ItemMisc)miscDic["미스릴"].Clone();
-                purchasedItem.InventoryCount=purchasedCnt;
+            Item item = itemObj.GetComponent<ItemInfo>().item;      // 오브젝트가 가지고 있는 아이템 참조값을 받아온다.
 
-                playerInventory.Add( purchasedItem );     // 인벤토리 리스트에 새롭게 추가한다.
+            if( item.Name==purchasedItemName )                      // NPC에게서 구매할 아이템이 현재 인벤토리의 아이템 이름과 같다면,
+            {
+                ( (ItemMisc)item ).InventoryCount=purchasedCnt;     // 인벤토리의 아이템카운트만 올린다.                
+            }
+            else                                                    // NPC에게서 구매할 아이템이 현재 인벤토리에 없다면,
+            {
+                CreateItemToNearstSlot(playerInventory, purchasedItemName, purchasedCnt);
+                break;
             }
         }
 

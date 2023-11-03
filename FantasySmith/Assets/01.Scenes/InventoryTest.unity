@@ -411,6 +411,9 @@ MonoBehaviour:
   - itemDesc: "\uBBF8\uC2A4\uB9B4"
     innerSprite: {fileID: 21300000, guid: b570928da823f4d96842cdc283f0b8ae, type: 3}
     statusSprite: {fileID: 21300000, guid: b570928da823f4d96842cdc283f0b8ae, type: 3}
+  - itemDesc: "\uC7AC"
+    innerSprite: {fileID: 21300000, guid: b570928da823f4d96842cdc283f0b8ae, type: 3}
+    statusSprite: {fileID: 21300000, guid: b570928da823f4d96842cdc283f0b8ae, type: 3}
 --- !u!4 &108264672
 Transform:
   m_ObjectHideFlags: 0

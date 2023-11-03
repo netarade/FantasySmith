@@ -3,9 +3,6 @@ using System.Collections.Generic;
 using UnityEngine;
 using ItemData;
 using System;
-using UnityEditor.UIElements;
-using UnityEngine.UIElements;
-using Unity.VisualScripting;
 
 /*
  * [작업 사항]
@@ -38,8 +35,8 @@ public class CreateManager : MonoBehaviour
     [SerializeField] ItemImageCollection iicMisc;           // 인스펙터 뷰 상에서 등록할 잡화아이템 이미지 집합
     [SerializeField] ItemImageCollection iicWeapon;         // 인스펙터 뷰 상에서 등록할 무기아이템 이미지 집합
 
-    Dictionary<string, Item> miscDic;                       // 게임 시작 시 넣어 둘 전체 잡화아이템 사전 
-    Dictionary<string, Item> weaponDic;                     // 게임 시작 시 넣어 둘 전체 무기아이템 사전
+    public Dictionary<string, Item> miscDic;                // 게임 시작 시 넣어 둘 전체 잡화아이템 사전 
+    public Dictionary<string, Item> weaponDic;              // 게임 시작 시 넣어 둘 전체 무기아이템 사전
     Dictionary<string, CraftProficiency> playerCraftDic;    // 제작 성공 시 증가하는 숙련도 목록
 
     [SerializeField] Transform slotListTr;                  // 인벤토리의 슬롯 오브젝트의 트랜스폼 참조
@@ -125,13 +122,13 @@ public class CreateManager : MonoBehaviour
     /// <summary>
     /// 월드의 모든 개념 아이템을 담아두는 딕셔너리를 초기화합니다.
     /// </summary>
-    void CreateAllItemDic()
+    private void CreateAllItemDictionary()
     {
         // 플레이어와 상관없이 게임 시스템 자체가 들고 있어야할 집합이며,
         // 플레이어는 아이템이 생성될 때 이 집합에서 복제해서 들고있게 될 것이다.
 
         miscDic=new Dictionary<string, Item>()
-        {
+        {           //0x1000
             { "철", new ItemMisc( ItemType.Misc, MiscType.Basic, "0000000", "철", 3.0f, iicMisc.icArrImg[0] ) },
             { "강철", new ItemMisc( ItemType.Misc, MiscType.Basic, "0000001", "강철", 5.0f, iicMisc.icArrImg[1] ) },
             { "흑철", new ItemMisc( ItemType.Misc, MiscType.Basic, "0000002", "흑철", 7.0f, iicMisc.icArrImg[2] ) },
@@ -144,7 +141,7 @@ public class CreateManager : MonoBehaviour
         };
     }
 
-
+    
     void Start()
     { 
 
@@ -157,13 +154,17 @@ public class CreateManager : MonoBehaviour
         iicWeapon = GameObject.Find("ImageCollections").transform.GetChild(1).GetComponent<ItemImageCollection>();
         
         // 모든 월드 아이템 등록
-        CreateAllItemDic();
+        CreateAllItemDictionary();
 
 
         #region 플레이어의 장비 아이템 복제 예시( 제작, 아이템 구매 등을 통해 인벤토리에 아이템이 생성된다.)
+               
 
-        playerInventory = new List<GameObject>();
+
+
+
         CreateItemToNearstSlot(playerInventory, "철", 5);
+        CreateItemToNearstSlot(playerInventory, "철 검");
 
         #endregion
 
@@ -178,11 +179,11 @@ public class CreateManager : MonoBehaviour
 
         foreach( GameObject itemObj in playerInventory )
         {
-            Item item = itemObj.GetComponent<ItemInfo>().item;      // 오브젝트가 가지고 있는 아이템 참조값을 받아온다.
+            ItemMisc item = (ItemMisc)itemObj.GetComponent<ItemInfo>().item;      // 오브젝트가 가지고 있는 아이템 참조값을 받아온다.
 
             if( item.Name==purchasedItemName )                      // NPC에게서 구매할 아이템이 현재 인벤토리의 아이템 이름과 같다면,
             {
-                ( (ItemMisc)item ).InventoryCount=purchasedCnt;     // 인벤토리의 아이템카운트만 올린다.                
+                item.InventoryCount = purchasedCnt;     // 인벤토리의 아이템카운트만 올린다.                
             }
             else                                                    // NPC에게서 구매할 아이템이 현재 인벤토리에 없다면,
             {

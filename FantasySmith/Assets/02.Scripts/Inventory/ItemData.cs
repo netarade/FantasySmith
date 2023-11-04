@@ -10,31 +10,33 @@ using UnityEngine.UI;
  * [작업 사항]
  * 
  * <v1.0 - 2023_1101_최원준>
- * 1 - 최초작성 및 테스트 완료
+ * 1- 최초작성 및 테스트 완료
  *  
  * <v1.1 - 2023_1102_최원준>  
- * 1 - 파일명을 Item에서 ItemData로 수정하였음. (여러 클래스를 포함하기 때문)
+ * 1- 파일명을 Item에서 ItemData로 수정하였음. (여러 클래스를 포함하기 때문)
  * 
- * 2 - Item클래스의 ItemType을 대분류 항목으로 수정.
+ * 2- Item클래스의 ItemType을 대분류 항목으로 수정.
  * 상속받은 클래스가 해당클래스에 맞게 중분류 Type을 가지도록 하였음.
  * 하위 클래스에 중분류 Type 생성 및 생성자도 수정.
  * 
- * 3 - 생성자 간소화
+ * 3- 생성자 간소화
  * 아이템의 원형을 미리 만들어 놓을 때 
  * 이미지를 넣지 않는 생성자나, 디폴트 생성자는 사용하지 않을 예정이므로.
  * 즉, 모든 데이터와 이미지들을 넣고 만들어놓을 예정.
  * 
- * 4 - Item 클래스에 ICloneable 인터페이스 추상형태로 구현 및 각 자식 클래스에서 직접 구현하도록 만듬.
+ * 4- Item 클래스에 ICloneable 인터페이스 추상형태로 구현 및 각 자식 클래스에서 직접 구현하도록 만듬.
  * 아이템 제작은 아이템을 새롭게 생성하는 것이므로, 일반적인 참조방식으로는 객체를 미리 여러개 만들어놔야 한다.
  * 복제를 통해 제작 시점에 새로운 객체를 할당받을 수 있게 한다.
  * 
  * <v2.0 - 2023_1103_최원준>
- * 1 - 아이템이 현재 놓여있는 인벤토리의 슬롯 인덱스를 정보로 가지고 있도록 하였음.
+ * 1- 아이템이 현재 놓여있는 인벤토리의 슬롯 인덱스를 정보로 가지고 있도록 하였음.
  * 인벤토리 리스트에 아이템을 담을 때 슬롯정보를 넣어서 저장하면, 
  * 인벤토리에서 아이템의 정보를 꺼냈을 때, 따로 슬롯의 인덱스 리스트를 관리하는 것보다 한 번에 보기 쉽기 때문.
  *  
- * 2 - ItemDebugInfo 메서드 추가. 호출 시 간단한 정보를 디버그상으로 표현
+ * 2- ItemDebugInfo 메서드 추가. 호출 시 간단한 정보를 디버그상으로 표현
  * 
+ * <v3.0 - 2023_1105_최원준>
+ * 1- 무기 타입에 각종 파라미터 추가
  */
 
 namespace ItemData
@@ -42,7 +44,7 @@ namespace ItemData
     public enum ItemType { Misc, Weapon };
     public enum MiscType { Basic, Additive, Fire, Attribute, Engraving, Etc } // 기본재료, 추가재료, 연료, 속성석, 각인석, 기타
     public enum WeaponType { Sword, Blade, Spear, Dagger, Thin, Axe, Blunt, Bow, Crossbow, Claw, Whip } //검,도,창,단검,세검,활,석궁,클로,채찍
-
+    
     
     /// <summary>
     /// 기본 아이템 추상 클래스 - 인스턴스를 생성하지 못합니다. 반드시 상속하여 사용하세요. 상속한 클래스는 ICloneable을 구현해야합니다.
@@ -55,7 +57,7 @@ namespace ItemData
         protected float fPrice;             // 가격   
         protected ImageCollection icImage;  // 아이템의 인벤토리 내부 이미지, 상태창 이미지 등을 저장한다.
         protected int slotIndex;            // 아이템은 자신이 놓여있는 인벤토리의 슬롯 인덱스 정보를 가진다.
-                
+        
         public ItemType Type { get { return enumType; } }
         public string Name { get { return strName; } }
         public float Price { get { return fPrice; } }
@@ -137,12 +139,73 @@ namespace ItemData
         }
     }
 
+
+    /// <summary>
+    /// 5대 속성 - 수,금,지,화,풍
+    /// </summary>
+    public enum Attribute { Water, Gold, Earth, Fire, Wind }
+   
+    /// <summary>
+    /// 무기 제작에 필요한 재료 - 재료 이름과 갯수
+    /// </summary>
+    public struct CraftMaterial
+    {
+        string name;
+        int count;
+    }
+
+    /// <summary>
+    /// 아이템 고유 레벨
+    /// </summary>
+    public enum ItemLevel { Low, Medium, High }
+
+    /// <summary>
+    /// 각인석의 종류 - 물리,공속,흡혈,사격,피해
+    /// </summary>
+    public enum StatType { Power, Speed, Leech, Range, Splash }
+
+    /// <summary>
+    /// 각인석 - 무기를 각인시킬 때 사용
+    /// </summary>
+    public struct Engraving             
+    {
+        public string Name {get;set;}   // 이름
+        public float increaseValue {get;set;}  // 증가 수치
+        public ItemLevel EngravingLevel {get; set; }
+        public StatType ssss;
+        
+        public string Desc {get;set;}   // 설명
+    }
+
+
     /// <summary>
     /// 무기 아이템
     /// </summary>
     public class ItemWeapon : Item
     {
         protected WeaponType enumWeaponType;    // 무기 소분류 타입
+        protected int iPower;                   // 공격력
+        protected int iDurability;              // 내구
+        protected float fSpeed;                 // 공격속도
+        protected int iWeight;                  // 무게
+        protected Attribute enumAttribute;      // 속성
+
+
+        ItemLevel enumCraftLevel;               // 무기 분류 (초급, 중급, 고급)
+        CraftMaterial[] cmArrBaseMaterial;           // 제작 시 필요한 기본 재료
+        CraftMaterial[] cmArrAdditiveMaterial;       // 제작 시 필요한 추가 재료
+        protected int fireNum;                  // 2단계 제작에 필요한 연료 갯수
+
+        protected float fBasePerformance;           // 장비 기본 성능
+        protected float fLastPerformance;           // 장비 최종 성능
+        protected float iEnhanceNum;                // 무기 강화 횟수
+        protected bool IsAttrUnlocked {get; set;}   // 속성 해방 여부
+        protected bool IsCraftable {get; set;}      // 제작 가능 여부
+        
+        public int RemainEngraveNum{get; set;}      // 남은 강화 횟수
+
+
+
         /// <summary>
         /// 무기 아이템 소분류 타입 - Sword, Blade, Spear, Dagger 등이 있습니다.
         /// </summary>
@@ -162,6 +225,12 @@ namespace ItemData
             return this.MemberwiseClone();
         }
     }
+
+
+
+
+
+
 
 
     /// <summary>

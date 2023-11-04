@@ -92,6 +92,8 @@ GameObject:
   - component: {fileID: 2122377946822496253}
   - component: {fileID: 2122377946822496250}
   - component: {fileID: 2122377946822496252}
+  - component: {fileID: -466012075503803452}
+  - component: {fileID: -5022671759351565396}
   m_Layer: 5
   m_Name: ItemOrigin
   m_TagString: ITEM
@@ -172,3 +174,27 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   innerImage: {fileID: 0}
   countTxt: {fileID: 0}
+--- !u!114 &-466012075503803452
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2122377946822496248}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2a0d4a14864806547805a54e6142b3f5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &-5022671759351565396
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2122377946822496248}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0539cfe88b5c3d642ba484145b283e40, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 

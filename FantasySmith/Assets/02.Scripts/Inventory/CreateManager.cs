@@ -8,27 +8,32 @@ using System;
  * [작업 사항]
  * 
  * <v1.0 - 2023_1101_최원준>
- * 1 - 테스트용 클래스 작성
+ * 1- 테스트용 클래스 작성
  * 
  * <v1.1 - 2023_1101_최원준>
- * 1 - 아이템 클래스 기반으로 아이템 초기화, 구매, 제작, 숙련도 변화 예시를 만들어봄.
- * 2 - 기타 주석 처리
+ * 1- 아이템 클래스 기반으로 아이템 초기화, 구매, 제작, 숙련도 변화 예시를 만들어봄.
+ * 2- 기타 주석 처리
  * 
  * <v2.0 - 2023_1103_최원준>
- * 1 - 중복, 복잡한 로직 메서드화하여 간소화 및 재사용 가능하게 변경
+ * 1- 중복, 복잡한 로직 메서드화하여 간소화 및 재사용 가능하게 변경
  * 
- * 2 - playerInventory가 Item을 가지는 것이 아니라 GameObject를 가지도록 수정.
+ * 2- playerInventory가 Item을 가지는 것이 아니라 GameObject를 가지도록 수정.
  * playerInventory는 게임 시작 시 플레이어가 가지게 될 리스트 변수이며, 게임 종료와 시작 시 저장 및 로드해야 할 변수이다.
  * 이 리스트에는 개념아이템이 아니라 아이템오브젝트를 보관해야 한다. 아이템 오브젝트에는 개념아이템 정보를 포함한다.
  * 
+ * <v3.0 - 2023_1104_최원준>
+ * 1- 플레이어 인벤토리를 GameObject를 보관하는 weapList, miscList로 분리하여 관리하고 구조체로 통합
  * 
+ * <v3.1 - 2023_1105_최원준>
+ * 1- ItemInfo의 OnItemAdded 메서드의 호출 방식 내부자동 호출 변경으로 인해서 
+ * 해당 메서드 사용구문을 삭제
+ * 2- CreateManager의 접근 편리성과 딕셔너리 및 메서드 항시 상주화 필요성으로 인해 싱글톤으로 수정. 
  */
 
 
 /// <summary>
 /// 아이템 생성에 관한 로직을 담당하는 클래스이며,<br/>
-/// 아이템을 활용하는 모든 씬에서 이 스크립트를 컴포넌트로 가지고 있는 오브젝트가 있어야 합니다.<br/>
-/// 원하는 시점에 인스턴스를 선언 및 참조하여 관련 메서드를 호출하면 됩니다.
+/// 아이템 생성을 원하는 시점에 싱글톤 인스턴스를 참조하여 관련 메서드를 호출하면 됩니다.
 /// </summary>
 public class CreateManager : MonoBehaviour
 {
@@ -43,11 +48,35 @@ public class CreateManager : MonoBehaviour
 
 
     GameObject itemPrefab;                                  // 리소스 폴더 또는 직접 드래그해서 복제할 오브젝트를 등록해야 한다.        
-    
-    
+        
     int inventoryMaxCount;                      // 인벤토리의 최대 칸수 - 시설 업그레이드 등에 따라 가변 될 수 있다.
-    List<GameObject> playerInventory;           // 아이템을 넣어서 관리하는 인벤토리
-    List<int> slotIndexList;                    // 사용자의 인벤토리 보관 목록
+    public static CreateManager instance;       // 매니저 싱글톤 인스턴스 생성
+
+
+
+    public struct PlayerInventory
+    {
+        List<GameObject> weapList;
+        List<GameObject> miscList; 
+    }
+
+    List<GameObject> weapList;              // 무기 아이템을 넣어서 관리하는 인벤토리
+    List<GameObject> miscList;              // 잡화 아이템을 넣어서 관리하는 인벤토리
+
+    public void Awake()
+    {
+        if(instance==null)
+        {
+            instance = this;            
+            DontDestroyOnLoad(instance);
+        }
+        else if(instance != null )
+            Destroy(this.gameObject);           // 싱글톤 이외 인스턴스는 삭제
+    }
+
+
+
+
 
 
     /// <summary>
@@ -91,10 +120,9 @@ public class CreateManager : MonoBehaviour
         // 슬롯리스트의 해당 슬롯에 게임 상에서 보여 질 오브젝트를 생성하여 배치한다.
         GameObject itemObject = Instantiate( itemPrefab, slotListTr.GetChild(findSlotIdx) );                
 
-
         // 스크립트 상의 item에 사전에서 클론한 아이템을 참조하게 한다.        
-        itemObject.GetComponent<ItemInfo>().item = itemClone;
-        itemObject.GetComponent<ItemInfo>().OnItemAdded(); // 복제 오브젝트에 아이템 참조값을 넣었다면 이미지를 반영해야한다.
+        itemObject.GetComponent<ItemInfo>().Item = itemClone;
+
         inventoryList.Add(itemObject);    // 인벤토리는 GameObject 인스턴스를 보관함으로서 transform정보와 개념 아이템을 정보를 포함하게 된다.
         
         return true;
@@ -157,14 +185,21 @@ public class CreateManager : MonoBehaviour
         CreateAllItemDictionary();
 
 
+
+
+
+
+
+
+
         #region 플레이어의 장비 아이템 복제 예시( 제작, 아이템 구매 등을 통해 인벤토리에 아이템이 생성된다.)
-               
+        weapList = new List<GameObject>();        
+        miscList = new List<GameObject>();
 
 
 
-
-        CreateItemToNearstSlot(playerInventory, "철", 5);
-        CreateItemToNearstSlot(playerInventory, "철 검");
+        CreateItemToNearstSlot(miscList, "철", 5);
+        CreateItemToNearstSlot(weapList, "철 검");
 
         #endregion
 
@@ -177,17 +212,17 @@ public class CreateManager : MonoBehaviour
         string purchasedItemName = "미스릴";  // 잡화아이템 구매이름이라고 가정한다.
         int purchasedCnt = 5;                // 잡화아이템의 구매횟수이다.
 
-        foreach( GameObject itemObj in playerInventory )
+        foreach( GameObject itemObj in miscList )
         {
             ItemMisc item = (ItemMisc)itemObj.GetComponent<ItemInfo>().item;      // 오브젝트가 가지고 있는 아이템 참조값을 받아온다.
 
             if( item.Name==purchasedItemName )                      // NPC에게서 구매할 아이템이 현재 인벤토리의 아이템 이름과 같다면,
             {
-                item.InventoryCount = purchasedCnt;     // 인벤토리의 아이템카운트만 올린다.                
+                item.InventoryCount=purchasedCnt;     // 인벤토리의 아이템카운트만 올린다.                
             }
             else                                                    // NPC에게서 구매할 아이템이 현재 인벤토리에 없다면,
             {
-                CreateItemToNearstSlot(playerInventory, purchasedItemName, purchasedCnt);
+                CreateItemToNearstSlot( miscList, purchasedItemName, purchasedCnt );
                 break;
             }
         }

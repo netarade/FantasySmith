@@ -60,11 +60,15 @@
     <Compile Include="Assets\02.Scripts\Inventory\Drop.cs" />
     <Compile Include="Assets\02.Scripts\Inventory\ItemImageCollection.cs" />
     <Compile Include="Assets\02.Scripts\Inventory\CreateManager.cs" />
-    <Compile Include="Assets\02.Scripts\Inventory\ItemData.cs" />
+    <Compile Include="Assets\02.Scripts\Inventory\ItemData\ItemData.cs" />
     <Compile Include="Assets\02.Scripts\Inventory\Drag.cs" />
+    <Compile Include="Assets\02.Scripts\Inventory\ItemPointerStatusWindow.cs" />
     <Compile Include="Assets\02.Scripts\Inventory\ItemInfo.cs" />
     <Compile Include="Assets\02.Scripts\Inventory\Issue.cs" />
-    <Compile Include="Assets\02.Scripts\Inventory\ItemPointerStatusWindow.cs" />
+    <Compile Include="Assets\02.Scripts\Inventory\ItemData\ItemData_Weapon.cs" />
+    <Compile Include="Assets\02.Scripts\Inventory\ItemData\CraftData.cs" />
+    <Compile Include="Assets\02.Scripts\Inventory\ItemData\ItemData_Misc.cs" />
+    <Compile Include="Assets\02.Scripts\Inventory\ItemData\ItemData_CraftWeapon.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="UnityEngine">

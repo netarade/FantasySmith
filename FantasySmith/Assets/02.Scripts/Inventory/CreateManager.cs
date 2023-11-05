@@ -31,7 +31,8 @@ using System;
  * 2- CreateManager의 접근 편리성과 딕셔너리 및 메서드 항시 상주화 필요성으로 인해 싱글톤으로 수정. 
  * 
  * <v3.2 - 2023_1106_최원준>
- * 1- 무기 아이템 사전 클래스 설계로 인한 주석처리
+ * 1- 무기 아이템 사전 아이템 클래스 추가 설계로 인한 주석처리
+ * 2- 잡화 및 무기아이템 사전 입력 진행 중(미완료)
  */
 
 
@@ -167,19 +168,19 @@ public class CreateManager : MonoBehaviour
             { "미스릴", new ItemMisc( ItemType.Misc, MiscType.Basic,"0000003", "미스릴", 20.0f, iicMisc.icArrImg[3] ) }
         };
 
-        //CraftMaterial = new CraftMaterial("철", 2);
+        CraftMaterial[] a = {new CraftMaterial("철",2), new CraftMaterial("강철",3)};
 
 
-        //weaponDic=new Dictionary<string, Item>()
-        //{
-        //    { "철 검", new ItemCraftWeapon( ItemType.Weapon, WeaponType.Sword, "0001000", "철 검", 10.0f, iicWeapon.icArrImg[0]
-        //        , ItemGrade.Low, 10, 100, 1.0f, 10, Attribute.None
-        //        ,
-        //    ) },
-        //    { "강철 검", new ItemCraftWeapon( ItemType.Weapon, WeaponType.Sword, "0001001", "강철 검", 20.0f, iicWeapon.icArrImg[1]
-                                        
-        //    ) }
-        //};
+        weaponDic=new Dictionary<string, Item>()
+        {
+            { "철 검", new ItemCraftWeapon( ItemType.Weapon, WeaponType.Sword, "0001000", "철 검", 10.0f, iicWeapon.icArrImg[0]
+                , ItemGrade.Low, 10, 100, 1.0f, 10, EnumAttribute.None
+                , new CraftMaterial[]{new CraftMaterial("철",2)}, new CraftMaterial[]{new CraftMaterial("점토",1)}, Recipie.Eu) 
+            },
+            //{ "강철 검", new ItemCraftWeapon( ItemType.Weapon, WeaponType.Sword, "0001001", "강철 검", 20.0f, iicWeapon.icArrImg[1]
+
+            //) }
+        };
     }
 
     

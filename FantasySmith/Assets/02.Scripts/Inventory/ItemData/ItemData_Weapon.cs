@@ -10,6 +10,9 @@ using UnityEngine;
  * 1- 일반무기(ItemWeapon) 클래스 파일 분리.
  * 2- 각 종 기본 변수 및 프로퍼티, 생성자와 메서드 구현
  * 3- 주석처리
+ * 
+ * <v1.1 - 2023_1106_최원준>
+ * 1- System 자료형과 겹치는 관계로 Attribute 를 EnumAttribute로 변경
  */
 namespace ItemData
 {    
@@ -21,7 +24,7 @@ namespace ItemData
     /// <summary>
     /// 6대 속성 - 수,금,지,화,풍,무
     /// </summary>
-    public enum Attribute { Water, Gold, Earth, Fire, Wind, None }
+    public enum EnumAttribute { Water, Gold, Earth, Fire, Wind, None }
    
     /// <summary>
     /// 장비의 최종 등급 - 노말, 매직, 레어, 에픽, 유니크, 레전드
@@ -42,7 +45,7 @@ namespace ItemData
         protected int iDurability;              // 내구
         protected float fSpeed;                 // 공격속도
         protected int iWeight;                  // 무게
-        protected Attribute enumAttribute;      // 고유 속성
+        protected EnumAttribute enumAttribute;      // 고유 속성
 
 
         /** 아이템 업그레이드 정보 **/
@@ -151,15 +154,15 @@ namespace ItemData
         /// <summary>
         /// 무기의 고유 속성입니다. 개방 여부와 상관이 없습니다.
         /// </summary>
-        public Attribute OriAttribute { get{return enumAttribute;} }  
+        public EnumAttribute OriAttribute { get{return enumAttribute;} }  
 
         /// <summary>
         /// 현재 무기의 속성입니다. 개방되지 않았다면 무속성입니다.
         /// </summary>
-        public Attribute CurAttribute { 
+        public EnumAttribute CurAttribute { 
             get{ 
                 if(isAttrUnlocked)
-                    return Attribute.None;
+                    return EnumAttribute.None;
                 else
                     return enumAttribute;                
                 }             
@@ -184,7 +187,7 @@ namespace ItemData
 
 
         public ItemWeapon(ItemType mainType, WeaponType subType, string No, string name, float price, ImageCollection image   // 아이템 기본 정보 
-            ,ItemGrade basicGrade, int power, int durability, float speed, int weight, Attribute attribute                    // 무기 고유 정보
+            ,ItemGrade basicGrade, int power, int durability, float speed, int weight, EnumAttribute attribute                    // 무기 고유 정보
         ) : base( mainType, No, name, price, image )
         {
             enumWeaponType = subType;

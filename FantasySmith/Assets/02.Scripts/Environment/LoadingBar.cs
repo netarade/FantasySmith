@@ -6,6 +6,7 @@ using System.Collections;
 public class LoadingBar : MonoBehaviour
 {
     public Slider progressbar;
+    public Text loadtext;
     public float loadingTime = 3.0f; // 로딩 시간(초)
 
     private void Start()
@@ -21,15 +22,24 @@ public class LoadingBar : MonoBehaviour
 
         while (!operation.isDone)
         {
+            yield return null;
             float progress = Mathf.Clamp01(operation.progress / 0.9f); // 로딩 진행 상태
             progressbar.value = progress;
 
-            if (progress >= 1f) // 로딩이 100% 완료되면
+            if (progressbar.value < 0.9f) // 로딩이 100% 완료되면
             {
-                operation.allowSceneActivation = true; // 다음 씬으로 전환 허용
+                progressbar.value = Mathf.MoveTowards(progressbar.value, 0.9f, Time.deltaTime);
+            }
+            else if (operation.progress > 0.9f)
+            {
+                progressbar.value = Mathf.MoveTowards(progressbar.value, 1f, Time.deltaTime);
             }
 
-            yield return null;
+            if (progressbar.value >= 1f && operation.progress >= 0.9f)
+            {
+                yield return new WaitForSeconds(1f); // 현재 씬에서 1초 머무르기
+                operation.allowSceneActivation = true; // 다음 씬으로 전환
+            }
         }
     }
 }

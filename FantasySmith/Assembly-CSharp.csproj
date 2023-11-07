@@ -60,14 +60,16 @@
     <Compile Include="Assets\02.Scripts\Title\AudioManager_Title.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\SkewTextExample.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\SimpleScript.cs" />
-    <Compile Include="Assets\02.Scripts\Environment\ButtonCtrl.cs" />
+    <Compile Include="Assets\02.Scripts\Environment\Button_Title.cs" />
     <Compile Include="Assets\02.Scripts\Title\SceneLoader.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\Benchmark01_UGUI.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\TMP_TextSelector_A.cs" />
     <Compile Include="Assets\02.Scripts\Main\GameManager.cs" />
     <Compile Include="Assets\04.Models\NPC\Polytope Studio\Lowpoly_Characters\Sources\Scripts\PT_Create_Prefab.cs" />
+    <Compile Include="Assets\02.Scripts\Main\DateManager.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\VertexShakeA.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\Benchmark04.cs" />
+    <Compile Include="Assets\02.Scripts\Main\TimeManager.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\ChatController.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\TextMeshProFloatingText.cs" />
     <Compile Include="Assets\04.Models\Icons\_Heathen Engineering\Samples\UX Examples\Flat Icons [Free]\ToggleSetAnimatorBoolean.cs" />
@@ -83,11 +85,11 @@
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\TMP_TextEventCheck.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\ShaderPropAnimator.cs" />
     <Compile Include="Assets\02.Scripts\Title\GraphicsSettings.cs" />
+    <Compile Include="Assets\02.Scripts\Main\MoneyManager.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\WarpTextExample.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\TMP_DigitValidator.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\Benchmark02.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\TextMeshSpawner.cs" />
-    <Compile Include="Assets\02.Scripts\Main\AudioManager.cs" />
     <Compile Include="Assets\02.Scripts\Title\AutoClickButton.cs" />
     <Compile Include="Assets\02.Scripts\Title\GameManager_Title.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\Benchmark03.cs" />
@@ -98,6 +100,7 @@
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\VertexJitter.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\TMP_TextEventHandler.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\TMP_TextSelector_B.cs" />
+    <Compile Include="Assets\XEntity GameKit\Demo\Scripts\PlayerMovement.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\DropdownSample.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\TMP_PhoneNumberValidator.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\VertexColorCycler.cs" />
@@ -106,10 +109,8 @@
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\VertexZoom.cs" />
     <Compile Include="Assets\02.Scripts\Title\ExitCtrl.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\Benchmark01.cs" />
-    <Compile Include="Assets\02.Scripts\Main\TimeManager.cs" />
-    <Compile Include="Assets\02.Scripts\Main\DateManager.cs" />
-    <Compile Include="Assets\02.Scripts\Main\MoneyManager.cs" />
-    <Compile Include="Assets\XEntity GameKit\Demo\Scripts\PlayerMovement.cs" />
+    <Compile Include="Assets\02.Scripts\Main\Button_Setting.cs" />
+    <Compile Include="Assets\02.Scripts\Title\AudioManager.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\Download\20 Logos PSD\Fonts\chunkfiveex\SIL Open Font License 1.1.txt" />

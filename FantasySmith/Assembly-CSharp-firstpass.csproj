@@ -889,6 +889,10 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="XEntity.InventoryItemSystem.csproj">
+      <Project>{4EB2CC8B-44EB-2484-BD4E-75D656BFCD10}</Project>
+      <Name>XEntity.InventoryItemSystem</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="GenerateTargetFrameworkMonikerAttribute" />

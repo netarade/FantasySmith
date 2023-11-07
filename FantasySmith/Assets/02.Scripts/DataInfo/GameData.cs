@@ -48,7 +48,7 @@ namespace DataManagement
 
 
         /// <summary>
-        /// 현재 플레이어가 보관하고 있는 인벤토리 정보입니다. 게임오브젝트를 보관하는 weapList와 miscList 및 InventoryMaxCount 등이 있습니다.
+        /// 현재 플레이어가 보관하고 있는 인벤토리 정보입니다. 게임오브젝트를 보관하는 weapList와 playerMiscList 및 InventoryMaxCount 등이 있습니다.
         /// </summary>
         public PlayerInventory inventory;
 

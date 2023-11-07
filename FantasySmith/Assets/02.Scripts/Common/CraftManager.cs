@@ -20,6 +20,9 @@ using DataManagement;
  * 다른 스크립트에서 Start구문에서 instance에 접근하여 정보를 받아가고 있기 때문.
  * 2- 직렬화 안되는 문제가 발생하여 다시 OnEnable에서 Start로 수정.
  * 
+ * <v2.0 - 2023_1107_최원준>
+ * 1- 빠른 초기화가 이루어져야 스크립트에서 정보를 받아가므로 Awake문으로 옮김.
+ * 대리자를 이용하여 연관성을 최소화하여 순서대로 초기화가 이루어지도록 함. 
  */
 
 
@@ -77,25 +80,28 @@ public class CraftManager : MonoBehaviour
 
         DontDestroyOnLoad( instance );
 
+        if( PlayerPrefs.GetInt("IsContinuedGamePlay") != 1 )   
+            CreateManager.PlayerInitCompleted += CraftManagerInit;    // 게임의 처음시작은 이벤트 연결을 통해 호출하고,
+        else
+            CraftManagerInit();                                       // 이후에는 Awake문에서 바로 정보를 불러들인다.   
     }
 
     /// <summary>
-    /// Start메소드를 OnEnable이상으로 고치면 직렬화 안되는 문제가 발생합니다.
+    /// CreateManager의 Awake문 이후에 데이터를 로드하여 초기화를 이루는 로직입니다.
     /// </summary>
-    void Start()
+    private void CraftManagerInit()
     {
         DataManager dataManager = new DataManager();
         GameData loadData = dataManager.LoadData();
 
-        proficiencyDic=loadData.proficiencyDic;   // 플레이어 숙련 목록 불러오기
+        proficiencyDic=loadData.proficiencyDic;     // 플레이어 숙련 목록 불러오기
         craftableList=loadData.craftableWeaponList; // 플레이어 제작 목록 불러오기
 
-        inventory=loadData.inventory;           // 플레이어 인벤토리 불러오기
+        inventory=loadData.inventory;               // 플레이어 인벤토리 불러오기
         miscList=inventory.miscList;
-        weapList=inventory.weapList;          // 접근의 편리함을 위해 따로 추가 선언 하였음.
-
-        //CraftManagerLoaded();   // 모든 작업이 끝났음을 알려서 연결된 메소드를 호출하여준다.
+        weapList=inventory.weapList;                // 접근의 편리함을 위해 따로 추가 선언 하였음.
     }
+
 
     private void OnApplicationQuit()
     {

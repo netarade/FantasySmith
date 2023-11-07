@@ -16,6 +16,11 @@ using Unity.VisualScripting;
  * <v1.1 - 2023_1106_최원준>
  * 1- txtDesc와 txtSpec 순서를 변경
  * 2- 상태창이 무기와 잡화아이템의 정보를 반영하도록 변경
+ * 
+ * <v1.2 - 2023_1106_최원준>
+ * 1- 잡화아이템의 상태창 설명에 이름과 갯수가 표시되도록 수정
+ * 2- 상태창 참조가 동적할당으로는 제대로 잡히지 않아 게임 시작 시 참조하는 변수를 미리 잡아놓도록 InventoryManagement에 static 참조 변수를 선언.
+ * 
  */
 
 
@@ -41,28 +46,36 @@ public class ItemPointerStatusWindow : MonoBehaviour, IPointerEnterHandler, IPoi
     /// </summary>
     void Awake()
     {        
-        statusWindow = GameObject.Find("Panel-ItemStatus");
+        statusWindow=InventoryManagement.statusWindow;
         imageItem = statusWindow.transform.GetChild(0).GetChild(0).GetComponent<Image>();
         txtEnhancement = statusWindow.transform.GetChild(1).GetComponent<Text>();
         txtName = statusWindow.transform.GetChild(2).GetComponent<Text>();
         txtDesc = statusWindow.transform.GetChild(3).GetComponent<Text>();
         txtSpec = statusWindow.transform.GetChild(4).GetComponent<Text>();
     }
+    
+    void OnEnable()
+    {
+        Debug.Log("호출 시점 확인 Enable");
+        
+    }
 
 
     void Start()
-    {
+    {        
         item = GetComponent<ItemInfo>().item;
     }
 
-    
+
     /// <summary>
     /// 아이템에 커서를 갖다 대는 순간 아이템의 정보를 볼 수 있습니다.
     /// </summary>
     public void OnPointerEnter( PointerEventData eventData )
     {
-        if(item == null)                            // 아이템 정보가 비었다면 보여주지 않는다.
+        if( item==null )                            // 아이템 정보가 비었다면 보여주지 않는다.
             return;
+
+
 
         /*** 아이템 종류 상관없이 공통 로직 ***/
         statusWindow.SetActive(true);               // 상태창 활성화
@@ -79,6 +92,7 @@ public class ItemPointerStatusWindow : MonoBehaviour, IPointerEnterHandler, IPoi
         { 
             txtEnhancement.enabled = false;         // 강화 텍스트를 비활성화
             txtSpec.enabled = false;                // 상세 스펙 텍스트를 비활성화
+            txtDesc.text += " " + ((ItemMisc)item).InventoryCount + "개";        // 중첩 횟수를 표시
         }
         else if(item.Type == ItemType.Weapon)
         {

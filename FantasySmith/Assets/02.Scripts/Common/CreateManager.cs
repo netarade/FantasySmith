@@ -7,55 +7,60 @@ using System;
 using UnityEngine.UI;
 using DataManagement;
 using static DataManagement.DataManager;
-
+using UnityEngine.EventSystems;
+using UnityEditor.Build.Content;
 /*
- * [작업 사항]
- * 
- * <v1.0 - 2023_1101_최원준>
- * 1- 테스트용 클래스 작성
- * 
- * <v1.1 - 2023_1101_최원준>
- * 1- 아이템 클래스 기반으로 아이템 초기화, 구매, 제작, 숙련도 변화 예시를 만들어봄.
- * 2- 기타 주석 처리
- * 
- * <v2.0 - 2023_1103_최원준>
- * 1- 중복, 복잡한 로직 메서드화하여 간소화 및 재사용 가능하게 변경
- * 
- * 2- playerInventory가 Item을 가지는 것이 아니라 GameObject를 가지도록 수정.
- * playerInventory는 게임 시작 시 플레이어가 가지게 될 리스트 변수이며, 게임 종료와 시작 시 저장 및 로드해야 할 변수이다.
- * 이 리스트에는 개념아이템이 아니라 아이템오브젝트를 보관해야 한다. 아이템 오브젝트에는 개념아이템 정보를 포함한다.
- * 
- * <v3.0 - 2023_1104_최원준>
- * 1- 플레이어 인벤토리를 GameObject를 보관하는 weapList, miscList로 분리하여 관리하고 구조체로 통합
- * 
- * <v3.1 - 2023_1105_최원준>
- * 1- ItemInfo의 OnItemAdded 메서드의 호출 방식 내부자동 호출 변경으로 인해서 
- * 해당 메서드 사용구문을 삭제
- * 2- CreateManager의 접근 편리성과 딕셔너리 및 메서드 항시 상주화 필요성으로 인해 싱글톤으로 수정. 
- * 
- * <v3.2 - 2023_1106_최원준>
- * 1- 무기 아이템 사전 아이템 클래스 추가 설계로 인한 주석처리
- * 2- 잡화 및 무기아이템 사전 입력 진행 중(미완료)
- * 
- * <v3.3 - 2023_1106_최원준>
- * 1- 무기, 잡화 아이템 사전 입력완료
- * 2- 탭 클릭 이벤트 추가
- * 각 탭을 클릭할 때 해당 오브젝트만 보여지도록 하였음.
- * 
- * <v4.0 - 2023_1106_최원준>
- * 1- Start로직 Awake로 통합.
- * 씬이 넘어가더라도 한번만 가지고 있으면 되며, 다른 클래스의 Start 로직에서 활용해야 하기 때문
- * 2- 버튼 탭 클릭이벤트를 InventoryManager 스크립트로 파일 분리
- * 3- 필요없는 변수 삭제, 메서드 간소화 및 이름 정리
- * 4- 외부에서 호출이 불필요한 메서드 private처리 
- * 5- 제작목록 클래스 구조 변경으로 인한 CreateNewPlayerCraftableList 메서드 수정
- * 6- 주석 보완
- * 
- * <v4.1- 2023_1106_최원준>
- * 1- DataManager사용 구문 Initialize()메서드 추가
- * 2- DataManager Json 방식으로 교체
- * 3- CreateNewPlayerCraftableList에서 bowList를 중복하여 2번사용하여 1개를 weapList로 수정
- */
+* [작업 사항]
+* 
+* <v1.0 - 2023_1101_최원준>
+* 1- 테스트용 클래스 작성
+* 
+* <v1.1 - 2023_1101_최원준>
+* 1- 아이템 클래스 기반으로 아이템 초기화, 구매, 제작, 숙련도 변화 예시를 만들어봄.
+* 2- 기타 주석 처리
+* 
+* <v2.0 - 2023_1103_최원준>
+* 1- 중복, 복잡한 로직 메서드화하여 간소화 및 재사용 가능하게 변경
+* 
+* 2- playerInventory가 Item을 가지는 것이 아니라 GameObject를 가지도록 수정.
+* playerInventory는 게임 시작 시 플레이어가 가지게 될 리스트 변수이며, 게임 종료와 시작 시 저장 및 로드해야 할 변수이다.
+* 이 리스트에는 개념아이템이 아니라 아이템오브젝트를 보관해야 한다. 아이템 오브젝트에는 개념아이템 정보를 포함한다.
+* 
+* <v3.0 - 2023_1104_최원준>
+* 1- 플레이어 인벤토리를 GameObject를 보관하는 weapList, miscList로 분리하여 관리하고 구조체로 통합
+* 
+* <v3.1 - 2023_1105_최원준>
+* 1- ItemInfo의 OnItemAdded 메서드의 호출 방식 내부자동 호출 변경으로 인해서 
+* 해당 메서드 사용구문을 삭제
+* 2- CreateManager의 접근 편리성과 딕셔너리 및 메서드 항시 상주화 필요성으로 인해 싱글톤으로 수정. 
+* 
+* <v3.2 - 2023_1106_최원준>
+* 1- 무기 아이템 사전 아이템 클래스 추가 설계로 인한 주석처리
+* 2- 잡화 및 무기아이템 사전 입력 진행 중(미완료)
+* 
+* <v3.3 - 2023_1106_최원준>
+* 1- 무기, 잡화 아이템 사전 입력완료
+* 2- 탭 클릭 이벤트 추가
+* 각 탭을 클릭할 때 해당 오브젝트만 보여지도록 하였음.
+* 
+* <v4.0 - 2023_1106_최원준>
+* 1- Start로직 Awake로 통합.
+* 씬이 넘어가더라도 한번만 가지고 있으면 되며, 다른 클래스의 Start 로직에서 활용해야 하기 때문
+* 2- 버튼 탭 클릭이벤트를 InventoryManager 스크립트로 파일 분리
+* 3- 필요없는 변수 삭제, 메서드 간소화 및 이름 정리
+* 4- 외부에서 호출이 불필요한 메서드 private처리 
+* 5- 제작목록 클래스 구조 변경으로 인한 CreateNewPlayerCraftableList 메서드 수정
+* 6- 주석 보완
+* 
+* <v4.1- 2023_1106_최원준>
+* 1- DataManager사용 구문 Initialize()메서드 추가
+* 2- DataManager Json 방식으로 교체
+* 3- CreateNewPlayerCraftableList에서 bowList를 중복하여 2번사용하여 1개를 weapList로 수정
+* 
+* <v4.2 - 2023_1106_최원준>
+* 1- 플레이어 관련 초기화 구문을 Start 위치로 옮기고 메서드 정리
+* 2- 아이템의 중첩횟수를 오브젝트가 반영하도록 수정
+*/
 
 
 /// <summary>
@@ -79,69 +84,55 @@ public class CreateManager : MonoBehaviour
     [SerializeField] GameObject itemPrefab;                 // 리소스 폴더 또는 직접 드래그해서 복제할 오브젝트를 등록해야 한다.        
         
     
-       
-
+    public delegate void InitEvent(); 
+    public static event InitEvent PlayerInitCompleted;         // CreateManager클래스의 초기화가 이루어졌음을 알리는 대리자
+    
 
     public void Awake()
-    {
-        if(instance==null)
+    {        
+        if( instance==null )
         {
-            instance = this;            
-            DontDestroyOnLoad(instance);
+            instance=this;
+            DontDestroyOnLoad( instance );
         }
-        else if(instance != null )
-            Destroy(this.gameObject);           // 싱글톤 이외 인스턴스는 삭제
-         
-        itemPrefab = Resources.Load<GameObject>("ItemOrigin");  // 리소스 폴더에서 원본 프리팹 가져오기
-        slotListTr = GameObject.Find("SlotList").transform;     // 슬롯리스트를 인식 시켜 남아있는 슬롯을 확인할 것이다.
+        else if( instance!=null )
+            Destroy( this.gameObject );           // 싱글톤 이외 인스턴스는 삭제
+
+        itemPrefab=Resources.Load<GameObject>( "ItemOrigin" );  // 리소스 폴더에서 원본 프리팹 가져오기
+        slotListTr=GameObject.Find( "SlotList" ).transform;     // 슬롯리스트를 인식 시켜 남아있는 슬롯을 확인할 것이다.
 
         // 인스펙터뷰 상에서 달아놓은 스프라이트 이미지 집합을 참조한다.
-        iicMiscBase = GameObject.Find("ImageCollections").transform.GetChild(0).GetComponent<ItemImageCollection>();
-        iicMiscAdd = GameObject.Find("ImageCollections").transform.GetChild(1).GetComponent<ItemImageCollection>();
-        iicMiscOther = GameObject.Find("ImageCollections").transform.GetChild(2).GetComponent<ItemImageCollection>();
-        iicWeaponSword = GameObject.Find("ImageCollections").transform.GetChild(3).GetComponent<ItemImageCollection>();
-        iicWeaponBow = GameObject.Find("ImageCollections").transform.GetChild(4).GetComponent<ItemImageCollection>();
-        
+        iicMiscBase=GameObject.Find( "ImageCollections" ).transform.GetChild( 0 ).GetComponent<ItemImageCollection>();
+        iicMiscAdd=GameObject.Find( "ImageCollections" ).transform.GetChild( 1 ).GetComponent<ItemImageCollection>();
+        iicMiscOther=GameObject.Find( "ImageCollections" ).transform.GetChild( 2 ).GetComponent<ItemImageCollection>();
+        iicWeaponSword=GameObject.Find( "ImageCollections" ).transform.GetChild( 3 ).GetComponent<ItemImageCollection>();
+        iicWeaponBow=GameObject.Find( "ImageCollections" ).transform.GetChild( 4 ).GetComponent<ItemImageCollection>();
+
         // 모든 월드 아이템 등록
         CreateAllItemDictionary();
-             
 
-        //데이터 매니저 사용하여 로드
-        DataManager dataManager = new DataManager();       
-        GameData loadData = dataManager.LoadData();
-
-        // 플레이어 관련 변수 등록 - 로드 인자 전달
-        CreateNewPlayerProficiencyDic( loadData );    // 제작 숙련 초기화
-        CreateNewPlayerCraftableList( loadData );     // 제작 가능 목록 초기화
-        CreateNewPlayerInventory( loadData );         // 인벤토리 초기화
-
-        dataManager.SaveData( loadData );
-
-
-
-
-
-
+        
+        
 
 
         #region 플레이어의 장비 아이템 복제 예시( 제작, 아이템 구매 등을 통해 인벤토리에 아이템이 생성된다.)
 
-        List<GameObject> weapList;              // 무기 아이템을 넣어서 관리하는 인벤토리
-        List<GameObject> miscList;              // 잡화 아이템을 넣어서 관리하는 인벤토리
-        weapList = new List<GameObject>();      // 원래는 게임 매니저에서 로드 하여 인벤토리를 관리한다.      
-        miscList = new List<GameObject>();  
+        //List<GameObject> weapList;              // 무기 아이템을 넣어서 관리하는 인벤토리
+        //List<GameObject> playerMiscList;              // 잡화 아이템을 넣어서 관리하는 인벤토리
+        //weapList=new List<GameObject>();      // 원래는 게임 매니저에서 로드 하여 인벤토리를 관리한다.      
+        //playerMiscList=new List<GameObject>();
 
-        // 상점 아이템 구매 예시
-        CreateItemToNearstSlot(miscList, "철", 2);
+        //// 상점 아이템 구매 예시
+        //CreateItemToNearstSlot( playerMiscList, "철", 2 );
 
-        // 무기아이템 제작 예시
-        CreateItemToNearstSlot(weapList, "철 검");
-        ItemCraftWeapon craftWeapon = (ItemCraftWeapon)weapList[weapList.Count-1].GetComponent<ItemInfo>().item;    //마지막에 들어간 아이템
-        craftWeapon.BasePerformance = 750f;
+        //// 무기아이템 제작 예시
+        //CreateItemToNearstSlot( weapList, "철 검" );
+        //ItemCraftWeapon craftWeapon = (ItemCraftWeapon)weapList[weapList.Count-1].GetComponent<ItemInfo>().item;    //마지막에 들어간 아이템
+        //craftWeapon.BasePerformance=750f;
 
-        
-        CreateItemToNearstSlot(weapList, "미스릴 검");
-        CreateItemToNearstSlot(weapList, "얼음칼날");
+
+        //CreateItemToNearstSlot( weapList, "미스릴 검" );
+        //CreateItemToNearstSlot( weapList, "얼음칼날" );
 
         #endregion
 
@@ -149,53 +140,78 @@ public class CreateManager : MonoBehaviour
 
         #region 플레이어의 잡화 아이템 구매 예시
 
-        string purchasedItemName = "미스릴";  // 잡화아이템 구매이름이라고 가정한다.
-        int purchasedCnt = 5;                // 잡화아이템의 구매횟수이다.
+        //string purchasedItemName = "미스릴";  // 잡화아이템 구매이름이라고 가정한다.
+        //int purchasedCnt = 5;                // 잡화아이템의 구매횟수이다.
 
-        foreach( GameObject itemObj in miscList )
-        {
-            ItemMisc item = (ItemMisc)itemObj.GetComponent<ItemInfo>().item;      // 오브젝트가 가지고 있는 아이템 참조값을 받아온다.
+        //foreach( GameObject itemObj in playerMiscList )
+        //{
+        //    ItemMisc item = (ItemMisc)itemObj.GetComponent<ItemInfo>().item;      // 오브젝트가 가지고 있는 아이템 참조값을 받아온다.
 
-            if( item.Name==purchasedItemName )                      // NPC에게서 구매할 아이템이 현재 인벤토리의 아이템 이름과 같다면,
-            {
-                item.InventoryCount=purchasedCnt;     // 인벤토리의 아이템카운트만 올린다.                
-            }
-            else                                                    // NPC에게서 구매할 아이템이 현재 인벤토리에 없다면,
-            {
-                CreateItemToNearstSlot( miscList, purchasedItemName, purchasedCnt );
-                break;
-            }
-        }
+        //    if( item.Name==purchasedItemName )                      // NPC에게서 구매할 아이템이 현재 인벤토리의 아이템 이름과 같다면,
+        //    {
+        //        item.InventoryCount=purchasedCnt;     // 인벤토리의 아이템카운트만 올린다.                
+        //    }
+        //    else                                                    // NPC에게서 구매할 아이템이 현재 인벤토리에 없다면,
+        //    {
+        //        CreateItemToNearstSlot( playerMiscList, purchasedItemName, purchasedCnt );
+        //        break;
+        //    }
+        //}
 
         #endregion
 
 
 
         #region 숙련도, 레시피 적용 예시
-        
-        Dictionary<string, CraftProficiency> playerCraftDic;    // 제작 성공 시 증가하는 숙련도 목록
-        playerCraftDic=new Dictionary<string, CraftProficiency>();  // 원래는 게임매니저에서 로드 해야 한다.
-        
 
-        if( !playerCraftDic.ContainsKey( "철검" ) ) //현재 숙련도 목록에 이름이 존재하지 않는다면, (목록에 넣고 수정한다.)
-        {
-            CraftProficiency info = new CraftProficiency();
-            info.Proficiency++;
-            // if(isRecipieSucced) 
-                info.RecipieHitCount++;
-            playerCraftDic.Add( "철검", info );
-        }
-        else
-        {
-            CraftProficiency info = playerCraftDic["철검"];
-            info.Proficiency++;
-            info.RecipieHitCount++;
+        //Dictionary<string, CraftProficiency> playerCraftDic;    // 제작 성공 시 증가하는 숙련도 목록
+        //playerCraftDic=new Dictionary<string, CraftProficiency>();  // 원래는 게임매니저에서 로드 해야 한다.
 
-        }
+
+        //if( !playerCraftDic.ContainsKey( "철검" ) ) //현재 숙련도 목록에 이름이 존재하지 않는다면, (목록에 넣고 수정한다.)
+        //{
+        //    CraftProficiency info = new CraftProficiency();
+        //    info.Proficiency++;
+        //    // if(isRecipieSucced) 
+        //    info.RecipieHitCount++;
+        //    playerCraftDic.Add( "철검", info );
+        //}
+        //else
+        //{
+        //    CraftProficiency info = playerCraftDic["철검"];
+        //    info.Proficiency++;
+        //    info.RecipieHitCount++;
+
+        //}
 
 
         #endregion
 
+    }
+
+    private void CreateFirstPlayerData()
+    {
+        if( PlayerPrefs.GetInt("IsContinuedGamePlay") == 1 )        // 이어서 하는 게임이라면, 호출하지 않는다.
+            return;
+        
+        PlayerPrefs.SetInt("IsContinuedGamePlay", 1);               // 딱 한번만 호출하기 위해 키와 value를 기록한다.
+        
+        //데이터 매니저 사용하여 로드
+        DataManager dataManager = new DataManager();
+        GameData loadData = dataManager.LoadData();
+
+        CreateNewPlayerProficiencyDic( loadData );     // 제작 숙련 초기화
+        CreateNewPlayerCraftableList( loadData );      // 제작 가능 목록 초기화
+        CreateNewPlayerInventory( loadData );          // 인벤토리 초기화
+        
+        dataManager.SaveData( loadData );
+        PlayerInitCompleted();                         // 데이터 저장 후 연결 메소드들을 호출해 준다.
+    }
+
+    void Start()
+    {
+        // 플레이어 관련 변수 등록 - 로드 인자 전달
+        CreateFirstPlayerData();                       // CreateManager의 초기화가 끝났음을 알리고 연결 메서드들의 호출을 이룰 수 있게 함.
     }
 
 
@@ -221,34 +237,68 @@ public class CreateManager : MonoBehaviour
                 
         
         // 사전의 개념 아이템을 클론하여 (아이템 원형을 복제해서) 또 다른 개념 아이템을 생성한다.
-        Item itemClone;
+        Item itemClone = null;
 
-        if( weaponDic.ContainsKey( itemName ) )
+        if( weaponDic.ContainsKey( itemName ) )                     // 무기라면 무조건 복제한다.
         {
             itemClone=(ItemWeapon)weaponDic[itemName].Clone();
         }
-        else if( miscDic.ContainsKey( itemName ) )
+        else if( miscDic.ContainsKey( itemName ) )                  // 잡화라면 
         {
-            itemClone=(ItemMisc)miscDic[itemName].Clone();
-            ((ItemMisc)itemClone).InventoryCount=count;         // 중첩 갯수를 지정합니다.
+            List<GameObject> playerMiscList = CraftManager.instance.miscList;   // 실시간으로 기록되고 있는 인벤토리의 miscList를 참고한다.
+           
+            for( int i = 0; i<playerMiscList.Count; i++ )           // 아이템이 생성될 때마다 플레이어의 잡화 목록을 검사한다.
+            {
+                ItemMisc itemInfo = (ItemMisc)playerMiscList[i].GetComponent<ItemInfo>().item;  // 해당 오브젝트의 개념아이템 정보를 뽑아옵니다
+
+
+                if( itemInfo.Name==itemName )                  // 잡화 아이템의 이름이 일치한다면,
+                {
+                    itemInfo.InventoryCount += count;          // 중첩 횟수를 받은 인자 만큼 늘리고
+                    playerMiscList[i].GetComponentInChildren<Text>().text  
+                        = itemInfo.InventoryCount.ToString();               // 아이템 오브젝트에도 중첩 수를 반영합니다.
+                    break;                                     // 한번 걸리면 반복문을 탈출합니다.
+                }
+                else if( i==playerMiscList.Count-1 )                        // 마지막 잡화목록에서도 일치하는 이름이 없다면,
+                {
+                    itemClone = (ItemMisc)miscDic[itemName].Clone();        // 개념아이템을 클론하고,
+                    ( (ItemMisc)itemClone ).InventoryCount=count;           // 클론의 중첩 갯수를 받은 인자로 지정합니다.                    
+                }
+            }
+            
+             if(playerMiscList.Count==0) // 잡화 인벤토리가 비었다면 (위의 for문이 돌아가지 않았다면)
+             {
+                itemClone = (ItemMisc)miscDic[itemName].Clone();        // 개념아이템을 클론하고,
+                ( (ItemMisc)itemClone ).InventoryCount=count;           // 클론의 중첩 갯수를 받은 인자로 지정합니다.
+             }
         }
-        else
+        else // 어떤 이름도 일치하지 않는다면 예외를 발생 시킨다.
         {
             throw new Exception("아이템 명이 정확하게 일치하지 않습니다. 확인하여 주세요.");
         }
-                
-        // 개념 아이템의 슬롯의 인덱스 정보를 찾은 위치로 수정한다.
-        itemClone.SlotIndex = findSlotIdx;
 
-        // 슬롯리스트의 해당 슬롯에 게임 상에서 보여 질 오브젝트를 생성하여 배치한다.
-        GameObject itemObject = Instantiate( itemPrefab, slotListTr.GetChild(findSlotIdx) );
-                
-        // 스크립트 상의 item에 사전에서 클론한 아이템을 참조하게 한다.        
-        itemObject.GetComponent<ItemInfo>().Item = itemClone;
+        if( itemClone!=null )   // 클론이 성공적으로 복제되었다면, (잡화의 경우 기존의 아이템이 있다면 복제되지 않는다.)
+        {
+            // 개념 아이템의 슬롯의 인덱스 정보를 찾은 위치로 수정한다.
+            itemClone.SlotIndex=findSlotIdx;
 
+            // 슬롯리스트의 해당 슬롯에 게임 상에서 보여 질 오브젝트를 생성하여 배치한다.
+            GameObject itemObject = Instantiate( itemPrefab, slotListTr.GetChild( findSlotIdx ) );
 
-        inventoryList.Add(itemObject);    // 인벤토리는 GameObject 인스턴스를 보관함으로서 transform정보와 개념 아이템을 정보를 포함하게 된다.
-        
+            // 스크립트 상의 item에 사전에서 클론한 아이템을 참조하게 한다.        
+            itemObject.GetComponent<ItemInfo>().Item=itemClone;
+
+            if( itemClone.Type==ItemType.Misc )
+            {
+                itemObject.GetComponentInChildren<Text>().enabled = true;   // 오브젝트의 갯수를 반영하는 텍스트를 켜고
+                itemObject.GetComponentInChildren<Text>().text = ((ItemMisc)itemClone).InventoryCount.ToString(); // 오브젝트에도 중첩횟수를 표시해 줍니다.
+            }
+            else
+                itemObject.GetComponentInChildren<Text>().enabled = false;  // 오브젝트의 갯수를 반영하는 텍스트를 끕니다.
+
+            inventoryList.Add( itemObject );    // 인벤토리는 GameObject 인스턴스를 보관함으로서 transform정보와 개념 아이템을 정보를 포함하게 된다.
+        }
+
         return true;
     }
 
@@ -311,8 +361,8 @@ public class CreateManager : MonoBehaviour
 
             if( weapInstance.BasicGrade==ItemGrade.Low )                  // 무기 사전에서 꺼낸 아이템이 초급 무기라면,
             {
-                if( weapInstance.EnumWeaponType==WeaponType.Sword )         // 검-장검 타입이라면,
-                    initCraftableList.swordList.Add( weapInstance.Name );       // 플레이어 제작 목록 검-장검 리스트에 추가한다.
+                if( weapInstance.EnumWeaponType==WeaponType.Sword )         // 검-장검 타입이라면,                
+                    initCraftableList.swordList.Add( weapInstance.Name );       // 플레이어 제작 목록 검-장검 리스트에 추가한다.                
                 else if( weapInstance.EnumWeaponType==WeaponType.Bow )      // 활-보우 타입이라면,
                     initCraftableList.bowList.Add( weapInstance.Name );       // 플레이어 제작 목록 활-보우 리스트에 추가한다.
             }

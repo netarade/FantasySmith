@@ -61,19 +61,19 @@
     <Compile Include="Assets\02.Scripts\DataInfo\ItemImageCollection.cs" />
     <Compile Include="Assets\02.Scripts\Common\CreateManager.cs" />
     <Compile Include="Assets\02.Scripts\DataInfo\ItemData.cs" />
+    <Compile Include="Assets\02.Scripts\Common\DataManager.cs" />
+    <Compile Include="Assets\02.Scripts\Inventory\InventoryManagement.cs" />
     <Compile Include="Assets\02.Scripts\DataInfo\ItemData_Misc.cs" />
     <Compile Include="Assets\02.Scripts\Inventory\Drag.cs" />
+    <Compile Include="Assets\02.Scripts\Common\CraftManager.cs" />
     <Compile Include="Assets\02.Scripts\DataInfo\ItemData_Weapon.cs" />
     <Compile Include="Assets\02.Scripts\CraftGame\CraftManagement.cs" />
     <Compile Include="Assets\02.Scripts\DataInfo\CraftData.cs" />
+    <Compile Include="Assets\02.Scripts\DataInfo\GameData.cs" />
     <Compile Include="Assets\02.Scripts\DataInfo\ItemData_CraftWeapon.cs" />
     <Compile Include="Assets\02.Scripts\Inventory\ItemPointerStatusWindow.cs" />
     <Compile Include="Assets\02.Scripts\DataInfo\ItemInfo.cs" />
     <Compile Include="Assets\02.Scripts\Inventory\Issue.cs" />
-    <Compile Include="Assets\02.Scripts\DataInfo\GameData.cs" />
-    <Compile Include="Assets\02.Scripts\Common\DataManager.cs" />
-    <Compile Include="Assets\02.Scripts\Common\CraftManager.cs" />
-    <Compile Include="Assets\02.Scripts\Inventory\InventoryManagement.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="UnityEngine">

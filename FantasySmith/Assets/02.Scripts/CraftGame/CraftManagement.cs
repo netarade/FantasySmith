@@ -161,9 +161,9 @@ public partial class CraftManagement : MonoBehaviour
         }
 
         // 숙련도 텍스트 지정
-        if(CraftManager.instance.proficiencyDic[weapon.Name].Equals(default) )  // 구조체가 default라면
-            itemTxtArr[2].text = "0 / 100";
-        else 
+        //if(CraftManager.instance.proficiencyDic[weapon.Name].Equals(default) )  // 구조체가 default라면
+        //    itemTxtArr[2].text = "0 / 100";
+        //else 
             itemTxtArr[2].text = CraftManager.instance.proficiencyDic[weapon.Name].Proficiency.ToString() + " / 100";   
     }
 

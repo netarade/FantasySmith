@@ -13,6 +13,10 @@ using UnityEngine.UI;
  * 
  * 3- 현재 전체 탭 클릭에 대한 로직이 불완전하게 구현되어있음.
  * 
+ * <v1.1 - 2023_1106_최원준>
+ * 1-ItemPointerStatusWindow에서 상태창 참조가 동적할당으로는 제대로 잡히지 않아 
+ * 게임 시작 시 참조하는 변수를 미리 잡아놓도록 static 참조 변수를 선언.
+ * 
  */
 
 /// <summary>
@@ -21,18 +25,23 @@ using UnityEngine.UI;
 /// </summary>
 public class InventoryManagement : MonoBehaviour
 {
-    private Button btnTapAll;               // 버튼 탭을 눌렀을 때 각 탭에 맞는 아이템이 표시되도록 하기 위한 참조
-    private Button btnTapWeap;
-    private Button btnTapMisc;
+    [SerializeField] private Button btnTapAll;               // 버튼 탭을 눌렀을 때 각 탭에 맞는 아이템이 표시되도록 하기 위한 참조
+    [SerializeField] private Button btnTapWeap;
+    [SerializeField] private Button btnTapMisc;
 
-    private Transform slotListTr;                   // 인벤토리의 슬롯 오브젝트의 트랜스폼 참조
-    private List<GameObject> weapList;              // 무기 아이템을 넣어서 관리하는 인벤토리
-    private List<GameObject> miscList;              // 잡화 아이템을 넣어서 관리하는 인벤토리
+    [SerializeField] private Transform slotListTr;                   // 인벤토리의 슬롯 오브젝트의 트랜스폼 참조
+    [SerializeField] private List<GameObject> weapList;              // 무기 아이템을 넣어서 관리하는 인벤토리
+    [SerializeField] private List<GameObject> miscList;              // 잡화 아이템을 넣어서 관리하는 인벤토리
+
+    public static GameObject statusWindow;                          // 상태창을 표시하는 스크립트(ItemPointerStatusWindow)에서 참조하기 위해 잡아주는 변수
 
     // Start is called before the first frame update
     void Start()
     {
+        statusWindow = GameObject.Find( "Panel-ItemStatus" );   // 상태창 참조
         slotListTr = GameObject.Find("SlotList").transform;     // 슬롯리스트 참조
+        weapList = CraftManager.instance.weapList;
+        miscList = CraftManager.instance.miscList;
 
         // 탭 버튼 참조
         btnTapAll = GameObject.Find("Inventory").transform.GetChild(1).GetComponent<Button>();
@@ -44,8 +53,17 @@ public class InventoryManagement : MonoBehaviour
         btnTapAll.onClick.AddListener( () => BtnTapClick(0) );
         btnTapWeap.onClick.AddListener( () => BtnTapClick(1) );
         btnTapMisc.onClick.AddListener( () => BtnTapClick(2) );
-
+        
     }
+
+    public void BtnItemCreateToInventory()
+    {
+        CreateManager.instance.CreateItemToNearstSlot(weapList, "철 검");
+        CreateManager.instance.CreateItemToNearstSlot(weapList, "미스릴 검");
+        CreateManager.instance.CreateItemToNearstSlot(miscList, "철");
+        CreateManager.instance.CreateItemToNearstSlot(miscList, "미스릴");
+    }
+
 
     
     /// <summary>
@@ -55,12 +73,12 @@ public class InventoryManagement : MonoBehaviour
     public void BtnTapClick( int btnIdx )
     {
         
-
+        
         if(btnIdx==0)       // All 탭
         {   
             if( slotListTr.parent.GetChild(4).childCount==0 ) //오브젝트 emptyList에 아무것도 담겨 있지 않다면, 실행하지 않는다.
                 return;
-
+            Debug.Log("버튼 0");
 
             for(int i=0; i<weapList.Count; i++) //무기 리스트를 하나씩 배치
             {

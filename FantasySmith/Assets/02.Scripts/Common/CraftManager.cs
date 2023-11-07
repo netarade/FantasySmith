@@ -4,6 +4,7 @@ using UnityEngine;
 using ItemData;
 using CraftData;
 using DataManagement;
+using UnityEngine.UI;
 
 
 /*
@@ -67,9 +68,20 @@ public class CraftManager : MonoBehaviour
     /// </summary>
     public List<GameObject> miscList;
 
+    /// <summary>
+    /// 게임 중에 기록하는 골드 플레이어 관련 변수입니다.
+    /// </summary>
+    public float playerGold; 
+    /// <summary>
+    /// 게임 중에 기록하는 실버 플레이어 관련 변수입니다.
+    /// </summary>
+    public float playerSilver;      
+
     public delegate void LoadEvent();
     // 이벤트 생성
     public static event LoadEvent CraftManagerLoaded;
+        
+    int beforeCount;
 
     void Awake()
     {
@@ -96,14 +108,62 @@ public class CraftManager : MonoBehaviour
 
         proficiencyDic=loadData.proficiencyDic;     // 플레이어 숙련 목록 불러오기
         craftableList=loadData.craftableWeaponList; // 플레이어 제작 목록 불러오기
-
-        inventory=loadData.inventory;               // 플레이어 인벤토리 불러오기
+        
+        inventory=loadData.inventory;                // 플레이어 인벤토리 불러오기
         miscList=inventory.miscList;
         weapList=inventory.weapList;                // 접근의 편리함을 위해 따로 추가 선언 하였음.
+
+        playerGold = loadData.gold;
+        playerSilver = loadData. silver;
+
+        beforeCount = miscList.Count;
     }
 
 
-    private void OnApplicationQuit()
+    
+
+    /// <summary>
+    /// 플레이어의 인벤토리에 담겨 있는 아이템의 갯수 정보를 최신화 하여 줍니다. removeMode가 true일 때 중첩 횟수가 음수인 아이템을 삭제합니다.
+    /// </summary>
+    public void UpdateInventoryText(bool removeMode=true)
+    {      
+            
+        Text countText;
+        for(int i=0; i<miscList.Count; i++)
+        { 
+            ItemMisc item = (ItemMisc)miscList[i].GetComponent<ItemInfo>().item;           
+           
+            countText = miscList[i].GetComponentInChildren<Text>();
+            countText.text = item.InventoryCount.ToString();        // 중첩 카운트 텍스트를 동기화
+
+            if(removeMode && item.InventoryCount<=0)   // 삭제모드이고 중첩횟수가 0이하이면
+            {
+                GameObject obj = miscList[i];   // 현재 탐색중인 오브젝트를 기록
+                miscList.RemoveAt(i);           // 리스트에서 제거
+                Destroy(obj);                   // 실제 오브젝트 삭제
+            }            
+        }
+    }
+
+
+
+
+
+    void Update()
+    {
+        if( beforeCount != miscList.Count)
+        {
+            print( "misc리스트에 변동이 일어났습니다." );
+            print(miscList[miscList.Count-1].GetComponent<ItemInfo>().item.Name);
+            beforeCount = miscList.Count;
+        }
+    }
+
+
+    /// <summary>
+    /// 테스트 버튼 로직 - 현재 세이브 로드가 제대로 되지 않아 버튼에 동작 테스트를 진행 중입니다.
+    /// </summary>
+    public void OnApplicationQuit()
     {
         DataManager dataManager = new DataManager();
         GameData saveData = dataManager.LoadData();
@@ -111,8 +171,17 @@ public class CraftManager : MonoBehaviour
         saveData.proficiencyDic=proficiencyDic;     // 플레이어 숙련 목록 저장
         saveData.craftableWeaponList=craftableList; // 플레이어 제작 목록 저장
         saveData.inventory=inventory;               // 플레이어 인벤토리 저장
+        saveData.gold = playerGold;
+        saveData.silver = playerSilver;                   // 금화와 은화 저장
 
         dataManager.SaveData( saveData );
+
+        #if UNITY_EDITOR
+            PlayerPrefs.SetInt("IsContinuedGamePlay", 0);   //현재 세이브 로드가 불안정하므로 일시적으로 초기화
+            UnityEditor.EditorApplication.isPlaying = false;
+        #else
+            Application.Quit();
+        #endif
     }
 
 }

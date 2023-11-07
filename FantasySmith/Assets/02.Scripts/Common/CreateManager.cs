@@ -60,6 +60,19 @@ using UnityEditor.Build.Content;
 * <v4.2 - 2023_1106_최원준>
 * 1- 플레이어 관련 초기화 구문을 Start 위치로 옮기고 메서드 정리
 * 2- 아이템의 중첩횟수를 오브젝트가 반영하도록 수정
+* 
+* <v4.3 - 2023_1108_최원준>
+* 1- Inventory 클래스 세이브 문제로 ItemInfo를 인자로 주면 새로운 프리팹을 만들어주는 메서드와
+* ItemInfo를 바탕으로 오브젝트의 정보를 최신화 해주는 메서드를 구현하려고하였다가 
+* Item 클래스 자체의 설계 문제가 있음을 알고 중단
+* 2- CreateNewPlayerCraftableList메서드 내부에서 리스트가 안채워져 있음에도 불구하고 return하는 현상 수정 
+* 
+* <v4.4 - 2023_1108_최원준>
+* 1- 인벤토리의 저장 및 로드가 제대로 되지 않아 
+* 플레이어 관련 변수는 계속 초기화가 이루어지도록 하였으며, 그에 따라 내부에 if와 return문을 삭제.
+* 2- 잡화 아이템 생성 시 중첩카운트에 포함되지 않고 새로운 오브젝트를 생성하던 점 수정.
+* 3- 아이템 생성 시 현재 인벤토리의 상태에 따라 이미지를 끄게 수정
+* 4- 골드와 실버 플레이어 변수 추가
 */
 
 
@@ -200,9 +213,10 @@ public class CreateManager : MonoBehaviour
         DataManager dataManager = new DataManager();
         GameData loadData = dataManager.LoadData();
 
-        CreateNewPlayerProficiencyDic( loadData );     // 제작 숙련 초기화
-        CreateNewPlayerCraftableList( loadData );      // 제작 가능 목록 초기화
-        CreateNewPlayerInventory( loadData );          // 인벤토리 초기화
+        CreateNewPlayerProficiencyDic( loadData );      // 제작 숙련 초기화
+        CreateNewPlayerCraftableList( loadData );       // 제작 가능 목록 초기화
+        CreateNewPlayerInventory( loadData );           // 인벤토리 초기화
+        CreateNewPlayerOtherData( loadData );           // 테스트용으로 금화와 초기 재료를 준다.
         
         dataManager.SaveData( loadData );
         PlayerInitCompleted();                         // 데이터 저장 후 연결 메소드들을 호출해 준다.
@@ -244,29 +258,27 @@ public class CreateManager : MonoBehaviour
             itemClone=(ItemWeapon)weaponDic[itemName].Clone();
         }
         else if( miscDic.ContainsKey( itemName ) )                  // 잡화라면 
-        {
-            List<GameObject> playerMiscList = CraftManager.instance.miscList;   // 실시간으로 기록되고 있는 인벤토리의 miscList를 참고한다.
-           
-            for( int i = 0; i<playerMiscList.Count; i++ )           // 아이템이 생성될 때마다 플레이어의 잡화 목록을 검사한다.
+        {  
+            for( int i = 0; i<inventoryList.Count; i++ )           // 아이템이 생성될 때마다 플레이어의 잡화 목록을 검사한다.
             {
-                ItemMisc itemInfo = (ItemMisc)playerMiscList[i].GetComponent<ItemInfo>().item;  // 해당 오브젝트의 개념아이템 정보를 뽑아옵니다
+                ItemMisc itemInfo = (ItemMisc)inventoryList[i].GetComponent<ItemInfo>().item;  // 해당 오브젝트의 개념아이템 정보를 뽑아옵니다
 
 
                 if( itemInfo.Name==itemName )                  // 잡화 아이템의 이름이 일치한다면,
                 {
                     itemInfo.InventoryCount += count;          // 중첩 횟수를 받은 인자 만큼 늘리고
-                    playerMiscList[i].GetComponentInChildren<Text>().text  
+                    inventoryList[i].GetComponentInChildren<Text>().text  
                         = itemInfo.InventoryCount.ToString();               // 아이템 오브젝트에도 중첩 수를 반영합니다.
                     break;                                     // 한번 걸리면 반복문을 탈출합니다.
                 }
-                else if( i==playerMiscList.Count-1 )                        // 마지막 잡화목록에서도 일치하는 이름이 없다면,
+                else if( i==inventoryList.Count-1 )                        // 마지막 잡화목록에서도 일치하는 이름이 없다면,
                 {
                     itemClone = (ItemMisc)miscDic[itemName].Clone();        // 개념아이템을 클론하고,
                     ( (ItemMisc)itemClone ).InventoryCount=count;           // 클론의 중첩 갯수를 받은 인자로 지정합니다.                    
                 }
             }
             
-             if(playerMiscList.Count==0) // 잡화 인벤토리가 비었다면 (위의 for문이 돌아가지 않았다면)
+             if(inventoryList.Count==0) // 잡화 인벤토리가 비었다면 (위의 for문이 돌아가지 않았다면)
              {
                 itemClone = (ItemMisc)miscDic[itemName].Clone();        // 개념아이템을 클론하고,
                 ( (ItemMisc)itemClone ).InventoryCount=count;           // 클론의 중첩 갯수를 받은 인자로 지정합니다.
@@ -288,19 +300,33 @@ public class CreateManager : MonoBehaviour
             // 스크립트 상의 item에 사전에서 클론한 아이템을 참조하게 한다.        
             itemObject.GetComponent<ItemInfo>().Item=itemClone;
 
+            // 아이템을 생성했을 때 인벤토리 위치로는 옮겨주지만, 인벤토리의 이미지가 꺼져있다면, 아이템도 꺼져있어야 한다.
+            itemObject.GetComponent<Image>().enabled = InventoryManagement.isInventoryOn;
+
             if( itemClone.Type==ItemType.Misc )
             {
-                itemObject.GetComponentInChildren<Text>().enabled = true;   // 오브젝트의 갯수를 반영하는 텍스트를 켜고
-                itemObject.GetComponentInChildren<Text>().text = ((ItemMisc)itemClone).InventoryCount.ToString(); // 오브젝트에도 중첩횟수를 표시해 줍니다.
+                itemObject.GetComponentInChildren<Text>().enabled = InventoryManagement.isInventoryOn;              // 오브젝트의 갯수를 반영하는 텍스트를 켜고
+                itemObject.GetComponentInChildren<Text>().text = ((ItemMisc)itemClone).InventoryCount.ToString();   // 오브젝트에도 중첩횟수를 표시해 줍니다.
             }
             else
                 itemObject.GetComponentInChildren<Text>().enabled = false;  // 오브젝트의 갯수를 반영하는 텍스트를 끕니다.
 
             inventoryList.Add( itemObject );    // 인벤토리는 GameObject 인스턴스를 보관함으로서 transform정보와 개념 아이템을 정보를 포함하게 된다.
+            //CraftManager.instance.inventory.miscList = inventoryList;
+            print("메서드 " + inventoryList.Count);
+            print("매니저 " + CraftManager.instance.inventory.miscList.Count);
         }
 
         return true;
     }
+
+
+
+
+
+
+
+
 
 
 
@@ -332,16 +358,13 @@ public class CreateManager : MonoBehaviour
     /// </summary>
     private void CreateNewPlayerProficiencyDic( GameData loadData )
     {
-        if( loadData.proficiencyDic!=null )   // 이미 만들어져 있다면 나간다
-            return;
+        // 새로운 숙련 사전을 만들어준다.
+        Dictionary<string, CraftProficiency> dic = new Dictionary<string, CraftProficiency>();   
 
-        Dictionary<string, CraftProficiency> dic =new Dictionary<string, CraftProficiency>();   // 새로운 숙련 사전을 만들어준다.
-        
         foreach( KeyValuePair<string, Item> pair in weaponDic )             // 모든무기사전에서 하나씩 꺼낸다.
             dic.Add( pair.Value.Name, new CraftProficiency(0, 0) );         // 모든 이름을 넣고 값을 0으로 초기화 하여 준다.
 
-        loadData.proficiencyDic = dic;
-
+        loadData.proficiencyDic = dic;  // 숙련 사전을 넣어준다.
         print( "숙련도 사전 초기화 완료" );
     }
 
@@ -350,9 +373,6 @@ public class CreateManager : MonoBehaviour
     /// </summary>
     private void CreateNewPlayerCraftableList( GameData loadData )
     {
-        if( loadData.craftableWeaponList!=null )    // 이미 만들어져 있다면 나간다
-            return;
-
         CraftableWeaponList initCraftableList = new CraftableWeaponList();  // 플레이어 제작목록 초기화를 위한 새로운 인스턴스를 만든다.
 
         foreach( KeyValuePair<string, Item> pair in weaponDic )               // 모든무기사전에서 하나씩 꺼낸다.
@@ -376,11 +396,17 @@ public class CreateManager : MonoBehaviour
     /// </summary>
     private void CreateNewPlayerInventory( GameData loadData )
     {
-        if( loadData.inventory!=null )              // 이미 만들어져 있다면 나간다
-            return;
-
         loadData.inventory=new PlayerInventory();   // 새로운 플레이어 인벤토리를 만들어 넣어준다.
         print( "엔벤토리 초기화 완료" );
+    }
+
+    /// <summary>
+    /// 플레이어 기타 변수 초기화
+    /// </summary>
+    private void CreateNewPlayerOtherData( GameData loadData )
+    {
+        loadData.gold = 100f;
+        
     }
 
 
@@ -657,5 +683,12 @@ public class CreateManager : MonoBehaviour
 
 
 
+
+
+
+
+    
+
+    
 
 }

@@ -71,6 +71,13 @@ namespace CraftData
             miscList = new List<GameObject>(){};
             InventoryMaxCount = 50;
         }
+
+        public PlayerInventory(List<GameObject> weapList, List<GameObject> miscList, int InventoryMaxCount )
+        {
+            this.weapList = weapList;
+            this.miscList = miscList;
+            this.InventoryMaxCount = InventoryMaxCount;
+        }
     }    
 
 

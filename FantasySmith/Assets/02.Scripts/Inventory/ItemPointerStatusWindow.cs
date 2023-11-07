@@ -54,12 +54,6 @@ public class ItemPointerStatusWindow : MonoBehaviour, IPointerEnterHandler, IPoi
         txtSpec = statusWindow.transform.GetChild(4).GetComponent<Text>();
     }
     
-    void OnEnable()
-    {
-        Debug.Log("호출 시점 확인 Enable");
-        
-    }
-
 
     void Start()
     {        

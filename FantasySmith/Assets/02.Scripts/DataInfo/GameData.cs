@@ -16,15 +16,23 @@ using CraftData;
  * <v1.1 - 2023_1106_최원준
  * 1- Transform 변수 제거, 클래스 CraftableWeaponList 변수 추가
  * 2- 주석 수정
+ * 
+ * <v1.2 - 2023_1108_최원준>
+ * 1- Inventory 클래스가 게임오브젝트 리스트를 포함하고 있기 때문에 저장안되는 문제가 있음을 알고
+ * 내부적으로 ItemInfo 리스트로 만들어 보려고 시도하였음. 
+ * 또 다른 문제점이 있는데 ItemInfo는 Image컴포넌트를 포함하고 있기 때문에 클래스 구조상 직렬화하기 힘들다고 생각됨.
+ * 
  */
 
 namespace DataManagement
 {
+
+
     /// <summary>
     /// 주의 사항 - 유니티 전용 클래스는 저장 불가. 기본 자료형으로 저장하거나, 구조체 또는 클래스를 만들어 저장한다. 
     /// </summary>
     [Serializable]           // 인스펙터에 아래의 클래스가 보여진다.
-    public class GameData    // 데이터 저장 클래스 (기능이 없는 엔터티 클래스)
+    public class GameData
     {
         /// <summary>
         /// 누적 플레이 타임
@@ -52,6 +60,7 @@ namespace DataManagement
         /// </summary>
         public PlayerInventory inventory;
 
+
         /// <summary>
         /// 제작 가능 목록을 종류 별 string name으로 보관하는 리스트들의 집합 클래스 입니다.
         /// </summary>
@@ -61,5 +70,57 @@ namespace DataManagement
         /// 장비 숙련도 목록을 name과 CraftProficincy구조체형 으로 보관하여 빠르게 접근을 가능하게 해줍니다.
         /// </summary>
         public Dictionary<string, CraftProficiency> proficiencyDic;
+               
+
+
+
+
+
+
+
+
+
+
+        
+        // 미구현 클래스 및 메서드
+        //public PlayerInventory saveInventory
+        //{
+        //    set { loadInventory=new SerializableInventory( value ); }
+        //}
+
+        //SerializableInventory loadInventory;
+
     }
+
+    //[Serializable]
+    //public class SerializableInventory
+    //{
+    //    public List<ItemInfo> weapList;
+    //    public List<ItemInfo> miscList;
+    //    public int InventoryMaxCount; 
+
+    //    public SerializableInventory(PlayerInventory inventory)
+    //    {
+    //        foreach( GameObject item in inventory.weapList )
+    //           this.weapList.Add( item.GetComponent<ItemInfo>() );
+
+    //        foreach( GameObject item in inventory.miscList )
+    //            this.miscList.Add( item.GetComponent<ItemInfo>() );
+
+    //        this.InventoryMaxCount = inventory.InventoryMaxCount;
+    //    }
+
+    //    public PlayerInventory Load()
+    //    {
+    //        CreateManager.instance.CreateItemByItemInfo
+
+    //        for(int i=0; i<weapList.Count; i++)
+    //            weapList[i].item.Type == ItemType.Misc
+            
+    //        PlayerInventory loadInventory = new PlayerInventory();
+    //    }
+
+    //}
+
+
 }

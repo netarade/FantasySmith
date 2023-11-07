@@ -57,9 +57,6 @@ namespace DataManagement
             Path = Application.persistentDataPath + path;	
         }
 
-        
-
-
 
         #if USE_NEWTONSOFT_JSON
         /// <summary>

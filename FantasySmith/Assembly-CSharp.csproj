@@ -74,6 +74,7 @@
     <Compile Include="Assets\02.Scripts\Inventory\ItemPointerStatusWindow.cs" />
     <Compile Include="Assets\02.Scripts\DataInfo\ItemInfo.cs" />
     <Compile Include="Assets\02.Scripts\Inventory\Issue.cs" />
+    <Compile Include="Assets\02.Scripts\Inventory\InventoryDrag.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="UnityEngine">

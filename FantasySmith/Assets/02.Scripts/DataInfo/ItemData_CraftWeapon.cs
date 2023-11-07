@@ -12,6 +12,7 @@ using UnityEngine;
  * <v1.1 - 2023_1106_최원준>
  * 1- CraftMaterial 구조체 생성자 추가
  * 2- 각 속성의 정보를 볼 수 있는 프로퍼티 추가
+ * 3- 프로퍼티 명 수정 
  */
 namespace ItemData
 {
@@ -62,7 +63,7 @@ namespace ItemData
         /// <summary>
         /// 제작 무기의 기본 재료입니다. 2단계 제작에 사용되며, 구조체 배열을 참조하고 있습니다.
         /// </summary>
-        public CraftMaterial[] CraftMaterials { get{return cmArrBaseMaterial;} }
+        public CraftMaterial[] BaseMaterials { get{return cmArrBaseMaterial;} }
 
         /// <summary>
         /// 제작 무기의 추가 재료입니다. 3단계 제작에 사용되며, 구조체 배열을 참조하고 있습니다.

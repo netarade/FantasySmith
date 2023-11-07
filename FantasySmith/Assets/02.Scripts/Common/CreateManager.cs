@@ -5,7 +5,8 @@ using ItemData;
 using CraftData;
 using System;
 using UnityEngine.UI;
-using Unity.VisualScripting.Antlr3.Runtime.Tree;
+using DataManagement;
+using static DataManagement.DataManager;
 
 /*
  * [작업 사항]
@@ -41,7 +42,19 @@ using Unity.VisualScripting.Antlr3.Runtime.Tree;
  * 2- 탭 클릭 이벤트 추가
  * 각 탭을 클릭할 때 해당 오브젝트만 보여지도록 하였음.
  * 
- * 3-
+ * <v4.0 - 2023_1106_최원준>
+ * 1- Start로직 Awake로 통합.
+ * 씬이 넘어가더라도 한번만 가지고 있으면 되며, 다른 클래스의 Start 로직에서 활용해야 하기 때문
+ * 2- 버튼 탭 클릭이벤트를 InventoryManager 스크립트로 파일 분리
+ * 3- 필요없는 변수 삭제, 메서드 간소화 및 이름 정리
+ * 4- 외부에서 호출이 불필요한 메서드 private처리 
+ * 5- 제작목록 클래스 구조 변경으로 인한 CreateNewPlayerCraftableList 메서드 수정
+ * 6- 주석 보완
+ * 
+ * <v4.1- 2023_1106_최원준>
+ * 1- DataManager사용 구문 Initialize()메서드 추가
+ * 2- DataManager Json 방식으로 교체
+ * 3- CreateNewPlayerCraftableList에서 bowList를 중복하여 2번사용하여 1개를 weapList로 수정
  */
 
 
@@ -51,6 +64,8 @@ using Unity.VisualScripting.Antlr3.Runtime.Tree;
 /// </summary>
 public class CreateManager : MonoBehaviour
 {
+    public static CreateManager instance;       // 매니저 싱글톤 인스턴스 생성
+
     [SerializeField] ItemImageCollection iicMiscBase;           // 인스펙터 뷰 상에서 등록할 잡화 기본 아이템 이미지 집합
     [SerializeField] ItemImageCollection iicMiscAdd;            // 인스펙터 뷰 상에서 등록할 잡화 추가 아이템 이미지 집합
     [SerializeField] ItemImageCollection iicMiscOther;          // 인스펙터 뷰 상에서 등록할 잡화 기타 아이템 이미지 집합
@@ -59,45 +74,12 @@ public class CreateManager : MonoBehaviour
 
     public Dictionary<string, Item> miscDic;                // 게임 시작 시 넣어 둘 전체 잡화아이템 사전 
     public Dictionary<string, Item> weaponDic;              // 게임 시작 시 넣어 둘 전체 무기아이템 사전
-    Dictionary<string, CraftProficiency> playerCraftDic;    // 제작 성공 시 증가하는 숙련도 목록
 
     [SerializeField] Transform slotListTr;                  // 인벤토리의 슬롯 오브젝트의 트랜스폼 참조
-
-
-    GameObject itemPrefab;                                  // 리소스 폴더 또는 직접 드래그해서 복제할 오브젝트를 등록해야 한다.        
+    [SerializeField] GameObject itemPrefab;                 // 리소스 폴더 또는 직접 드래그해서 복제할 오브젝트를 등록해야 한다.        
         
-    int inventoryMaxCount;                      // 인벤토리의 최대 칸수 - 시설 업그레이드 등에 따라 가변 될 수 있다.
-    public static CreateManager instance;       // 매니저 싱글톤 인스턴스 생성
-
-
-    public struct PlayerInventory
-    {
-        List<GameObject> weapList;
-        List<GameObject> miscList; 
-    }
-
-    List<GameObject> weapList;              // 무기 아이템을 넣어서 관리하는 인벤토리
-    List<GameObject> miscList;              // 잡화 아이템을 넣어서 관리하는 인벤토리
-
-    private Button btnTapAll;               // 버튼 탭을 눌렀을 때 각 탭에 맞는 아이템이 표시되도록 하기 위한 참조
-    private Button btnTapWeap;
-    private Button btnTapMisc;
-
-
-
-    List<string> playerCraftableList;
     
-
-
-
-
-
-
-    // 아이템이 Change되었음을 반영하여 PlyerInventory를 사용하는 모든 스크립트가 변경된 inventory를 참조하도록 한다.
-    // Delegate
-
-
-
+       
 
 
     public void Awake()
@@ -109,13 +91,8 @@ public class CreateManager : MonoBehaviour
         }
         else if(instance != null )
             Destroy(this.gameObject);           // 싱글톤 이외 인스턴스는 삭제
-    }
-
-    
-    void Start()
-    {         
+         
         itemPrefab = Resources.Load<GameObject>("ItemOrigin");  // 리소스 폴더에서 원본 프리팹 가져오기
-        inventoryMaxCount = 50;                                 // 인벤토리 최대 수치이며, 이는 게임 상에서 변경될 가능 성이 있다.
         slotListTr = GameObject.Find("SlotList").transform;     // 슬롯리스트를 인식 시켜 남아있는 슬롯을 확인할 것이다.
 
         // 인스펙터뷰 상에서 달아놓은 스프라이트 이미지 집합을 참조한다.
@@ -127,26 +104,20 @@ public class CreateManager : MonoBehaviour
         
         // 모든 월드 아이템 등록
         CreateAllItemDictionary();
+             
+
+        //데이터 매니저 사용하여 로드
+        DataManager dataManager = new DataManager();       
+        GameData loadData = dataManager.LoadData();
+
+        // 플레이어 관련 변수 등록 - 로드 인자 전달
+        CreateNewPlayerProficiencyDic( loadData );    // 제작 숙련 초기화
+        CreateNewPlayerCraftableList( loadData );     // 제작 가능 목록 초기화
+        CreateNewPlayerInventory( loadData );         // 인벤토리 초기화
+
+        dataManager.SaveData( loadData );
 
 
-        // 탭 버튼 참조
-        btnTapAll = GameObject.Find("Inventory").transform.GetChild(1).GetComponent<Button>();
-        btnTapWeap = GameObject.Find("Inventory").transform.GetChild(2).GetComponent<Button>();
-        btnTapMisc = GameObject.Find("Inventory").transform.GetChild(3).GetComponent<Button>();
-        btnTapMisc.Select();    // 첫 시작 시 Select 표시
-
-        btnTapAll.onClick.AddListener( () => BtnTapClick(0) );
-        btnTapWeap.onClick.AddListener( () => BtnTapClick(1) );
-        btnTapMisc.onClick.AddListener( () => BtnTapClick(2) );
-
-        
-        
-        
-        
-
-
-
-        
 
 
 
@@ -154,7 +125,10 @@ public class CreateManager : MonoBehaviour
 
 
         #region 플레이어의 장비 아이템 복제 예시( 제작, 아이템 구매 등을 통해 인벤토리에 아이템이 생성된다.)
-        weapList = new List<GameObject>();  // 원래는 게임 시작 시 로드 하여 인벤토리를 관리한다.      
+
+        List<GameObject> weapList;              // 무기 아이템을 넣어서 관리하는 인벤토리
+        List<GameObject> miscList;              // 잡화 아이템을 넣어서 관리하는 인벤토리
+        weapList = new List<GameObject>();      // 원래는 게임 매니저에서 로드 하여 인벤토리를 관리한다.      
         miscList = new List<GameObject>();  
 
         // 상점 아이템 구매 예시
@@ -198,110 +172,35 @@ public class CreateManager : MonoBehaviour
 
 
         #region 숙련도, 레시피 적용 예시
-
-        playerCraftDic=new Dictionary<string, CraftProficiency>();
+        
+        Dictionary<string, CraftProficiency> playerCraftDic;    // 제작 성공 시 증가하는 숙련도 목록
+        playerCraftDic=new Dictionary<string, CraftProficiency>();  // 원래는 게임매니저에서 로드 해야 한다.
+        
 
         if( !playerCraftDic.ContainsKey( "철검" ) ) //현재 숙련도 목록에 이름이 존재하지 않는다면, (목록에 넣고 수정한다.)
-            playerCraftDic.Add( "철검", new CraftProficiency() );
+        {
+            CraftProficiency info = new CraftProficiency();
+            info.Proficiency++;
+            // if(isRecipieSucced) 
+                info.RecipieHitCount++;
+            playerCraftDic.Add( "철검", info );
+        }
+        else
+        {
+            CraftProficiency info = playerCraftDic["철검"];
+            info.Proficiency++;
+            info.RecipieHitCount++;
 
-        playerCraftDic["철검"].Proficiency++;
+        }
 
-        // if(isRecipieSucced)                          
-        playerCraftDic["철검"].RecipieHitCount++; // 레시피까지 성공해서 만들었을 때      
 
         #endregion
 
-
-    }
-
-    /// <summary>
-    /// 버튼 클릭 시 각탭에 해당하는 아이템만 보여주기 위한 메서드입니다. 각 탭의 버튼 클릭 이벤트에 등록해야 합니다.
-    /// </summary>
-    /// <param name="btnIdx"></param>
-    public void BtnTapClick( int btnIdx )
-    {
-        
-
-        if(btnIdx==0)       // All 탭
-        {   
-            if( slotListTr.parent.GetChild(4).childCount==0 ) //오브젝트 emptyList에 아무것도 담겨 있지 않다면, 실행하지 않는다.
-                return;
-
-
-            for(int i=0; i<weapList.Count; i++) //무기 리스트를 하나씩 배치
-            {
-                for(int j=0; j<slotListTr.childCount; j++) // 슬롯을 차례로 순회
-                {
-                    if(slotListTr.GetChild(j).childCount==0)
-                    {
-                        weapList[i].transform.SetParent( slotListTr.GetChild(j), false );     // 빈 공간에 배치
-                        weapList[i].transform.localPosition = Vector3.zero;
-                        break;
-                    }                
-                } 
-            }
-            for(int i=0; i<miscList.Count; i++) //기타 리스트를 하나씩 배치
-            {
-                for(int j=0; j<slotListTr.childCount; j++) // 슬롯을 차례로 순회
-                {
-                    if(slotListTr.GetChild(j).childCount==0)
-                    {
-                        miscList[i].transform.SetParent( slotListTr.GetChild(j), false );     // 빈 공간에 배치
-                        miscList[i].transform.localPosition = Vector3.zero;
-                        break;
-                    }                
-                } 
-            } 
-              
-        }
-        else if(btnIdx==1)  // Weapon 탭
-        {
-            for(int i=0; i<slotListTr.childCount; i++) // 슬롯의 갯수만큼
-            {
-                if( slotListTr.GetChild(i).childCount!=0 ) // 슬롯에 들어있는 오브젝트를 모두 잠시 오브젝트 emptyList로 이동한다.
-                {
-                    slotListTr.GetChild(i).GetChild(0).localPosition = Vector3.zero;
-                    slotListTr.GetChild(i).GetChild(0).SetParent(slotListTr.parent.GetChild(4), false);
-                }
-            }
-
-            for( int i = 0; i<weapList.Count; i++ ) // 무기 리스트의 모든 아이템 정보를 읽어들인다.
-            {
-                int targetIdx = weapList[i].GetComponent<ItemInfo>().item.SlotIndex;
-                weapList[i].transform.SetParent( slotListTr.GetChild(targetIdx), false );     // 해당 정보에 맞게 배치한다.
-                weapList[i].transform.localPosition = Vector3.zero;                                                                                              
-            }
-        }
-        else if(btnIdx==2)  // Misc 탭
-        {
-            for(int i=0; i<slotListTr.childCount; i++) // 슬롯의 갯수 만큼
-            {
-                if( slotListTr.GetChild(i).childCount!=0 ) // 슬롯에 들어있는 오브젝트를 모두 잠시 오브젝트 emptyList로 이동한다.
-                {
-                    slotListTr.GetChild(i).GetChild(0).localPosition = Vector3.zero;
-                    slotListTr.GetChild(i).GetChild(0).SetParent(slotListTr.parent.GetChild(4), false);
-                }
-            }
-
-            for( int i = 0; i<miscList.Count; i++ ) // 기타 리스트의 모든 아이템 정보를 읽어들인다. 해당 정보에 맞게 배치한다.
-            {
-                int targetIdx = miscList[i].GetComponent<ItemInfo>().item.SlotIndex;
-                miscList[i].transform.SetParent( slotListTr.GetChild(targetIdx), false );     
-                miscList[i].transform.localPosition = Vector3.zero;                                                                                              
-            }
-        }
-
     }
 
 
 
 
-
-
-
-
-
-    
 
     /// <summary>
     /// 가장 가까운 슬롯에 원하는 아이템을 생성합니다.<br/>
@@ -374,7 +273,72 @@ public class CreateManager : MonoBehaviour
         return findIdx;     // findIdx가 수정되지 않았다면 -1을 반환한다. 수정되었다면 0이상의 인덱스값을 반환한다.
     }
 
-    
+
+
+
+
+    /// <summary>
+    /// 플레이어 숙련도 사전 초기화 - 세이브하고 로드 할 새로운 사전을 만들어 줍니다.
+    /// </summary>
+    private void CreateNewPlayerProficiencyDic( GameData loadData )
+    {
+        if( loadData.proficiencyDic!=null )   // 이미 만들어져 있다면 나간다
+            return;
+
+        Dictionary<string, CraftProficiency> dic =new Dictionary<string, CraftProficiency>();   // 새로운 숙련 사전을 만들어준다.
+        
+        foreach( KeyValuePair<string, Item> pair in weaponDic )             // 모든무기사전에서 하나씩 꺼낸다.
+            dic.Add( pair.Value.Name, new CraftProficiency(0, 0) );         // 모든 이름을 넣고 값을 0으로 초기화 하여 준다.
+
+        loadData.proficiencyDic = dic;
+
+        print( "숙련도 사전 초기화 완료" );
+    }
+
+    /// <summary>
+    /// 플레이어 제작가능 목록 초기화 - 세이브하고 로드 할 새로운 제작 목록을 만들어 줍니다.
+    /// </summary>
+    private void CreateNewPlayerCraftableList( GameData loadData )
+    {
+        if( loadData.craftableWeaponList!=null )    // 이미 만들어져 있다면 나간다
+            return;
+
+        CraftableWeaponList initCraftableList = new CraftableWeaponList();  // 플레이어 제작목록 초기화를 위한 새로운 인스턴스를 만든다.
+
+        foreach( KeyValuePair<string, Item> pair in weaponDic )               // 모든무기사전에서 하나씩 꺼낸다.
+        {
+            ItemWeapon weapInstance = (ItemWeapon)pair.Value;               // 하나씩 꺼냈을 때 value값은 Item형이며, 더 많은 정보 참조를 위해 ItemWeapon형으로 변환한다.
+
+            if( weapInstance.BasicGrade==ItemGrade.Low )                  // 무기 사전에서 꺼낸 아이템이 초급 무기라면,
+            {
+                if( weapInstance.EnumWeaponType==WeaponType.Sword )         // 검-장검 타입이라면,
+                    initCraftableList.swordList.Add( weapInstance.Name );       // 플레이어 제작 목록 검-장검 리스트에 추가한다.
+                else if( weapInstance.EnumWeaponType==WeaponType.Bow )      // 활-보우 타입이라면,
+                    initCraftableList.bowList.Add( weapInstance.Name );       // 플레이어 제작 목록 활-보우 리스트에 추가한다.
+            }
+        }
+        loadData.craftableWeaponList=initCraftableList;                   // 초기화 해 줄 정보를 저장한 제작 목록 인스턴스를 넣어준다.
+        print( "제작가능 목록 초기화 완료" );
+    }
+
+    /// <summary>
+    /// 플레이어 인벤토리 초기화 - 세이브하고 로드 할 새로운 인벤토리를 만들어줍니다.
+    /// </summary>
+    private void CreateNewPlayerInventory( GameData loadData )
+    {
+        if( loadData.inventory!=null )              // 이미 만들어져 있다면 나간다
+            return;
+
+        loadData.inventory=new PlayerInventory();   // 새로운 플레이어 인벤토리를 만들어 넣어준다.
+        print( "엔벤토리 초기화 완료" );
+    }
+
+
+
+
+
+
+
 
 
     /// <summary>
@@ -636,16 +600,7 @@ public class CreateManager : MonoBehaviour
                 , Recipie.Ma)
             }
 
-        };
-
-
-        //playerCraftableList = DataManager.Load().playerCraftableList;
-        
-        if( playerCraftableList!=null )
-            return;
-            
-        playerCraftableList = new List<string>();
-
+        };    
 
     }
 

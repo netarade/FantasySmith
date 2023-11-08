@@ -69,12 +69,18 @@
     <Compile Include="Assets\02.Scripts\DataInfo\ItemData_Weapon.cs" />
     <Compile Include="Assets\02.Scripts\CraftGame\CraftManagement.cs" />
     <Compile Include="Assets\02.Scripts\DataInfo\CraftData.cs" />
+    <Compile Include="Assets\02.Scripts\Inventory\InventoryDrag.cs" />
     <Compile Include="Assets\02.Scripts\DataInfo\GameData.cs" />
     <Compile Include="Assets\02.Scripts\DataInfo\ItemData_CraftWeapon.cs" />
     <Compile Include="Assets\02.Scripts\Inventory\ItemPointerStatusWindow.cs" />
     <Compile Include="Assets\02.Scripts\DataInfo\ItemInfo.cs" />
     <Compile Include="Assets\02.Scripts\Inventory\Issue.cs" />
-    <Compile Include="Assets\02.Scripts\Inventory\InventoryDrag.cs" />
+    <Compile Include="Assets\FantasyIconsPackFree\Demo\IconViewer.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Assets\Free Meat and Skin Icons\readme.txt" />
+    <None Include="Assets\Flat RPG Icon Pack 1 Weapons\Flat RPG Icon Pack Instructions of Use.txt" />
+    <None Include="Assets\Free Minerals Pixel Art Icons\readme.txt" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="UnityEngine">
@@ -331,6 +337,12 @@
     </Reference>
     <Reference Include="Newtonsoft.Json">
       <HintPath>Library\PackageCache\com.unity.nuget.newtonsoft-json@3.2.1\Runtime\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEditor.iOS.Extensions.Xcode">
+      <HintPath>C:\Program Files\Unity\Hub\Editor\2021.3.31f1\Editor\Data\PlaybackEngines\iOSSupport\UnityEditor.iOS.Extensions.Xcode.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEditor.iOS.Extensions.Common">
+      <HintPath>C:\Program Files\Unity\Hub\Editor\2021.3.31f1\Editor\Data\PlaybackEngines\iOSSupport\UnityEditor.iOS.Extensions.Common.dll</HintPath>
     </Reference>
     <Reference Include="Unity.Android.Types">
       <HintPath>C:\Program Files\Unity\Hub\Editor\2021.3.31f1\Editor\Data\PlaybackEngines\AndroidPlayer\Unity.Android.Types.dll</HintPath>

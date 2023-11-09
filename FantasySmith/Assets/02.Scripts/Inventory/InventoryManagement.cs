@@ -3,25 +3,28 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using ItemData;
+
 /*
- * [작업 사항]  
- * <v1.0 - 2023_1106_최원준>
- * 1- 초기 클래스 정의
- * 
- * 2- 인벤토리 인터엑티브 로직을 담당
- * 각 탭을 클릭했을 때의 메서드가 정의되어 있음.
- * 
- * 3- 현재 전체 탭 클릭에 대한 로직이 불완전하게 구현되어있음.
- * 
- * <v1.1 - 2023_1106_최원준>
- * 1-ItemPointerStatusWindow에서 상태창 참조가 동적할당으로는 제대로 잡히지 않아 
- * 게임 시작 시 참조하는 변수를 미리 잡아놓도록 static 참조 변수를 선언.
- * 
- * <v1.2 - 2023_1108_최원준>
- * 1- 인벤토리 i키를 통해 닫는 기능 구현
- * 2- 스크립트 부착위치를 Inventory 판넬에서 GameController 오브젝트로 옮김
- * 
- */
+* [작업 사항]  
+* <v1.0 - 2023_1106_최원준>
+* 1- 초기 클래스 정의
+* 
+* 2- 인벤토리 인터엑티브 로직을 담당
+* 각 탭을 클릭했을 때의 메서드가 정의되어 있음.
+* 
+* 3- 현재 전체 탭 클릭에 대한 로직이 불완전하게 구현되어있음.
+* 
+* <v1.1 - 2023_1106_최원준>
+* 1-ItemPointerStatusWindow에서 상태창 참조가 동적할당으로는 제대로 잡히지 않아 
+* 게임 시작 시 참조하는 변수를 미리 잡아놓도록 static 참조 변수를 선언.
+* 
+* <v1.2 - 2023_1108_최원준>
+* 1- 인벤토리 i키를 통해 닫는 기능 구현
+* 2- 스크립트 부착위치를 Inventory 판넬에서 GameController 오브젝트로 옮김
+* 
+* <v1.3 - 2023_1109_최원준>
+* 1- InventroyOnOffSwitch 철자 수정
+*/
 
 /// <summary>
 /// 인벤토리 인터엑티브 로직을 담당합니다. 컴포넌트로 붙여야 하며, 별다른 인스턴스 선언 접근이 필요하지 않습니다.<br/>
@@ -44,6 +47,9 @@ public class InventoryManagement : MonoBehaviour
     private Image[] inventoryImgArr;                    // 인벤토리의 모든 이미지
     private Text[] inventoryTextArr;                    // 인벤토리의 모든 텍스트
     public static bool isInventoryOn;                   // On상태 기록하기 위한 변수
+    
+
+
 
     void Start()
     {
@@ -74,26 +80,57 @@ public class InventoryManagement : MonoBehaviour
 
         // 게임 시작 시 인벤토리 판넬과 상태창 판넬을 꺼둔다.
         statusWindow.SetActive(false);  
-        InventroyOnOffSwitch(false);
+        InventoryOnOffSwitch(false);
         isInventoryOn = false;          //초기에 인벤토리는 꺼진 상태
 
 
     }
 
+
+
+
+
+    /// <summary>
+    /// 아이템 생성 테스트 버튼
+    /// </summary>
     public void BtnItemCreateToInventory()
-    {
-        CreateManager.instance.CreateItemToNearstSlot(miscList, "강철", 10);
-        CreateManager.instance.CreateItemToNearstSlot(miscList, "흑철", 10);
-        CreateManager.instance.CreateItemToNearstSlot(miscList, "철", 10);
-        CreateManager.instance.CreateItemToNearstSlot(miscList, "미스릴", 10);
+    {        
+        CreateManager.instance.CreateItemToNearstSlot(CraftManager.instance.miscList, "강철", 10);
+        CreateManager.instance.CreateItemToNearstSlot(CraftManager.instance.miscList, "흑철", 10);
+        CreateManager.instance.CreateItemToNearstSlot(CraftManager.instance.miscList, "철", 10);
+        CreateManager.instance.CreateItemToNearstSlot(CraftManager.instance.miscList, "미스릴", 10);
+        CreateManager.instance.CreateItemToNearstSlot(CraftManager.instance.miscList, "부드러운 나뭇가지", 10);
+        CreateManager.instance.CreateItemToNearstSlot(CraftManager.instance.miscList, "가벼운 나뭇가지", 10);
+        CreateManager.instance.CreateItemToNearstSlot(CraftManager.instance.miscList, "속성석", 3);
+        CreateManager.instance.CreateItemToNearstSlot(CraftManager.instance.miscList, "강화석", 3);
+        CreateManager.instance.CreateItemToNearstSlot(CraftManager.instance.miscList, "초급 물리의 각인", 1);
+        CreateManager.instance.CreateItemToNearstSlot(CraftManager.instance.miscList, "중급 공속의 각인", 1);
+        CreateManager.instance.CreateItemToNearstSlot(CraftManager.instance.miscList, "고급 흡혈의 각인", 1);
     }
 
 
+    /// <summary>
+    /// 인벤토리 아이콘 클릭 시 OnOff 스위치
+    /// </summary>
+    public void InventoryQuit()
+    {
+        InventoryOnOffSwitch( !isInventoryOn );     // 반대 상태로 넣어준다.
+        isInventoryOn = !isInventoryOn;             // 상태 변화를 기록한다.
+    }
+
+
+
+
+
+
+    /// <summary>
+    /// 인벤토리 키 맵핑 I키를 누르면 인벤토리를 종료한다.
+    /// </summary>
     private void Update()
     {
         if(Input.GetKeyDown(KeyCode.I))
         {
-            InventroyOnOffSwitch( !isInventoryOn );     // 반대 상태로 넣어준다.
+            InventoryOnOffSwitch( !isInventoryOn );     // 반대 상태로 넣어준다.
             isInventoryOn = !isInventoryOn;             // 상태 변화를 기록한다.
         }
         
@@ -102,7 +139,7 @@ public class InventoryManagement : MonoBehaviour
     /// <summary>
     /// 인벤토리의 모든 이미지와 텍스트를 꺼줍니다.
     /// </summary>
-    public void InventroyOnOffSwitch(bool onOffState )
+    public void InventoryOnOffSwitch(bool onOffState )
     {
         foreach(Image image in inventoryImgArr)
             image.enabled = onOffState;

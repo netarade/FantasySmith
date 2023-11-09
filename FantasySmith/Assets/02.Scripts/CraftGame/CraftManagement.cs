@@ -27,7 +27,10 @@ using UnityEngine.SceneManagement;
 * <v1.3 - 2023_1108_최원준>
 * 1- 스크립트 부착 위치를 CreateManager에서 GameController로 옮김.
 * 2- 1단계 드롭다운 동작의 숙련도 이름 검사에서 키를 갖고 있지 않다면 키와 숙련도 구조체를 초기화 해주는 구문 삽입
+* 3- 제작 1단계 시작버튼 추가
 * 
+* <1.4 - 2023_1109_최원준>
+* 1- 씬 테스트 버튼 옮김 (씬 전환 시 데이터 이동이 제대로 되는지 테스트)
 */
 
 /// <summary>
@@ -48,17 +51,25 @@ public partial class CraftManagement : MonoBehaviour
     
     private Transform panelCraftLev2Tr; // 2번째 제작 판넬
     private int lastOptIdx;             // 마지막 옵션을 기록
+    private Text panelCraftLev2Txt;        // 2번째 판넬 텍스트
     
+    //private Transform gamePlayTestBtn;          //게임 테스트 버튼
+    //private Transform itemCreateBtn;           // 아이템 생성 버튼 
+    //private GameObject attributeCreateBtn;      // 강화 아이템 생성 버튼
+
     void Start()
     {
         panelCraftLev1Tr=GameObject.Find( "Panel-CraftLevel1" ).transform;
         panelCraftLev2Tr=GameObject.Find( "Panel-CraftLevel2" ).transform;
+        panelCraftLev2Txt = panelCraftLev2Tr.GetChild(0).GetComponent<Text>();
+
+
         dropWeapType=panelCraftLev1Tr.GetChild( 0 ).GetComponent<Dropdown>();
         dropWeapItem=panelCraftLev1Tr.GetChild( 1 ).GetComponent<Dropdown>();
 
         dropWeapItem.GetComponent<Image>().enabled=false;                   // Item드롭다운은 초기에 꺼진 상태로 시작한다.
         nextButton = panelCraftLev1Tr.GetComponentInChildren<Button>();     // 다음 버튼 인식
-        nextButton.onClick.AddListener(NextButtonClick);                    // 다음 버튼에 이벤트 연결
+        nextButton.onClick.AddListener(Craft1MakeBtnClick);                    // 다음 버튼에 이벤트 연결
 
         dropWeapType.onValueChanged.AddListener( OnTypeChanged );       // 첫번째 드롭다운 이벤트 연결
         dropWeapItem.onValueChanged.AddListener( OnItemChanged );       // 두번째 드롭다운 이벤트 연결
@@ -70,6 +81,7 @@ public partial class CraftManagement : MonoBehaviour
         // 판넬의 모든 하위 오브젝트를 꺼준다.
         panelCraftLev1Tr.gameObject.SetActive(false);
         panelCraftLev2Tr.gameObject.SetActive(false);
+
     }
 
     /// <summary>
@@ -77,7 +89,10 @@ public partial class CraftManagement : MonoBehaviour
     /// </summary>
     public void OnCraftLevel1Start()
     {
-        
+        //인벤토리를 켜준다.
+        InventoryManagement manager = GameObject.Find("GameController").GetComponent<InventoryManagement>();
+        manager.InventoryOnOffSwitch(true); 
+
         // 판넬 레벨1의 모든 하위 오브젝트를 켜준다.
         panelCraftLev1Tr.gameObject.SetActive(true);
 
@@ -86,11 +101,35 @@ public partial class CraftManagement : MonoBehaviour
         foreach(var text in itemTxtArr)
             text.enabled = false;
 
-        craftableList=CraftManager.instance.craftableList;        // 제작을 수행할 때 마다 실시간 제작 가능 목록을 불러온다.
-    
+        craftableList=CraftManager.instance.craftableList;        // 제작을 수행할 때 마다 실시간 제작 가능 목록을 불러온다.    
      }
 
-    
+        
+    /// <summary>
+    /// 씬무브 테스트 버튼
+    /// </summary>
+    public void BtnNextScene()
+    {
+        switch( SceneManager.GetActiveScene().name )    // 씬 1, 2를 전환하는 기능
+        {
+            case "InventoryTest":
+                SceneManager.LoadScene( "InventoryTest2" );
+                break;
+            case "InventoryTest2":
+                SceneManager.LoadScene( "InventoryTest" );
+                break;
+        }
+    }
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -144,6 +183,8 @@ public partial class CraftManagement : MonoBehaviour
     /// </summary>
     public void OnItemChanged( int optIdx )
     {
+        
+
         // 표시 할 이미지와 텍스트를 켜준다.
         itemImg.enabled=true;
         for(int i=0; i<itemTxtArr.Length; i++)
@@ -180,23 +221,23 @@ public partial class CraftManagement : MonoBehaviour
 
 
     /// <summary>
-    /// 다음 버튼을 클릭했을 때의 로직
+    /// 제작 버튼을 클릭했을 때의 로직
     /// </summary>
-    public void NextButtonClick()
+    public void Craft1MakeBtnClick()
     {
         // 플레이어 재료 인벤토리 참조
         List<GameObject> miscList = CraftManager.instance.miscList;
 
         // 월드 사전에 드롭다운의 옵션 이름을 기반으로 접근하여 아이템 정보를 받는다.
-        ItemCraftWeapon weapon = (ItemCraftWeapon)CreateManager.instance.weaponDic[dropWeapItem.options[lastOptIdx].text];
-        CraftMaterial[] baseMaterials = weapon.BaseMaterials;                   // 기본 재료 구조체 배열을 참조
+        ItemCraftWeapon targetWeapon = (ItemCraftWeapon)CreateManager.instance.weaponDic[dropWeapItem.options[lastOptIdx].text];
+        CraftMaterial[] baseMaterials = targetWeapon.BaseMaterials;                   // 기본 재료 구조체 배열을 참조
         Dictionary<string, int> dicMaterial = new Dictionary<string, int>();    // 기본 재료의 이름과 수를 기반으로 하는 딕셔너리 생성
                 
         for(int i=0; i<baseMaterials.Length; i++)
         {
              dicMaterial.Add(baseMaterials[i].name, baseMaterials[i].count);    // 딕셔너리에 다시 담는다.
         }
-        ItemMisc[] targetItem = new ItemMisc[dicMaterial.Count];                // 재료 키 쌍의 갯수만큼 목표로 찾을 아이템의 갯수를 정한다.
+        ItemMisc[] targetMiscItem = new ItemMisc[dicMaterial.Count];            // 재료 키 쌍의 갯수만큼 목표로 찾을 아이템의 갯수를 정한다.
         int foundCount = 0;                                                     // 찾을 때 마다 카운트를 기록한다.
 
         
@@ -216,7 +257,7 @@ public partial class CraftManagement : MonoBehaviour
                 if( playerItem.InventoryCount>=dicMaterial[playerItem.Name] ) // 재료가 플레이어 쪽이 더 많다면
                 {
                     playerItem.InventoryCount-=dicMaterial[playerItem.Name];  // 일단 갯수를 제외 해준다.
-                    targetItem[foundCount]=playerItem;                        // 찾은 타겟 배열에 등록한다.
+                    targetMiscItem[foundCount]=playerItem;                        // 찾은 타겟 배열에 등록한다.
                     foundCount++;                                               // 찾은 갯수를 증가시킨다.
                 }
             }
@@ -224,19 +265,39 @@ public partial class CraftManagement : MonoBehaviour
 
         if( foundCount==dicMaterial.Count )   // 정상적으로 진행 한 타겟 카운트와 재료의 카운트가 일치한다면
         {
-            panelCraftLev1Tr.gameObject.SetActive( false );
-            panelCraftLev2Tr.gameObject.SetActive( true );
-            Debug.Log( "성공했습니다." );
+            panelCraftLev1Tr.gameObject.SetActive( false );     // 판넬 1을 끄고 
+            panelCraftLev2Tr.gameObject.SetActive( true );      // 판넬2번을 켜준다.
+                        
+            panelCraftLev2Txt.text = "제작에 성공하였습니다!";
+            CreateManager.instance.CreateItemToNearstSlot(CraftManager.instance.weapList, targetWeapon.Name);
+            Debug.Log( "제작에 성공했습니다." );
         }
         else
         {
             for(int i=0; i<foundCount; i++)                             // 타겟으로 삼은 횟수까지만 해야 한다.
             {
-                ItemMisc failItem = targetItem[i];                      // 재료가 부족하다면 타겟으로 삼으려다가 실패한 아이템일 것이다.
+                ItemMisc failItem = targetMiscItem[i];                      // 재료가 부족하다면 타겟으로 삼으려다가 실패한 아이템일 것이다.
                 failItem.InventoryCount += dicMaterial[failItem.Name];  // 다시 인벤토리 카운트를 정상적으로 돌려준다.
             }
-            Debug.Log( "실패했습니다." );
+            
+            panelCraftLev1Tr.gameObject.SetActive(false);  // 판넬 1을 끄고 
+            panelCraftLev2Tr.gameObject.SetActive(true);     // 판넬2번을 켜준다.
+            panelCraftLev2Txt.text = "제작에 실패하였습니다.";
+            Debug.Log( "제작에 실패했습니다." );
         }
         CraftManager.instance.UpdateInventoryText(true);
     }
+
+    
+    /// <summary>
+    /// 확인 버튼 또는 x버튼 누르면 모든 창을 종료할 수 있다.
+    /// </summary>
+    public void BtnPanel2ConfirmExit()
+    {
+        panelCraftLev1Tr.gameObject.SetActive(false);
+        panelCraftLev2Tr.gameObject.SetActive(false);
+    }
+
+
+
 }

@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 /*
  * [작업 사항]
@@ -12,7 +13,7 @@ using UnityEngine;
  * 3- 주석처리
  * 
  * <v1.1 - 2023_1106_최원준>
- * 1- System 자료형과 겹치는 관계로 Attribute 를 EnumAttribute로 변경
+ * 1- System 자료형과 겹치는 관계로 Enhancement 를 EnumAttribute로 변경
  * 
  * <v1.2 - 2023_1106_최원준>
  * 1- 강화 횟수가 float형 이었던 점을 int로 수정

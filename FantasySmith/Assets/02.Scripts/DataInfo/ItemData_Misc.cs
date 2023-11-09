@@ -12,6 +12,9 @@ using UnityEngine;
  * 3- ItemMisc 클래스 내부에 ItemEngraving과 FirePower에 대한 정보를 포함하도록 하였음.
  * 아이템 생성 시 입력 한 세부 타입과 이름에 따라 정보를 알아서 집어넣도록 수정.
  * 
+ * <v1.1 - 2023_1109_최원준>
+ * 1- 강화석을 추가하기 위해 MiscType의 Attribute를 Enhancement로 통일
+ * 
  */
 
 
@@ -21,7 +24,7 @@ namespace ItemData
     /// <summary>
     /// 잡화 아이템의 상세 분류
     /// </summary>
-    public enum MiscType { Basic, Additive, Fire, Attribute, Engraving, Etc } // 기본재료, 추가재료, 연료, 속성석, 각인석, 기타
+    public enum MiscType { Basic, Additive, Fire, Enhancement, Engraving, Etc } // 기본재료, 추가재료, 연료, 강화(속성석,강화석), 각인석, 기타
         
     /// <summary>
     /// 각인석의 종류 - 물리,공속,흡혈,사격,피해

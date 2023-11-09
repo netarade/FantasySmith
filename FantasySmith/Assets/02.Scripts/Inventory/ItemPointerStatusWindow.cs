@@ -21,6 +21,8 @@ using Unity.VisualScripting;
  * 1- 잡화아이템의 상태창 설명에 이름과 갯수가 표시되도록 수정
  * 2- 상태창 참조가 동적할당으로는 제대로 잡히지 않아 게임 시작 시 참조하는 변수를 미리 잡아놓도록 InventoryManagement에 static 참조 변수를 선언.
  * 
+ * <v2.0 - 2023_1109_최원준>
+ * 1- 각인 판넬 추가 및 각인 활성화 조절, 정보 반영
  */
 
 
@@ -38,28 +40,45 @@ public class ItemPointerStatusWindow : MonoBehaviour, IPointerEnterHandler, IPoi
     private Text txtSpec;               // 상태창의 아이템 스펙
 
     private Item item;                  // 개념 아이템을 참조하기 위한 변수
-
-
     
-    /// <summary>
-    /// 모든 아이템 인스턴스가 스테이터스 창이 꺼지기 전에 참조해야 하므로 반드시 Awake에 두어야 합니다.
-    /// </summary>
-    void Awake()
+
+    [SerializeField] private readonly int AnyEngraveMaxNum = 3;     // 종류와 상관없는 각인 슬롯 최대 (판넬 최대 갯수)
+    [SerializeField] private GameObject[] PanelEngraveArr;          // 각인 판넬
+    [SerializeField] private Transform[] PanelEngraveTrArr;         // 각인 판넬
+    [SerializeField] private Image[] imageEngraveArr;               // 각인 이미지
+    [SerializeField] private Text[] txtNameArr;                     // 각인 이름     
+    [SerializeField] private Text[] txtDescArr;                     // 각인 설명
+
+
+
+
+    void Start()
     {        
-        statusWindow=InventoryManagement.statusWindow;
+        // 하위 오브젝트의 모든 참조는 InventoryManagement의 빠른 참조를 기반으로 한다.
+        statusWindow=InventoryManagement.statusWindow;  
         imageItem = statusWindow.transform.GetChild(0).GetChild(0).GetComponent<Image>();
         txtEnhancement = statusWindow.transform.GetChild(1).GetComponent<Text>();
         txtName = statusWindow.transform.GetChild(2).GetComponent<Text>();
         txtDesc = statusWindow.transform.GetChild(3).GetComponent<Text>();
         txtSpec = statusWindow.transform.GetChild(4).GetComponent<Text>();
+        item = GetComponent<ItemInfo>().item;
+
+        PanelEngraveArr = new GameObject[AnyEngraveMaxNum];
+        imageEngraveArr = new Image[AnyEngraveMaxNum];
+        txtNameArr = new Text[AnyEngraveMaxNum];
+        txtDescArr = new Text[AnyEngraveMaxNum];
+
+        for(int i=0; i<AnyEngraveMaxNum; i++)
+        {
+            PanelEngraveArr[i] = statusWindow.transform.GetChild(5+i).gameObject;
+            imageEngraveArr[i] = PanelEngraveArr[i].transform.GetChild(0).GetChild(0).GetComponent<Image>();
+            txtNameArr[i] = PanelEngraveArr[i].transform.GetChild(1).GetComponent<Text>();
+            txtDescArr[i] = PanelEngraveArr[i].transform.GetChild(2).GetComponent<Text>();
+        }
+        
+
     }
     
-
-    void Start()
-    {        
-        item = GetComponent<ItemInfo>().item;
-    }
-
 
     /// <summary>
     /// 아이템에 커서를 갖다 대는 순간 아이템의 정보를 볼 수 있습니다.
@@ -79,6 +98,10 @@ public class ItemPointerStatusWindow : MonoBehaviour, IPointerEnterHandler, IPoi
         imageItem.sprite = item.Image.statusSprite; // 이미지에 등록한 statusSprite 이미지를 보여준다.
         txtName.text = item.Name;                   // 이름 텍스트에 아이템 이름을 보여준다.
         txtDesc.text = item.Name;                   // 설명 텍스트에 아이템 이름을 임시적으로 보여준다.
+
+         for(int i=0; i<AnyEngraveMaxNum; i++)                  // 모든 각인 판넬을 off한다.
+                PanelEngraveArr[i].SetActive(false);
+
 
 
         /*** 아이템 종류별 차이 ***/
@@ -104,26 +127,31 @@ public class ItemPointerStatusWindow : MonoBehaviour, IPointerEnterHandler, IPoi
             string strType;                     // 무기의 종류 한글 문자열
             string strAttr;                     // 무기의 속성 한글 문자열
             
-
-            switch(itemWeap.LastGrade)          // 무기 등급의 한글 문자열을 지정
+            switch(itemWeap.LastGrade)          // 무기 등급의 한글 문자열을 지정, 이름에 컬러링
             {
                 case Rarity.Normal :
                     strGrade="노말";
+                    txtName.color = new Color(0f, 0f, 0f, 1f);
                     break;
                 case Rarity.Magic :
                     strGrade="매직";
+                    txtName.color = new Color(0/255f, 13/255f, 235/255f, 0.66f);
                     break;        
                 case Rarity.Rare :
                     strGrade="레어";
+                    txtName.color = new Color(138/255f, 81/255f, 192/255f, 0.66f);
                     break;
                 case Rarity.Epic :
                     strGrade="에픽";
+                    txtName.color = new Color(78/255f, 0f, 108/255f, 1f);
                     break;
                 case Rarity.Unique :
                     strGrade="유니크";
+                    txtName.color = new Color(249/255f, 130/255f, 40/255f, 1f);
                     break;
                 case Rarity.Legend :
                     strGrade="레전드";
+                    txtName.color = new Color(1f, 1f, 85/255f, 1f);
                     break;
                 default :
                     strGrade="미정";
@@ -177,6 +205,23 @@ public class ItemPointerStatusWindow : MonoBehaviour, IPointerEnterHandler, IPoi
                 $"무게 : {itemWeap.Weight}\n" +
                 $"속성 : {strAttr}");
 
+
+            /******** 각인 관련 ************/          
+            if(itemWeap.RemainEngraveNum != AnyEngraveMaxNum ) // 각인이 하나라도 장착되어 있다면
+            {
+                ItemEngraving[] engraveArr = itemWeap.EquipEngrave;                 // 각인 구조체 배열을 받아온다. 
+                int typeEngraveMaxNum = engraveArr.Length;                          // 아이템 등급 별 각인 최대 갯수
+                int curEngraveNum = typeEngraveMaxNum - itemWeap.RemainEngraveNum;  // 현재 각인 장착 갯수
+
+                for(int i=0; i<curEngraveNum; i++)                              // 현재 장착 중인 각인 갯수만큼
+                { 
+                    PanelEngraveArr[i].SetActive(true);                         // 각인 판넬을 켜준다.
+
+                    imageEngraveArr[i].sprite = itemWeap.Image.statusSprite;    // 각인의 정보를 반영한다.
+                    txtNameArr[i].text = engraveArr[i].Name.ToString();     
+                    txtDescArr[i].text = engraveArr[i].Desc;     
+                 }
+            }
 
         }
         

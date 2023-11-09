@@ -10,7 +10,7 @@
     <ProductVersion>10.0.20506</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
     <RootNamespace></RootNamespace>
-    <ProjectGuid>{0BF26DBF-B77A-4AC3-B237-2A18E7AF48C3}</ProjectGuid>
+    <ProjectGuid>{F4CE686A-DD23-0C77-2CA3-1F5B6C5ADC3F}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <AssemblyName>Assembly-CSharp</AssemblyName>
@@ -75,12 +75,7 @@
     <Compile Include="Assets\02.Scripts\Inventory\ItemPointerStatusWindow.cs" />
     <Compile Include="Assets\02.Scripts\DataInfo\ItemInfo.cs" />
     <Compile Include="Assets\02.Scripts\Inventory\Issue.cs" />
-    <Compile Include="Assets\FantasyIconsPackFree\Demo\IconViewer.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Assets\Free Meat and Skin Icons\readme.txt" />
-    <None Include="Assets\Flat RPG Icon Pack 1 Weapons\Flat RPG Icon Pack Instructions of Use.txt" />
-    <None Include="Assets\Free Minerals Pixel Art Icons\readme.txt" />
+    <Compile Include="Assets\03.Images\FantasyIconsPackFree\Demo\IconViewer.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="UnityEngine">
@@ -337,12 +332,6 @@
     </Reference>
     <Reference Include="Newtonsoft.Json">
       <HintPath>Library\PackageCache\com.unity.nuget.newtonsoft-json@3.2.1\Runtime\Newtonsoft.Json.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEditor.iOS.Extensions.Xcode">
-      <HintPath>C:\Program Files\Unity\Hub\Editor\2021.3.31f1\Editor\Data\PlaybackEngines\iOSSupport\UnityEditor.iOS.Extensions.Xcode.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEditor.iOS.Extensions.Common">
-      <HintPath>C:\Program Files\Unity\Hub\Editor\2021.3.31f1\Editor\Data\PlaybackEngines\iOSSupport\UnityEditor.iOS.Extensions.Common.dll</HintPath>
     </Reference>
     <Reference Include="Unity.Android.Types">
       <HintPath>C:\Program Files\Unity\Hub\Editor\2021.3.31f1\Editor\Data\PlaybackEngines\AndroidPlayer\Unity.Android.Types.dll</HintPath>
@@ -788,7 +777,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="Assembly-CSharp-firstpass.csproj">
-      <Project>{F550AB83-5845-FB10-531C-71E77C325449}</Project>
+      <Project>{44D38566-C9BF-7A50-51D8-28BE28AAA830}</Project>
       <Name>Assembly-CSharp-firstpass</Name>
     </ProjectReference>
   </ItemGroup>

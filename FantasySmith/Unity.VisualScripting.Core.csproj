@@ -235,10 +235,10 @@
     <Compile Include="Library\PackageCache\com.unity.visualscripting@1.9.1\Runtime\VisualScripting.Core\Serialization\DictionaryAsset.cs" />
     <Compile Include="Library\PackageCache\com.unity.visualscripting@1.9.1\Runtime\VisualScripting.Core\Collections\INotifyCollectionChanged.cs" />
     <Compile Include="Library\PackageCache\com.unity.visualscripting@1.9.1\Runtime\VisualScripting.Core\Dependencies\AssemblyQualifiedNameParser\ParsedAssemblyQualifiedName.cs" />
-    <Compile Include="Library\PackageCache\com.unity.visualscripting@1.9.1\Runtime\VisualScripting.Core\Reflection\Optimization\StaticActionInvoker_4.cs" />
     <Compile Include="Library\PackageCache\com.unity.visualscripting@1.9.1\Runtime\VisualScripting.Core\Dependencies\FullSerializer\Reflection\fsMetaProperty.cs" />
     <Compile Include="Library\PackageCache\com.unity.visualscripting@1.9.1\Runtime\VisualScripting.Core\Reflection\Optimization\StaticActionInvoker_2.cs" />
     <Compile Include="Library\PackageCache\com.unity.visualscripting@1.9.1\Runtime\VisualScripting.Core\Utilities\IIdentifiable.cs" />
+    <Compile Include="Library\PackageCache\com.unity.visualscripting@1.9.1\Runtime\VisualScripting.Core\Reflection\Optimization\StaticActionInvoker_4.cs" />
     <Compile Include="Library\PackageCache\com.unity.visualscripting@1.9.1\Runtime\VisualScripting.Core\Reflection\Optimization\StaticPropertyAccessor.cs" />
     <Compile Include="Library\PackageCache\com.unity.visualscripting@1.9.1\Runtime\VisualScripting.Core\EditorBinding\DisableAnnotationAttribute.cs" />
     <Compile Include="Library\PackageCache\com.unity.visualscripting@1.9.1\Runtime\VisualScripting.Core\Dependencies\FullSerializer\Reflection\fsMetaType.cs" />
@@ -771,6 +771,9 @@
     </Reference>
     <Reference Include="ReportGeneratorMerged">
       <HintPath>Library\PackageCache\com.unity.testtools.codecoverage@1.2.4\lib\ReportGenerator\ReportGeneratorMerged.dll</HintPath>
+    </Reference>
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>Library\PackageCache\com.unity.nuget.newtonsoft-json@3.2.1\Runtime\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="Unity.Android.Types">
       <HintPath>C:\Program Files\Unity\Hub\Editor\2021.3.31f1\Editor\Data\PlaybackEngines\AndroidPlayer\Unity.Android.Types.dll</HintPath>

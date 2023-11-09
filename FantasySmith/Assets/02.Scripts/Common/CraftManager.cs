@@ -5,7 +5,7 @@ using ItemData;
 using CraftData;
 using DataManagement;
 using UnityEngine.UI;
-
+using UnityEngine.SceneManagement;
 
 /*
  * [작업 사항]  
@@ -24,9 +24,16 @@ using UnityEngine.UI;
  * <v2.0 - 2023_1107_최원준>
  * 1- 빠른 초기화가 이루어져야 스크립트에서 정보를 받아가므로 Awake문으로 옮김.
  * 대리자를 이용하여 연관성을 최소화하여 순서대로 초기화가 이루어지도록 함. 
+ * 
+ * <v2.1 - 2023_1108_최원준>
+ * 1- 아이템이 씬이 넘어갈때 파괴되기 때문에 스크립트를 저장하려고 하였으나 스크립트 또한 파괴되는 문제 발생
+ * => 딕셔너리를 이용해서 이름과 수량만 저장하고 새롭게 생성하는 대체 방식으로 수정. 
+ * 
+ * 2- 씬 로드 시 무조건 하나의 재료만 들어있는 문제 발생
+ * => 아이템쪽에서 파괴될떄마다 딕셔너리를 생성했었기 때문에 CraftManager쪽에서 마지막에 한번 미리 생성해주도록 변경
  */
 
-
+    
 
 /// <summary>
 /// 게임 실행 중 제작 관련 실시간 플레이어 정보 들을 보유하고 있는 클래스입니다. 싱글톤으로 접근 가능합니다.
@@ -81,7 +88,13 @@ public class CraftManager : MonoBehaviour
     // 이벤트 생성
     public static event LoadEvent CraftManagerLoaded;
         
-    int beforeCount;
+
+
+
+    // 씬이 넘어갈 때 ItemInfo 스크립트를 넘겨주기 위한 딕셔너리
+    public Dictionary<string, int> weapSaveDic;
+    public Dictionary<string, int> miscSaveDic;
+
 
     void Awake()
     {
@@ -96,7 +109,14 @@ public class CraftManager : MonoBehaviour
             CreateManager.PlayerInitCompleted += CraftManagerInit;    // 게임의 처음시작은 이벤트 연결을 통해 호출하고,
         else
             CraftManagerInit();                                       // 이후에는 Awake문에서 바로 정보를 불러들인다.   
+
+
+        SceneManager.sceneLoaded += OnSceneLoaded; // 씬이로드될때 새롭게 참조를 잡아준다.
+        SceneManager.sceneUnloaded += OnSceneUnloaded; // 씬이로드될때 새롭게 참조를 잡아준다.
+
+        
     }
+
 
     /// <summary>
     /// CreateManager의 Awake문 이후에 데이터를 로드하여 초기화를 이루는 로직입니다.
@@ -115,12 +135,61 @@ public class CraftManager : MonoBehaviour
 
         playerGold = loadData.gold;
         playerSilver = loadData. silver;
-
-        beforeCount = miscList.Count;
     }
 
 
+
     
+    /// <summary>
+    /// 씬이 로드되었을 때 다시 참조해주는 로직
+    /// </summary>
+    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        if( miscSaveDic==null && weapSaveDic==null ) // 최초에 딕셔너리가 없다면 새로만든다.
+        {
+            weapSaveDic=new Dictionary<string, int>();
+            miscSaveDic=new Dictionary<string, int>();
+            return;
+        }
+
+        weapList.Clear();   // 기존의 리스트 클리어
+        miscList.Clear();
+
+        print(miscSaveDic.Count);
+        print(weapSaveDic.Count);
+        // 딕셔너리를 참조하여 아이템 오브젝트를 만든다.
+        foreach( KeyValuePair<string, int> pair in miscSaveDic )
+        {
+            CreateManager.instance.CreateItemToNearstSlot( miscList, pair.Key, pair.Value );
+        }
+
+        foreach( KeyValuePair<string, int> pair in weapSaveDic )
+        {
+            CreateManager.instance.CreateItemToNearstSlot( weapList, pair.Key );
+        }
+        
+        CraftManager.instance.weapSaveDic=new Dictionary<string, int>(); // 새로운 딕셔너리를 만들어 둔다
+        CraftManager.instance.miscSaveDic=new Dictionary<string, int>(); // 새로운 딕셔너리를 만들어 둔다.
+    }
+    
+    private void OnSceneUnloaded( Scene scene )
+    {
+        Debug.Log("언로드 되었습니다.");
+        
+    }
+
+    private void OnDestroy()
+    {
+        SceneManager.sceneLoaded-=OnSceneLoaded; // 씬이로드될때 새롭게 참조를 잡아준다.
+        SceneManager.sceneUnloaded-=OnSceneUnloaded; // 씬이로드될때 새롭게 참조를 잡아준다.
+    }
+
+
+
+
+
+
+
 
     /// <summary>
     /// 플레이어의 인벤토리에 담겨 있는 아이템의 갯수 정보를 최신화 하여 줍니다. removeMode가 true일 때 중첩 횟수가 음수인 아이템을 삭제합니다.
@@ -147,34 +216,21 @@ public class CraftManager : MonoBehaviour
 
 
 
-
-
-    void Update()
-    {
-        if( beforeCount != miscList.Count)
-        {
-            print( "misc리스트에 변동이 일어났습니다." );
-            print(miscList[miscList.Count-1].GetComponent<ItemInfo>().item.Name);
-            beforeCount = miscList.Count;
-        }
-    }
-
-
     /// <summary>
     /// 테스트 버튼 로직 - 현재 세이브 로드가 제대로 되지 않아 버튼에 동작 테스트를 진행 중입니다.
     /// </summary>
     public void OnApplicationQuit()
     {
-        DataManager dataManager = new DataManager();
-        GameData saveData = dataManager.LoadData();
+        //DataManager dataManager = new DataManager();
+        //GameData saveData = dataManager.LoadData();
 
-        saveData.proficiencyDic=proficiencyDic;     // 플레이어 숙련 목록 저장
-        saveData.craftableWeaponList=craftableList; // 플레이어 제작 목록 저장
-        saveData.inventory=inventory;               // 플레이어 인벤토리 저장
-        saveData.gold = playerGold;
-        saveData.silver = playerSilver;                   // 금화와 은화 저장
+        //saveData.proficiencyDic=proficiencyDic;     // 플레이어 숙련 목록 저장
+        //saveData.craftableWeaponList=craftableList; // 플레이어 제작 목록 저장
+        //saveData.inventory=inventory;               // 플레이어 인벤토리 저장
+        //saveData.gold = playerGold;
+        //saveData.silver = playerSilver;                   // 금화와 은화 저장
 
-        dataManager.SaveData( saveData );
+        //dataManager.SaveData( saveData );
 
         #if UNITY_EDITOR
             PlayerPrefs.SetInt("IsContinuedGamePlay", 0);   //현재 세이브 로드가 불안정하므로 일시적으로 초기화

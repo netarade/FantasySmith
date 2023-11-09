@@ -6,10 +6,10 @@ using CraftData;
 using System;
 using UnityEngine.UI;
 using DataManagement;
-using static DataManagement.DataManager;
-using UnityEngine.EventSystems;
-using UnityEditor.Build.Content;
+using UnityEngine.SceneManagement;
+
 /*
+ * 
 * [작업 사항]
 * 
 * <v1.0 - 2023_1101_최원준>
@@ -73,6 +73,16 @@ using UnityEditor.Build.Content;
 * 2- 잡화 아이템 생성 시 중첩카운트에 포함되지 않고 새로운 오브젝트를 생성하던 점 수정.
 * 3- 아이템 생성 시 현재 인벤토리의 상태에 따라 이미지를 끄게 수정
 * 4- 골드와 실버 플레이어 변수 추가
+* 
+* <v4.5 - 2023_1109_최원준>
+* 1- 아이템을 생성했을 때 이미지가 꺼져있던 점을 수정. - 
+* 인벤토리가 꺼졌을 때는 하위의 이미지를 끄겠다고 생각했는데 문제는 다시 인벤토리가 켜질 때 하위의 이미지를 끈채로 시작하게 되었기 때문. 
+* (상위 부모가 꺼졌을 때는 자식 컴포넌트를 켜도 보이지 않는다. 부모가 꺼졌다고 자식 컴포넌트를 꺼버리면 자식 컴포넌트를 끈채로 시작하게 되버린다.)
+* 
+* 2- 잡화아이템 강화석 추가, MiscType을 Attribute에서 Enhancement로 변경 통일 
+* 
+* 3- 각인의 월드 사전 생성이 MiscType.Basic이었던 점을 Enhancement로 수정
+* 
 */
 
 
@@ -100,6 +110,8 @@ public class CreateManager : MonoBehaviour
     public delegate void InitEvent(); 
     public static event InitEvent PlayerInitCompleted;         // CreateManager클래스의 초기화가 이루어졌음을 알리는 대리자
     
+    
+
 
     public void Awake()
     {        
@@ -124,8 +136,12 @@ public class CreateManager : MonoBehaviour
         // 모든 월드 아이템 등록
         CreateAllItemDictionary();
 
-        
-        
+        SceneManager.sceneLoaded += OnSceneLoaded; // 씬이로드될때 새롭게 참조를 잡아준다.
+        Debug.Log("씬 호출횟수");
+
+
+
+
 
 
         #region 플레이어의 장비 아이템 복제 예시( 제작, 아이템 구매 등을 통해 인벤토리에 아이템이 생성된다.)
@@ -232,6 +248,40 @@ public class CreateManager : MonoBehaviour
 
 
 
+
+    /// <summary>
+    /// 씬이 로드되었을 때 다시 참조해주는 로직
+    /// </summary>
+    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        itemPrefab=Resources.Load<GameObject>( "ItemOrigin" );  // 리소스 폴더에서 원본 프리팹 가져오기
+        slotListTr=GameObject.Find( "SlotList" ).transform;     // 슬롯리스트를 인식 시켜 남아있는 슬롯을 확인할 것이다.
+
+        // 인스펙터뷰 상에서 달아놓은 스프라이트 이미지 집합을 참조한다.
+        iicMiscBase=GameObject.Find( "ImageCollections" ).transform.GetChild( 0 ).GetComponent<ItemImageCollection>();
+        iicMiscAdd=GameObject.Find( "ImageCollections" ).transform.GetChild( 1 ).GetComponent<ItemImageCollection>();
+        iicMiscOther=GameObject.Find( "ImageCollections" ).transform.GetChild( 2 ).GetComponent<ItemImageCollection>();
+        iicWeaponSword=GameObject.Find( "ImageCollections" ).transform.GetChild( 3 ).GetComponent<ItemImageCollection>();
+        iicWeaponBow=GameObject.Find( "ImageCollections" ).transform.GetChild( 4 ).GetComponent<ItemImageCollection>();
+
+    }
+
+
+
+
+
+
+
+
+    public void OnDestroy()
+    {
+        SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
+
+
+
+
+
     /// <summary>
     /// 가장 가까운 슬롯에 원하는 아이템을 생성합니다.<br/>
     /// 현재 인벤토리 슬롯에 빈자리가 없다면 false를 반환합니다.<br/>
@@ -300,15 +350,12 @@ public class CreateManager : MonoBehaviour
             // 스크립트 상의 item에 사전에서 클론한 아이템을 참조하게 한다.        
             itemObject.GetComponent<ItemInfo>().Item=itemClone;
 
-            // 아이템을 생성했을 때 인벤토리 위치로는 옮겨주지만, 인벤토리의 이미지가 꺼져있다면, 아이템도 꺼져있어야 한다.
-            itemObject.GetComponent<Image>().enabled = InventoryManagement.isInventoryOn;
-
             if( itemClone.Type==ItemType.Misc )
             {
-                itemObject.GetComponentInChildren<Text>().enabled = InventoryManagement.isInventoryOn;              // 오브젝트의 갯수를 반영하는 텍스트를 켜고
+                itemObject.GetComponentInChildren<Text>().enabled = true;                                           // 오브젝트의 갯수를 반영하는 텍스트를 켜고
                 itemObject.GetComponentInChildren<Text>().text = ((ItemMisc)itemClone).InventoryCount.ToString();   // 오브젝트에도 중첩횟수를 표시해 줍니다.
             }
-            else
+            else if(itemClone.Type==ItemType.Weapon)
                 itemObject.GetComponentInChildren<Text>().enabled = false;  // 오브젝트의 갯수를 반영하는 텍스트를 끕니다.
 
             inventoryList.Add( itemObject );    // 인벤토리는 GameObject 인스턴스를 보관함으로서 transform정보와 개념 아이템을 정보를 포함하게 된다.
@@ -459,26 +506,27 @@ public class CreateManager : MonoBehaviour
             { "물소의 뿔", new ItemMisc( ItemType.Misc, MiscType.Additive,"0000315", "물소의 뿔", 15.0f, iicMiscAdd.icArrImg[15] ) },
             { "짐승 가죽", new ItemMisc( ItemType.Misc, MiscType.Additive,"0000316", "짐승 가죽", 6.0f, iicMiscAdd.icArrImg[16] ) },
             
-            { "초급 물리의 각인", new ItemMisc( ItemType.Misc, MiscType.Basic,"0000700", "초급 물리의 각인", 50.0f, iicMiscOther.icArrImg[0] ) },
-            { "초급 공속의 각인", new ItemMisc( ItemType.Misc, MiscType.Basic,"0000701", "초급 공속의 각인", 50.0f, iicMiscOther.icArrImg[1] ) },
-            { "초급 흡혈의 각인", new ItemMisc( ItemType.Misc, MiscType.Basic,"0000702", "초급 흡혈의 각인", 50.0f, iicMiscOther.icArrImg[2] ) },
-            { "초급 사격의 각인", new ItemMisc( ItemType.Misc, MiscType.Basic,"0000703", "초급 사격의 각인", 50.0f, iicMiscOther.icArrImg[3] ) },
-            { "초급 피해의 각인", new ItemMisc( ItemType.Misc, MiscType.Basic,"0000704", "초급 피해의 각인", 50.0f, iicMiscOther.icArrImg[4] ) },
-            { "중급 물리의 각인", new ItemMisc( ItemType.Misc, MiscType.Basic,"0000705", "중급 물리의 각인", 125.0f, iicMiscOther.icArrImg[0] ) },
-            { "중급 공속의 각인", new ItemMisc( ItemType.Misc, MiscType.Basic,"0000706", "중급 공속의 각인", 125.0f, iicMiscOther.icArrImg[1] ) },
-            { "중급 흡혈의 각인", new ItemMisc( ItemType.Misc, MiscType.Basic,"0000707", "중급 흡혈의 각인", 125.0f, iicMiscOther.icArrImg[2] ) },
-            { "중급 사격의 각인", new ItemMisc( ItemType.Misc, MiscType.Basic,"0000708", "중급 사격의 각인", 125.0f, iicMiscOther.icArrImg[3] ) },
-            { "중급 피해의 각인", new ItemMisc( ItemType.Misc, MiscType.Basic,"0000709", "중급 피해의 각인", 125.0f, iicMiscOther.icArrImg[4] ) },
-            { "고급 물리의 각인", new ItemMisc( ItemType.Misc, MiscType.Basic,"0000710", "고급 물리의 각인", 200.0f, iicMiscOther.icArrImg[0] ) },
-            { "고급 공속의 각인", new ItemMisc( ItemType.Misc, MiscType.Basic,"0000711", "고급 공속의 각인", 200.0f, iicMiscOther.icArrImg[1] ) },
-            { "고급 흡혈의 각인", new ItemMisc( ItemType.Misc, MiscType.Basic,"0000712", "고급 흡혈의 각인", 200.0f, iicMiscOther.icArrImg[2] ) },
-            { "고급 사격의 각인", new ItemMisc( ItemType.Misc, MiscType.Basic,"0000713", "고급 사격의 각인", 200.0f, iicMiscOther.icArrImg[3] ) },
-            { "고급 피해의 각인", new ItemMisc( ItemType.Misc, MiscType.Basic,"0000714", "고급 피해의 각인", 200.0f, iicMiscOther.icArrImg[4] ) },
+            { "초급 물리의 각인", new ItemMisc( ItemType.Misc, MiscType.Enhancement,"0000700", "초급 물리의 각인", 50.0f, iicMiscOther.icArrImg[0] ) },
+            { "초급 공속의 각인", new ItemMisc( ItemType.Misc, MiscType.Enhancement,"0000701", "초급 공속의 각인", 50.0f, iicMiscOther.icArrImg[1] ) },
+            { "초급 흡혈의 각인", new ItemMisc( ItemType.Misc, MiscType.Enhancement,"0000702", "초급 흡혈의 각인", 50.0f, iicMiscOther.icArrImg[2] ) },
+            { "초급 사격의 각인", new ItemMisc( ItemType.Misc, MiscType.Enhancement,"0000703", "초급 사격의 각인", 50.0f, iicMiscOther.icArrImg[3] ) },
+            { "초급 피해의 각인", new ItemMisc( ItemType.Misc, MiscType.Enhancement,"0000704", "초급 피해의 각인", 50.0f, iicMiscOther.icArrImg[4] ) },
+            { "중급 물리의 각인", new ItemMisc( ItemType.Misc, MiscType.Enhancement,"0000705", "중급 물리의 각인", 125.0f, iicMiscOther.icArrImg[0] ) },
+            { "중급 공속의 각인", new ItemMisc( ItemType.Misc, MiscType.Enhancement,"0000706", "중급 공속의 각인", 125.0f, iicMiscOther.icArrImg[1] ) },
+            { "중급 흡혈의 각인", new ItemMisc( ItemType.Misc, MiscType.Enhancement,"0000707", "중급 흡혈의 각인", 125.0f, iicMiscOther.icArrImg[2] ) },
+            { "중급 사격의 각인", new ItemMisc( ItemType.Misc, MiscType.Enhancement,"0000708", "중급 사격의 각인", 125.0f, iicMiscOther.icArrImg[3] ) },
+            { "중급 피해의 각인", new ItemMisc( ItemType.Misc, MiscType.Enhancement,"0000709", "중급 피해의 각인", 125.0f, iicMiscOther.icArrImg[4] ) },
+            { "고급 물리의 각인", new ItemMisc( ItemType.Misc, MiscType.Enhancement,"0000710", "고급 물리의 각인", 200.0f, iicMiscOther.icArrImg[0] ) },
+            { "고급 공속의 각인", new ItemMisc( ItemType.Misc, MiscType.Enhancement,"0000711", "고급 공속의 각인", 200.0f, iicMiscOther.icArrImg[1] ) },
+            { "고급 흡혈의 각인", new ItemMisc( ItemType.Misc, MiscType.Enhancement,"0000712", "고급 흡혈의 각인", 200.0f, iicMiscOther.icArrImg[2] ) },
+            { "고급 사격의 각인", new ItemMisc( ItemType.Misc, MiscType.Enhancement,"0000713", "고급 사격의 각인", 200.0f, iicMiscOther.icArrImg[3] ) },
+            { "고급 피해의 각인", new ItemMisc( ItemType.Misc, MiscType.Enhancement,"0000714", "고급 피해의 각인", 200.0f, iicMiscOther.icArrImg[4] ) },
             
             { "나무", new ItemMisc( ItemType.Misc, MiscType.Fire, "0000600", "나무", 1.0f, iicMiscOther.icArrImg[5] ) },
             { "석탄", new ItemMisc( ItemType.Misc, MiscType.Fire, "0000601", "석탄", 6.0f, iicMiscOther.icArrImg[6] ) },
             { "석유", new ItemMisc( ItemType.Misc, MiscType.Fire, "0000602", "석유", 15.0f, iicMiscOther.icArrImg[7] ) },
-            { "속성석", new ItemMisc( ItemType.Misc, MiscType.Attribute,"0000610", "속성석", 500.0f, iicMiscOther.icArrImg[8] ) }, 
+            { "속성석", new ItemMisc( ItemType.Misc, MiscType.Enhancement,"0000610", "속성석", 500.0f, iicMiscOther.icArrImg[8] ) }, 
+            { "강화석", new ItemMisc( ItemType.Misc, MiscType.Enhancement,"0000611", "강화석", 50.0f, iicMiscOther.icArrImg[9] ) }, 
         };
 
         weaponDic=new Dictionary<string, Item>()

@@ -30,7 +30,7 @@ using UnityEngine.SceneManagement;
 * 1- 플레이어 인벤토리를 GameObject를 보관하는 weapList, miscList로 분리하여 관리하고 구조체로 통합
 * 
 * <v3.1 - 2023_1105_최원준>
-* 1- ItemInfo의 OnItemAdded 메서드의 호출 방식 내부자동 호출 변경으로 인해서 
+* 1- ItemInfo의 OnItemChanged 메서드의 호출 방식 내부자동 호출 변경으로 인해서 
 * 해당 메서드 사용구문을 삭제
 * 2- CreateManager의 접근 편리성과 딕셔너리 및 메서드 항시 상주화 필요성으로 인해 싱글톤으로 수정. 
 * 
@@ -83,6 +83,13 @@ using UnityEngine.SceneManagement;
 * 
 * 3- 각인의 월드 사전 생성이 MiscType.Basic이었던 점을 Enhancement로 수정
 * 
+* <v5.0 - 2023_1112_최원준>
+* 1- CreateItemToNearstSlot메서드에 클론한 아이템을 등록할 때 (오브젝트의 중첩텍스트를 켜는) 불필요한 중복코드를 집어넣었던 점을 수정
+* 
+* <v6.0 - 2023_1115_최원준>
+* 1- 인벤토리 클래스 딕셔너리 전환으로 인한 Create메서드 대폭 수정
+* 2- ItemInfo 클래스에서 item 값 입력 시 자동 메서드 호출로 인한 중복코드 수정
+* 3- Create메서드 내부 지역 변수명이 itemInfo로 되어있던 점을 itemMisc으로 수정 
 */
 
 
@@ -303,7 +310,7 @@ public class CreateManager : MonoBehaviour
         // 사전의 개념 아이템을 클론하여 (아이템 원형을 복제해서) 또 다른 개념 아이템을 생성한다.
         Item itemClone = null;
 
-        if( weaponDic.ContainsKey( itemName ) )                     // 무기라면 무조건 복제한다.
+        if( weaponDic.ContainsKey( itemName ) )                     // 무기라면 무조건 복제한다. (중첩될 일이 없으므로)
         {
             itemClone=(ItemWeapon)weaponDic[itemName].Clone();
         }
@@ -311,14 +318,15 @@ public class CreateManager : MonoBehaviour
         {  
             for( int i = 0; i<inventoryList.Count; i++ )           // 아이템이 생성될 때마다 플레이어의 잡화 목록을 검사한다.
             {
-                ItemMisc itemInfo = (ItemMisc)inventoryList[i].GetComponent<ItemInfo>().item;  // 해당 오브젝트의 개념아이템 정보를 뽑아옵니다
+                ItemMisc itemMisc = (ItemMisc)inventoryList[i].GetComponent<ItemInfo>().item;  // 해당 오브젝트의 개념아이템 정보를 뽑아옵니다
 
 
-                if( itemInfo.Name==itemName )                  // 잡화 아이템의 이름이 일치한다면,
+                if( itemMisc.Name==itemName )                  // 잡화 아이템의 이름이 일치한다면,
                 {
-                    itemInfo.InventoryCount += count;          // 중첩 횟수를 받은 인자 만큼 늘리고
-                    inventoryList[i].GetComponentInChildren<Text>().text  
-                        = itemInfo.InventoryCount.ToString();               // 아이템 오브젝트에도 중첩 수를 반영합니다.
+                    itemMisc.InventoryCount += count;          // 중첩 횟수를 받은 인자 만큼 늘리고
+                    inventoryList[i].GetComponent<ItemInfo>().UpdateCountTxt(); 
+                    // 아이템 오브젝트에도 중첩 수를 반영합니다.
+                    // (이 경우는 클론을 따로 만들지 않기 때문에 직접 오브젝트에 접근하여 업데이트 해주어야 합니다.)
                     break;                                     // 한번 걸리면 반복문을 탈출합니다.
                 }
                 else if( i==inventoryList.Count-1 )                        // 마지막 잡화목록에서도 일치하는 이름이 없다면,
@@ -328,15 +336,15 @@ public class CreateManager : MonoBehaviour
                 }
             }
             
-             if(inventoryList.Count==0) // 잡화 인벤토리가 비었다면 (위의 for문이 돌아가지 않았다면)
-             {
+            if(inventoryList.Count==0) // 잡화 인벤토리가 비었다면 (위의 for문이 돌아가지 않았다면)
+            {
                 itemClone = (ItemMisc)miscDic[itemName].Clone();        // 개념아이템을 클론하고,
                 ( (ItemMisc)itemClone ).InventoryCount=count;           // 클론의 중첩 갯수를 받은 인자로 지정합니다.
-             }
+            }
         }
         else // 어떤 이름도 일치하지 않는다면 예외를 발생 시킨다.
         {
-            throw new Exception("아이템 명이 정확하게 일치하지 않습니다. 확인하여 주세요.");
+            throw new Exception("생성 할 아이템 명이 정확하게 일치하지 않습니다. 확인하여 주세요.");
         }
 
         if( itemClone!=null )   // 클론이 성공적으로 복제되었다면, (잡화의 경우 기존의 아이템이 있다면 복제되지 않는다.)
@@ -347,25 +355,29 @@ public class CreateManager : MonoBehaviour
             // 슬롯리스트의 해당 슬롯에 게임 상에서 보여 질 오브젝트를 생성하여 배치한다.
             GameObject itemObject = Instantiate( itemPrefab, slotListTr.GetChild( findSlotIdx ) );
 
-            // 스크립트 상의 item에 사전에서 클론한 아이템을 참조하게 한다.        
+            // 스크립트 상의 item에 사전에서 클론한 아이템을 참조하게 한다. (내부적으로 OnItemChanged()메서드가 호출되어 자동으로 오브젝트에 정보를 동기화)       
             itemObject.GetComponent<ItemInfo>().Item=itemClone;
-
-            if( itemClone.Type==ItemType.Misc )
-            {
-                itemObject.GetComponentInChildren<Text>().enabled = true;                                           // 오브젝트의 갯수를 반영하는 텍스트를 켜고
-                itemObject.GetComponentInChildren<Text>().text = ((ItemMisc)itemClone).InventoryCount.ToString();   // 오브젝트에도 중첩횟수를 표시해 줍니다.
-            }
-            else if(itemClone.Type==ItemType.Weapon)
-                itemObject.GetComponentInChildren<Text>().enabled = false;  // 오브젝트의 갯수를 반영하는 텍스트를 끕니다.
-
+                              
             inventoryList.Add( itemObject );    // 인벤토리는 GameObject 인스턴스를 보관함으로서 transform정보와 개념 아이템을 정보를 포함하게 된다.
-            //CraftManager.instance.inventory.miscList = inventoryList;
-            print("메서드 " + inventoryList.Count);
-            print("매니저 " + CraftManager.instance.inventory.miscList.Count);
+            
+            print("메서드에서의 리스트 갯수: " + inventoryList.Count);
+            print("매니저에서의 리스트 갯수: " + CraftManager.instance.inventory.miscList.Count);
         }
 
         return true;
     }
+
+    /// <summary>
+    /// 개념 아이템 정보가 이미 있다면 이를 가지고 그에 맞는 아이템 오브젝트를 만들어 줍니다.
+    /// </summary>
+    /// <param name="item"></param>
+    public GameObject CreateItemByInfo(Item item)
+    {
+        GameObject itemObject = Instantiate(itemPrefab);    // 프리팹하나를 복제해 옵니다.
+        itemObject.GetComponent<ItemInfo>().Item = item;    // 아이템 정보 할당이 이루어질 때 자동으로 이미지,수량,위치가 동기화 됩니다.
+
+        return itemObject;
+    }    
 
 
 
@@ -443,7 +455,7 @@ public class CreateManager : MonoBehaviour
     /// </summary>
     private void CreateNewPlayerInventory( GameData loadData )
     {
-        loadData.inventory=new PlayerInventory();   // 새로운 플레이어 인벤토리를 만들어 넣어준다.
+        loadData.inventory=new Inventory();   // 새로운 플레이어 인벤토리를 만들어 넣어준다.
         print( "엔벤토리 초기화 완료" );
     }
 

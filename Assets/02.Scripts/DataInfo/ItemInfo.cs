@@ -18,36 +18,68 @@ using Unity.VisualScripting;
  * 인스턴스가 생성되어 이미지 컴포넌트를 잡기 시작하면 OnItemAdded와 호출 시점이 동시성을 가져서 스프라이트 이미지가 변경되지 않는다.
  * 
  * <v3.0 - 2023-1105_최원준>
- * 1- 개념아이템 변수인 item을 프로퍼티화 시켜서 set이 호출되었을 때 OnItemAdded()가 호출되도록 변경 
+ * 1- 개념아이템 변수인 item을 프로퍼티화 시켜서 set이 호출되었을 때 OnItemChanged()가 호출되도록 변경 
  * OnItemAdded는 private처리 및 내부 예외처리 구문 삭제
  *
  *<v4.0 - 2023_1108_최원준>
  *1- 아이템이 파괴될 때 정보를 저장하도록 구현하였으나, 모든아이템의 기록이 저장되지 않는 문제발생
  *=> 아이템쪽에서 파괴될떄마다 딕셔너리를 생성해서 CraftManager쪽에서 마지막에 한번 미리 생성해주도록 변경
  *
- *2- OnItemAdded 메서드 주석추가
+ *2- OnItemChanged 메서드 주석추가
  *
  *3- UpdateCountTxt 메서드 추가
  * 아이템 수량이 변경 될때 동적으로 텍스트를 수정해주도록 하였음.
  * item쪽에서 메서드를 가지고 있음으로 해서 편리한 접근성 확보.
  *
+ *<v5.0 - 2023_1112_최원준>
+ *1- OnItemAdded메서드 추가수정. (CreateManager쪽에서 중복코드 사용하고 있던 점 수정 및 통합, 주석 추가) 
+ *
+ *<v6.0 - 2023_1114_최원준>
+ *1- OnItemAdded메서드를 OnItemChanged로 이름변경
+ *2- ItemInfo 클래스 설명 주석 추가
+ *3- private 메서드 public 메서드로 변경
+ *4- 멤버 변수 item이 public되어있던 점을 private 처리. 반드시 프로퍼티를 통한 초기화를 위해
+ *
  */
 
 
 /// <summary>
-/// 게임 상의 아이템 오브젝트는 이 클래스를 컴포넌트로 가져야합니다.
+/// 게임 상의 아이템 오브젝트는 이 클래스를 컴포넌트로 가져야합니다.<br/><br/>
+/// 
+/// ItemInfo 스크립트가 컴포넌트로 붙은 아이템 오브젝트의 자체적인 기능은 다음과 같습니다.<br/>
+/// (ItemInfo의 개념 아이템 인스턴스인 item이 할당될 때 자동으로 이루어집니다.)<br/><br/>
+/// 
+/// 1.오브젝트의 이미지를 개념 아이템의 정보와 대조하여 채웁니다.<br/>
+/// 2.잡화아이템의 경우 중첩횟수를 아이템정보와 비교하여 표시하여 줍니다. 비잡화 아이템의 경우 텍스트를 끕니다.<br/>
+/// 3.인벤토리 슬롯 상의 포지션을 아이템 정보와 대조하여 해당 슬롯에 위치시킵니다.<br/><br/>
+/// 
+/// 주의) 아이템의 내부 정보가 바뀔 때 마다 최신 정보를 오브젝트에 반영해야 합니다.<br/>
+/// 1,2,3의 경우 각 메서드를 따로 호출 할 수 있으며 모든 것을 한번에 호출하는  OnItemChanged메서드가 있습니다.<br/>
 /// </summary>
 public class ItemInfo : MonoBehaviour
 {
-    public Item item;               // 모든 아이템 클래스를 관리 가능한 변수
+    private Item item;               // 모든 아이템 클래스를 관리 가능한 변수
     public Image innerImage;        // 아이템이 인벤토리에서 보여질 이미지 (오브젝트의 이미지 컴포넌트를 말한다.)
-    public Text countTxt;
+    public Text countTxt;           // 잡화 아이템의 수량을 반영할 텍스트
+    public Transform slotList;      // 아이템이 놓이게 될 슬롯 들의 부모인 슬롯리스트를 참조
 
+
+    public void Start()
+    {
+        countTxt = GetComponentInChildren<Text>();
+        slotList = GameObject.Find("Inventory").transform.GetChild(0);
+    }
+
+
+    /// <summary>
+    /// 클론 한 Item 인스턴스를 저장하고, 저장 되어있는 인스턴스를 불러올 수 있습니다.<br/> 
+    /// 아이템이 저장될 때 자동으로 OnItemChanged()메서드를 호출하여 오브젝트 상의 정보를 반영합니다.
+    /// </summary>
     public Item Item                // 외부에서 개념아이템을 참조시킬 때 호출해야할 프로퍼티
     {
         set {
                 item =  value;
-                OnItemAdded();      // 개념아이템 참조값이 들어오면 내부에서 자동 호출해준다. 
+                OnItemChanged();      // 개념아이템 참조값이 들어오면 내부에서 자동 호출해준다. 
             }
         get {return item;}
     }
@@ -65,27 +97,63 @@ public class ItemInfo : MonoBehaviour
 
     /// <summary>
     /// 오브젝트에 item의 참조가 이루어졌다면 item이 가지고 있는 이미지를 반영하고 잡화아이템의 경우 중첩 횟수까지 최신화 합니다.<br/>
-    /// private 로 내부 자동 호출이 이루어지는 메서드이기에 사용자는 신경쓸 필요가 없습니다.
+    /// 오브젝트의 아이템 값을 입력할 때는 내부 자동 호출이 이루어지는 메서드이기에 아이템 정보 변동이 있을 때만 따로 호출하시면 됩니다.
     /// </summary>
-    private void OnItemAdded()
+    public void OnItemChanged()
+    {
+        UpdateImage();
+        UpdateCountTxt();
+        UpdatePosition();
+    }
+
+    /// <summary>
+    /// 아이템의 이미지 정보를 받아와서 오브젝트에 반영합니다.
+    /// </summary>
+    public void UpdateImage()
     {
         innerImage.sprite = item.Image.innerSprite;   // 현재 아이템의 이미지 정보를 가져옵니다.
-
-        if( item.Type==ItemType.Misc )                // 잡화 아이템의 중첩 갯수를 표시합니다.
-        {
-            countTxt.enabled=true;
-            countTxt.text = ((ItemMisc)item).InventoryCount.ToString();
-        }
     }
+
 
     /// <summary>
     /// 잡화 아이템의 중첩횟수를 동적으로 수정합니다. 잡화 아이템의 수량이 변경될 때 마다 호출해 주십시오.
     /// </summary>
     public void UpdateCountTxt()
     {
-        if( item.Type == ItemType.Misc )
+        if( item.Type==ItemType.Misc )                // 잡화 아이템의 중첩 갯수를 표시합니다.
+        {
+            countTxt.enabled=true;
             countTxt.text = ((ItemMisc)item).InventoryCount.ToString();
+        }
+        else
+            countTxt.enabled = false;                // 잡화아이템이 아니라면 중첩 텍스트를 비활성화합니다.
     }
+
+
+    // 새로운 아이템 정보 참조 시 (Item인스턴스를 꺼내서 새로운 오브젝트 만들어서 Item인스턴스를 저장했을 때)
+
+
+    // 수량 변경으로 0이 되었을 때 파괴 행위. (현재 어디서 검사하고있음? => CraftManagement에서 CraftManager.instance.UpdateInventoryText(true); 를 호출하고 있다)
+    // 문제점. 일시적으로 -가되었을 때 파괴시킬 것인가
+    // 제거는 오브젝트 뿐만 아니라 인벤토리의 리스트에서도 사라져야 한다. 제거된 참조값이 남아있으면 안된다.
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <returns>반환 값은 아이템의 슬롯 넘버입니다.</returns>
+    public int RemoveItemObject()
+    {
+
+    }
+
+
+    // 아이템의 위치정보 반영  (현재 어디서 아이템 위치를 참조해서 슬롯에 넣어주고 있는가? => CreateManager에서 Instantiate할때 미리 붙인다.)
+    public void UpdatePosition()
+    {
+        transform.SetParent( slotList.GetChild(item.SlotIndex) );  // 오브젝트의 현 부모를 아이템 정보상의 슬롯 위치로 변경한다.
+        transform.localPosition = Vector3.zero;                    // 로컬위치를 부모기준으로부터 0,0,0으로 맞춘다.
+    }
+
 
 
 

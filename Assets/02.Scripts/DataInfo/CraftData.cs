@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 /*
@@ -16,6 +15,13 @@ using UnityEngine;
  * 
  * 3- 제작목록을 통합목록 리스트에서 CraftableWeaponList 클래스로 변경하여 각 종류별 이름을 보관하도록 변경
  * => 제작 1단계에서 드롭다운 버튼으로 무기 종류별로 제작 목록을 보여줄 필요성이 있기 때문 
+ * 
+ * <v3.0 - 2023_1112_최원준>
+ * 1- 인벤토리 변수 이름변경(InvnetoryMaxCount->TotalMaxCount)
+ * 2- 인벤토리 클래스명 PlayerInventory에서 Inventory로 변경
+ * 
+ * <v4.0 - 2023_1113_최원준>
+ * 1- 분량 관계로 Ivnentory 클래스를 Inventory.cs파일로 분리하였음. (namespace는 그대로)
  */
 
 
@@ -44,41 +50,7 @@ namespace CraftData
         }
     }
 
-    /// <summary>
-    /// 인벤토리를 정의하는 클래스, 내부에 GameObject를 저장하는 weapList와 miscList가 있다. save, Load시 저장해야 한다.
-    /// </summary>
-    [Serializable]
-    public class PlayerInventory
-    {
-        /// <summary>
-        /// 플레이어가 보유하고 있는 무기 아이템 목록입니다. 게임오브젝트를 저장합니다. 변동 사항이 있다면 수정해야 합니다.
-        /// </summary>
-        public List<GameObject> weapList;
-
-        /// <summary>
-        /// 플레이어가 보유하고 있는 잡화 아이템 목록 입니다. 게임오브젝트를 저장합니다. 변동 사항이 있다면 수정해야 합니다.
-        /// </summary>
-        public List<GameObject> miscList;
-
-        /// <summary>
-        /// 플레이어 인벤토리의 최대 칸수 입니다. 게임 중에 업그레이드 등으로 인해 변동될 수 있습니다.
-        /// </summary>
-        public int InventoryMaxCount;
-
-        public PlayerInventory()
-        {            
-            weapList = new List<GameObject>(){};
-            miscList = new List<GameObject>(){};
-            InventoryMaxCount = 50;
-        }
-
-        public PlayerInventory(List<GameObject> weapList, List<GameObject> miscList, int InventoryMaxCount )
-        {
-            this.weapList = weapList;
-            this.miscList = miscList;
-            this.InventoryMaxCount = InventoryMaxCount;
-        }
-    }    
+        
 
 
     /// <summary>

@@ -58,7 +58,7 @@ public class CraftManager : MonoBehaviour
     /// 플레이어가 보유하고 있는 인벤토리 관련 정보의 집합 클래스입니다. <br/>
     /// 게임 중에 변경사항이 있다면 이 변수를 수정해야 합니다.
     /// </summary>
-    public PlayerInventory inventory;
+    public Inventory inventory;
 
 
     /*** 접근의 편리함을 위해 추가 선언하였음. ***/

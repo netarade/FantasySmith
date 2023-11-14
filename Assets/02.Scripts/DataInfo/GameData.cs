@@ -54,13 +54,6 @@ namespace DataManagement
         /// </summary>
         public Transform playerTr;
 
-
-        /// <summary>
-        /// 현재 플레이어가 보관하고 있는 인벤토리 정보입니다. 게임오브젝트를 보관하는 weapList와 playerMiscList 및 InventoryMaxCount 등이 있습니다.
-        /// </summary>
-        public PlayerInventory inventory;
-
-
         /// <summary>
         /// 제작 가능 목록을 종류 별 string name으로 보관하는 리스트들의 집합 클래스 입니다.
         /// </summary>
@@ -70,57 +63,66 @@ namespace DataManagement
         /// 장비 숙련도 목록을 name과 CraftProficincy구조체형 으로 보관하여 빠르게 접근을 가능하게 해줍니다.
         /// </summary>
         public Dictionary<string, CraftProficiency> proficiencyDic;
-               
-
-
-
-
-
-
-
-
-
 
         
-        // 미구현 클래스 및 메서드
-        //public PlayerInventory saveInventory
-        //{
-        //    set { loadInventory=new SerializableInventory( value ); }
-        //}
 
-        //SerializableInventory loadInventory;
+        /// <summary>
+        /// 현재 플레이어가 보관하고 있는 인벤토리 정보입니다. 게임오브젝트를 보관하는 weapList와 playerMiscList 및 TotalMaxCount 등이 있습니다.
+        /// </summary>
+        public Inventory inventory
+        {
+            set{ 
+                //saveInventory = new SerializableInventory( value );                
+            }
+            get{ 
+                //Inventory loadInventory = new Inventory(saveInventory.weapList,saveInventory.miscList, saveInventory.TotalMaxCount);
+                return new Inventory(); }
+        }
+        // 미구현 클래스 및 메서드
+        
+        private SerializableInventory saveInventory;
+        private List<GameObject> ConvertListTypeItemToGameObject(List<Item> itemList)
+        {
+            List<GameObject> gameObjectList = new List<GameObject>();
+            return gameObjectList;
+        }
+
+
+
+
 
     }
 
-    //[Serializable]
-    //public class SerializableInventory
-    //{
-    //    public List<ItemInfo> weapList;
-    //    public List<ItemInfo> miscList;
-    //    public int InventoryMaxCount; 
+    [Serializable]
+    public class SerializableInventory
+    {
+        public List<Item> weapList;
+        public List<Item> miscList;
+        public int InventoryMaxCount;
 
-    //    public SerializableInventory(PlayerInventory inventory)
-    //    {
-    //        foreach( GameObject item in inventory.weapList )
-    //           this.weapList.Add( item.GetComponent<ItemInfo>() );
+        //public SerializableInventory( Inventory inventory )
+        //{
+        //    foreach( GameObject item in inventory.weapList )
+        //        this.weapList.Add( item.GetComponent<ItemInfo>() );
 
-    //        foreach( GameObject item in inventory.miscList )
-    //            this.miscList.Add( item.GetComponent<ItemInfo>() );
+        //    foreach( GameObject item in inventory.miscList )
+        //        this.miscList.Add( item.GetComponent<ItemInfo>() );
 
-    //        this.InventoryMaxCount = inventory.InventoryMaxCount;
-    //    }
+        //    this.TotalMaxCount=inventory.TotalMaxCount;
+        //}
 
-    //    public PlayerInventory Load()
-    //    {
-    //        CreateManager.instance.CreateItemByItemInfo
+        //public Inventory Load()
+        //{
+        //    CreateManager.instance.CreateItemByItemInfo
 
-    //        for(int i=0; i<weapList.Count; i++)
-    //            weapList[i].item.Type == ItemType.Misc
-            
-    //        PlayerInventory loadInventory = new PlayerInventory();
-    //    }
+        //    for( int i = 0; i<weapList.Count; i++ )
+        //        weapList[i].item.Type==ItemType.Misc
 
-    //}
+
+        //    Inventory loadInventory = new Inventory();
+        //}
+
+    }
 
 
 }

@@ -23,6 +23,10 @@ using Unity.VisualScripting;
  * 
  * <v2.0 - 2023_1109_최원준>
  * 1- 각인 판넬 추가 및 각인 활성화 조절, 정보 반영
+ * 
+ * <v2.1 - 2023-1112_최원준>
+ * 1- 상태창 위치를 아이템 바로 옆에서 보일 수 있게 수정
+ * 2- 상태창이 다른 이미지와 겹치는 경우 가장 앞에 표시될 수 있도록 수정
  */
 
 
@@ -49,8 +53,8 @@ public class ItemPointerStatusWindow : MonoBehaviour, IPointerEnterHandler, IPoi
     [SerializeField] private Text[] txtNameArr;                     // 각인 이름     
     [SerializeField] private Text[] txtDescArr;                     // 각인 설명
 
-
-
+    RectTransform statusRectTr; // 상태창의 렉트 트랜스폼
+    RectTransform itemRectTr;   // 아이템의 렉트 트랜스폼
 
     void Start()
     {        
@@ -75,8 +79,9 @@ public class ItemPointerStatusWindow : MonoBehaviour, IPointerEnterHandler, IPoi
             txtNameArr[i] = PanelEngraveArr[i].transform.GetChild(1).GetComponent<Text>();
             txtDescArr[i] = PanelEngraveArr[i].transform.GetChild(2).GetComponent<Text>();
         }
-        
-
+        statusRectTr = statusWindow.GetComponent<RectTransform>();
+        itemRectTr = this.gameObject.GetComponent<RectTransform>();
+        statusRectTr.SetAsLastSibling();  // 상태창을 캔버스의 최하위 자식으로 배치하여 이미지 표시 우선순위를 높게 한다.          
     }
     
 
@@ -89,12 +94,16 @@ public class ItemPointerStatusWindow : MonoBehaviour, IPointerEnterHandler, IPoi
             return;
 
 
-
         /*** 아이템 종류 상관없이 공통 로직 ***/
         statusWindow.SetActive(true);               // 상태창 활성화
-        statusWindow.transform.localPosition 
-            = transform.position + Vector3.left*350f + Vector3.down*600f; //상태창의 위치
+
+        statusRectTr.position = itemRectTr.position
+            + Vector3.right*(statusRectTr.sizeDelta.x/2 + itemRectTr.sizeDelta.x/2 + 50f);  
+        //상태창의 위치는 아이템 위치로부터 상태창 크기, 아이템크기를 고려하여 우측으로 떨어진 거리이다.
     
+        
+
+
         imageItem.sprite = item.Image.statusSprite; // 이미지에 등록한 statusSprite 이미지를 보여준다.
         txtName.text = item.Name;                   // 이름 텍스트에 아이템 이름을 보여준다.
         txtDesc.text = item.Name;                   // 설명 텍스트에 아이템 이름을 임시적으로 보여준다.

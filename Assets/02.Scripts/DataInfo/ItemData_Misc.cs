@@ -15,6 +15,12 @@ using UnityEngine;
  * <v1.1 - 2023_1109_최원준>
  * 1- 강화석을 추가하기 위해 MiscType의 Attribute를 Enhancement로 통일
  * 
+ * <v2.0 - 2023_1112_최원준>
+ * 1- 인벤토리 수량이 99를 초과한 경우 예외를 발생시키는 것이 아니라 새로운 슬롯에 생성되게 수정하였음.
+ * 그에 따라 CreateManager의 Create메서드도 수정
+ * 
+ * <v2.1 - 2023_1115_최원준>
+ * 1- 잡화 아이템의 최대 수량을 static 클래스 변수 MaxCount로 선언 및 주석 및 설명 수정
  */
 
 
@@ -31,24 +37,24 @@ namespace ItemData
     /// </summary>
     public enum StatType { Power, Speed, Leech, Range, Splash }
     
-
     /// <summary>
     /// 잡화 아이템 - 기본 아이템과 다른점은 인벤토리에 중복해서 쌓을 수 있다는 점 (count가 존재)
     /// </summary>
     public sealed class ItemMisc : Item
     {        
         private int iInventoryCount;  // 인벤토리 중첩 횟수
+        public static int MaxCount = 99;
 
         /// <summary>
         /// 잡화 아이템의 중첩횟수를 표시합니다. 기본 값은 1입니다.<br/>
-        /// **인벤토리 수량이 99를 초과하면 예외를 발생시킵니다.**
+        /// **인벤토리 수량이 ItemMisc.MaxCount를 초과하면 예외를 발생시킵니다.**
         /// </summary>
         public int InventoryCount { 
             set { 
                     iInventoryCount = value; 
 
-                    if(iInventoryCount>99)
-                        throw new Exception("인벤토리 수량이 99를 초과하였습니다.");                    
+                    if(iInventoryCount > MaxCount)
+                        throw new Exception($"인벤토리 수량이 {MaxCount}를 초과하였습니다.");                    
                 }
             get { return iInventoryCount; }
         }

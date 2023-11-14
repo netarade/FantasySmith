@@ -254,10 +254,10 @@ public partial class CraftManagement : MonoBehaviour
             print( playerItem.Name );
             if( dicMaterial.ContainsKey( playerItem.Name ) ) // 꺼낸 아이템 중에 이름과 일치하는 것이 있는지 본다.
             {
-                if( playerItem.InventoryCount>=dicMaterial[playerItem.Name] ) // 재료가 플레이어 쪽이 더 많다면
+                if( playerItem.InventoryCount>=dicMaterial[playerItem.Name] )   // 재료가 플레이어 쪽이 더 많다면
                 {
-                    playerItem.InventoryCount-=dicMaterial[playerItem.Name];  // 일단 갯수를 제외 해준다.
-                    targetMiscItem[foundCount]=playerItem;                        // 찾은 타겟 배열에 등록한다.
+                    playerItem.InventoryCount-=dicMaterial[playerItem.Name];    // 일단 갯수를 제외 해준다.
+                    targetMiscItem[foundCount]=playerItem;                      // 찾은 타겟 배열에 등록한다.
                     foundCount++;                                               // 찾은 갯수를 증가시킨다.
                 }
             }
@@ -285,7 +285,7 @@ public partial class CraftManagement : MonoBehaviour
             panelCraftLev2Txt.text = "제작에 실패하였습니다.";
             Debug.Log( "제작에 실패했습니다." );
         }
-        CraftManager.instance.UpdateInventoryText(true);
+        CraftManager.instance.UpdateInventoryText(true);    // (수량 제외로 인한) 아이템의 정보를 최신화 시켜줘야 한다.
     }
 
     

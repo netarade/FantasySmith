@@ -40,6 +40,14 @@ using Unity.VisualScripting;
  *3- private 메서드 public 메서드로 변경
  *4- 멤버 변수 item이 public되어있던 점을 private 처리. 반드시 프로퍼티를 통한 초기화를 위해
  *
+ *<v7.0 - 2023_1116_최원준>
+ *1- ItemInfo 클래스가 ItemImageCollection 멤버변수를 포함하여 외부이미지를 참조하도록 설정하였습니다. 
+ *(CreateManager에 있던 참조 변수를 옮겨옴.)
+ *
+ *2- UpdateImage메서드를 수정하였습니다.
+ *기존의 아이템 클래스가 ImageCollection 구조체 변수를 멤버로 포함하고 있던 점에서 ImageReferenceIndex 구조체 변수를 멤버로 포함하도록 바꾸었기 때문에
+ *item의 ImageReferenceIndex 멤버변수로 부터 인덱스값을 받아와서 ImageCollection 변수에 접근하여 오브젝트에 이미지를 넣어주도록 수정.
+ *
  */
 
 
@@ -63,11 +71,23 @@ public class ItemInfo : MonoBehaviour
     public Text countTxt;           // 잡화 아이템의 수량을 반영할 텍스트
     public Transform slotList;      // 아이템이 놓이게 될 슬롯 들의 부모인 슬롯리스트를 참조
 
+    [SerializeField] ItemImageCollection iicMiscBase;           // 인스펙터 뷰 상에서 등록할 잡화 기본 아이템 이미지 집합
+    [SerializeField] ItemImageCollection iicMiscAdd;            // 인스펙터 뷰 상에서 등록할 잡화 추가 아이템 이미지 집합
+    [SerializeField] ItemImageCollection iicMiscOther;          // 인스펙터 뷰 상에서 등록할 잡화 기타 아이템 이미지 집합
+    [SerializeField] ItemImageCollection iicWeaponSword;        // 인스펙터 뷰 상에서 등록할 무기 검 아이템 이미지 집합
+    [SerializeField] ItemImageCollection iicWeaponBow;          // 인스펙터 뷰 상에서 등록할 무기 활 아이템 이미지 집합
 
     public void Start()
     {
         countTxt = GetComponentInChildren<Text>();
         slotList = GameObject.Find("Inventory").transform.GetChild(0);
+        
+        // 인스펙터뷰 상에서 달아놓은 스프라이트 이미지 집합을 참조한다.
+        iicMiscBase=GameObject.Find( "ImageCollections" ).transform.GetChild( 0 ).GetComponent<ItemImageCollection>();
+        iicMiscAdd=GameObject.Find( "ImageCollections" ).transform.GetChild( 1 ).GetComponent<ItemImageCollection>();
+        iicMiscOther=GameObject.Find( "ImageCollections" ).transform.GetChild( 2 ).GetComponent<ItemImageCollection>();
+        iicWeaponSword=GameObject.Find( "ImageCollections" ).transform.GetChild( 3 ).GetComponent<ItemImageCollection>();
+        iicWeaponBow=GameObject.Find( "ImageCollections" ).transform.GetChild( 4 ).GetComponent<ItemImageCollection>();
     }
 
 
@@ -107,11 +127,37 @@ public class ItemInfo : MonoBehaviour
     }
 
     /// <summary>
-    /// 아이템의 이미지 정보를 받아와서 오브젝트에 반영합니다.
+    /// 아이템의 이미지 정보를 받아와서 오브젝트에 반영합니다.<br/>
+    /// Item 클래스는 정의될 때 외부에서 참조할 이미지 인덱스를 저장하고 있습니다.<br/>
+    /// 해당 인덱스를 참고하여 인스펙터뷰에 등록된 이미지를 참조합니다.
     /// </summary>
     public void UpdateImage()
     {
-        innerImage.sprite = item.Image.innerSprite;   // 현재 아이템의 이미지 정보를 가져옵니다.
+        switch( item.Type ) // 아이템의 메인타입을 구분합니다.
+        {
+            case ItemType.Weapon:
+                WeaponType weaponType = ((ItemWeapon)item).EnumWeaponType;  // 아이템의 서브타입을 구분합니다.
+
+                if(weaponType==WeaponType.Sword)
+                    innerImage.sprite = iicWeaponSword.icArrImg[item.sImageRefIndex.innerImgIdx].innerSprite;  
+                else if(weaponType==WeaponType.Bow)
+                    innerImage.sprite =iicWeaponBow.icArrImg[item.sImageRefIndex.innerImgIdx].innerSprite;
+                break;
+
+                // 아이템 오브젝트 이미지를 인스펙터뷰에 직렬화되어 있는 ItemImageCollection 클래스의
+                // 내부 구조체 배열 ImageColection[]에 개념아이템이 고유 정보로 가지고 있는 ImageReferenceIndex 구조체의 인덱스를 가져옵니다.                
+                
+            case ItemType.Misc:
+                MiscType miscType = ((ItemMisc)item).EnumMiscType;
+
+                if(miscType==MiscType.Basic)
+                    innerImage.sprite = iicMiscBase.icArrImg[item.sImageRefIndex.innerImgIdx].innerSprite;
+                else if(miscType==MiscType.Additive)
+                    innerImage.sprite = iicMiscAdd.icArrImg[item.sImageRefIndex.innerImgIdx].innerSprite;
+                else
+                    innerImage.sprite = iicMiscOther.icArrImg[item.sImageRefIndex.innerImgIdx].innerSprite;
+                break;
+        }
     }
 
 

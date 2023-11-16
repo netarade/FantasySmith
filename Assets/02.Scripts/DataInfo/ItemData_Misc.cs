@@ -21,6 +21,9 @@ using UnityEngine;
  * 
  * <v2.1 - 2023_1115_최원준>
  * 1- 잡화 아이템의 최대 수량을 static 클래스 변수 MaxCount로 선언 및 주석 및 설명 수정
+ * 
+ * <v2.2 - 2023_1116_최원준>
+ * 1- 아이템 클래스 구조 변경으로 인한 생성자내부의 이미지 참조 변수를 이미지 인덱스 변수로 수정
  */
 
 
@@ -74,8 +77,8 @@ namespace ItemData
         /// </summary>
         public int FirePower {get;}
 
-        public ItemMisc( ItemType mainType, MiscType subType, string No, string name, float price, ImageCollection image )
-            : base( mainType, No, name, price, image ) 
+        public ItemMisc( ItemType mainType, MiscType subType, string No, string name, float price, ImageReferenceIndex imgRefIdx )
+            : base( mainType, No, name, price, imgRefIdx ) 
         { 
             iInventoryCount = 1;
             EnumMiscType = subType;

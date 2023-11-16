@@ -13,6 +13,9 @@ using UnityEngine;
  * 1- CraftMaterial 구조체 생성자 추가
  * 2- 각 속성의 정보를 볼 수 있는 프로퍼티 추가
  * 3- 프로퍼티 명 수정 
+ * 
+ * <v1.2 - 2023_1116_최원준>
+ * 1- 아이템 클래스 구조 변경으로 인한 생성자내부의 이미지 참조 변수를 이미지 인덱스 변수로 수정
  */
 namespace ItemData
 {
@@ -76,10 +79,10 @@ namespace ItemData
         public int FirePower { get{return iFirePower;} }
 
 
-        public ItemCraftWeapon(ItemType mainType, WeaponType subType, string No, string name, float price, ImageCollection image // 아이템 기본 정보 
-            , ItemGrade basicGrade, int power, int durability, float speed, int weight, EnumAttribute attribute                      // 무기 고유 정보
-            , CraftMaterial[] baseMaterial, CraftMaterial[] additiveMaterial, Recipie recipie                                    // 제작 관련 정보   
-        ) : base( mainType, subType, No, name, price, image, basicGrade, power, durability, speed, weight, attribute )
+        public ItemCraftWeapon(ItemType mainType, WeaponType subType, string No, string name, float price, ImageReferenceIndex imgRefIdx // 아이템 기본 정보 
+            , ItemGrade basicGrade, int power, int durability, float speed, int weight, EnumAttribute attribute                         // 무기 고유 정보
+            , CraftMaterial[] baseMaterial, CraftMaterial[] additiveMaterial, Recipie recipie                                           // 제작 관련 정보   
+        ) : base( mainType, subType, No, name, price, imgRefIdx, basicGrade, power, durability, speed, weight, attribute )
         {          
 
             /*** 제작 관련 정보 ***/

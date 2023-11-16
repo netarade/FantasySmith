@@ -19,6 +19,9 @@ using UnityEngine.UI;
  * 1- 강화 횟수가 float형 이었던 점을 int로 수정
  * 2- 속성 잠금이 초기에 false로 되있던 점을 true로 수정
  * 3- LastPerformance - 최종성능이 높을 수록 먼저 표현되도록 if문의 순서를 조절
+ * 
+ * <v1.3 - 2023_1116_최원준>
+ * 1- 아이템 클래스 구조 변경으로 인한 생성자내부의 이미지 참조 변수를 이미지 인덱스 변수로 수정
  */
 namespace ItemData
 {    
@@ -193,9 +196,9 @@ namespace ItemData
 
 
 
-        public ItemWeapon(ItemType mainType, WeaponType subType, string No, string name, float price, ImageCollection image   // 아이템 기본 정보 
-            ,ItemGrade basicGrade, int power, int durability, float speed, int weight, EnumAttribute attribute                    // 무기 고유 정보
-        ) : base( mainType, No, name, price, image )
+        public ItemWeapon(ItemType mainType, WeaponType subType, string No, string name, float price, ImageReferenceIndex imgRefIdx // 아이템 기본 정보 
+            ,ItemGrade basicGrade, int power, int durability, float speed, int weight, EnumAttribute attribute                      // 무기 고유 정보
+        ) : base( mainType, No, name, price, imgRefIdx )
         {
             enumWeaponType = subType;
             enumBasicGrade = basicGrade;

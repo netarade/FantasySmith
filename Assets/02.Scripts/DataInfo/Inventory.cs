@@ -88,6 +88,7 @@ namespace CraftData
         /// 오브젝트를 제외한 아이템의 순수한 정보만 읽어들일 필요가 있을 때,<br/>
         /// 게임 오브젝트 리스트를 직렬화 할 때, 씬을 넘어가기 전에 전달해야하는 용도로 사용합니다.
         /// </summary>
+        /// <param name="itemType"> GameObject타입에서 Item타입으로 리스트화 할 사전목록의 종류를 정해주세요. Weapon, Misc등이 있습니다. </param>
         public List<Item> GetItemList(ItemType itemType)
         {
             List<Item> itemList = new List<Item>();

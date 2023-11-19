@@ -46,7 +46,7 @@ public class CraftManager : MonoBehaviour
     /// 플레이어가 제작가능한 장비를 알려주는 목록입니다. string name을 기반으로 하는 무기 종류별 리스트가 보관되어있는 클래스입니다.<br/> 
     /// 게임 중에 변경사항이 있다면 이 변수를 수정해야 합니다.
     /// </summary>
-    public CraftableWeaponList craftableList;
+    public Craftdic craftableList;
 
     /// <summary>
     /// 플레이어가 보유하고 있는 장비 숙련도 목록입니다. name과 CraftProficincy구조체형 으로 보관하여 빠르게 접근을 가능하게 해줍니다<br/>

@@ -48,6 +48,14 @@ using Unity.VisualScripting;
  *기존의 아이템 클래스가 ImageCollection 구조체 변수를 멤버로 포함하고 있던 점에서 ImageReferenceIndex 구조체 변수를 멤버로 포함하도록 바꾸었기 때문에
  *item의 ImageReferenceIndex 멤버변수로 부터 인덱스값을 받아와서 ImageCollection 변수에 접근하여 오브젝트에 이미지를 넣어주도록 수정.
  *
+ *<v7.1 - 2023_1119_최원준>
+ *1- OnDestroy()메서드 주석처리. 
+ *Inventory클래스를 직렬화 가능하게 변경할 예정이므로
+ *
+ *2- RemoveItemObject 미구현 메서드 제거 - inventory클래스에서 구현
+ *ItemInfo 클래스는 오브젝트의 정보만 최신화 시켜주는 역할을 하게 해야하기 때문이며, 
+ *ItemInfo에서 item의 내부정보를 수정하는 메서드를 추가하기 시작하면, Inventory클래스에서의 기능을 중복 구현할 가능성이 커짐.
+ *
  */
 
 
@@ -176,23 +184,8 @@ public class ItemInfo : MonoBehaviour
     }
 
 
-    // 새로운 아이템 정보 참조 시 (Item인스턴스를 꺼내서 새로운 오브젝트 만들어서 Item인스턴스를 저장했을 때)
-
-
-    // 수량 변경으로 0이 되었을 때 파괴 행위. (현재 어디서 검사하고있음? => CraftManagement에서 CraftManager.instance.UpdateInventoryText(true); 를 호출하고 있다)
-    // 문제점. 일시적으로 -가되었을 때 파괴시킬 것인가
-    // 제거는 오브젝트 뿐만 아니라 인벤토리의 리스트에서도 사라져야 한다. 제거된 참조값이 남아있으면 안된다.
-
-    /// <summary>
-    /// 
-    /// </summary>
-    /// <returns>반환 값은 아이템의 슬롯 넘버입니다.</returns>
-    public int RemoveItemObject()
-    {
-
-    }
-
-
+    
+    
     // 아이템의 위치정보 반영  (현재 어디서 아이템 위치를 참조해서 슬롯에 넣어주고 있는가? => CreateManager에서 Instantiate할때 미리 붙인다.)
     public void UpdatePosition()
     {
@@ -207,18 +200,18 @@ public class ItemInfo : MonoBehaviour
     /// <summary>
     /// 아이템이 파괴 되기전 정보를 넘겨주기 위한 메서드 (현재 임시로 이름과 수량만 넘겨주고 새로운 아이템을 생성하는 형식으로 되어 있다.)
     /// </summary>
-    private void OnDestroy()
-    {
-        if( item.Type==ItemType.Misc )
-        {
-            CraftManager.instance.miscSaveDic.Add( item.Name, ( (ItemMisc)item ).InventoryCount );    //이름과 수량을 저장
-            Debug.Log( item.Name );
-        }
-        else if( item.Type==ItemType.Weapon )
-        {
-            CraftManager.instance.weapSaveDic.Add( item.Name, 0 );    //이름을 저장
-            Debug.Log( item.Name );
-        }
-    }
+    //private void OnDestroy()
+    //{
+    //    if( item.Type==ItemType.Misc )
+    //    {
+    //        CraftManager.instance.miscSaveDic.Add( item.Name, ( (ItemMisc)item ).InventoryCount );    //이름과 수량을 저장
+    //        Debug.Log( item.Name );
+    //    }
+    //    else if( item.Type==ItemType.Weapon )
+    //    {
+    //        CraftManager.instance.weapSaveDic.Add( item.Name, 0 );    //이름을 저장
+    //        Debug.Log( item.Name );
+    //    }
+    //}
 
 }

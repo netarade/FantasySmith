@@ -96,6 +96,16 @@ using UnityEngine.SceneManagement;
 * 2- OnSceneLoaded메서드에서 ItemImageCollection 참조를 다시 잡아주던 부분을 삭제
 * 3- 월드 아이템 딕셔너리 생성 시 ItemImageCollection 참조 변수를 활용하던 부분을 ImageReferenceIndex 변수 생성 방식으로 변경
 * (아이템 생성시 외부 이미지 참조를 직접 저장하던 방식에서 외부 이미지 변수에 접근하여 참조 할 고유 인덱스를 저장하는 방식으로 변경)
+* 
+* <v8.0 - 2023_1119_최원준>
+* 1- 플레이어 초기화 관련 메서드들을 모두 삭제하였음.(CreateFirstPlayerData와 내부 호출 메서드들)
+* 기존에 제작 목록, 숙련 목록을 따로 초기화 해주는 메서드가 CreateManager 클래스에 있었는데 CraftData에서 하나의 클래스로 통합하였으며,
+* 제작 목록을 인스턴스 생성 시에 CreateManager를 참고하여 알아서 생성해주도록 하는 것이 클래스 의존성을 감소시킨다고 판단.
+* 
+* 2- InitEvent 삭제
+* 마찬가지로 CraftManager에서 처음 시작 시 직접 인벤토리 클래스 생성 및 제작목록 클래스 생성을 담당하면 CreateManager의 Init을 기다릴 필요가 없기 때문
+* 
+* 3- 아이템 복제 및 상점 구매, 숙련도 조정 예시 등 주석처리 되어있던 것을 삭제하였음.
 */
 
 
@@ -113,13 +123,7 @@ public class CreateManager : MonoBehaviour
 
     [SerializeField] Transform slotListTr;                  // 인벤토리의 슬롯 오브젝트의 트랜스폼 참조
     [SerializeField] GameObject itemPrefab;                 // 리소스 폴더 또는 직접 드래그해서 복제할 오브젝트를 등록해야 한다.        
-        
     
-    public delegate void InitEvent(); 
-    public static event InitEvent PlayerInitCompleted;         // CreateManager클래스의 초기화가 이루어졌음을 알리는 대리자
-    
-    
-
 
     public void Awake()
     {        
@@ -139,120 +143,12 @@ public class CreateManager : MonoBehaviour
         CreateAllItemDictionary();
 
         SceneManager.sceneLoaded += OnSceneLoaded; // 씬이로드될때 새롭게 참조를 잡아준다.
-        Debug.Log("씬 호출횟수");
-
-
-
-
-
-
-        #region 플레이어의 장비 아이템 복제 예시( 제작, 아이템 구매 등을 통해 인벤토리에 아이템이 생성된다.)
-
-        //List<GameObject> weapList;              // 무기 아이템을 넣어서 관리하는 인벤토리
-        //List<GameObject> playerMiscList;              // 잡화 아이템을 넣어서 관리하는 인벤토리
-        //weapList=new List<GameObject>();      // 원래는 게임 매니저에서 로드 하여 인벤토리를 관리한다.      
-        //playerMiscList=new List<GameObject>();
-
-        //// 상점 아이템 구매 예시
-        //CreateItemToNearstSlot( playerMiscList, "철", 2 );
-
-        //// 무기아이템 제작 예시
-        //CreateItemToNearstSlot( weapList, "철 검" );
-        //ItemCraftWeapon craftWeapon = (ItemCraftWeapon)weapList[weapList.Count-1].GetComponent<ItemInfo>().item;    //마지막에 들어간 아이템
-        //craftWeapon.BasePerformance=750f;
-
-
-        //CreateItemToNearstSlot( weapList, "미스릴 검" );
-        //CreateItemToNearstSlot( weapList, "얼음칼날" );
-
-        #endregion
-
-
-
-        #region 플레이어의 잡화 아이템 구매 예시
-
-        //string purchasedItemName = "미스릴";  // 잡화아이템 구매이름이라고 가정한다.
-        //int purchasedCnt = 5;                // 잡화아이템의 구매횟수이다.
-
-        //foreach( GameObject itemObj in playerMiscList )
-        //{
-        //    ItemMisc item = (ItemMisc)itemObj.GetComponent<ItemInfo>().item;      // 오브젝트가 가지고 있는 아이템 참조값을 받아온다.
-
-        //    if( item.Name==purchasedItemName )                      // NPC에게서 구매할 아이템이 현재 인벤토리의 아이템 이름과 같다면,
-        //    {
-        //        item.InventoryCount=purchasedCnt;     // 인벤토리의 아이템카운트만 올린다.                
-        //    }
-        //    else                                                    // NPC에게서 구매할 아이템이 현재 인벤토리에 없다면,
-        //    {
-        //        CreateItemToNearstSlot( playerMiscList, purchasedItemName, purchasedCnt );
-        //        break;
-        //    }
-        //}
-
-        #endregion
-
-
-
-        #region 숙련도, 레시피 적용 예시
-
-        //Dictionary<string, CraftProficiency> playerCraftDic;    // 제작 성공 시 증가하는 숙련도 목록
-        //playerCraftDic=new Dictionary<string, CraftProficiency>();  // 원래는 게임매니저에서 로드 해야 한다.
-
-
-        //if( !playerCraftDic.ContainsKey( "철검" ) ) //현재 숙련도 목록에 이름이 존재하지 않는다면, (목록에 넣고 수정한다.)
-        //{
-        //    CraftProficiency info = new CraftProficiency();
-        //    info.Proficiency++;
-        //    // if(isRecipieSucced) 
-        //    info.RecipieHitCount++;
-        //    playerCraftDic.Add( "철검", info );
-        //}
-        //else
-        //{
-        //    CraftProficiency info = playerCraftDic["철검"];
-        //    info.Proficiency++;
-        //    info.RecipieHitCount++;
-
-        //}
-
-
-        #endregion
-
+                
     }
-
-    private void CreateFirstPlayerData()
-    {
-        if( PlayerPrefs.GetInt("IsContinuedGamePlay") == 1 )        // 이어서 하는 게임이라면, 호출하지 않는다.
-            return;
-        
-        PlayerPrefs.SetInt("IsContinuedGamePlay", 1);               // 딱 한번만 호출하기 위해 키와 value를 기록한다.
-        
-        //데이터 매니저 사용하여 로드
-        DataManager dataManager = new DataManager();
-        GameData loadData = dataManager.LoadData();
-
-        CreateNewPlayerProficiencyDic( loadData );      // 제작 숙련 초기화
-        CreateNewPlayerCraftableList( loadData );       // 제작 가능 목록 초기화
-        CreateNewPlayerInventory( loadData );           // 인벤토리 초기화
-        CreateNewPlayerOtherData( loadData );           // 테스트용으로 금화와 초기 재료를 준다.
-        
-        dataManager.SaveData( loadData );
-        PlayerInitCompleted();                         // 데이터 저장 후 연결 메소드들을 호출해 준다.
-    }
-
-    void Start()
-    {
-        // 플레이어 관련 변수 등록 - 로드 인자 전달
-        CreateFirstPlayerData();                       // CreateManager의 초기화가 끝났음을 알리고 연결 메서드들의 호출을 이룰 수 있게 함.
-    }
-
-
-
-
 
 
     /// <summary>
-    /// 씬이 로드되었을 때 다시 참조해주는 로직
+    /// 씬이 전환되었을 때 이벤트 호출로 다시 참조를 잡기 위한 로직
     /// </summary>
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
@@ -260,13 +156,9 @@ public class CreateManager : MonoBehaviour
         slotListTr=GameObject.Find( "SlotList" ).transform;     // 슬롯리스트를 인식 시켜 남아있는 슬롯을 확인할 것이다.
     }
 
-
-
-
-
-
-
-
+    /// <summary>
+    /// 오브젝트 삭제 시 이벤트 연결 해제
+    /// </summary>
     public void OnDestroy()
     {
         SceneManager.sceneLoaded -= OnSceneLoaded;
@@ -368,14 +260,6 @@ public class CreateManager : MonoBehaviour
 
 
 
-
-
-
-
-
-
-
-
     /// <summary>
     /// 남아있는 슬롯 중에서 가장 작은 인덱스를 반환합니다. 슬롯이 꽉 찬경우 -1을 반환합니다.
     /// </summary>
@@ -394,68 +278,6 @@ public class CreateManager : MonoBehaviour
 
         return findIdx;     // findIdx가 수정되지 않았다면 -1을 반환한다. 수정되었다면 0이상의 인덱스값을 반환한다.
     }
-
-
-
-
-
-    /// <summary>
-    /// 플레이어 숙련도 사전 초기화 - 세이브하고 로드 할 새로운 사전을 만들어 줍니다.
-    /// </summary>
-    private void CreateNewPlayerProficiencyDic( GameData loadData )
-    {
-        // 새로운 숙련 사전을 만들어준다.
-        Dictionary<string, CraftProficiency> dic = new Dictionary<string, CraftProficiency>();   
-
-        foreach( KeyValuePair<string, Item> pair in weaponDic )             // 모든무기사전에서 하나씩 꺼낸다.
-            dic.Add( pair.Value.Name, new CraftProficiency(0, 0) );         // 모든 이름을 넣고 값을 0으로 초기화 하여 준다.
-
-        loadData.proficiencyDic = dic;  // 숙련 사전을 넣어준다.
-        print( "숙련도 사전 초기화 완료" );
-    }
-
-    /// <summary>
-    /// 플레이어 제작가능 목록 초기화 - 세이브하고 로드 할 새로운 제작 목록을 만들어 줍니다.
-    /// </summary>
-    private void CreateNewPlayerCraftableList( GameData loadData )
-    {
-        CraftableWeaponList initCraftableList = new CraftableWeaponList();  // 플레이어 제작목록 초기화를 위한 새로운 인스턴스를 만든다.
-
-        foreach( KeyValuePair<string, Item> pair in weaponDic )               // 모든무기사전에서 하나씩 꺼낸다.
-        {
-            ItemWeapon weapInstance = (ItemWeapon)pair.Value;               // 하나씩 꺼냈을 때 value값은 Item형이며, 더 많은 정보 참조를 위해 ItemWeapon형으로 변환한다.
-
-            if( weapInstance.BasicGrade==ItemGrade.Low )                  // 무기 사전에서 꺼낸 아이템이 초급 무기라면,
-            {
-                if( weapInstance.EnumWeaponType==WeaponType.Sword )         // 검-장검 타입이라면,                
-                    initCraftableList.swordList.Add( weapInstance.Name );       // 플레이어 제작 목록 검-장검 리스트에 추가한다.                
-                else if( weapInstance.EnumWeaponType==WeaponType.Bow )      // 활-보우 타입이라면,
-                    initCraftableList.bowList.Add( weapInstance.Name );       // 플레이어 제작 목록 활-보우 리스트에 추가한다.
-            }
-        }
-        loadData.craftableWeaponList=initCraftableList;                   // 초기화 해 줄 정보를 저장한 제작 목록 인스턴스를 넣어준다.
-        print( "제작가능 목록 초기화 완료" );
-    }
-
-    /// <summary>
-    /// 플레이어 인벤토리 초기화 - 세이브하고 로드 할 새로운 인벤토리를 만들어줍니다.
-    /// </summary>
-    private void CreateNewPlayerInventory( GameData loadData )
-    {
-        loadData.inventory=new Inventory();   // 새로운 플레이어 인벤토리를 만들어 넣어준다.
-        print( "엔벤토리 초기화 완료" );
-    }
-
-    /// <summary>
-    /// 플레이어 기타 변수 초기화
-    /// </summary>
-    private void CreateNewPlayerOtherData( GameData loadData )
-    {
-        loadData.gold = 100f;
-        
-    }
-
-
 
 
 

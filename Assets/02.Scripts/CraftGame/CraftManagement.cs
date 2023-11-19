@@ -42,7 +42,7 @@ public partial class CraftManagement : MonoBehaviour
     private Transform panelCraftLev1Tr;          // 생성할 위치 - Craft 1단계 판넬
     private Dropdown dropWeapType;               // 제작할 무기의 종류를 정하는 첫번째 드롭다운 
     private Dropdown dropWeapItem;               // 해당 종류의 아이템을 정하는 두번째 드롭다운
-    private CraftableWeaponList craftableList;   // 제작 가능 목록
+    private Craftdic craftableList;   // 제작 가능 목록
     private enum OptionIndex { Selecet, Sword, Bow } // 옵션을 읽기 쉽게하기 위한 enum 선언
 
     private Image itemImg;       // 아이템명을 셀렉트했을 때 표시 할 이미지
@@ -160,16 +160,16 @@ public partial class CraftManagement : MonoBehaviour
         switch( optIdx )
         {
             case (int)OptionIndex.Sword:
-                for( int i = 0; i<craftableList.swordList.Count; i++ )                        // 검-장검 리스트를 전부 읽어들입니다.
+                for( int i = 0; i<craftableList.swordDic.Count; i++ )                        // 검-장검 리스트를 전부 읽어들입니다.
                 {
-                    optionList.Add( new Dropdown.OptionData( craftableList.swordList[i] ) ); // 버튼의 옵션으로 생성합니다.
+                    optionList.Add( new Dropdown.OptionData( craftableList.swordDic[i] ) ); // 버튼의 옵션으로 생성합니다.
                 }
                 break;
 
             case (int)OptionIndex.Bow:
-                for( int i = 0; i<craftableList.bowList.Count; i++ )                        // 보우-활 리스트를 전부 읽어들입니다.
+                for( int i = 0; i<craftableList.bowDic.Count; i++ )                        // 보우-활 리스트를 전부 읽어들입니다.
                 {
-                    optionList.Add( new Dropdown.OptionData( craftableList.bowList[i] ) ); // 버튼의 옵션으로 생성합니다.
+                    optionList.Add( new Dropdown.OptionData( craftableList.bowDic[i] ) ); // 버튼의 옵션으로 생성합니다.
                 }
                 break;
         }

@@ -1,8 +1,5 @@
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
-using ItemData;
 using CraftData;
 
 /*
@@ -14,7 +11,7 @@ using CraftData;
  * 1- 초기 GameData 설정
  * 
  * <v1.1 - 2023_1106_최원준
- * 1- Transform 변수 제거, 클래스 CraftableWeaponList 변수 추가
+ * 1- Transform 변수 제거, 클래스 Craftdic 변수 추가
  * 2- 주석 수정
  * 
  * <v1.2 - 2023_1108_최원준>
@@ -22,6 +19,11 @@ using CraftData;
  * 내부적으로 ItemInfo 리스트로 만들어 보려고 시도하였음. 
  * 또 다른 문제점이 있는데 ItemInfo는 Image컴포넌트를 포함하고 있기 때문에 클래스 구조상 직렬화하기 힘들다고 생각됨.
  * 
+ * <v2.0 - 2023_1119_최원준>
+ * 1- Inventory 클래스의 직렬화 및 역직렬화 구현완료
+ * 2- SerializableInventory 클래스를 Inventory 파일로 위치로 옮김.
+ * 씬 전환시에도 사용하기 위해
+ * 3- 플레이어 위치, 회전 정보를 담기 위한 STransform 클래스 정의
  */
 
 namespace DataManagement
@@ -40,6 +42,14 @@ namespace DataManagement
         public float playTime;
 
         /// <summary>
+        /// 플레이어 위치, 회전 정보를 담는 변수입니다.<br/>
+        /// 저장 할 Transform 컴포넌트를 전달해서 생성 해야되며, 불러 올때는 Deserialize 메서드에 연동할 Transform 인자를 전달하여 정보를 전달받습니다. 
+        /// </summary>
+        public STransform playerTr;
+
+
+        
+        /// <summary>
         /// 금화
         /// </summary>
         public float gold;
@@ -50,79 +60,70 @@ namespace DataManagement
         public float silver;
 
         /// <summary>
-        /// 플레이어 변수
+        /// 플레이어의 제작 가능 목록과 숙련도, 레시피 맞춘 횟수 정보가 담겨 있는 제작 관련 클래스 입니다.
         /// </summary>
-        public Transform playerTr;
-
-        /// <summary>
-        /// 제작 가능 목록을 종류 별 string name으로 보관하는 리스트들의 집합 클래스 입니다.
-        /// </summary>
-        public CraftableWeaponList craftableWeaponList;
-
-        /// <summary>
-        /// 장비 숙련도 목록을 name과 CraftProficincy구조체형 으로 보관하여 빠르게 접근을 가능하게 해줍니다.
-        /// </summary>
-        public Dictionary<string, CraftProficiency> proficiencyDic;
+        public Craftdic craftDic;
 
         
+        private SerializableInventory savedInventory;
 
         /// <summary>
-        /// 현재 플레이어가 보관하고 있는 인벤토리 정보입니다. 게임오브젝트를 보관하는 weapList와 playerMiscList 및 TotalMaxCount 등이 있습니다.
+        /// 현재 플레이어가 보관하고 있는 인벤토리 정보입니다. <br/>
+        /// Inventory 인스턴스를 전달하며 반합니다. (내부에 직렬화 가능한 클래스를 두고 자동 변환이 이루어집니다.)
         /// </summary>
         public Inventory inventory
         {
-            set{ 
-                //saveInventory = new SerializableInventory( value );                
-            }
-            get{ 
-                //Inventory loadInventory = new Inventory(saveInventory.weapList,saveInventory.miscList, saveInventory.TotalMaxCount);
-                return new Inventory(); }
+            set{ savedInventory = new SerializableInventory( value ); }
+            get{ return new Inventory( savedInventory ); }
         }
-        // 미구현 클래스 및 메서드
-        
-        private SerializableInventory saveInventory;
-        private List<GameObject> ConvertListTypeItemToGameObject(List<Item> itemList)
-        {
-            List<GameObject> gameObjectList = new List<GameObject>();
-            return gameObjectList;
-        }
-
-
-
-
-
     }
 
-    [Serializable]
-    public class SerializableInventory
+
+    /// <summary>
+    /// 위치, 회전 정보를 직렬화하기 위한 클래스입니다.<br/> 
+    /// 저장할 때는 반드시 Transform 컴포넌트를 전달해서 STransform 인스턴스를 생성해야 합니다.<br/>
+    /// 불러올 때는 STransform 인스턴스의 Deserialize메서드를 호출해야 합니다.<br/><br/>
+    /// [사용 예시]<br/>
+    /// STransform playerTr = new STransform(transform); <br/>
+    /// playerTr.DeSerialize(ref transform);
+    /// </summary>
+    public class STransform
     {
-        public List<Item> weapList;
-        public List<Item> miscList;
-        public int InventoryMaxCount;
+        public float x;
+        public float y;
+        public float z;
+        public float xRot;
+        public float yRot;
+        public float zRot;
 
-        //public SerializableInventory( Inventory inventory )
-        //{
-        //    foreach( GameObject item in inventory.weapList )
-        //        this.weapList.Add( item.GetComponent<ItemInfo>() );
+        /// <summary>
+        /// 전달 받은 Transform 컴포넌트의 위치와 회전정보만 가지고 와서 STransform 인스턴스를 생성하여 반환합니다.
+        /// </summary>
+        public STransform(Transform tr)
+        {
+            x = tr.position.x;
+            y = tr.position.y;
+            z = tr.position.z;
+            xRot = tr.rotation.x;
+            yRot = tr.rotation.y;
+            zRot = tr.rotation.z;
+        }
 
-        //    foreach( GameObject item in inventory.miscList )
-        //        this.miscList.Add( item.GetComponent<ItemInfo>() );
-
-        //    this.TotalMaxCount=inventory.TotalMaxCount;
-        //}
-
-        //public Inventory Load()
-        //{
-        //    CreateManager.instance.CreateItemByItemInfo
-
-        //    for( int i = 0; i<weapList.Count; i++ )
-        //        weapList[i].item.Type==ItemType.Misc
-
-
-        //    Inventory loadInventory = new Inventory();
-        //}
-
+        /// <summary>
+        /// 저장되어있는 STransform의 위치와 회전 정보를 전달한 Transform 컴포넌트 인자에 동기화 시켜줍니다.
+        /// </summary>
+        public void Deserialize(ref Transform tr)
+        {
+            tr.position = new Vector3( x, y, z );
+            tr.rotation = Quaternion.Euler( xRot, yRot, zRot );
+        }
     }
+       
+
+
+
+
+    
 
 
 }

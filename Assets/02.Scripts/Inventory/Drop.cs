@@ -13,6 +13,9 @@ using UnityEngine.EventSystems;
  * 1- 강화석, 속성석, 각인석에 대한 로직 구현
  * 2- 변수 캐싱처리하여 중복 로직제거
  * 
+ * 
+ * <v2.1 - 2023_1119_최원준>
+ * 1- ItemInfo스크립트의 item에 직접 접근하고 있던 점을 Item(프로퍼티)에의 접근으로 수정
  */
 
 
@@ -31,7 +34,7 @@ public class Drop : MonoBehaviour, IDropHandler
     public void OnDrop( PointerEventData eventData )
     {
         GameObject dragObj = Drag.draggingItem;             
-        Item draggingItem = dragObj.GetComponent<ItemInfo>().item;   // 자주 사용하므로 캐싱처리
+        Item draggingItem = dragObj.GetComponent<ItemInfo>().Item;   // 자주 사용하므로 캐싱처리
 
 
 
@@ -42,7 +45,7 @@ public class Drop : MonoBehaviour, IDropHandler
 
             if( draggingMisc.EnumMiscType==MiscType.Engraving || draggingMisc.EnumMiscType==MiscType.Enhancement )
             {                
-                Item applyItem = slotTr.GetChild(0).gameObject.GetComponent<ItemInfo>().item;   //강화를 적용할 아이템의 정보를 봅니다.
+                Item applyItem = slotTr.GetChild(0).gameObject.GetComponent<ItemInfo>().Item;   //강화를 적용할 아이템의 정보를 봅니다.
                 if(applyItem.Type == ItemType.Weapon)                 // 적용 대상이 무기라면 강화 로직을 수행하고 아니라면 스위칭 로직을 수행합니다.
                 {
                    
@@ -104,7 +107,7 @@ public class Drop : MonoBehaviour, IDropHandler
             dragObj.transform.localPosition = Vector3.zero;                     // 정중앙 위치
 
             Transform switchingItemTr = slotTr.GetChild(0);                     // 바꿀 아이템 (현재 자식이 2개가 중첩되어 있다. 그 중 1번째 기존의 자식)
-            switchingItemTr.GetComponent<ItemInfo>().item.SlotIndex = prevIdx;  //스위칭할 아이템의 슬롯 번호를 기록해둔 위치로 저장 
+            switchingItemTr.GetComponent<ItemInfo>().Item.SlotIndex = prevIdx;  //스위칭할 아이템의 슬롯 번호를 기록해둔 위치로 저장 
             switchingItemTr.SetParent( Drag.prevParentTrByDrag );               // 이미지 우선순위 문제로 부모를 일시적으로 바꾸므로, 이전 부모를 받아온다.            
             switchingItemTr.localPosition = Vector3.zero;                       // 정중앙 위치
         }

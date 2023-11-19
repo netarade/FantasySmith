@@ -18,10 +18,23 @@ using UnityEngine;
  * 
  * <v2.0 - 2023_1114_최원준>
  * 1- 인벤토리 클래스 멤버인 장비 및 잡화아이템 게임오브젝트 리스트를 딕셔너리-게임오브젝트리스트로 변경하기로 계획
- * 그 이유는 현재 수량 변경이 일어나면 리스트를 순차적으로 빼서 하나씩 정보를 열어보는 비효율이 발생하고 있기 때문이며,
+ * => 그 이유는 현재 수량 변경이 일어나면 리스트를 순차적으로 빼서 하나씩 정보를 열어보는 비효율이 발생하고 있기 때문이며,
  * 특히 삭제시 결정된 아이템을 목록에서 삭제하기 위해 매번 리스트를 하나씩 꺼내봐야하면 연산 자원소모가 많이 발생하기 때문
  * 
+ * <v3.0 - 2023_1119_최원준>
+ * 1- 메서드 이름 변경 - GetItemList -> ConvertDicToItemList
+ * 2- 메서드 이름 변경 및 매개변수 변경 - SetObjectList(ItemType, List<Item>) -> ConvertItemListToDic(List<Item>)
+ * 3- 프로퍼티 이름 변경 - TotalMaxCount -> TotalCountLimit, TotalCurCount->TotalCount
+ * 4- InitialCount -> InitialCountLimit으로 변경 및 static 변수에서 프로퍼티로 변경. (메모리 공간 낭비를 막음)
  * 
+ * 5- 새로운 멤버변수 추가 - weapCountLimit, miscCountLimit 
+ * 인벤토리 개별탭의 칸수에 제한이 있는 방식으로 변경해야 하기 때문
+ * 칸수를 change한다고 할 때 전체 칸수를 늘리면 나중에 개별 칸수를 지정하지 못하기 때문이며, 
+ * item을 add할 때도 개별 제한이 있어야 현재 칸수와 비교하여 add시킬 수 있으며,
+ * 개별 제한 칸 수가 정해지면 TotalCountLimit은 자동으로 지정할 수 있기 때문
+ *  
+ * 6- 기본 생성자 수정
+ * 인벤토리 초기 생성시, 사전초기화와 개별 제한 칸 수 초기화가 이루어짐.
  */
 
 
@@ -35,6 +48,8 @@ namespace CraftData
     [Serializable]
     public class Inventory
     {
+        /**** 세이브 로드 시 저장해야할 속성들 ****/
+
         /// <summary>
         /// 플레이어가 보유하고 있는 무기 아이템 목록입니다. 아이템 이름을 통해 해당 아이템 오브젝트를 보관하는 리스트에 접근할 수 있습니다.
         /// </summary>
@@ -44,22 +59,36 @@ namespace CraftData
         /// 플레이어가 보유하고 있는 잡화 아이템 목록 입니다. 아이템 이름을 통해 해당 아이템 오브젝트를 보관하는 리스트에 접근할 수 있습니다.
         /// </summary>
         public Dictionary< string, List<GameObject> > miscDic;
-
+                        
+        /// <summary>
+        /// 플레이어 인벤토리의 무기 탭의 칸의 제한 수 입니다. 게임 중에 업그레이드 등으로 인해 변동될 수 있습니다.
+        /// </summary>
+        public int weapCountLimit;
 
         /// <summary>
-        /// 플레이어 인벤토리의 각 탭에 공통으로 주어지는 초기 칸 수입니다.
+        /// 플레이어 인벤토리의 잡화 탭의 칸의 제한 수 입니다. 게임 중에 업그레이드 등으로 인해 변동될 수 있습니다.
         /// </summary>
-        public static int InitialCount = 50;
+        public int miscCountLimit;
+        
+
+
+        /**** 자동으로 지정되는 속성들 ****/
 
         /// <summary>
-        /// 플레이어 인벤토리의 전체 최대 칸의 갯수 입니다. 게임 중에 업그레이드 등으로 인해 변동될 수 있습니다.
+        /// 플레이어 인벤토리의 각 탭에 공통으로 주어지는 초기 칸의 제한 수입니다.
         /// </summary>
-        public int TotalMaxCount {get; set;}
+        public int InitialCountLimit { get{ return 50; } }
+        
+        
+        /// <summary>
+        /// 플레이어 인벤토리의 전체 탭의 칸의 제한 수 입니다. 게임 중에 업그레이드 등으로 인해 변동될 수 있습니다.
+        /// </summary>
+        public int TotalCountLimit { get{return weapCountLimit+miscCountLimit; } }
 
         /// <summary>
         /// 플레이어 인벤토리에 종류와 상관없이 모든 아이템이 차지하고 있는 현재 칸 수입니다.
         /// </summary>
-        public int TotalCurCount { get{ return WeapCount + MiscCount; } }
+        public int TotalCount { get{ return WeapCount + MiscCount; } }
 
         /// <summary>
         /// 무기 아이템이 인벤토리에 차지하고 있는 칸의 총 갯수입니다.
@@ -89,7 +118,7 @@ namespace CraftData
         /// 게임 오브젝트 리스트를 직렬화 할 때, 씬을 넘어가기 전에 전달해야하는 용도로 사용합니다.
         /// </summary>
         /// <param name="itemType"> GameObject타입에서 Item타입으로 리스트화 할 사전목록의 종류를 정해주세요. Weapon, Misc등이 있습니다. </param>
-        public List<Item> GetItemList(ItemType itemType)
+        public List<Item> ConvertDicToItemList(ItemType itemType)
         {
             List<Item> itemList = new List<Item>();
             switch(itemType)
@@ -115,9 +144,11 @@ namespace CraftData
 
         /// <summary>
         /// 종류 별 아이템 정보가 담겨있는 리스트를 집어넣으면 해당 딕셔너리로 변환시켜 줍니다.<br/>
-        /// 아이템 리스트를 역직렬화 하여 로드 할때, 씬을 넘어왔을 때 다시 인벤토리 목록으로 변환해야하는 용도로 사용합니다.
+        /// 로드 할때나 씬을 전환했을 때 아이템 리스트를 역직렬화 하여 다시 인벤토리 목록으로 변환해야하는 용도로 사용합니다.
         /// </summary>
-        public void SetObjectList( ItemType itemType, List<Item> itemList )
+        /// <param name="itemType">해당 itemList의 item의 종류</param>
+        /// <param name="itemList">딕셔너리로 변환 시킬 item정보가 보관되어 있는 List</param>
+        public void ConvertItemListToDic( ItemType itemType, List<Item> itemList )
         {
             switch(itemType)
             {
@@ -160,19 +191,13 @@ namespace CraftData
                     break;
                     
                 // 참고) 잡화아이템의 최대 수량 검사를 따로 하지 않습니다.
-                // 아이템 정보 상에 MaxCount이상일 때 처리 로직이 있어야 하기 때문이며,
-                // 씬 이동이나 로드 등을 거치면서 해당 아이템 정보를 가진 오브젝트 그대로 전달해야 하기 때문입니다. 
+                // 아이템 정보 상에 MaxCount이상일 때 예외 처리 로직이 있으며, Inventory에서 미리 MaxCount일 때의 새로운 오브젝트 생성 등을 처리했다고 판단합니다.
+                // 씬 이동이나 로드 등을 거치면서 해당 아이템 정보를 가진 오브젝트 그대로 전달해야 합니다.
             }
         }
 
 
 
-
-
-        /// <summary>
-        /// 플레이어가 관리하고 있는 목록의 갯수입니다. 무기, 잡화 종류밖에 없다면 2입니다.
-        /// </summary>
-        public int dicNum {get;}
 
         public void AddItem( GameObject itemObject )
         {
@@ -196,22 +221,46 @@ namespace CraftData
         {            
             weapDic = new Dictionary< string, List<GameObject> >();
             miscDic = new Dictionary< string, List<GameObject> >();
-            dicNum = 2;
-
-            TotalMaxCount = InitialCount * dicNum;
+            weapCountLimit = InitialCountLimit;
+            miscCountLimit = InitialCountLimit;
         }
 
         /// <summary>
-        /// 플레이어 정보가 있는 경우 기존 정보를 바탕으로 인벤토리를 만들어주는 생성자입니다. 
+        /// 기존의 직렬화 된 인벤토리가 존재하는 경우 해당 정보를 바탕으로 다시 인벤토리를 만들어주는 생성자입니다. 
         /// </summary>
-        /// <param name="weapItemInfoList"></param>
-        /// <param name="miscList"></param>
-        /// <param name="InventoryMaxCount"></param>
-        public Inventory(List<Item> weapItemInfoList, List<Item> miscList, int InventoryMaxCount )
+        public Inventory( SerializableInventory savedInventory )
         {
-            this.weapList = weapList;
-            this.miscList = miscList;
-            this.TotalMaxCount = InventoryMaxCount;
+            ConvertItemListToDic(ItemType.Weapon, savedInventory.weapList);
+            ConvertItemListToDic(ItemType.Misc, savedInventory.miscList);
+            weapCountLimit = savedInventory.weapCountLimit;
+            miscCountLimit = savedInventory.miscCountLimit;
         }
     }
+
+
+
+
+    /// <summary>
+    /// 직렬화 가능한 인벤토리 클래스입니다.<br/>
+    /// 기존의 인벤토리에서 GameObject 형식의 리스트를 Item 형식의 리스트로 변환하여 보관합니다.<br/>
+    /// </summary>
+    [Serializable]
+    public class SerializableInventory
+    {
+        public List<Item> weapList;
+        public List<Item> miscList;
+        public int weapCountLimit;
+        public int miscCountLimit;
+        
+
+        /// <summary>
+        /// 기존의 인벤토리 클래스의 인스턴스를 인자로 받아서 직렬화 가능한 인벤토리 인스턴스를 생성해 줍니다.
+        /// </summary>
+        public SerializableInventory( Inventory inventory )
+        {
+            weapList = inventory.ConvertDicToItemList(ItemType.Weapon);
+            miscList = inventory.ConvertDicToItemList(ItemType.Misc);
+        }
+    }
+
 }

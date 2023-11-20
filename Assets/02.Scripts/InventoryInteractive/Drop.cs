@@ -73,7 +73,7 @@ public class Drop : MonoBehaviour, IDropHandler
 
                     if( draggingMisc.InventoryCount == 1 )    // 아이템 갯수가 1개라면,
                     {
-                        CraftManager.instance.miscList.Remove(dragObj);   // 강화석을 플레이어 인벤토리의 잡화목록에서 제거합니다.
+                        PlayerInven.instance.miscList.Remove(dragObj);   // 강화석을 플레이어 인벤토리의 잡화목록에서 제거합니다.
                         Destroy(dragObj, 0.5f);                           // 0.5초후 삭제 시킵니다.
                         dragObj.SetActive(false);                         // 아이템을 바로 disable 시킵니다.
                     }

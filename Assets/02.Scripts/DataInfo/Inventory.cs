@@ -24,7 +24,7 @@ using UnityEngine;
  * <v3.0 - 2023_1119_최원준>
  * 1- 메서드 이름 변경 - GetItemList -> ConvertDicToItemList
  * 2- 메서드 이름 변경 및 매개변수 변경 - SetObjectList(ItemType, List<Item>) -> ConvertItemListToDic(List<Item>)
- * 3- 프로퍼티 이름 변경 - TotalMaxCount -> TotalCountLimit, TotalCurCount->TotalCount
+ * 3- 프로퍼티 이름 변경 - TotalMaxCount -> AllCountLimit, TotalCurCount->TotalCount
  * 4- InitialCount -> InitialCountLimit으로 변경 및 static 변수에서 프로퍼티로 변경. (메모리 공간 낭비를 막음)
  * 
  * 5- 새로운 멤버변수 추가 - weapCountLimit, miscCountLimit 
@@ -35,6 +35,16 @@ using UnityEngine;
  *  
  * 6- 기본 생성자 수정
  * 인벤토리 초기 생성시, 사전초기화와 개별 제한 칸 수 초기화가 이루어짐.
+ * 
+ * <v4.0 - 2023_1120_최원준>
+ * 1- 현 스크립트의 Inventory 클래스를 partial 클래스로 전환
+ * 아이템 추가, 검색, 제거 관련 로직을 다음 파일에서 할 예정
+ * 2- 슬롯 리스트를 멤버로 추가
+ * 3- Inventory 클래스의 TotalCountLimit 변수명을 AllCountLimit으로 변경
+ * 4- Inventory 클래스와 SerializableInventory 클래스의 weapCountLimit, miscCountLimit 프로퍼티화 및 변수명 앞머리 대문자로 변경
+ * 5- Serializable 클래스의 생성자에  WeapCountLimit, MiscCountLimit의 초기화가 빠져있던 점 수정
+ * 
+ * 
  */
 
 
@@ -46,7 +56,7 @@ namespace CraftData
     /// 인벤토리를 정의하는 클래스, 내부에 GameObject를 저장하는 weapList와 miscList가 있다. save, Load시 저장해야 한다.
     /// </summary>
     [Serializable]
-    public class Inventory
+    public partial class Inventory
     {
         /**** 세이브 로드 시 저장해야할 속성들 ****/
 
@@ -63,13 +73,17 @@ namespace CraftData
         /// <summary>
         /// 플레이어 인벤토리의 무기 탭의 칸의 제한 수 입니다. 게임 중에 업그레이드 등으로 인해 변동될 수 있습니다.
         /// </summary>
-        public int weapCountLimit;
+        public int WeapCountLimit { get; }
 
         /// <summary>
         /// 플레이어 인벤토리의 잡화 탭의 칸의 제한 수 입니다. 게임 중에 업그레이드 등으로 인해 변동될 수 있습니다.
         /// </summary>
-        public int miscCountLimit;
+        public int MiscCountLimit { get; }
         
+        /// <summary>
+        /// 플레이어 인벤토리의 전체 탭의 칸의 제한 수 입니다. 게임 중에 업그레이드 등으로 인해 변동될 수 있습니다.
+        /// </summary>
+        public int AllCountLimit { get{return WeapCountLimit+MiscCountLimit; } }
 
 
         /**** 자동으로 지정되는 속성들 ****/
@@ -80,11 +94,7 @@ namespace CraftData
         public int InitialCountLimit { get{ return 50; } }
         
         
-        /// <summary>
-        /// 플레이어 인벤토리의 전체 탭의 칸의 제한 수 입니다. 게임 중에 업그레이드 등으로 인해 변동될 수 있습니다.
-        /// </summary>
-        public int TotalCountLimit { get{return weapCountLimit+miscCountLimit; } }
-
+        
         /// <summary>
         /// 플레이어 인벤토리에 종류와 상관없이 모든 아이템이 차지하고 있는 현재 칸 수입니다.
         /// </summary>
@@ -196,24 +206,6 @@ namespace CraftData
             }
         }
 
-
-
-
-        public void AddItem( GameObject itemObject )
-        {
-            Item item = itemObject.GetComponent<ItemInfo>().item;
-            switch(item.Type)
-            {
-                case ItemType.Weapon:
-                    weapList.Add(itemObject);
-                    break;
-                
-                case ItemType.Misc:
-                    miscList.Add(itemObject);
-                    break;
-            }
-        }
-
         /// <summary>
         /// 기본 인벤토리 생성자입니다. 새로운 게임을 시작할 때 사용해주세요.
         /// </summary>
@@ -221,8 +213,8 @@ namespace CraftData
         {            
             weapDic = new Dictionary< string, List<GameObject> >();
             miscDic = new Dictionary< string, List<GameObject> >();
-            weapCountLimit = InitialCountLimit;
-            miscCountLimit = InitialCountLimit;
+            WeapCountLimit = InitialCountLimit;
+            MiscCountLimit = InitialCountLimit;
         }
 
         /// <summary>
@@ -232,8 +224,8 @@ namespace CraftData
         {
             ConvertItemListToDic(ItemType.Weapon, savedInventory.weapList);
             ConvertItemListToDic(ItemType.Misc, savedInventory.miscList);
-            weapCountLimit = savedInventory.weapCountLimit;
-            miscCountLimit = savedInventory.miscCountLimit;
+            WeapCountLimit = savedInventory.WeapCountLimit;
+            MiscCountLimit = savedInventory.MiscCountLimit;
         }
     }
 
@@ -249,8 +241,8 @@ namespace CraftData
     {
         public List<Item> weapList;
         public List<Item> miscList;
-        public int weapCountLimit;
-        public int miscCountLimit;
+        public int WeapCountLimit {get;}
+        public int MiscCountLimit {get;}
         
 
         /// <summary>
@@ -260,6 +252,8 @@ namespace CraftData
         {
             weapList = inventory.ConvertDicToItemList(ItemType.Weapon);
             miscList = inventory.ConvertDicToItemList(ItemType.Misc);
+            WeapCountLimit = inventory.WeapCountLimit;
+            MiscCountLimit = inventory.MiscCountLimit;
         }
     }
 

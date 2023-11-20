@@ -24,6 +24,20 @@ using ItemData;
 * 
 * <v1.3 - 2023_1109_최원준>
 * 1- InventroyOnOffSwitch 철자 수정
+* 
+* <v2.0 - 2023_1120_최원준> 
+* 1- InventoryManagement의 역할 설정
+* 
+* a. 게임 시작 시 인벤토리의 슬롯(오브젝트)을 생성하고, 슬롯 리스트(오브젝트) 주소를 관리하는 역할. 
+* (개념 인벤토리의 게임 상 오브젝트를 관리하는 역할). 슬롯 생성 메서드를 보유 (인벤토리의 각 탭 별 제한 만큼 생성해줘야 한다.)
+* 
+* b. 플레이어의 개념 인벤토리를 참조하는 역할.(기존의 PlayerInven 스크립트의 역할을 통합하고 CraftManager클래스는 제거) 
+* 게임 시작 시 플레이어 인벤토리를 세이브 로드하여 참조하고 있다. 씬 전환 시에도 참조 유지. 
+* 
+* c. 인벤토리 및 상태창의 숨김 드러남을 관리. OnOff 메서드를 보유.
+* 
+* d. 탭버튼 클릭시의 처리에 관한 메서드 보유
+* 
 */
 
 /// <summary>
@@ -58,8 +72,8 @@ public class InventoryManagement : MonoBehaviour
         InventoryPanel = GameObject.Find("Inventory");          // 인벤토리 판넬 참조
        
         // 인벤토리 정보를 통해 탭 기능을 구현하기 위함 
-        weapList = CraftManager.instance.weapList;
-        miscList = CraftManager.instance.miscList;
+        weapList = PlayerInven.instance.weapList;
+        miscList = PlayerInven.instance.miscList;
 
         // 탭 버튼 참조
         btnTapAll = InventoryPanel.transform.GetChild(1).GetComponent<Button>();
@@ -95,17 +109,17 @@ public class InventoryManagement : MonoBehaviour
     /// </summary>
     public void BtnItemCreateToInventory()
     {        
-        CreateManager.instance.CreateItemToNearstSlot(CraftManager.instance.miscList, "강철", 10);
-        CreateManager.instance.CreateItemToNearstSlot(CraftManager.instance.miscList, "흑철", 10);
-        CreateManager.instance.CreateItemToNearstSlot(CraftManager.instance.miscList, "철", 10);
-        CreateManager.instance.CreateItemToNearstSlot(CraftManager.instance.miscList, "미스릴", 10);
-        CreateManager.instance.CreateItemToNearstSlot(CraftManager.instance.miscList, "부드러운 나뭇가지", 10);
-        CreateManager.instance.CreateItemToNearstSlot(CraftManager.instance.miscList, "가벼운 나뭇가지", 10);
-        CreateManager.instance.CreateItemToNearstSlot(CraftManager.instance.miscList, "속성석", 3);
-        CreateManager.instance.CreateItemToNearstSlot(CraftManager.instance.miscList, "강화석", 3);
-        CreateManager.instance.CreateItemToNearstSlot(CraftManager.instance.miscList, "초급 물리의 각인", 1);
-        CreateManager.instance.CreateItemToNearstSlot(CraftManager.instance.miscList, "중급 공속의 각인", 1);
-        CreateManager.instance.CreateItemToNearstSlot(CraftManager.instance.miscList, "고급 흡혈의 각인", 1);
+        CreateManager.instance.CreateItemToNearstSlot(PlayerInven.instance.miscList, "강철", 10);
+        CreateManager.instance.CreateItemToNearstSlot(PlayerInven.instance.miscList, "흑철", 10);
+        CreateManager.instance.CreateItemToNearstSlot(PlayerInven.instance.miscList, "철", 10);
+        CreateManager.instance.CreateItemToNearstSlot(PlayerInven.instance.miscList, "미스릴", 10);
+        CreateManager.instance.CreateItemToNearstSlot(PlayerInven.instance.miscList, "부드러운 나뭇가지", 10);
+        CreateManager.instance.CreateItemToNearstSlot(PlayerInven.instance.miscList, "가벼운 나뭇가지", 10);
+        CreateManager.instance.CreateItemToNearstSlot(PlayerInven.instance.miscList, "속성석", 3);
+        CreateManager.instance.CreateItemToNearstSlot(PlayerInven.instance.miscList, "강화석", 3);
+        CreateManager.instance.CreateItemToNearstSlot(PlayerInven.instance.miscList, "초급 물리의 각인", 1);
+        CreateManager.instance.CreateItemToNearstSlot(PlayerInven.instance.miscList, "중급 공속의 각인", 1);
+        CreateManager.instance.CreateItemToNearstSlot(PlayerInven.instance.miscList, "고급 흡혈의 각인", 1);
     }
 
 

@@ -31,13 +31,16 @@ using UnityEngine.SceneManagement;
 * 
 * <1.4 - 2023_1109_최원준>
 * 1- 씬 테스트 버튼 옮김 (씬 전환 시 데이터 이동이 제대로 되는지 테스트)
+* 
+* <v2.0 - 2023_1120_최원준>
+* 1- 파일명 및 클래스명 수정 - CraftManagement->CraftSimulation 
 */
 
 /// <summary>
 /// 장비 제작 로직을 담당하는 클래스입니다. 컴포넌트로 붙여 활용하며, 별도의 인스턴스 생성이 필요하지 않습니다.<br/>
 /// 많은 외부 참조를 해야 하므로 파괴불가 속성오브젝트 보다는 새롭게 참조할 수 있는 오브젝트에 부착하록 합니다. 
 /// </summary>
-public partial class CraftManagement : MonoBehaviour
+public partial class CraftSimulation : MonoBehaviour
 {
     private Transform panelCraftLev1Tr;          // 생성할 위치 - Craft 1단계 판넬
     private Dropdown dropWeapType;               // 제작할 무기의 종류를 정하는 첫번째 드롭다운 
@@ -101,7 +104,7 @@ public partial class CraftManagement : MonoBehaviour
         foreach(var text in itemTxtArr)
             text.enabled = false;
 
-        craftableList=CraftManager.instance.craftableList;        // 제작을 수행할 때 마다 실시간 제작 가능 목록을 불러온다.    
+        craftableList=PlayerInven.instance.craftableList;        // 제작을 수행할 때 마다 실시간 제작 가능 목록을 불러온다.    
      }
 
         
@@ -208,13 +211,13 @@ public partial class CraftManagement : MonoBehaviour
         }
 
         // 숙련도 텍스트 지정
-        if( CraftManager.instance.proficiencyDic.ContainsKey(weapon.Name) )  // 구조체가 해당 이름의 키를 갖고 있지 않다면,
+        if( PlayerInven.instance.proficiencyDic.ContainsKey(weapon.Name) )  // 구조체가 해당 이름의 키를 갖고 있지 않다면,
         {
-            CraftManager.instance.proficiencyDic[weapon.Name] = new CraftProficiency(0,0);  // 딕셔너리에 해당 이름의 키를 넣어준다.
+            PlayerInven.instance.proficiencyDic[weapon.Name] = new CraftProficiency(0,0);  // 딕셔너리에 해당 이름의 키를 넣어준다.
             itemTxtArr[2].text = "0 / 100";
         }
         else
-            itemTxtArr[2].text = CraftManager.instance.proficiencyDic[weapon.Name].Proficiency.ToString() + " / 100";
+            itemTxtArr[2].text = PlayerInven.instance.proficiencyDic[weapon.Name].Proficiency.ToString() + " / 100";
         
         lastOptIdx = optIdx;    // 마지막 옵션을 기록한다.
     }
@@ -226,7 +229,7 @@ public partial class CraftManagement : MonoBehaviour
     public void Craft1MakeBtnClick()
     {
         // 플레이어 재료 인벤토리 참조
-        List<GameObject> miscList = CraftManager.instance.miscList;
+        List<GameObject> miscList = PlayerInven.instance.miscList;
 
         // 월드 사전에 드롭다운의 옵션 이름을 기반으로 접근하여 아이템 정보를 받는다.
         ItemCraftWeapon targetWeapon = (ItemCraftWeapon)CreateManager.instance.weaponDic[dropWeapItem.options[lastOptIdx].text];
@@ -249,7 +252,7 @@ public partial class CraftManagement : MonoBehaviour
         // 현재 재료아이템이 충분한지 여부 조사
         foreach( GameObject itemObject in miscList )  // 아이템 오브젝트를 하나씩 꺼낸다.
         {
-            Debug.Log(CraftManager.instance.inventory.miscList.Count);
+            Debug.Log(PlayerInven.instance.inventory.miscList.Count);
             ItemMisc playerItem = (ItemMisc)( itemObject.GetComponent<ItemInfo>().item ); // 개념 아이템 정보를 받아온다.
             print( playerItem.Name );
             if( dicMaterial.ContainsKey( playerItem.Name ) ) // 꺼낸 아이템 중에 이름과 일치하는 것이 있는지 본다.
@@ -269,7 +272,7 @@ public partial class CraftManagement : MonoBehaviour
             panelCraftLev2Tr.gameObject.SetActive( true );      // 판넬2번을 켜준다.
                         
             panelCraftLev2Txt.text = "제작에 성공하였습니다!";
-            CreateManager.instance.CreateItemToNearstSlot(CraftManager.instance.weapList, targetWeapon.Name);
+            CreateManager.instance.CreateItemToNearstSlot(PlayerInven.instance.weapList, targetWeapon.Name);
             Debug.Log( "제작에 성공했습니다." );
         }
         else
@@ -285,7 +288,7 @@ public partial class CraftManagement : MonoBehaviour
             panelCraftLev2Txt.text = "제작에 실패하였습니다.";
             Debug.Log( "제작에 실패했습니다." );
         }
-        CraftManager.instance.UpdateInventoryText(true);    // (수량 제외로 인한) 아이템의 정보를 최신화 시켜줘야 한다.
+        PlayerInven.instance.UpdateInventoryText(true);    // (수량 제외로 인한) 아이템의 정보를 최신화 시켜줘야 한다.
     }
 
     

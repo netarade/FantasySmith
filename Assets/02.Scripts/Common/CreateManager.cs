@@ -240,7 +240,7 @@ public class CreateManager : MonoBehaviour
             inventoryList.Add( itemObject );    // 인벤토리는 GameObject 인스턴스를 보관함으로서 transform정보와 개념 아이템을 정보를 포함하게 된다.
             
             print("메서드에서의 리스트 갯수: " + inventoryList.Count);
-            print("매니저에서의 리스트 갯수: " + CraftManager.instance.inventory.miscList.Count);
+            print("매니저에서의 리스트 갯수: " + PlayerInven.instance.inventory.miscList.Count);
         }
 
         return true;

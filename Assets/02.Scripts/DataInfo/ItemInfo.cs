@@ -204,12 +204,12 @@ public class ItemInfo : MonoBehaviour
     //{
     //    if( item.Type==ItemType.Misc )
     //    {
-    //        CraftManager.instance.miscSaveDic.Add( item.Name, ( (ItemMisc)item ).InventoryCount );    //이름과 수량을 저장
+    //        PlayerInven.instance.miscSaveDic.Add( item.Name, ( (ItemMisc)item ).InventoryCount );    //이름과 수량을 저장
     //        Debug.Log( item.Name );
     //    }
     //    else if( item.Type==ItemType.Weapon )
     //    {
-    //        CraftManager.instance.weapSaveDic.Add( item.Name, 0 );    //이름을 저장
+    //        PlayerInven.instance.weapSaveDic.Add( item.Name, 0 );    //이름을 저장
     //        Debug.Log( item.Name );
     //    }
     //}

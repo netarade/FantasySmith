@@ -31,6 +31,19 @@ using UnityEngine.SceneManagement;
  * 
  * 2- 씬 로드 시 무조건 하나의 재료만 들어있는 문제 발생
  * => 아이템쪽에서 파괴될떄마다 딕셔너리를 생성했었기 때문에 CraftManager쪽에서 마지막에 한번 미리 생성해주도록 변경
+ * 
+ * <v3.0 - 2023_1120_최원준>
+ * 1- CraftManager 클래스 및 파일명 변경 PlayerInven, 파일위치 이동 Common폴더 -> Player폴더
+ * 
+ * 2- PlayerInven 클래스 역할 설정
+ * a. 플레이어의 인벤토리 데이터를 보관하는 역할
+ * b. 게임시작 및 게임종료 시 플레이어 인벤토리를 로드 및 세이브해주며, 씬 전환시 인벤토리를 유지하게 해줘야 한다.
+ * c. 실제 플레이어 오브젝트에 스크립트가 붙어있어야 한다. (플레이어가 들고있는 데이터모음이 될 것이다.)
+ * d. 오브젝트가 파괴될 때(게임 종료 시)
+ * 
+ * 3- weapList, miscList를 제거 (inventory쪽에 기능을 추가하여 접근성을 높일 계획이므로)
+ * 4- 기타 로직들 제거 및 주석처리 (미완료)
+ * 5- UpdateInventoryText 메서드 주석처리 - inventory쪽에 해당 기능을 추가 할 예정이므로
  */
 
     
@@ -38,10 +51,8 @@ using UnityEngine.SceneManagement;
 /// <summary>
 /// 게임 실행 중 제작 관련 실시간 플레이어 정보 들을 보유하고 있는 클래스입니다. 싱글톤으로 접근 가능합니다.
 /// </summary>
-public class CraftManager : MonoBehaviour
+public class PlayerInven : MonoBehaviour
 {
-    public static CraftManager instance;
-
     /// <summary>
     /// 플레이어가 제작가능한 장비를 알려주는 목록입니다. string name을 기반으로 하는 무기 종류별 리스트가 보관되어있는 클래스입니다.<br/> 
     /// 게임 중에 변경사항이 있다면 이 변수를 수정해야 합니다.
@@ -60,21 +71,6 @@ public class CraftManager : MonoBehaviour
     /// </summary>
     public Inventory inventory;
 
-
-    /*** 접근의 편리함을 위해 추가 선언하였음. ***/
-
-    /// <summary>
-    /// 플레이어 인벤토리 중에서 장비아이템 게임오브젝트를 보관하는 리스트입니다. <br/>
-    /// 게임 중에 변경사항이 있다면 이 변수를 수정해야 합니다. (inventory와 참조연결이 되어있습니다.)
-    /// </summary>
-    public List<GameObject> weapList;
-
-    /// <summary>
-    /// 플레이어 인벤토리 중에서 잡화아이템 게임오브젝트를 보관하는 리스트입니다. <br/>
-    /// 게임 중에 변경사항이 있다면 이 변수를 수정해야 합니다. (inventory와 참조연결이 되어있습니다.)
-    /// </summary>
-    public List<GameObject> miscList;
-
     /// <summary>
     /// 게임 중에 기록하는 골드 플레이어 관련 변수입니다.
     /// </summary>
@@ -92,19 +88,12 @@ public class CraftManager : MonoBehaviour
 
 
     // 씬이 넘어갈 때 ItemInfo 스크립트를 넘겨주기 위한 딕셔너리
-    public Dictionary<string, int> weapSaveDic;
-    public Dictionary<string, int> miscSaveDic;
+    //public Dictionary<string, int> weapSaveDic;
+    //public Dictionary<string, int> miscSaveDic;
 
 
     void Awake()
     {
-        if( instance==null )
-            instance=this;
-        else
-            Destroy( this.gameObject );
-
-        DontDestroyOnLoad( instance );
-
         if( PlayerPrefs.GetInt("IsContinuedGamePlay") != 1 )   
             CreateManager.PlayerInitCompleted += CraftManagerInit;    // 게임의 처음시작은 이벤트 연결을 통해 호출하고,
         else
@@ -130,8 +119,6 @@ public class CraftManager : MonoBehaviour
         craftableList=loadData.craftableWeaponList; // 플레이어 제작 목록 불러오기
         
         inventory=loadData.inventory;                // 플레이어 인벤토리 불러오기
-        miscList=inventory.miscList;
-        weapList=inventory.weapList;                // 접근의 편리함을 위해 따로 추가 선언 하였음.
 
         playerGold = loadData.gold;
         playerSilver = loadData. silver;
@@ -145,31 +132,31 @@ public class CraftManager : MonoBehaviour
     /// </summary>
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
-        if( miscSaveDic==null && weapSaveDic==null ) // 최초에 딕셔너리가 없다면 새로만든다.
-        {
-            weapSaveDic=new Dictionary<string, int>();
-            miscSaveDic=new Dictionary<string, int>();
-            return;
-        }
+        //if( miscSaveDic==null && weapSaveDic==null ) // 최초에 딕셔너리가 없다면 새로만든다.
+        //{
+        //    weapSaveDic=new Dictionary<string, int>();
+        //    miscSaveDic=new Dictionary<string, int>();
+        //    return;
+        //}
 
-        weapList.Clear();   // 기존의 리스트 클리어
-        miscList.Clear();
+        //weapList.Clear();   // 기존의 리스트 클리어
+        //miscList.Clear();
 
-        print(miscSaveDic.Count);
-        print(weapSaveDic.Count);
-        // 딕셔너리를 참조하여 아이템 오브젝트를 만든다.
-        foreach( KeyValuePair<string, int> pair in miscSaveDic )
-        {
-            CreateManager.instance.CreateItemToNearstSlot( miscList, pair.Key, pair.Value );
-        }
+        //print(miscSaveDic.Count);
+        //print(weapSaveDic.Count);
+        //// 딕셔너리를 참조하여 아이템 오브젝트를 만든다.
+        //foreach( KeyValuePair<string, int> pair in miscSaveDic )
+        //{
+        //    CreateManager.instance.CreateItemToNearstSlot( miscList, pair.Key, pair.Value );
+        //}
 
-        foreach( KeyValuePair<string, int> pair in weapSaveDic )
-        {
-            CreateManager.instance.CreateItemToNearstSlot( weapList, pair.Key );
-        }
+        //foreach( KeyValuePair<string, int> pair in weapSaveDic )
+        //{
+        //    CreateManager.instance.CreateItemToNearstSlot( weapList, pair.Key );
+        //}
         
-        CraftManager.instance.weapSaveDic=new Dictionary<string, int>(); // 새로운 딕셔너리를 만들어 둔다
-        CraftManager.instance.miscSaveDic=new Dictionary<string, int>(); // 새로운 딕셔너리를 만들어 둔다.
+        //PlayerInven.instance.weapSaveDic=new Dictionary<string, int>(); // 새로운 딕셔너리를 만들어 둔다
+        //PlayerInven.instance.miscSaveDic=new Dictionary<string, int>(); // 새로운 딕셔너리를 만들어 둔다.
     }
     
     private void OnSceneUnloaded( Scene scene )
@@ -194,25 +181,25 @@ public class CraftManager : MonoBehaviour
     /// <summary>
     /// 플레이어의 인벤토리에 담겨 있는 아이템의 갯수 정보를 최신화 하여 줍니다. removeMode가 true일 때 중첩 횟수가 음수인 아이템을 삭제합니다.
     /// </summary>
-    public void UpdateInventoryText(bool removeMode=true)
-    {      
+    //public void UpdateInventoryText(bool removeMode=true)
+    //{      
             
-        Text countText;
-        for(int i=0; i<miscList.Count; i++)
-        { 
-            ItemMisc item = (ItemMisc)miscList[i].GetComponent<ItemInfo>().item;           
+    //    Text countText;
+    //    for(int i=0; i<miscList.Count; i++)
+    //    { 
+    //        ItemMisc item = (ItemMisc)miscList[i].GetComponent<ItemInfo>().item;           
            
-            countText = miscList[i].GetComponentInChildren<Text>();
-            countText.text = item.InventoryCount.ToString();        // 중첩 카운트 텍스트를 동기화
+    //        countText = miscList[i].GetComponentInChildren<Text>();
+    //        countText.text = item.InventoryCount.ToString();        // 중첩 카운트 텍스트를 동기화
 
-            if(removeMode && item.InventoryCount<=0)   // 삭제모드이고 중첩횟수가 0이하이면
-            {
-                GameObject obj = miscList[i];   // 현재 탐색중인 오브젝트를 기록
-                miscList.RemoveAt(i);           // 리스트에서 제거
-                Destroy(obj);                   // 실제 오브젝트 삭제
-            }            
-        }
-    }
+    //        if(removeMode && item.InventoryCount<=0)   // 삭제모드이고 중첩횟수가 0이하이면
+    //        {
+    //            GameObject obj = miscList[i];   // 현재 탐색중인 오브젝트를 기록
+    //            miscList.RemoveAt(i);           // 리스트에서 제거
+    //            Destroy(obj);                   // 실제 오브젝트 삭제
+    //        }            
+    //    }
+    //}
 
 
 

@@ -165,5 +165,13 @@
  * 
  * 7- CraftManagement의 클래스명과 파일명을 CraftSimulation으로 변경 (완료)
  * 8- Inventory 폴더의 폴더명을 InventoryInteractive로 변경(완료)
+ * 
+ * 
+ * <2023_1121_최원준>
+ * 1- CraftGame 폴더를 InGameSimulation으로 변경.
+ * 해당 폴더에 제작, 강화, 상점 관련 시뮬레이션이 들어갈 예정.
+ * 
+ * 
+ * 
  */
  

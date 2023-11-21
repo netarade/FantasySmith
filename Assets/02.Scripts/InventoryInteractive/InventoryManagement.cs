@@ -38,6 +38,12 @@ using ItemData;
 * 
 * d. 탭버튼 클릭시의 처리에 관한 메서드 보유
 * 
+* <v2.1 - 2023_1121_최원준>
+* 1- BtnItemCreateToInventory(아이템 생성 테스트 버튼) 메서드 삭제
+* 클래스와 연관성 없는 기능이므로 
+* 
+* 2- weapList, miscList 초기화 구문 삭제 
+* 인벤토리 클래스 구성이 바뀌었으므로
 */
 
 /// <summary>
@@ -71,9 +77,9 @@ public class InventoryManagement : MonoBehaviour
         slotListTr = GameObject.Find("SlotList").transform;     // 슬롯리스트 트랜스폼 참조        
         InventoryPanel = GameObject.Find("Inventory");          // 인벤토리 판넬 참조
        
-        // 인벤토리 정보를 통해 탭 기능을 구현하기 위함 
-        weapList = PlayerInven.instance.weapList;
-        miscList = PlayerInven.instance.miscList;
+
+
+
 
         // 탭 버튼 참조
         btnTapAll = InventoryPanel.transform.GetChild(1).GetComponent<Button>();
@@ -103,24 +109,6 @@ public class InventoryManagement : MonoBehaviour
 
 
 
-
-    /// <summary>
-    /// 아이템 생성 테스트 버튼
-    /// </summary>
-    public void BtnItemCreateToInventory()
-    {        
-        CreateManager.instance.CreateItemToNearstSlot(PlayerInven.instance.miscList, "강철", 10);
-        CreateManager.instance.CreateItemToNearstSlot(PlayerInven.instance.miscList, "흑철", 10);
-        CreateManager.instance.CreateItemToNearstSlot(PlayerInven.instance.miscList, "철", 10);
-        CreateManager.instance.CreateItemToNearstSlot(PlayerInven.instance.miscList, "미스릴", 10);
-        CreateManager.instance.CreateItemToNearstSlot(PlayerInven.instance.miscList, "부드러운 나뭇가지", 10);
-        CreateManager.instance.CreateItemToNearstSlot(PlayerInven.instance.miscList, "가벼운 나뭇가지", 10);
-        CreateManager.instance.CreateItemToNearstSlot(PlayerInven.instance.miscList, "속성석", 3);
-        CreateManager.instance.CreateItemToNearstSlot(PlayerInven.instance.miscList, "강화석", 3);
-        CreateManager.instance.CreateItemToNearstSlot(PlayerInven.instance.miscList, "초급 물리의 각인", 1);
-        CreateManager.instance.CreateItemToNearstSlot(PlayerInven.instance.miscList, "중급 공속의 각인", 1);
-        CreateManager.instance.CreateItemToNearstSlot(PlayerInven.instance.miscList, "고급 흡혈의 각인", 1);
-    }
 
 
     /// <summary>

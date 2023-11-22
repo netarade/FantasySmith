@@ -44,6 +44,10 @@ using UnityEngine.SceneManagement;
  * 3- weapList, miscList를 제거 (inventory쪽에 기능을 추가하여 접근성을 높일 계획이므로)
  * 4- 기타 로직들 제거 및 주석처리 (미완료)
  * 5- UpdateInventoryText 메서드 주석처리 - inventory쪽에 해당 기능을 추가 할 예정이므로
+ * 
+ * <v3.1 - 2023_1122_최원준>
+ * 1- 인벤토리 및 숙련사전 주석 수정 보완
+ * 
  */
 
     
@@ -53,23 +57,20 @@ using UnityEngine.SceneManagement;
 /// </summary>
 public class PlayerInven : MonoBehaviour
 {
-    /// <summary>
-    /// 플레이어가 제작가능한 장비를 알려주는 목록입니다. string name을 기반으로 하는 무기 종류별 리스트가 보관되어있는 클래스입니다.<br/> 
-    /// 게임 중에 변경사항이 있다면 이 변수를 수정해야 합니다.
-    /// </summary>
-    public Craftdic craftableList;
 
     /// <summary>
-    /// 플레이어가 보유하고 있는 장비 숙련도 목록입니다. name과 CraftProficincy구조체형 으로 보관하여 빠르게 접근을 가능하게 해줍니다<br/>
-    /// 게임 중에 변경사항이 있다면 이 변수를 수정해야 합니다. 
-    /// </summary>
-    public Dictionary<string, CraftProficiency> proficiencyDic;
-
-    /// <summary>
-    /// 플레이어가 보유하고 있는 인벤토리 관련 정보의 집합 클래스입니다. <br/>
-    /// 게임 중에 변경사항이 있다면 이 변수를 수정해야 합니다.
+    /// 플레이어가 보유하고 있는 아이템을 보관하는 인벤토리와 관련된 정보를 가지고 있는 클래스입니다.<br/>
+    /// 인벤토리에 아이템을 생성하고 제거하거나 현재 아이템의 검색 기능 등을 가지고 있습니다.<br/>
+    /// 딕셔너리 내부에 게임 오브젝트를 보유하고 있으므로 씬 전환이나 세이브 로드 시에 반드시 Item 형식의 List로의 Convert가 필요합니다.
     /// </summary>
     public Inventory inventory;
+    
+    /// <summary>
+    /// 플레이어가 현재 제작가능한 장비와 해당 장비의 숙련도를 알려주는 딕셔너리를 보유한 클래스입니다.<br/>
+    /// 해당 종류의 딕셔너리에 아이템 이름으로 접근하여 구조체를 할당받아 정보를 확인합니다.
+    /// </summary>
+    public Craftdic craftDic;
+
 
     /// <summary>
     /// 게임 중에 기록하는 골드 플레이어 관련 변수입니다.
@@ -115,7 +116,7 @@ public class PlayerInven : MonoBehaviour
         DataManager dataManager = new DataManager();
         GameData loadData = dataManager.LoadData();
 
-        proficiencyDic=loadData.proficiencyDic;     // 플레이어 숙련 목록 불러오기
+        craftDic=loadData.proficiencyDic;     // 플레이어 숙련 목록 불러오기
         craftableList=loadData.craftableWeaponList; // 플레이어 제작 목록 불러오기
         
         inventory=loadData.inventory;                // 플레이어 인벤토리 불러오기

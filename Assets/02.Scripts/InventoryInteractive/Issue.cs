@@ -171,14 +171,14 @@
  * 1- CraftGame 폴더를 InGameSimulation으로 변경.
  * 해당 폴더에 제작, 강화, 상점 관련 시뮬레이션이 들어갈 예정.
  * 
- * 2- 슬롯리스트를 동적할당 방식으로 생성하기 전에 휠드래그를 이용한 스크롤 가능하게 만들어야 한다.
+ * 2- 슬롯리스트를 동적할당 방식으로 생성하기 전에 휠드래그를 이용한 스크롤 가능하게 만들어야 한다.  (완료_2023_1122)
  * 인벤토리 스크롤뷰로 만들면, Viewport 내부 Content 하위에 Slot을 두어야 하는데 
  * 문제는 스크롤바가 Content랑만 연동되기 때문에 Content를 복제하면 작동하지 않는다.
  * (Content를 각 슬롯 리스트로 활용할 수 없다.)
  * (현재 Content 하위에 그리드 레이아웃과 Content Size Fitter를 붙여서 Vertical Fit - Min size 옵션으로 테스트 해보았다.)
  * => (해결방안) Content 하나만 쓰고, Content 하위에 각 슬롯리스트를 두어야 한다.
  * Content에는 Vertical Layout Group과 Content Size Fitter를 달아서 하위 자식크기 변동이 있을 때 크기가 조정 되게끔해주고
- * SlotList에는 Grid Layout Group과 Content Size Fitter를 달아서 슬롯이 늘어날 때마다 사이즈가 늘어나게끔 해준다.
+ * SlotList에는 Grid Layout Group과 Content Size Fitter를 달아서 슬롯이 늘어날 때마다 사이즈가 늘어나게끔 해준다.   
  * 
  * 
  */

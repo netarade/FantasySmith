@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using ItemData;
+using CraftData;
 
 /*
 * [작업 사항]  
@@ -44,6 +45,9 @@ using ItemData;
 * 
 * 2- weapList, miscList 초기화 구문 삭제 
 * 인벤토리 클래스 구성이 바뀌었으므로
+* 
+* <v2.2 - 2023_1122_최원준>
+* 1- 각 슬롯리스트 선언 및 참조, 슬롯리스트에 슬롯 프리팹 동적할당 진행 중  
 */
 
 /// <summary>
@@ -53,34 +57,35 @@ using ItemData;
 /// </summary>
 public class InventoryManagement : MonoBehaviour
 {
-    [SerializeField] private Button btnTapAll;               // 버튼 탭을 눌렀을 때 각 탭에 맞는 아이템이 표시되도록 하기 위한 참조
+    [SerializeField] private Button btnTapAll;                      // 버튼 탭을 눌렀을 때 각 탭에 맞는 아이템이 표시되도록 하기 위한 참조
     [SerializeField] private Button btnTapWeap;
     [SerializeField] private Button btnTapMisc;
 
-    [SerializeField] private Transform slotListTr;                   // 인벤토리의 슬롯 오브젝트의 트랜스폼 참조
-    [SerializeField] private List<GameObject> weapList;              // 무기 아이템을 넣어서 관리하는 인벤토리
-    [SerializeField] private List<GameObject> miscList;              // 잡화 아이템을 넣어서 관리하는 인벤토리
-
     public static GameObject statusWindow;                          // 상태창을 표시하는 스크립트(ItemPointerStatusWindow)에서 참조하기 위해 잡아주는 변수
     public GameObject InventoryPanel;                               // 인벤토리 판넬을 참조하여 껐다 켰다 하기 위함.
-    
+        
+    [SerializeField] private Transform slotListAllTr;                   // 인벤토리 전체탭 슬롯리스트의 트랜스폼 참조
+    [SerializeField] private Transform slotListWeapTr;                  // 인벤토리 무기탭 슬롯리스트의 트랜스폼 참조
+    [SerializeField] private Transform slotListMiscTr;                  // 인벤토리 기타탭 슬롯리스트의 트랜스폼 참조
+    public GameObject slotPrefab;                                       // 슬롯을 동적으로 생성하기 위한 프리팹 참조
+
+
+
     private Image[] inventoryImgArr;                    // 인벤토리의 모든 이미지
     private Text[] inventoryTextArr;                    // 인벤토리의 모든 텍스트
     public static bool isInventoryOn;                   // On상태 기록하기 위한 변수
     
-
+    PlayerInven invenInfo;
 
 
     void Start()
     {
-        statusWindow = GameObject.Find( "Panel-ItemStatus" );   // 상태창 참조
-        slotListTr = GameObject.Find("SlotList").transform;     // 슬롯리스트 트랜스폼 참조        
+        statusWindow = GameObject.Find( "Panel-ItemStatus" );   // 상태창 참조    
         InventoryPanel = GameObject.Find("Inventory");          // 인벤토리 판넬 참조
+        slotListAllTr = InventoryPanel.transform.GetChild(0).GetChild(0).GetChild(0);       // 뷰포트-컨텐트-전체 슬롯리스트
+        slotListWeapTr = InventoryPanel.transform.GetChild(0).GetChild(0).GetChild(1);      // 뷰포트-컨텐트-무기 슬롯리스트
+        slotListMiscTr = InventoryPanel.transform.GetChild(0).GetChild(0).GetChild(2);      // 뷰포트-컨텐트-기타 슬롯리스트
        
-
-
-
-
         // 탭 버튼 참조
         btnTapAll = InventoryPanel.transform.GetChild(1).GetComponent<Button>();
         btnTapWeap = InventoryPanel.transform.GetChild(2).GetComponent<Button>();
@@ -104,6 +109,16 @@ public class InventoryManagement : MonoBehaviour
         isInventoryOn = false;          //초기에 인벤토리는 꺼진 상태
 
 
+        //인벤토리 슬롯 생성
+        invenInfo = GameObject.Find("Player").GetComponent<PlayerInven>();
+        
+
+        for(int i=0; i< invenInfo.inventory.WeapCountLimit+invenInfo.inventory.MiscCountLimit; i++)
+            Instantiate(slotPrefab, slotListAllTr);
+        for(int i=0; i< invenInfo.inventory.WeapCountLimit; i++)
+            Instantiate(slotPrefab, slotListWeapTr);
+        for(int i=0; i< invenInfo.inventory.MiscCountLimit; i++)
+            Instantiate(slotPrefab, slotListMiscTr);
     }
 
 
@@ -149,7 +164,7 @@ public class InventoryManagement : MonoBehaviour
             text.enabled = onOffState;
 
         // 인벤토리의 이미지를 키고 끌때마다 현재 슬롯에 있는 아이템의 이미지와 텍스트도 동일한 상태로 동기화 해줍니다.        
-        ItemInfo[] itemInfos = slotListTr.GetComponentsInChildren<ItemInfo>();
+        ItemInfo[] itemInfos = slotListAllTr.GetComponentsInChildren<ItemInfo>();
         foreach(ItemInfo info in itemInfos)
         {
             info.gameObject.GetComponent<Image>().enabled = onOffState;
@@ -172,16 +187,16 @@ public class InventoryManagement : MonoBehaviour
         
         if(btnIdx==0)       // All 탭
         {   
-            if( slotListTr.parent.GetChild(4).childCount==0 ) //오브젝트 emptyList에 아무것도 담겨 있지 않다면, 실행하지 않는다.
+            if( slotListAllTr.parent.GetChild(4).childCount==0 ) //오브젝트 emptyList에 아무것도 담겨 있지 않다면, 실행하지 않는다.
                 return;
 
             for(int i=0; i<weapList.Count; i++) //무기 리스트를 하나씩 배치
             {
-                for(int j=0; j<slotListTr.childCount; j++) // 슬롯을 차례로 순회
+                for(int j=0; j<slotListAllTr.childCount; j++) // 슬롯을 차례로 순회
                 {
-                    if(slotListTr.GetChild(j).childCount==0)
+                    if(slotListAllTr.GetChild(j).childCount==0)
                     {
-                        weapList[i].transform.SetParent( slotListTr.GetChild(j), false );     // 빈 공간에 배치
+                        weapList[i].transform.SetParent( slotListAllTr.GetChild(j), false );     // 빈 공간에 배치
                         weapList[i].transform.localPosition = Vector3.zero;
                         break;
                     }                
@@ -189,11 +204,11 @@ public class InventoryManagement : MonoBehaviour
             }
             for(int i=0; i<miscList.Count; i++) //기타 리스트를 하나씩 배치
             {
-                for(int j=0; j<slotListTr.childCount; j++) // 슬롯을 차례로 순회
+                for(int j=0; j<slotListAllTr.childCount; j++) // 슬롯을 차례로 순회
                 {
-                    if(slotListTr.GetChild(j).childCount==0)
+                    if(slotListAllTr.GetChild(j).childCount==0)
                     {
-                        miscList[i].transform.SetParent( slotListTr.GetChild(j), false );     // 빈 공간에 배치
+                        miscList[i].transform.SetParent( slotListAllTr.GetChild(j), false );     // 빈 공간에 배치
                         miscList[i].transform.localPosition = Vector3.zero;
                         break;
                     }                
@@ -203,37 +218,37 @@ public class InventoryManagement : MonoBehaviour
         }
         else if(btnIdx==1)  // Sword 탭
         {
-            for(int i=0; i<slotListTr.childCount; i++) // 슬롯의 갯수만큼
+            for(int i=0; i<slotListAllTr.childCount; i++) // 슬롯의 갯수만큼
             {
-                if( slotListTr.GetChild(i).childCount!=0 ) // 슬롯에 들어있는 오브젝트를 모두 잠시 오브젝트 emptyList로 이동한다.
+                if( slotListAllTr.GetChild(i).childCount!=0 ) // 슬롯에 들어있는 오브젝트를 모두 잠시 오브젝트 emptyList로 이동한다.
                 {
-                    slotListTr.GetChild(i).GetChild(0).localPosition = Vector3.zero;
-                    slotListTr.GetChild(i).GetChild(0).SetParent(slotListTr.parent.GetChild(4), false);
+                    slotListAllTr.GetChild(i).GetChild(0).localPosition = Vector3.zero;
+                    slotListAllTr.GetChild(i).GetChild(0).SetParent(slotListAllTr.parent.GetChild(4), false);
                 }
             }
 
             for( int i = 0; i<weapList.Count; i++ ) // 무기 리스트의 모든 아이템 정보를 읽어들인다.
             {
                 int targetIdx = weapList[i].GetComponent<ItemInfo>().item.SlotIndex;
-                weapList[i].transform.SetParent( slotListTr.GetChild(targetIdx), false );     // 해당 정보에 맞게 배치한다.
+                weapList[i].transform.SetParent( slotListAllTr.GetChild(targetIdx), false );     // 해당 정보에 맞게 배치한다.
                 weapList[i].transform.localPosition = Vector3.zero;                                                                                              
             }
         }
         else if(btnIdx==2)  // Misc 탭
         {
-            for(int i=0; i<slotListTr.childCount; i++) // 슬롯의 갯수 만큼
+            for(int i=0; i<slotListAllTr.childCount; i++) // 슬롯의 갯수 만큼
             {
-                if( slotListTr.GetChild(i).childCount!=0 ) // 슬롯에 들어있는 오브젝트를 모두 잠시 오브젝트 emptyList로 이동한다.
+                if( slotListAllTr.GetChild(i).childCount!=0 ) // 슬롯에 들어있는 오브젝트를 모두 잠시 오브젝트 emptyList로 이동한다.
                 {
-                    slotListTr.GetChild(i).GetChild(0).localPosition = Vector3.zero;
-                    slotListTr.GetChild(i).GetChild(0).SetParent(slotListTr.parent.GetChild(4), false);
+                    slotListAllTr.GetChild(i).GetChild(0).localPosition = Vector3.zero;
+                    slotListAllTr.GetChild(i).GetChild(0).SetParent(slotListAllTr.parent.GetChild(4), false);
                 }
             }
 
             for( int i = 0; i<miscList.Count; i++ ) // 기타 리스트의 모든 아이템 정보를 읽어들인다. 해당 정보에 맞게 배치한다.
             {
                 int targetIdx = miscList[i].GetComponent<ItemInfo>().item.SlotIndex;
-                miscList[i].transform.SetParent( slotListTr.GetChild(targetIdx), false );     
+                miscList[i].transform.SetParent( slotListAllTr.GetChild(targetIdx), false );     
                 miscList[i].transform.localPosition = Vector3.zero;                                                                                              
             }
         }

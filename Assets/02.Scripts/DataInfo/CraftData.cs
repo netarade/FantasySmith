@@ -40,6 +40,9 @@ using ItemData;
  * 
  * 4- 기타 주석 수정
  * 
+ * <v5.1 - 2023_1122>
+ * 1- 딕셔너리 멤버변수 주석 수정
+ * 
  * 
  */
 
@@ -53,12 +56,12 @@ namespace CraftData
     public class Craftdic
     {
         /// <summary>
-        /// 제작가능한 검-장검 목록입니다. 아이템 이름으로 접근가능합니다.
+        /// 제작가능한 검-장검 목록입니다. 아이템 이름으로 접근하면 해당 장비의 숙련도 정보를 가진 구조체를 할당 받습니다.
         /// </summary>
         public Dictionary<string, CraftProficiency> swordDic;
 
         /// <summary>
-        /// 제작가능한 활-보우 목록입니다. 아이템 이름으로 접근가능합니다.
+        /// 제작가능한 활-보우 목록입니다. 아이템 이름으로 접근하면 해당 장비의 숙련도 정보를 가진 구조체를 할당 받습니다.
         /// </summary>
         public Dictionary<string, CraftProficiency> bowDic;
 

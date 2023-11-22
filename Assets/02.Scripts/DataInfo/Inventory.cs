@@ -44,6 +44,8 @@ using UnityEngine;
  * 4- Inventory 클래스와 SerializableInventory 클래스의 weapCountLimit, miscCountLimit 프로퍼티화 및 변수명 앞머리 대문자로 변경
  * 5- Serializable 클래스의 생성자에  WeapCountLimit, MiscCountLimit의 초기화가 빠져있던 점 수정
  * 
+ * <v4.1 - 2023_1122_최원준>
+ * 1- 무기, 기타 사전의 주석 보완
  * 
  */
 

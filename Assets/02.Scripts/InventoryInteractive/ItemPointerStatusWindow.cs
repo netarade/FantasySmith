@@ -59,7 +59,7 @@ public class ItemPointerStatusWindow : MonoBehaviour, IPointerEnterHandler, IPoi
     void Start()
     {        
         // 하위 오브젝트의 모든 참조는 InventoryManagement의 빠른 참조를 기반으로 한다.
-        statusWindow=InventoryManagement.statusWindow;  
+        statusWindow=InventoryManagement.statusWindowTr;  
         imageItem = statusWindow.transform.GetChild(0).GetChild(0).GetComponent<Image>();
         txtEnhancement = statusWindow.transform.GetChild(1).GetComponent<Text>();
         txtName = statusWindow.transform.GetChild(2).GetComponent<Text>();

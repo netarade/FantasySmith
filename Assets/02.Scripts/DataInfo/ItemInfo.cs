@@ -74,7 +74,7 @@ using Unity.VisualScripting;
 /// </summary>
 public class ItemInfo : MonoBehaviour
 {
-    private Item item;               // 모든 아이템 클래스를 관리 가능한 변수
+    private Item item;              // 모든 아이템 클래스를 관리 가능한 변수
     public Image innerImage;        // 아이템이 인벤토리에서 보여질 이미지 (오브젝트의 이미지 컴포넌트를 말한다.)
     public Text countTxt;           // 잡화 아이템의 수량을 반영할 텍스트
     public Transform slotList;      // 아이템이 놓이게 될 슬롯 들의 부모인 슬롯리스트를 참조

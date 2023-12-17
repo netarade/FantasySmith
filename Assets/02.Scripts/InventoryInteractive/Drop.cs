@@ -1,4 +1,5 @@
 using ItemData;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
@@ -16,15 +17,30 @@ using UnityEngine.EventSystems;
  * 
  * <v2.1 - 2023_1119_최원준>
  * 1- ItemInfo스크립트의 item에 직접 접근하고 있던 점을 Item(프로퍼티)에의 접근으로 수정
+ * 
+ * <v3.0 - 2023_1216_최원준>
+ * 1- 속성석을 5개로 나누었고 각각의 이름에 따른 속성개방 로직 분기 처리, 장착이 이뤄지면 무조건 감소 삭제되도록 변경
+ * 2- 아이템 갯수 1일때 잡화 리스트에서 감소하던 구문을 잡화 딕셔너리를 참조하여 감소하는 구문으로 변경
+ * 
+ * <v3.1 - 2023_1217_최원준>
+ * 1- miscDic을 PlayerInven클래스에서 싱글톤에 접속해서 초기화 하던 것을 인스턴스 생성하여 초기화 하는 것으로 변경
+ * (싱글톤은 씬전환시 초기화가 느리기 때문)
+ * 2- switch문의 강화석에 각인로직이 있던것을 수정
+ * 3- Drop스크립트에서 속성석이나 각인석을 적용할 때 직접 BasePerformance를 조정하던 것을 삭제
+ * 
  */
 
 
 public class Drop : MonoBehaviour, IDropHandler
 {
     Transform slotTr;   // 슬롯 자신의 트랜스폼
+    Dictionary<string, List<GameObject>> miscDic;
     void Start()
     {
         slotTr = GetComponent<Transform>();     
+        //플레이어 인벤토리 정보에서 잡화 딕셔너리를 참조합니다
+        PlayerInven playerInvenInfo = GetComponent<PlayerInven>();
+        miscDic = playerInvenInfo.inventory.miscDic;
     }
 
     /// <summary>
@@ -43,7 +59,9 @@ public class Drop : MonoBehaviour, IDropHandler
         {
             ItemMisc draggingMisc = ((ItemMisc)draggingItem); 
 
-            if( draggingMisc.EnumMiscType==MiscType.Engraving || draggingMisc.EnumMiscType==MiscType.Enhancement )
+            if( draggingMisc.eMiscType==MiscType.Engraving || 
+                draggingMisc.eMiscType==MiscType.Enhancement ||
+                draggingMisc.eMiscType==MiscType.Attribute )
             {                
                 Item applyItem = slotTr.GetChild(0).gameObject.GetComponent<ItemInfo>().Item;   //강화를 적용할 아이템의 정보를 봅니다.
                 if(applyItem.Type == ItemType.Weapon)                 // 적용 대상이 무기라면 강화 로직을 수행하고 아니라면 스위칭 로직을 수행합니다.
@@ -51,31 +69,35 @@ public class Drop : MonoBehaviour, IDropHandler
                    
                     switch (draggingItem.Name)
                     {
-                        case "강화석" :
-                            ((ItemWeapon)applyItem).BasePerformance *= 1.15f;  // 기본 성능을 15% 증가시킵니다.
+                        case "강화석" :                            
                             break;
-                        case "속성석" :
-                            if( ((ItemWeapon)applyItem).IsAttrUnlocked )           // 속성이 잠겨있다면 
-                            {
-                                ((ItemWeapon)applyItem).BasePerformance *= 1.50f;  // 기본 성능을 50% 증가시킵니다.
-                                ((ItemWeapon)applyItem).IsAttrUnlocked = false;    // 속성을 개방합니다.
-                            }
-                            else        // 속성이 이미 개방되어 있다면
-                                return; // 하위의 수량감산이나 스왑로직을 수행하지 않습니다.
-
-                            break;
+                        case "속성석-수" :
+                            ((ItemWeapon)applyItem).AttributeUnlock(AttributeType.Water); // 수 속성을 개방합니다. 
+                            break;       
+                        case "속성석-금" :
+                            ((ItemWeapon)applyItem).AttributeUnlock(AttributeType.Gold);  // 굼 속성을 개방합니다. 
+                            break;          
+                        case "속성석-지" :
+                            ((ItemWeapon)applyItem).AttributeUnlock(AttributeType.Earth); // 지 속성을 개방합니다. 
+                            break;         
+                        case "속성석-화" :
+                            ((ItemWeapon)applyItem).AttributeUnlock(AttributeType.Fire);  // 화 속성을 개방합니다. 
+                            break;         
+                        case "속성석-풍" :
+                            ((ItemWeapon)applyItem).AttributeUnlock(AttributeType.Wind);  // 풍 속성을 개방합니다. 
+                            break;    
+                            // 속성석은 개방여부와 상관없이 소모되어야 합니다
                         case "각인석" :
-                            ((ItemWeapon)applyItem).BasePerformance *= draggingMisc.EngraveInfo.PerformMult;  // 기본 성능을 각인의 성능 배율만큼 증가시킵니다.
                             ((ItemWeapon)applyItem).Engrave(draggingItem.Name); // 드래깅아이템을 각인하여 각인정보를 반영합니다.
                             break;
                     }
 
 
                     if( draggingMisc.InventoryCount == 1 )    // 아이템 갯수가 1개라면,
-                    {
-                        PlayerInven.instance.miscList.Remove(dragObj);   // 강화석을 플레이어 인벤토리의 잡화목록에서 제거합니다.
-                        Destroy(dragObj, 0.5f);                           // 0.5초후 삭제 시킵니다.
-                        dragObj.SetActive(false);                         // 아이템을 바로 disable 시킵니다.
+                    {   
+                        miscDic[draggingItem.Name].Remove(dragObj);   // 아이템을 플레이어 인벤토리의 잡화목록에서 제거합니다.
+                        Destroy(dragObj, 0.5f);                       // 0.5초후 삭제 시킵니다.
+                        dragObj.SetActive(false);                     // 아이템을 바로 disable 시킵니다.
                     }
                     else //2개 이상이라면,
                     {

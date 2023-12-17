@@ -56,6 +56,19 @@ using Unity.VisualScripting;
  *ItemInfo 클래스는 오브젝트의 정보만 최신화 시켜주는 역할을 하게 해야하기 때문이며, 
  *ItemInfo에서 item의 내부정보를 수정하는 메서드를 추가하기 시작하면, Inventory클래스에서의 기능을 중복 구현할 가능성이 커짐.
  *
+ *<v8.0 - 2023_1216_최원준>
+ *1- 아이템의 상태창 이미지 변수 statusImage 추가 및 UpdateImage메서드 내부 수정
+ *
+ *2- 아이템 파괴시 전달 로직 주석처리 되어있던 부분 제거
+ *
+ *3- slotList 변수명 slotListTr로 변경
+ *
+ *4- Transform imageCollectionsTr 임시변수 선언후 
+ * GameObject.Find( "ImageCollections" ) 중복 호출 로직 수정
+ *
+ *<v8.1 - 2023_1217_최원준>
+ *1- ItemImageCollection 변수들을 하나씩 참조하던 것을 배열로 만들어서 참조
+ *
  */
 
 
@@ -76,26 +89,23 @@ public class ItemInfo : MonoBehaviour
 {
     private Item item;              // 모든 아이템 클래스를 관리 가능한 변수
     public Image innerImage;        // 아이템이 인벤토리에서 보여질 이미지 (오브젝트의 이미지 컴포넌트를 말한다.)
+    public Image statusImage;       // 아이템이 상태창에서 보여질 이미지 (오브젝트의 이미지 컴포넌트)
     public Text countTxt;           // 잡화 아이템의 수량을 반영할 텍스트
-    public Transform slotList;      // 아이템이 놓이게 될 슬롯 들의 부모인 슬롯리스트를 참조
+    public Transform slotListTr;    // 아이템이 놓이게 될 슬롯 들의 부모인 슬롯리스트 트랜스폼 참조
 
-    [SerializeField] ItemImageCollection iicMiscBase;           // 인스펙터 뷰 상에서 등록할 잡화 기본 아이템 이미지 집합
-    [SerializeField] ItemImageCollection iicMiscAdd;            // 인스펙터 뷰 상에서 등록할 잡화 추가 아이템 이미지 집합
-    [SerializeField] ItemImageCollection iicMiscOther;          // 인스펙터 뷰 상에서 등록할 잡화 기타 아이템 이미지 집합
-    [SerializeField] ItemImageCollection iicWeaponSword;        // 인스펙터 뷰 상에서 등록할 무기 검 아이템 이미지 집합
-    [SerializeField] ItemImageCollection iicWeaponBow;          // 인스펙터 뷰 상에서 등록할 무기 활 아이템 이미지 집합
-
+    public ItemImageCollection[] iicArr;      // 인스펙터 뷰 상에서 등록할 아이템 이미지 집합 배열
+    public enum eIIC { MiscBase,MiscAdd,MiscOther,Sword,Bow }    // 이미지 집합 배열의 인덱스 구분
     public void Start()
     {
         countTxt = GetComponentInChildren<Text>();
-        slotList = GameObject.Find("Inventory").transform.GetChild(0);
+        slotListTr = GameObject.Find("Inventory").transform.GetChild(0);
         
-        // 인스펙터뷰 상에서 달아놓은 스프라이트 이미지 집합을 참조한다.
-        iicMiscBase=GameObject.Find( "ImageCollections" ).transform.GetChild( 0 ).GetComponent<ItemImageCollection>();
-        iicMiscAdd=GameObject.Find( "ImageCollections" ).transform.GetChild( 1 ).GetComponent<ItemImageCollection>();
-        iicMiscOther=GameObject.Find( "ImageCollections" ).transform.GetChild( 2 ).GetComponent<ItemImageCollection>();
-        iicWeaponSword=GameObject.Find( "ImageCollections" ).transform.GetChild( 3 ).GetComponent<ItemImageCollection>();
-        iicWeaponBow=GameObject.Find( "ImageCollections" ).transform.GetChild( 4 ).GetComponent<ItemImageCollection>();
+        // 인스펙터뷰 상에서 달아놓은 스프라이트 이미지 집합을 참조합니다.
+        Transform imageCollectionsTr = GameObject.Find( "ImageCollections" ).transform;
+
+        for( int i = 0; i<5; i++)
+            iicArr[i] = imageCollectionsTr.GetChild(i).GetComponent<ItemImageCollection>();
+
     }
 
 
@@ -146,24 +156,38 @@ public class ItemInfo : MonoBehaviour
             case ItemType.Weapon:
                 WeaponType weaponType = ((ItemWeapon)item).EnumWeaponType;  // 아이템의 서브타입을 구분합니다.
 
-                if(weaponType==WeaponType.Sword)
-                    innerImage.sprite = iicWeaponSword.icArrImg[item.sImageRefIndex.innerImgIdx].innerSprite;  
-                else if(weaponType==WeaponType.Bow)
-                    innerImage.sprite =iicWeaponBow.icArrImg[item.sImageRefIndex.innerImgIdx].innerSprite;
+                if( weaponType==WeaponType.Sword )
+                {
+                    innerImage.sprite=iicArr[((int)eIIC.Sword)].icArrImg[item.sImageRefIndex.innerImgIdx].innerSprite;
+                    statusImage.sprite=iicArr[(int)eIIC.Bow].icArrImg[item.sImageRefIndex.statusImgIdx].statusSprite;
+                }
+                else if( weaponType==WeaponType.Bow )
+                {
+                    innerImage.sprite=iicArr[(int)eIIC.Bow].icArrImg[item.sImageRefIndex.innerImgIdx].innerSprite;
+                    statusImage.sprite=iicArr[(int)eIIC.Bow].icArrImg[item.sImageRefIndex.statusImgIdx].statusSprite;
+                }
                 break;
-
                 // 아이템 오브젝트 이미지를 인스펙터뷰에 직렬화되어 있는 ItemImageCollection 클래스의
                 // 내부 구조체 배열 ImageColection[]에 개념아이템이 고유 정보로 가지고 있는 ImageReferenceIndex 구조체의 인덱스를 가져옵니다.                
                 
             case ItemType.Misc:
-                MiscType miscType = ((ItemMisc)item).EnumMiscType;
+                MiscType miscType = ((ItemMisc)item).eMiscType;
 
-                if(miscType==MiscType.Basic)
-                    innerImage.sprite = iicMiscBase.icArrImg[item.sImageRefIndex.innerImgIdx].innerSprite;
-                else if(miscType==MiscType.Additive)
-                    innerImage.sprite = iicMiscAdd.icArrImg[item.sImageRefIndex.innerImgIdx].innerSprite;
+                if( miscType==MiscType.Basic )
+                {
+                    innerImage.sprite=iicArr[(int)eIIC.MiscBase].icArrImg[item.sImageRefIndex.innerImgIdx].innerSprite;
+                    statusImage.sprite=iicArr[(int)eIIC.MiscBase].icArrImg[item.sImageRefIndex.statusImgIdx].statusSprite;
+                }
+                else if( miscType==MiscType.Additive )
+                {
+                    innerImage.sprite=iicArr[(int)eIIC.MiscAdd].icArrImg[item.sImageRefIndex.innerImgIdx].innerSprite;
+                    statusImage.sprite=iicArr[(int)eIIC.MiscAdd].icArrImg[item.sImageRefIndex.statusImgIdx].statusSprite;
+                }
                 else
-                    innerImage.sprite = iicMiscOther.icArrImg[item.sImageRefIndex.innerImgIdx].innerSprite;
+                {
+                    innerImage.sprite=iicArr[(int)eIIC.MiscOther].icArrImg[item.sImageRefIndex.innerImgIdx].innerSprite;
+                    statusImage.sprite=iicArr[(int)eIIC.MiscOther].icArrImg[item.sImageRefIndex.statusImgIdx].statusSprite;
+                }
                 break;
         }
     }
@@ -183,35 +207,13 @@ public class ItemInfo : MonoBehaviour
             countTxt.enabled = false;                // 잡화아이템이 아니라면 중첩 텍스트를 비활성화합니다.
     }
 
-
-    
     
     // 아이템의 위치정보 반영  (현재 어디서 아이템 위치를 참조해서 슬롯에 넣어주고 있는가? => CreateManager에서 Instantiate할때 미리 붙인다.)
     public void UpdatePosition()
     {
-        transform.SetParent( slotList.GetChild(item.SlotIndex) );  // 오브젝트의 현 부모를 아이템 정보상의 슬롯 위치로 변경한다.
+        transform.SetParent( slotListTr.GetChild(item.SlotIndex) );  // 오브젝트의 현 부모를 아이템 정보상의 슬롯 위치로 변경한다.
         transform.localPosition = Vector3.zero;                    // 로컬위치를 부모기준으로부터 0,0,0으로 맞춘다.
     }
 
-
-
-
-
-    /// <summary>
-    /// 아이템이 파괴 되기전 정보를 넘겨주기 위한 메서드 (현재 임시로 이름과 수량만 넘겨주고 새로운 아이템을 생성하는 형식으로 되어 있다.)
-    /// </summary>
-    //private void OnDestroy()
-    //{
-    //    if( item.Type==ItemType.Misc )
-    //    {
-    //        PlayerInven.instance.miscSaveDic.Add( item.Name, ( (ItemMisc)item ).InventoryCount );    //이름과 수량을 저장
-    //        Debug.Log( item.Name );
-    //    }
-    //    else if( item.Type==ItemType.Weapon )
-    //    {
-    //        PlayerInven.instance.weapSaveDic.Add( item.Name, 0 );    //이름을 저장
-    //        Debug.Log( item.Name );
-    //    }
-    //}
 
 }

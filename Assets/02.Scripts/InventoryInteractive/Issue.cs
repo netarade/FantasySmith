@@ -161,14 +161,17 @@
  * 6- 실제 플레이에서는 CraftManager를 지우고 Player 스크립트에 인벤토리가 있어야 한다.
  * 세부적으로는 씬로드 및 씬종료시 인벤토리 로드와세이브를 해줘야 하며 , 씬전환 시 인벤토리가 유지 될 수 있어야 한다.
  * 또한 CraftManagement클래스에서 CraftManager의 인벤토리를 참조하는 것이 아니라 Player가 제작시뮬레이션이 시작되면 inventory를 넘겨주어야 한다.
- * => CraftManager의 클래스명과 파일명을 PlayerInven으로 변경 후 플레이어 오브젝트가 컴포넌트로 들고있어야 하는 것으로 변경. 싱글톤 제거, Player폴더로 이동 (완료)
+ * => 
+ * CraftManager의 클래스명과 파일명을 PlayerInven으로 변경 후 
+ * 플레이어 오브젝트가 컴포넌트로 들고있어야 하는 것으로 변경.싱글톤 제거, Player폴더로 이동 (완료) 
+ * 
  * 
  * 7- CraftManagement의 클래스명과 파일명을 CraftSimulation으로 변경 (완료)
  * 8- Inventory 폴더의 폴더명을 InventoryInteractive로 변경(완료)
  * 
  * 
  * <2023_1121_최원준>
- * 1- CraftGame 폴더를 InGameSimulation으로 변경.
+ * 1- CraftGame 폴더를 InGameSimulation으로 변경. (완료_2023_1122)
  * 해당 폴더에 제작, 강화, 상점 관련 시뮬레이션이 들어갈 예정.
  * 
  * 2- 슬롯리스트를 동적할당 방식으로 생성하기 전에 휠드래그를 이용한 스크롤 가능하게 만들어야 한다.  (완료_2023_1122)
@@ -195,10 +198,59 @@
  * 부모의 사이즈를 변동하게 해주는 역할이므로 레이아웃과 함께 써야 (레이아웃이 생성될 때마다 자동으로 위치를 할당해주고) Content Size Fitter가
  * 부모의 사이즈를 조정해주게 된다.
  * 레이아웃이 없으면 자식의 크기가 아무리 부모보다 크더라도 부모의 크기는 변하지 않는다.
+ * (2023_1215_1차완료_스크립트 연동해서 테스트 해봐야함)
  * 
  * 
  * <2023_1215_최원준>
- * 1. Canvas-UI를 Canvas_Craft, Canvas_Character로 분리시켜 제작관련UI와 캐릭터관련UI로 나눈후 태그 부여
+ * 1- Canvas-UI를 Canvas_Craft, Canvas_Character로 분리시켜 제작관련UI와 캐릭터관련UI로 나눈후 태그 부여 )
+ * 2- 슬롯리스트가 여러개일 필요가 없다는 생각. 전체 슬롯리스트를 만들고 탭을 클릭했을 때 개별 슬롯리스트 만큼 비활성화 시킨다음 
+ * 줄여서 보여주는게 낫다는 생각.
+ * (1216_완료-InventoryManagement.cs)
  * 
+ * => 슬롯리스트-All만 남겨두고 삭제 및 탭버튼을 눌렀을 때 나머지 오브젝트들은 EmptyList로 옮기고 필요한 오브젝트만 보여줄 예정 
+ * (1216_완료-InventoryManagement.cs)
+ * 
+ * <2023_1216_최원준>
+ * 1- CreateManager에 인벤토리 및 슬롯리스트 참조를 바꿔야 함.
+ * PlayerInven과 InventoryManagement의 스크립트 참조를 해당 스크립트에서 미리 잡아줄 것인지, 필요할 때 인자로 전달받을 것인지.
+ * 네트워크 게임을 감안하면 다른 플레이어 인벤토리를 받을 수도 있으며, 따라서 다른 슬롯리스트도 참조할 수 있어야 한다.
+ * => 플레이어 인벤토리 스크립트 인스턴스를 인자로 받도록 해야 한다.
+ * 
+ * 2- 아이템 생성을 해주는 클래스(CreateManager)에 관한 생각
+ * 아이템이 생성될 때는 현재는 인벤토리에서만 생성이 되나 추후에는 
+ * 월드 상에 뿌려질 수도 있다. 혹은 몬스터의 시체를 클릭했을 때나 보관함 같은데도 들어갈 수 있을 것이다.
+ * 
+ * 
+ * 3- 플레이어가 가지고 있는 인벤토리 관련 클래스 및 오브젝트 정리 (씬 전환 시 파괴후 재생성)
+ * 
+ * a. PlayerInven 스크립트 - 플레이어가 가질 개념 인벤토리 정보 
+ * b. Canvas-Character 캔버스 및 하위의 Inventory 오브젝트 - 슬롯리스트가 존재
+ * (개념 인벤토리를 바탕으로 아이템 오브젝트를 슬롯리스트에 배치. InventoryManagement클래스에서 상호작용)
+ * c. InventoryManagement 스크립트 - 인벤토리 오브젝트와 개념인벤토리의 상호작용을 하는 역할
+ * 
+ * 4- CreateManager에 PlayerIven 정보가 전달되고, 이를통해 플레이어의 개념 Inventory를 참조할 수 있다.
+ * 그리고 슬롯에 아이템을 넣어줘야 하는데 슬롯의 정보를 전달하면 현재 탭의 상태에 따라 오브젝트를 넣어줄지 말지를 결정해야 한다.
+ * 이는 복잡성을 증가시키므로 InventoryManagement의 슬롯정보를 업데이트해주는 UpdateSlotList메서드를 만들 필요가 있다.
+ * 
+ * 
+ * <2023_1217_최원준>
+ * 1- 씬의 CreateManager 오브젝트 하위에 ItemCollections 오브젝트를 넣어둠
+ * 
+ * 2- Player Inven의 싱글톤이 필요한지 여부
+ * - 여러 스크립트에서 PlayerInven의 inventory나 craftDic, 골드,실버등의 정보를 받아가서 수정도 해야 한다. 
+ * 싱글톤의 단점은 씬전환시 Awake문 초기화가 불가능해진다는 점이다.
+ * 따라서 다른 스크립트의 Start문에서 PlayerInven 참조를 매번 연결하여 정보를 수정하는 방식이 낫다고 판단.
+ * 
+ * 3- InventoryManagement에 SlotListTr, Inventory PanelTr이 있는데 
+ * 필요없는 ItemImageColleicion도 넣어서 다른 스크립트에서 해당 변수를 편리하게 참조시킬 것인지
+ *
+ * 수정내용
+ * ItemData_Weapon.cs v2.0 - 각인배열 인덱스 오류 수정, 각인 최대수량 프로퍼티 추가, 속성석 적용 메서드 추가 
+ * ItemData_Misc.cs v3.0 - 속성석입력 받을 때 이름에 따른 분기로 변경, 각인석 정보 구조체에서 상태창 이미지 인덱스 정보를 가지도록 변경
+ * ItemInfo V8.1 - UpdateInfo에서 상태창 이미지까지 반영, 
+ * ItemPointerStatusWindow v3.0 - statusWindow, 각인석 이미지를 iicMiscOther에서 구조체 인덱스로 접근하여 반영
+ * InventoryManagement.cs v4.0 - 슬롯리스트가 개별탭 별로 있던 것을 전체탭만 존재하도록 축소 및 개별 탭의 갯수만큼만 슬롯이 보이도록 변경
+ * Drop.cs v3.1 - 속성석 5개 분기처리, 싱글톤 참조 삭제, 직접 BasePerformance 조정 삭제, -1감소 리스트에서 딕셔너리로 수정
+ * GameManager_part2.cs v1.0 - 게임상태 변수 isNewGame과 버튼 시작, 이어하기 기능에서 isNewGame을 수정하도록 구현
  */
  

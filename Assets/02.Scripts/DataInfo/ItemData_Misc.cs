@@ -24,6 +24,20 @@ using UnityEngine;
  * 
  * <v2.2 - 2023_1116_최원준>
  * 1- 아이템 클래스 구조 변경으로 인한 생성자내부의 이미지 참조 변수를 이미지 인덱스 변수로 수정
+ * 
+ * <v3.0 - 2023_1216_최원준>
+ * 1- MiscType EnumMiscType 변수명을 eMiscType으로 수정 
+ * 
+ * 2- MiscType에 Attribute 추가. 이유는 속성석 아이템이 만들어질 때 속성정보를 넣고 싶기 때문
+ * 
+ * 3- AttributeType eAttributeType 변수를 추가하고 생성자에서 속성석 정보를 받을 때마다 분기해서 들어가도록 하였음.
+ * 
+ * 4- 각인석 정보 구조체에서 상태창 이미지 인덱스 정보를 가지도록 하고,
+ * 아이템 생성자에서 각인석이 일 때 상태창 이미지 인덱스를 추가로 받도록 수정하였음 
+ * (이유는 상태창을 보여 줄 때 각인석 정보 구조체에 해당 이미지 정보를 갖고 있지 않으면 이름을 통해서 일일이 이미지를 찾아야 하기 때문
+ * 
+ * 5- 각인석 정보 구조체의 생성자를 이름만 받는 생성자와 이름과 상태창 이미지 인덱스를 받는 생성자 둘로 나누었음.
+ * 이유는 ItemMisc에서는 직접 이미지 인덱스를 넣어줄 수 있지만, ItemWeapon의 Engrave 기능에서는 이름만 줄 수 있기 때문
  */
 
 
@@ -33,7 +47,7 @@ namespace ItemData
     /// <summary>
     /// 잡화 아이템의 상세 분류
     /// </summary>
-    public enum MiscType { Basic, Additive, Fire, Enhancement, Engraving, Etc } // 기본재료, 추가재료, 연료, 강화(속성석,강화석), 각인석, 기타
+    public enum MiscType { Basic, Additive, Fire, Attribute, Enhancement, Engraving, Etc } // 기본재료, 추가재료, 연료, 속성석, 강화석, 각인석, 기타
         
     /// <summary>
     /// 각인석의 종류 - 물리,공속,흡혈,사격,피해
@@ -65,12 +79,18 @@ namespace ItemData
         /// <summary>
         /// 잡화아이템 소분류 타입 - Basic, Additive, Fire 등이 있습니다.
         /// </summary>
-        public MiscType EnumMiscType { get; }
+        public MiscType eMiscType { get; }
 
         /// <summary>
         /// 잡화 아이템의 종류가 각인이라면 engraveInfo를 가집니다. 이 변수에 접근하여 추가 정보를 확인가능합니다.
         /// </summary>
         public ItemEngraving EngraveInfo {get;}
+
+        /// <summary>
+        /// 잡화 아이템의 종류가 속성석이라면 eAttributeType을 가집니다.
+        /// </summary>
+        public AttributeType eAttributeType { get; }
+
 
         /// <summary>
         /// 잡화 아이템의 종류가 연료라면 연료 고유의 화력을 가집니다. 연료가 아니라면 0입니다.
@@ -81,11 +101,34 @@ namespace ItemData
             : base( mainType, No, name, price, imgRefIdx ) 
         { 
             iInventoryCount = 1;
-            EnumMiscType = subType;
+            eMiscType = subType;
             FirePower = 0;
 
-            if(subType == MiscType.Engraving)           // 각인석이라면 이름을 그대로 넣어서 구조체 정보를 가지게 합니다.
-                EngraveInfo = new ItemEngraving(name); 
+            if(subType == MiscType.Engraving)           // 각인석이라면 이름과 상태창 이미지 인덱스를 넣어서 구조체 정보를 가지게 합니다.
+                EngraveInfo = new ItemEngraving(name, imgRefIdx.statusImgIdx); 
+            else if( subType == MiscType.Attribute )    // 속성석이라면 '-'이후의 이름을 참고하여 정보를 가지게 합니다 
+            {
+                switch( name.Split('-')[1] )
+                {
+                    case "수":
+                        eAttributeType = AttributeType.Water;
+                        break;
+                    case "금":
+                        eAttributeType = AttributeType.Gold;
+                        break;                    
+                    case "지":
+                        eAttributeType = AttributeType.Earth; 
+                        break;                        
+                    case "화":
+                        eAttributeType = AttributeType.Fire; 
+                        break;
+                    case "풍":
+                        eAttributeType = AttributeType.Wind; 
+                        break;
+                    default:
+                        throw new Exception("속성석의 이름이 적절치 않습니다.");
+                }
+            }
             else if( subType == MiscType.Fire )         // 연료라면 화력을 조정합니다.
             {
                 switch(name)
@@ -153,18 +196,32 @@ namespace ItemData
         /// </summary>
         public float PerformMult { get; }               
         
+        /// <summary>
+        /// 각인이 가지는 상태창 이미지의 인덱스 번호
+        /// </summary>
+        public int StatusImageIdx {get;}
 
+
+        /// <summary>
+        /// 상태창 이미지 인덱스를 인자로 주어 각인 정보 구조체를 생성합니다.
+        /// </summary>
+        /// <param name="fullName"></param>
+        /// <param name="statusImageIndex"></param>
+        public ItemEngraving( string fullName, int statusImageIndex ) : this(fullName)            
+        {
+            StatusImageIdx = statusImageIndex; // 상태창 이미지 인덱스 설정                         
+        }
 
         /// <summary>
         /// 원하는 각인 이름을 지정하여 생성하면 모든 정보를 데이터 테이블에 맞게 초기화하여 줍니다.<br/>
         /// * 생성 시 일치하는 이름이 아니라면 예외를 던집니다. *
         /// </summary>
         public ItemEngraving(string fullName)
-        {
+        {            
             Name = fullName;
             string strGrade = fullName.Split(" ")[0];                   // 풀네임의 첫부분
             string strType = fullName.Split(" ")[1].Substring(0, 2);    // 풀네임의 둘째 부분에서 '의'를 제외한 앞 두글자
-            
+                        
             switch( strGrade )
             {
                 case "초급" :
@@ -195,30 +252,35 @@ namespace ItemData
                     fIncreaseValue = 10f;
                     LastIncrVal = fIncreaseValue * fMultiplier;
                     Desc = string.Format( $"물리 피해 {LastIncrVal} 증가" );
+                    StatusImageIdx = 0; // 상태창 이미지 인덱스 직접 설정
                     break;
                 case "공속" :
                     StatusType = StatType.Speed;
                     fIncreaseValue = 0.1f;
                     LastIncrVal = fIncreaseValue * fMultiplier;
                     Desc = string.Format( $"공격 속도 {LastIncrVal}% 증가" );
+                    StatusImageIdx = 1; // 상태창 이미지 인덱스 직접 설정
                     break;
                 case "흡혈" :
                     StatusType = StatType.Leech;
                     fIncreaseValue = 0.1f;
                     LastIncrVal = fIncreaseValue * fMultiplier;
                     Desc = string.Format( $"흡혈량 {LastIncrVal}% 증가" );
+                    StatusImageIdx = 2; // 상태창 이미지 인덱스 직접 설정
                     break;
                 case "사격" :
                     StatusType = StatType.Range;
                     fIncreaseValue = 0.15f;
                     LastIncrVal = fIncreaseValue * fMultiplier;
                     Desc = string.Format( $"공격 사거리 {LastIncrVal}% 증가" );
+                    StatusImageIdx = 3; // 상태창 이미지 인덱스 직접 설정
                     break;
                 case "피해" :
                     StatusType = StatType.Splash;
                     fIncreaseValue = 0.1f;
                     LastIncrVal = fIncreaseValue * fMultiplier;
                     Desc = string.Format( $"범위 피해 {LastIncrVal}% 증가" );
+                    StatusImageIdx = 4; // 상태창 이미지 인덱스 직접 설정
                     break;
                     
                 default :

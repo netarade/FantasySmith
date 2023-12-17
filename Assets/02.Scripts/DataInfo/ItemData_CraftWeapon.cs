@@ -80,7 +80,7 @@ namespace ItemData
 
 
         public ItemCraftWeapon(ItemType mainType, WeaponType subType, string No, string name, float price, ImageReferenceIndex imgRefIdx // 아이템 기본 정보 
-            , ItemGrade basicGrade, int power, int durability, float speed, int weight, EnumAttribute attribute                         // 무기 고유 정보
+            , ItemGrade basicGrade, int power, int durability, float speed, int weight, AttributeType attribute                         // 무기 고유 정보
             , CraftMaterial[] baseMaterial, CraftMaterial[] additiveMaterial, Recipie recipie                                           // 제작 관련 정보   
         ) : base( mainType, subType, No, name, price, imgRefIdx, basicGrade, power, durability, speed, weight, attribute )
         {          

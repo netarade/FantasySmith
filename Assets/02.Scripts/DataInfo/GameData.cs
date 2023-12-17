@@ -24,6 +24,10 @@ using CraftData;
  * 2- SerializableInventory 클래스를 Inventory 파일로 위치로 옮김.
  * 씬 전환시에도 사용하기 위해
  * 3- 플레이어 위치, 회전 정보를 담기 위한 STransform 클래스 정의
+ * 
+ * <v2.1 - 2023_1218_최원준>
+ * 1- 금화 은화 변수 int형으로 변경
+ * 
  */
 
 namespace DataManagement
@@ -52,12 +56,12 @@ namespace DataManagement
         /// <summary>
         /// 금화
         /// </summary>
-        public float gold;
+        public int gold;
 
         /// <summary>
         /// 은화
         /// </summary>
-        public float silver;
+        public int silver;
 
         /// <summary>
         /// 플레이어의 제작 가능 목록과 숙련도, 레시피 맞춘 횟수 정보가 담겨 있는 제작 관련 클래스 입니다.

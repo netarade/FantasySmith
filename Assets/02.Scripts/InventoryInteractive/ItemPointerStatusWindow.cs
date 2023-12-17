@@ -5,6 +5,7 @@ using UnityEngine.EventSystems;
 using ItemData;
 using UnityEngine.UI;
 using Unity.VisualScripting;
+using System;
 
 /* [작업 사항]
  * <v1.0 - 2023_1105_최원준>
@@ -24,9 +25,17 @@ using Unity.VisualScripting;
  * <v2.0 - 2023_1109_최원준>
  * 1- 각인 판넬 추가 및 각인 활성화 조절, 정보 반영
  * 
- * <v2.1 - 2023-1112_최원준>
+ * <v2.1 - 2023_1112_최원준>
  * 1- 상태창 위치를 아이템 바로 옆에서 보일 수 있게 수정
  * 2- 상태창이 다른 이미지와 겹치는 경우 가장 앞에 표시될 수 있도록 수정
+ * 
+ * <v3.0 - 2023_1216_최원준
+ * 1- statusWindow의 참조를 PlayerInven에서 참조하던 것을 직접 캐릭터 캔버스를 태그로 찾아 참조하도록 수정
+ * 2- 상태창이 떴을 때 포지션을 약간 수정
+ * 
+ * <v3.1 -2023_1217_최원준>
+ * 1- 각인석 정보 구조체에서 인덱스를 받아서 IIC 직렬화 스크립트에서 이미지를 참조하여 각인석 이미지를 반영하도록 수정 
+ * 2- iicMiscOther의 참조를 CreateManager의 싱글톤을 통한 참조로 변경
  */
 
 
@@ -37,14 +46,15 @@ using Unity.VisualScripting;
 public class ItemPointerStatusWindow : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
 {    
     private GameObject statusWindow;    // 상태창 오브젝트
-    private Image imageItem;            // 상태창의 아이템 이미지
+    private Image itemStatusImage;      // 상태창의 아이템 이미지
     private Text txtEnhancement;        // 상태창의 아이템 강화 텍스트
     private Text txtName;               // 상태창의 아이템 이름
     private Text txtDesc;               // 상태창의 아이템 설명
     private Text txtSpec;               // 상태창의 아이템 스펙
 
-    private Item item;                  // 개념 아이템을 참조하기 위한 변수
-    
+    private ItemInfo itemInfo;                  // 아이템이 가지고 있는 정보 집합
+    private Item item;                          // 개념 아이템을 참조하기 위한 변수
+    private ItemImageCollection iicMiscOther;   // 각인석 이미지를 참고할 직렬화 스크립트 참조
 
     [SerializeField] private readonly int AnyEngraveMaxNum = 3;     // 종류와 상관없는 각인 슬롯 최대 (판넬 최대 갯수)
     [SerializeField] private GameObject[] PanelEngraveArr;          // 각인 판넬
@@ -58,14 +68,20 @@ public class ItemPointerStatusWindow : MonoBehaviour, IPointerEnterHandler, IPoi
 
     void Start()
     {        
-        // 하위 오브젝트의 모든 참조는 InventoryManagement의 빠른 참조를 기반으로 한다.
-        statusWindow=InventoryManagement.statusWindowTr;  
-        imageItem = statusWindow.transform.GetChild(0).GetChild(0).GetComponent<Image>();
+        // 하위 오브젝트의 모든 참조는 캐릭터 Canvas의 1번째 자식인 상태창 오브젝트의 참조를 기반으로 합니다.
+        statusWindow= GameObject.FindWithTag("CANVAS_CHARACTER").transform.GetChild(1).gameObject;
+
+        if(statusWindow == null)
+            throw new Exception("상태창의 참조를 확인하여 주세요.");
+
+        itemStatusImage = statusWindow.transform.GetChild(0).GetChild(0).GetComponent<Image>();
         txtEnhancement = statusWindow.transform.GetChild(1).GetComponent<Text>();
         txtName = statusWindow.transform.GetChild(2).GetComponent<Text>();
         txtDesc = statusWindow.transform.GetChild(3).GetComponent<Text>();
         txtSpec = statusWindow.transform.GetChild(4).GetComponent<Text>();
-        item = GetComponent<ItemInfo>().item;
+
+        itemInfo = GetComponent<ItemInfo>();
+        item = itemInfo.Item;
 
         PanelEngraveArr = new GameObject[AnyEngraveMaxNum];
         imageEngraveArr = new Image[AnyEngraveMaxNum];
@@ -81,7 +97,15 @@ public class ItemPointerStatusWindow : MonoBehaviour, IPointerEnterHandler, IPoi
         }
         statusRectTr = statusWindow.GetComponent<RectTransform>();
         itemRectTr = this.gameObject.GetComponent<RectTransform>();
-        statusRectTr.SetAsLastSibling();  // 상태창을 캔버스의 최하위 자식으로 배치하여 이미지 표시 우선순위를 높게 한다.          
+        statusRectTr.SetAsLastSibling();  // 상태창을 캔버스의 최하위 자식으로 배치하여 이미지 표시 우선순위를 높게 한다.
+                                          
+        // 게임 시작 시 상태창을 꺼둔다
+        statusWindow.SetActive(false);        
+
+        iicMiscOther=CreateManager.instance.transform.GetChild(0).GetChild(2).gameObject.GetComponent<ItemImageCollection>();
+        if(iicMiscOther == null)
+            throw new Exception("iicMiscOther의 참조를 확인하여 주세요.");
+
     }
     
 
@@ -97,16 +121,16 @@ public class ItemPointerStatusWindow : MonoBehaviour, IPointerEnterHandler, IPoi
         /*** 아이템 종류 상관없이 공통 로직 ***/
         statusWindow.SetActive(true);               // 상태창 활성화
 
-        statusRectTr.position = itemRectTr.position
-            + Vector3.right*(statusRectTr.sizeDelta.x/2 + itemRectTr.sizeDelta.x/2 + 50f);  
-        //상태창의 위치는 아이템 위치로부터 상태창 크기, 아이템크기를 고려하여 우측으로 떨어진 거리이다.
+        statusRectTr.position = itemRectTr.position 
+            + Vector3.right*(statusRectTr.sizeDelta.x/2 + 10f);  
+        //상태창의 위치는 아이템 위치로부터 상태창 크기, 아이템크기를 고려하여 우측으로 마진 10만큼 떨어진 거리이다.
     
         
 
 
-        imageItem.sprite = item.Image.statusSprite; // 이미지에 등록한 statusSprite 이미지를 보여준다.
-        txtName.text = item.Name;                   // 이름 텍스트에 아이템 이름을 보여준다.
-        txtDesc.text = item.Name;                   // 설명 텍스트에 아이템 이름을 임시적으로 보여준다.
+        itemStatusImage.sprite = itemInfo.statusImage.sprite;   // 이미지에 등록한 statusSprite 이미지를 보여준다.
+        txtName.text = item.Name;                               // 이름 텍스트에 아이템 이름을 보여준다.
+        txtDesc.text = item.Name;                               // 설명 텍스트에 아이템 이름을 임시적으로 보여준다.
 
          for(int i=0; i<AnyEngraveMaxNum; i++)                  // 모든 각인 판넬을 off한다.
                 PanelEngraveArr[i].SetActive(false);
@@ -182,22 +206,22 @@ public class ItemPointerStatusWindow : MonoBehaviour, IPointerEnterHandler, IPoi
                         
             switch(itemWeap.CurAttribute)       // 무기 속성의 한글 문자열을 지정
             {
-                case EnumAttribute.Water :
+                case AttributeType.Water :
                     strAttr="수(水)";
                     break;
-                case EnumAttribute.Wind :
+                case AttributeType.Wind :
                     strAttr="풍(風)";
                     break;
-                case EnumAttribute.Earth :
+                case AttributeType.Earth :
                     strAttr="지(地)";
                     break;
-                case EnumAttribute.Fire :
+                case AttributeType.Fire :
                     strAttr="화(火)";
                     break;
-                case EnumAttribute.Gold :
+                case AttributeType.Gold :
                     strAttr="금(金)";
                     break;
-                case EnumAttribute.None :
+                case AttributeType.None :
                     strAttr="무(無)";
                     break;
                 default :
@@ -216,17 +240,20 @@ public class ItemPointerStatusWindow : MonoBehaviour, IPointerEnterHandler, IPoi
 
 
             /******** 각인 관련 ************/          
-            if(itemWeap.RemainEngraveNum != AnyEngraveMaxNum ) // 각인이 하나라도 장착되어 있다면
+            if(itemWeap.RemainEngraveNum > 0 ) // 각인이 하나라도 장착되어 있다면
             {
-                ItemEngraving[] engraveArr = itemWeap.EquipEngrave;                 // 각인 구조체 배열을 받아온다. 
-                int typeEngraveMaxNum = engraveArr.Length;                          // 아이템 등급 별 각인 최대 갯수
-                int curEngraveNum = typeEngraveMaxNum - itemWeap.RemainEngraveNum;  // 현재 각인 장착 갯수
-
-                for(int i=0; i<curEngraveNum; i++)                              // 현재 장착 중인 각인 갯수만큼
+                ItemEngraving[] engraveArr = itemWeap.EquipEngraveArrInfo;      // 각인 구조체 배열을 받아온다. 
+                int curEngraveNum = itemWeap.EquipEngraveNum;                   // 현재 각인 장착 갯수
+                
+                for(int i=0; i<curEngraveNum; i++)      // 현재 장착 중인 각인 갯수만큼
                 { 
-                    PanelEngraveArr[i].SetActive(true);                         // 각인 판넬을 켜준다.
-
-                    imageEngraveArr[i].sprite = itemWeap.Image.statusSprite;    // 각인의 정보를 반영한다.
+                    // 각인 판넬을 켜준다.
+                    PanelEngraveArr[i].SetActive(true);                         
+                    
+                    // 무기아이템의 각인석 정보 구조체에서 인덱스를 받아서 IIC 직렬화 스크립트에서 이미지를 참조 접근한다.
+                    imageEngraveArr[i].sprite = iicMiscOther.icArrImg[engraveArr[i].StatusImageIdx].statusSprite;
+                    
+                    // 추가 각인의 정보를 반영한다.
                     txtNameArr[i].text = engraveArr[i].Name.ToString();     
                     txtDescArr[i].text = engraveArr[i].Desc;     
                  }

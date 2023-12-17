@@ -22,6 +22,14 @@ using UnityEngine.UI;
  * 
  * <v1.3 - 2023_1116_최원준>
  * 1- 아이템 클래스 구조 변경으로 인한 생성자내부의 이미지 참조 변수를 이미지 인덱스 변수로 수정
+ * 
+ * <v2.0 - 2023_1216_최원준>
+ * 1- 각인배열의 최대 수량 iMaxEngraveNum을 추가하고 생성자에서 최대 수량을 초기화
+ * 2- 현재 장착중인 각인의 갯수를 반환하는 EquipEngraveNum 프로퍼티 추가
+ * 3- Engrave메서드에 3-iRemainEngraveNum 인덱스로 잡혀있던 점을 EquipEngraveNum로 수정. (인덱스 접근 오류를 수정)
+ * 4- Engrave메서드에 EquipEngraveArrInfo에 접근하여 값을 수정 하던 점을 ieArrEquipEngrave에 접근하여 수정하는 것으로 변경
+ * 5- IsAttrUnlocked 프로퍼티로 속성 개방여부를 수정할 수 있던 점을 삭제하고 새로운 메서드를 만듬.
+ * 6- 열거형 EnumAttribute를 AttributeType으로 수정, enumAttribute변수명을 eAttribute로 수정
  */
 namespace ItemData
 {    
@@ -33,7 +41,7 @@ namespace ItemData
     /// <summary>
     /// 6대 속성 - 수,금,지,화,풍,무
     /// </summary>
-    public enum EnumAttribute { Water, Gold, Earth, Fire, Wind, None }
+    public enum AttributeType { Water, Gold, Earth, Fire, Wind, None }
    
     /// <summary>
     /// 장비의 최종 등급 - 노말, 매직, 레어, 에픽, 유니크, 레전드
@@ -54,13 +62,14 @@ namespace ItemData
         protected int iDurability;              // 내구
         protected float fSpeed;                 // 공격속도
         protected int iWeight;                  // 무게
-        protected EnumAttribute enumAttribute;      // 고유 속성
+        protected AttributeType eAttribute;     // 고유 속성
 
 
         /** 아이템 업그레이드 정보 **/
         protected int iEnhanceNum;                      // 무기 강화 횟수
         protected bool isAttrUnlocked;                  // 속성 해방 여부       
-        protected int iRemainEngraveNum;                // 남은 각인 횟수 (무기 분류 등급에 따른 제한)
+        protected int iRemainEngraveNum;                // 남은 각인 횟수 
+        protected int iMaxEngraveNum;                   // 최대 각인 횟수 (무기 분류 등급에 따른 제한)
         protected ItemEngraving[] ieArrEquipEngrave;    // 장착 중인 각인
         protected float fBasePerformance;               // 장비 기본 성능 (일반 무기-100, 제작무기-제작에따른 변화)
                     
@@ -71,9 +80,18 @@ namespace ItemData
         public int RemainEngraveNum { get{ return iRemainEngraveNum; } }
         
         /// <summary>
-        /// 현재 장착중인 각인 배열입니다.
+        /// 실제 각인이 장착된 갯수입니다.
         /// </summary>
-        public ItemEngraving[] EquipEngrave { get{ return ieArrEquipEngrave;} }
+        public int EquipEngraveNum { get{ return iMaxEngraveNum-iRemainEngraveNum; } }
+        
+        /// <summary>
+        /// 현재 장착중인 각인 배열 정보를 반환합니다. <br/>
+        /// 빈 각인의 경우에도 구조체가 할당되어 있으므로, 각인 배열의 갯수는 EquipEngraveNum을 사용해서 확인하여야 합니다.
+        /// </summary>
+        public ItemEngraving[] EquipEngraveArrInfo
+        {
+            get{ return ieArrEquipEngrave;} 
+        }
 
         /// <summary>
         /// 무기에 각인을 장착하는 메서드 입니다. 장착하고자 할 각인 이름이 필요하며, 남아있는 각인 슬롯이 없다면 false를 반환합니다.
@@ -83,7 +101,7 @@ namespace ItemData
             if(iRemainEngraveNum==0)
                 return false;
 
-            EquipEngrave[3-iRemainEngraveNum] = new ItemEngraving(engravingName);
+            ieArrEquipEngrave[EquipEngraveNum] = new ItemEngraving(engravingName);
             iRemainEngraveNum--;
             return true;
         }
@@ -105,8 +123,8 @@ namespace ItemData
                 float attributeMult = isAttrUnlocked? 1f : 1.5f;    // true 일 때(잠겨있을 때) 1
                 
                 iLastMult *= attributeMult;         // 속성석의 배율을 곱한다.
-
-                for(int i=0; i<ieArrEquipEngrave.Length-RemainEngraveNum; i++)
+                               
+                for(int i=0; i<EquipEngraveNum; i++)
                     iLastMult *= ieArrEquipEngrave[i].PerformMult;  // 각 각인석의 배율을 곱한다.
 
                 return iLastMult;                 
@@ -164,25 +182,44 @@ namespace ItemData
         /// <summary>
         /// 무기의 고유 속성입니다. 개방 여부와 상관이 없습니다.
         /// </summary>
-        public EnumAttribute OriAttribute { get{return enumAttribute;} }  
+        public AttributeType OriAttribute { get{return eAttribute;} }  
 
         /// <summary>
         /// 현재 무기의 속성입니다. 개방되지 않았다면 무속성입니다.
         /// </summary>
-        public EnumAttribute CurAttribute { 
+        public AttributeType CurAttribute { 
             get{ 
                 if(isAttrUnlocked)
-                    return EnumAttribute.None;
+                    return AttributeType.None;
                 else
-                    return enumAttribute;                
+                    return eAttribute;                
                 }             
         }
                 
         /// <summary>
-        /// 장비의 속성개방 여부를 보거나 수정합니다.
+        /// 장비의 속성개방 여부를 볼 수 있습니다.
         /// </summary>
-        public bool IsAttrUnlocked { get{ return isAttrUnlocked; } set{ isAttrUnlocked=value; } }
+        public bool IsAttrUnlocked { get{ return isAttrUnlocked; } }
                 
+        public bool AttributeUnlock(AttributeType attribute)
+        {
+            if(IsAttrUnlocked)          // 무기가 이미 해방되어있다면 실행하지 않음.
+                return false;
+
+            if(attribute == eAttribute) // 들어온 속성이 고유속성과 일치한다면 성공
+            {
+                isAttrUnlocked = true;
+                return true;
+            }
+            else                        // 들어온 속성이 고유속성과 일치하지 않는다면 실패.
+                return false;           
+        }
+
+
+
+
+
+
         /// <summary>
         /// 장비 아이템의 현재 강화 횟수입니다. 플레이어의 상호작용에 의해 수정이 가능합니다.
         /// </summary>
@@ -190,14 +227,16 @@ namespace ItemData
             get{return iEnhanceNum;}
             set{
                     if( 0<=iEnhanceNum && iEnhanceNum<=9 )  //강화의 수정 허용은 0에서 9까지
-                        iEnhanceNum = value; 
+                        iEnhanceNum = value;
                }
         }
 
 
-
+        /// <summary>
+        /// 무기 아이템의 최초 생성을 위한 생성자 옵션
+        /// </summary>
         public ItemWeapon(ItemType mainType, WeaponType subType, string No, string name, float price, ImageReferenceIndex imgRefIdx // 아이템 기본 정보 
-            ,ItemGrade basicGrade, int power, int durability, float speed, int weight, EnumAttribute attribute                      // 무기 고유 정보
+            ,ItemGrade basicGrade, int power, int durability, float speed, int weight, AttributeType attribute                      // 무기 고유 정보
         ) : base( mainType, No, name, price, imgRefIdx )
         {
             enumWeaponType = subType;
@@ -206,13 +245,15 @@ namespace ItemData
             iDurability = durability;
             fSpeed = speed;
             iWeight = weight;
-            enumAttribute = attribute;
+            eAttribute = attribute;
 
-            iEnhanceNum = 0;                                            // 기본으로 강화 되어있지 않음.
-            isAttrUnlocked = true;                                      // 기본으로 속성이 잠겨있음.
-            iRemainEngraveNum = (int)basicGrade + 1;                    // 남은 각인횟수 (초급:1, 중급:2, 고급:3)
-            ieArrEquipEngrave = new ItemEngraving[iRemainEngraveNum];   // 각인 배열의 크기는 남은 각인 횟수와 동일(기본 등급 별 제한)
-            fBasePerformance = 100f;                                    // 제작아이템이 아닌 경우 기본 성능 100f
+            iEnhanceNum = 0;                                        // 기본으로 강화 되어있지 않음.
+            isAttrUnlocked = true;                                  // 기본으로 속성이 잠겨있음.
+        
+            iMaxEngraveNum = (int)basicGrade + 1;                   // 최대 각인횟수는 변하지 않음 (초급:1, 중급:2, 고급:3)
+            iRemainEngraveNum = iMaxEngraveNum;                     // 남은 각인횟수는 각인을 끼울 시 하나 씩 줄어듬
+            ieArrEquipEngrave = new ItemEngraving[iMaxEngraveNum];  // 최초 각인 배열의 크기는 최대 각인 횟수와 동일(기본 등급 별 제한)
+            fBasePerformance = 100f;                                // 제작아이템이 아닌 경우 기본 성능 100f
         }
 
 

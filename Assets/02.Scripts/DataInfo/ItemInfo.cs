@@ -201,7 +201,7 @@ public class ItemInfo : MonoBehaviour
         if( item.Type==ItemType.Misc )                // 잡화 아이템의 중첩 갯수를 표시합니다.
         {
             countTxt.enabled=true;
-            countTxt.text = ((ItemMisc)item).InventoryCount.ToString();
+            countTxt.text = ((ItemMisc)item).OverlapCount.ToString();
         }
         else
             countTxt.enabled = false;                // 잡화아이템이 아니라면 중첩 텍스트를 비활성화합니다.

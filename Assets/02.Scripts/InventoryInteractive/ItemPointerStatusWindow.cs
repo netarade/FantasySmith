@@ -142,7 +142,7 @@ public class ItemPointerStatusWindow : MonoBehaviour, IPointerEnterHandler, IPoi
         { 
             txtEnhancement.enabled = false;         // 강화 텍스트를 비활성화
             txtSpec.enabled = false;                // 상세 스펙 텍스트를 비활성화
-            txtDesc.text += " " + ((ItemMisc)item).InventoryCount + "개";        // 중첩 횟수를 표시
+            txtDesc.text += " " + ((ItemMisc)item).OverlapCount + "개";        // 중첩 횟수를 표시
         }
         else if(item.Type == ItemType.Weapon)
         {

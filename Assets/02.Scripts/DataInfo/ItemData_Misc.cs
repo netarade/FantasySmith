@@ -38,6 +38,12 @@ using UnityEngine;
  * 
  * 5- 각인석 정보 구조체의 생성자를 이름만 받는 생성자와 이름과 상태창 이미지 인덱스를 받는 생성자 둘로 나누었음.
  * 이유는 ItemMisc에서는 직접 이미지 인덱스를 넣어줄 수 있지만, ItemWeapon의 Engrave 기능에서는 이름만 줄 수 있기 때문
+ * 
+ * 
+ * <v4.0 - 2023_1219_최원준>
+ * 1- 중첩변수와 프로퍼티 iInventoryCount와 InventoryCount를 iOverlapCount, OverlapCount로 이름변경
+ * 2- static변수이던 MaxCount를 readonly로 변경
+ * 3- 아이템 초과갯수 
  */
 
 
@@ -59,21 +65,36 @@ namespace ItemData
     /// </summary>
     public sealed class ItemMisc : Item
     {        
-        private int iInventoryCount;  // 인벤토리 중첩 횟수
-        public static int MaxCount = 99;
+        private int iOverlapCount = 0;  // 인벤토리 중첩 횟수
+        public readonly int MaxCount = 99;
+
+        /// <summary>
+        /// 현재 최대중첩갯수를 초과하였는지 여부
+        /// </summary>
+        public bool isOverflowed = false;
+
+        /// <summary>
+        /// 초과 갯수를 보여줍니다
+        /// </summary>
+        public int overflowCount = 0;
+
 
         /// <summary>
         /// 잡화 아이템의 중첩횟수를 표시합니다. 기본 값은 1입니다.<br/>
         /// **인벤토리 수량이 ItemMisc.MaxCount를 초과하면 예외를 발생시킵니다.**
         /// </summary>
-        public int InventoryCount { 
+        public int OverlapCount { 
             set { 
-                    iInventoryCount = value; 
+                    iOverlapCount += value;         // 값이 들어오면 누적시켜 줍니다.
 
-                    if(iInventoryCount > MaxCount)
-                        throw new Exception($"인벤토리 수량이 {MaxCount}를 초과하였습니다.");                    
+                    if(iOverlapCount > MaxCount)    // 중첩횟수가 최대갯수보다 크다면
+                    {
+                        isOverflowed = true;
+                        overflowCount = iOverlapCount-MaxCount;     // 넘친갯수를 기록해줍니다.
+                        iOverlapCount = MaxCount;   // 중첩횟수를 최대갯수로 만들어줍니다.
+                    }
                 }
-            get { return iInventoryCount; }
+            get { return iOverlapCount; } //중첩갯수를 반환합니다
         }
 
         /// <summary>
@@ -100,7 +121,7 @@ namespace ItemData
         public ItemMisc( ItemType mainType, MiscType subType, string No, string name, float price, ImageReferenceIndex imgRefIdx )
             : base( mainType, No, name, price, imgRefIdx ) 
         { 
-            iInventoryCount = 1;
+            iOverlapCount = 1;
             eMiscType = subType;
             FirePower = 0;
 

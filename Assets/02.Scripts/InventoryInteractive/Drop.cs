@@ -93,7 +93,7 @@ public class Drop : MonoBehaviour, IDropHandler
                     }
 
 
-                    if( draggingMisc.InventoryCount == 1 )    // 아이템 갯수가 1개라면,
+                    if( draggingMisc.OverlapCount == 1 )    // 아이템 갯수가 1개라면,
                     {   
                         miscDic[draggingItem.Name].Remove(dragObj);   // 아이템을 플레이어 인벤토리의 잡화목록에서 제거합니다.
                         Destroy(dragObj, 0.5f);                       // 0.5초후 삭제 시킵니다.
@@ -101,7 +101,7 @@ public class Drop : MonoBehaviour, IDropHandler
                     }
                     else //2개 이상이라면,
                     {
-                        draggingMisc.InventoryCount -= 1;       // 실제 수량을 뺀다.
+                        draggingMisc.OverlapCount -= 1;       // 실제 수량을 뺀다.
                         dragObj.GetComponent<ItemInfo>().UpdateCountTxt();  // 중첩 텍스트를 수정한다.
                     }
 

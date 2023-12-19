@@ -258,9 +258,9 @@ public partial class CraftSimulation : MonoBehaviour
             print( playerItem.Name );
             if( dicMaterial.ContainsKey( playerItem.Name ) ) // 꺼낸 아이템 중에 이름과 일치하는 것이 있는지 본다.
             {
-                if( playerItem.InventoryCount>=dicMaterial[playerItem.Name] )   // 재료가 플레이어 쪽이 더 많다면
+                if( playerItem.OverlapCount>=dicMaterial[playerItem.Name] )   // 재료가 플레이어 쪽이 더 많다면
                 {
-                    playerItem.InventoryCount-=dicMaterial[playerItem.Name];    // 일단 갯수를 제외 해준다.
+                    playerItem.OverlapCount-=dicMaterial[playerItem.Name];    // 일단 갯수를 제외 해준다.
                     targetMiscItem[foundCount]=playerItem;                      // 찾은 타겟 배열에 등록한다.
                     foundCount++;                                               // 찾은 갯수를 증가시킨다.
                 }
@@ -281,7 +281,7 @@ public partial class CraftSimulation : MonoBehaviour
             for(int i=0; i<foundCount; i++)                             // 타겟으로 삼은 횟수까지만 해야 한다.
             {
                 ItemMisc failItem = targetMiscItem[i];                      // 재료가 부족하다면 타겟으로 삼으려다가 실패한 아이템일 것이다.
-                failItem.InventoryCount += dicMaterial[failItem.Name];  // 다시 인벤토리 카운트를 정상적으로 돌려준다.
+                failItem.OverlapCount += dicMaterial[failItem.Name];  // 다시 인벤토리 카운트를 정상적으로 돌려준다.
             }
             
             panelCraftLev1Tr.gameObject.SetActive(false);  // 판넬 1을 끄고 

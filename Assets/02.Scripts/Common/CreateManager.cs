@@ -195,13 +195,37 @@ public class CreateManager : MonoBehaviour
         Item itemClone = null;
         List<GameObject> itemObjList;  // 잡화 아이템에서 기존 아이템이 있는 지 정보 비교를 위한 선언 
 
-        if( weaponDic.ContainsKey( itemName ) )         // 무기라면 무조건 복제한다. (중첩될 일이 없으므로)
+        
+
+
+
+        if( weaponDic.ContainsKey( itemName ) )         // 이름이 무기 종류라면
         {
-            itemClone=(ItemWeapon)weaponDic[itemName].Clone();
+            // 인벤토리의 무기목록에 해당 아이템 리스트가 없다면 리스트를 새롭게 생성합니다
+            if( !inventory.weapDic.ContainsKey( itemName) )  
+                inventory.weapDic[itemName] = new List<GameObject>();
+
+            itemClone=(ItemWeapon)weaponDic[itemName].Clone();   // 무기라면 무조건 복제합니다 (중첩될 일이 없으므로)
+
+
         }
-        else if( miscDic.ContainsKey( itemName ) )          // 잡화라면 
+        else if( miscDic.ContainsKey( itemName ) )     // 잡화 종류라면 
         {  
+            // 인벤토리의 잡화목록에 해당 아이템 리스트가 없다면 리스트를 새롭게 생성합니다
+            if( !inventory.miscDic.ContainsKey( itemName) )  
+                inventory.miscDic[itemName] = new List<GameObject>();
+
             itemObjList = inventory.miscDic[itemName];     // 인벤토리의 딕셔너리에 접근하여 아이템 리스트를 받아옵니다
+
+            if(itemObjList.Count > 0 ) // 들어간 오브젝트가 하나라도 있다면 (중복수량을 체크해야 합니다)
+            {
+
+
+            }
+            
+
+
+
 
             for( int i = 0; i<itemObjList.Count; i++ )     // 아이템이 생성될 때마다 플레이어의 잡화 목록을 검사한다.
             {
@@ -210,7 +234,7 @@ public class CreateManager : MonoBehaviour
 
                 if( itemMisc.Name==itemName )                  // 잡화 아이템의 이름이 일치한다면,
                 {
-                    itemMisc.InventoryCount += count;          // 중첩 횟수를 받은 인자 만큼 늘리고
+                    itemMisc.OverlapCount += count;          // 중첩 횟수를 받은 인자 만큼 늘리고
                     itemObjList[i].GetComponent<ItemInfo>().UpdateCountTxt(); 
                     // 아이템 오브젝트에도 중첩 수를 반영합니다.
                     // (이 경우는 클론을 따로 만들지 않기 때문에 직접 오브젝트에 접근하여 업데이트 해주어야 합니다.)
@@ -219,15 +243,19 @@ public class CreateManager : MonoBehaviour
                 else if( i==itemObjList.Count-1 )                        // 마지막 잡화목록에서도 일치하는 이름이 없다면,
                 {
                     itemClone = (ItemMisc)miscDic[itemName].Clone();        // 개념아이템을 클론하고,
-                    ( (ItemMisc)itemClone ).InventoryCount=count;           // 클론의 중첩 갯수를 받은 인자로 지정합니다.                    
+                    ( (ItemMisc)itemClone ).OverlapCount=count;           // 클론의 중첩 갯수를 받은 인자로 지정합니다.                    
                 }
             }
             
             if(itemObjList.Count==0) // 잡화 인벤토리가 비었다면 (위의 for문이 돌아가지 않았다면)
             {
                 itemClone = (ItemMisc)miscDic[itemName].Clone();        // 개념아이템을 클론하고,
-                ( (ItemMisc)itemClone ).InventoryCount=count;           // 클론의 중첩 갯수를 받은 인자로 지정합니다.
+                ( (ItemMisc)itemClone ).OverlapCount=count;           // 클론의 중첩 갯수를 받은 인자로 지정합니다.
             }
+
+
+
+
         }
         else // 어떤 이름도 일치하지 않는다면 예외를 발생 시킨다.
         {

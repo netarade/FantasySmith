@@ -44,6 +44,10 @@ using UnityEngine;
  * 1- 중첩변수와 프로퍼티 iInventoryCount와 InventoryCount를 iOverlapCount, OverlapCount로 이름변경
  * 2- static변수이던 MaxCount를 readonly로 변경
  * 3- 아이템 초과갯수 
+ * 
+ * <v4.1 - 2023_1220_최원준>
+ * 1- 중첩수량을 지정하는 메서드 SetOverlapCount 추가하여 수량을 입력 시 초과수량을 반환받도록 하였음
+ * 
  */
 
 
@@ -67,35 +71,47 @@ namespace ItemData
     {        
         private int iOverlapCount = 0;  // 인벤토리 중첩 횟수
         public readonly int MaxCount = 99;
-
-        /// <summary>
-        /// 현재 최대중첩갯수를 초과하였는지 여부
-        /// </summary>
-        public bool isOverflowed = false;
-
-        /// <summary>
-        /// 초과 갯수를 보여줍니다
-        /// </summary>
-        public int overflowCount = 0;
-
-
+        
         /// <summary>
         /// 잡화 아이템의 중첩횟수를 표시합니다. 기본 값은 1입니다.<br/>
-        /// **인벤토리 수량이 ItemMisc.MaxCount를 초과하면 예외를 발생시킵니다.**
+        /// **해당 프로퍼티를 통해 중첩횟수를 설정할 시 ItemMisc.MaxCount를 초과하면 예외를 발생시킵니다.**
+        /// SetOverlapCount를 통해 남은 수량을 반환받아야 합니다.
         /// </summary>
         public int OverlapCount { 
             set { 
                     iOverlapCount += value;         // 값이 들어오면 누적시켜 줍니다.
 
                     if(iOverlapCount > MaxCount)    // 중첩횟수가 최대갯수보다 크다면
-                    {
-                        isOverflowed = true;
-                        overflowCount = iOverlapCount-MaxCount;     // 넘친갯수를 기록해줍니다.
-                        iOverlapCount = MaxCount;   // 중첩횟수를 최대갯수로 만들어줍니다.
-                    }
+                        throw new Exception("최대 수량에 도달하였습니다.");
                 }
             get { return iOverlapCount; } //중첩갯수를 반환합니다
         }
+
+
+        /// <summary>
+        /// 잡화 아이템의 중첩횟수를 설정합니다. 수량을 인자로 넣으면 초과수량을 반환하여 줍니다
+        /// </summary>
+        /// <param name="count"></param>
+        /// <returns></returns>
+        public int SetOverlapCount(int count)
+        {
+            int remainCount = iOverlapCount+count-MaxCount; // 반환되는 갯수 설정 : 기존 수량+들어온 수량-최대수량
+
+            if( remainCount > 0 )                           // 들어온수량을 기존수량에 더했을 때 최대 수량을 초과한다면
+            {
+                iOverlapCount=MaxCount;                     // 현재 아이템의 갯수를 최대수량으로 맞춰줍니다
+                return remainCount;                         // 나머지를 반환해줍니다
+            }
+            else if(remainCount==0)                         // 반환할 나머지가 없다면
+            {
+                iOverlapCount += count;                     // 기존수량에 들어온 수량을 더해줍니다
+            }
+
+            return 0;                                       // 0을 반환합니다
+        }
+
+
+
 
         /// <summary>
         /// 잡화아이템 소분류 타입 - Basic, Additive, Fire 등이 있습니다.

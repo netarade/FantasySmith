@@ -4,8 +4,12 @@ using CraftData;
 
 
 /* [작업 사항]
- * <v1.0 - 2023_1105_최원준>
+ * <v1.0 - 2023_1221_최원준>
  * 1- 테스트용 버튼 메서드가 모아져있는 클래스를 새롭게 생성하였습니다.
+ * 
+ * <v1.1 - 2023_1222_최원준>
+ * 1- playerInven의 변수명을 inventory로 수정
+ * 2- GetComponent<Inventory>()이던 점을 GetComponent<PlayerInven>().inventory로 수정
  * 
  */
 
@@ -15,20 +19,18 @@ using CraftData;
 /// </summary>
 public class ButtonPlayTest : MonoBehaviour
 {
-    //Inventory playerInven;
+    Inventory inventory;
     private void Start()
     {
-        //playerInven = GameObject.FindWithTag("Player").GetComponent<Inventory>();
-        DataManagement.DataManager dataManager = new DataManagement.DataManager();
-        Debug.Log(dataManager.Path);
+        inventory=GameObject.FindWithTag( "Player" ).GetComponent<InventoryInfo>().inventory;
     }
 
 
     public void btnCreateItem()
     {
-        //playerInven.AddItem("철", 10);
-        //playerInven.AddItem("강철", 10);
-        //playerInven.AddItem("미스릴", 10);
+        //inventory.AddItem( "철", 10 );
+        //inventory.AddItem( "강철", 10 );
+        inventory.AddItem( "미스릴", 10 );
     }
 
     public void btnNext()

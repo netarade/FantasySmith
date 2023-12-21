@@ -1,6 +1,7 @@
 using System;
 using UnityEngine;
 using CraftData;
+using System.Collections.Generic;
 
 /*
  * [파일 목적]
@@ -28,12 +29,24 @@ using CraftData;
  * <v2.1 - 2023_1218_최원준>
  * 1- 금화 은화 변수 int형으로 변경
  * 
+ * <v3.0 - 2023_1222_최원준>
+ * 1- DataManager클래스의 Load메서드에서 GameData 기본생성자를 호출하는데 정의가 되어있지 않아 새롭게 정의 (STransform 기본 생성자 포함)
+ * 
+ * 2- saveInventory변수를 private에서 public으로 변경하였음.
+ * public아닌 변수는 Json에서 직렬화가 불가능한 변수가 되기 때문
+ * 
+ * 3- 인벤토리 클래스를 프로퍼티로 직렬화 인벤토리 클래스로 변환하여 저장하던 것을 메서드를 통해 변환하여 저장하도록 수정함.
+ * (Inventory프로퍼티 삭제, SaveInventory, LoadInventory메서드를 추가)
+ * =>이유는 프로퍼티는 set을통해 직렬화가능한 변수에 저장한다고 하더라도 프로퍼티 자체에 받자마자 저장이 되기 때문에 
+ * GameData에 해당 프로퍼티가 포함되어 있으면 직렬화 처리가 불가능한 것을 발견하였음. 
+ * (Inventory 클래스는 List<GameObject>를 포함하기 때문에 프로퍼티로 GameData에 담기는 순간 직렬화처리 불가능해 저장이 안되었음.)
+ * 
  */
 
+
+
 namespace DataManagement
-{
-
-
+{    
     /// <summary>
     /// 주의 사항 - 유니티 전용 클래스는 저장 불가. 기본 자료형으로 저장하거나, 구조체 또는 클래스를 만들어 저장한다. 
     /// </summary>
@@ -50,9 +63,7 @@ namespace DataManagement
         /// 저장 할 Transform 컴포넌트를 전달해서 생성 해야되며, 불러 올때는 Deserialize 메서드에 연동할 Transform 인자를 전달하여 정보를 전달받습니다. 
         /// </summary>
         public STransform playerTr;
-
-
-        
+                
         /// <summary>
         /// 금화
         /// </summary>
@@ -69,16 +80,34 @@ namespace DataManagement
         public Craftdic craftDic;
 
         
-        private SerializableInventory savedInventory;
+        public SerializableInventory savedInventory;
+
+        
+        public Inventory LoadInventory()
+        {
+            return new Inventory(savedInventory);
+        }
+
+        public void SaveInventory(Inventory inventory)
+        {
+            savedInventory = new SerializableInventory(inventory);
+        }
+
 
         /// <summary>
-        /// 현재 플레이어가 보관하고 있는 인벤토리 정보입니다. <br/>
-        /// Inventory 인스턴스를 전달하며 반합니다. (내부에 직렬화 가능한 클래스를 두고 자동 변환이 이루어집니다.)
+        /// DataManager에서 Load메서드에서 새로운 GameData를 생성하기 위한 생성자입니다.<br/>
+        /// 기존의 데이터가 없을 경우 사용됩니다.
         /// </summary>
-        public Inventory inventory
+        public GameData()
         {
-            set{ savedInventory = new SerializableInventory( value ); }
-            get{ return new Inventory( savedInventory ); }
+            playTime = 0f;
+            playerTr = new STransform();
+
+            gold = 0;
+            silver = 0;
+
+            craftDic = new Craftdic();
+            SaveInventory(new Inventory());     // 새로운 직렬화 인벤토리 생성  
         }
     }
 
@@ -91,6 +120,7 @@ namespace DataManagement
     /// STransform playerTr = new STransform(transform); <br/>
     /// playerTr.DeSerialize(ref transform);
     /// </summary>
+    [Serializable]
     public class STransform
     {
         public float x;
@@ -99,6 +129,21 @@ namespace DataManagement
         public float xRot;
         public float yRot;
         public float zRot;
+
+
+        /// <summary>
+        /// 전달인자가 없을 때 새로운 STransform을 만들고 싶을 때 호출하는 생성자입니다. 모든 정보가 0으로 초기화됩니다.
+        /// </summary>
+        public STransform()
+        {
+            x = 0f;
+            y = 0f;
+            z = 0f;
+            xRot = 0f;
+            yRot = 0f;
+            zRot = 0f;
+        }
+
 
         /// <summary>
         /// 전달 받은 Transform 컴포넌트의 위치와 회전정보만 가지고 와서 STransform 인스턴스를 생성하여 반환합니다.
@@ -116,10 +161,10 @@ namespace DataManagement
         /// <summary>
         /// 저장되어있는 STransform의 위치와 회전 정보를 전달한 Transform 컴포넌트 인자에 동기화 시켜줍니다.
         /// </summary>
-        public void Deserialize(ref Transform tr)
+        public void Deserialize( ref Transform tr )
         {
-            tr.position = new Vector3( x, y, z );
-            tr.rotation = Quaternion.Euler( xRot, yRot, zRot );
+            tr.position=new Vector3( x, y, z );
+            tr.rotation=Quaternion.Euler( xRot, yRot, zRot );
         }
     }
        

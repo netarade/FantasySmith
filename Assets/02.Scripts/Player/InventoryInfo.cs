@@ -64,6 +64,10 @@ using UnityEngine.SceneManagement;
  * 2- 게임매니저의 인스턴스로 isNewGame을 판별하던 구문을 PlayerPrefs의 키값 참조로 변경
  * 이유는 PlayerInven 스크립트가 Awake로 빠른 초기화를 해야하는데 싱글톤으로의 접근시점이 같아서 불러오기 어렵기 때문 
  * 3- 테스트용 키삭제 구문 PlayerPrefs.DeleteAll 추가
+ * 
+ * <v5.0 - 2023_1222_최원준>
+ * 1- 클래스와 파일명을 PlayerInven에서 InventoryInfo로 수정 
+ * (ItemInfo와 이름의 일관성을 맞추기 위함)
  */
 
     
@@ -72,7 +76,7 @@ using UnityEngine.SceneManagement;
 /// 게임 실행 중 제작 관련 실시간 플레이어 정보 들을 보유하고 있는 전용 정보 클래스입니다.<br/>
 /// 인스턴스를 생성하여 정보를 확인하시기 바랍니다.
 /// </summary>
-public class PlayerInven : MonoBehaviour
+public class InventoryInfo : MonoBehaviour
 {
     /// <summary>
     /// 플레이어가 보유하고 있는 아이템을 보관하는 인벤토리와 관련된 정보를 가지고 있는 클래스입니다.<br/>
@@ -109,7 +113,7 @@ public class PlayerInven : MonoBehaviour
             Debug.Log("새로운 게임을 시작합니다.");
             PlayerPrefs.SetInt( "IsNewGame", 1 );
             InitPlayerData();        // 플레이어 데이터를 초기화
-            //SavePlayerData();        // 플레이어 데이터를 한번 세이브 해줍니다.
+            SavePlayerData();        // 플레이어 데이터를 한번 세이브 해줍니다.
         }
         else
         {            
@@ -153,7 +157,7 @@ public class PlayerInven : MonoBehaviour
         DataManager dataManager = new DataManager();
         GameData loadData = dataManager.LoadData();
 
-        inventory = loadData.inventory;
+        inventory=loadData.LoadInventory();
         craftDic = loadData.craftDic;
         gold = loadData.gold;
         silver = loadData.silver;
@@ -168,13 +172,12 @@ public class PlayerInven : MonoBehaviour
         DataManager dataManager = new DataManager();
         
         // 메서드 호출 시점에 다른 스크립트에서 save했을 수도 있으므로 새롭게 생성하지 않고 기존 데이터 최신화합니다
-        GameData saveData = dataManager.LoadData(); 
+        GameData saveData = dataManager.LoadData();
 
-        saveData.inventory = inventory;
+        saveData.SaveInventory(inventory);
         saveData.craftDic = craftDic;
         saveData.gold = gold;
         saveData.silver = silver;
-
         dataManager.SaveData(saveData);
     }
 

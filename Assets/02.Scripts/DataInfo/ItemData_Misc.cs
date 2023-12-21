@@ -67,6 +67,7 @@ namespace ItemData
     /// <summary>
     /// 잡화 아이템 - 기본 아이템과 다른점은 인벤토리에 중복해서 쌓을 수 있다는 점 (count가 존재)
     /// </summary>
+    [Serializable]
     public sealed class ItemMisc : Item
     {        
         private int iOverlapCount = 0;  // 인벤토리 중첩 횟수
@@ -197,6 +198,7 @@ namespace ItemData
     /// <summary>
     /// 각인석 - 무기를 각인시킬 때 사용
     /// </summary>
+    [Serializable]
     public struct ItemEngraving             
     {
         private float fIncreaseValue;        // 증가 수치

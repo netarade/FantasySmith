@@ -72,6 +72,15 @@ using Unity.VisualScripting;
  *<v8.2 - 2023_1221_최원준>
  *1- GameObject.Find()메서드로 오브젝트를 검색하던 것을 빠른참조로 변경
  *
+ *<v9.0 - 2023_1222_최원준>
+ *1- 태그참조 철자오류 수정 (CANVAS_CHRACTER -> CANVAS_CHARACTER)
+ *
+ *2- ItemImageCollection[]의 배열을 참조만하고 생성을 안해서 뜨는 배열의 bounds오류 수정
+ *
+ *3- 아이템의 생성시점에 UpdateImage나 UpdatePosition을 호출하면 참조가 잡히지 않기 때문에 bounds오류가 뜨는데
+ * OnItemChanged메서드를 아이템의 생성시점 호출이 아니라, 아이템의 등장 시점에 호출하도록 수정하였음.
+ *
+ *4 - SlotListTr이 뷰포트로 잡혀있던 점을 수정
  */
 
 
@@ -91,24 +100,36 @@ using Unity.VisualScripting;
 public class ItemInfo : MonoBehaviour
 {
     private Item item;              // 모든 아이템 클래스를 관리 가능한 변수
-    public Image innerImage;        // 아이템이 인벤토리에서 보여질 이미지 (오브젝트의 이미지 컴포넌트를 말한다.)
-    public Image statusImage;       // 아이템이 상태창에서 보여질 이미지 (오브젝트의 이미지 컴포넌트)
+    private Image itemImage;        // 아이템이 인벤토리에서 2D상에서 보여질 이미지     
+
+    public Sprite innerSprite;      // 아이템이 인벤토리에서 보여질 이미지 스프라이트
+    public Sprite statusSprite;     // 아이템이 상태창에서 보여질 이미지 스프라이트
+
     public Text countTxt;           // 잡화 아이템의 수량을 반영할 텍스트
     public Transform slotListTr;    // 아이템이 놓이게 될 슬롯 들의 부모인 슬롯리스트 트랜스폼 참조
 
     public ItemImageCollection[] iicArr;      // 인스펙터 뷰 상에서 등록할 아이템 이미지 집합 배열
     public enum eIIC { MiscBase,MiscAdd,MiscOther,Sword,Bow }    // 이미지 집합 배열의 인덱스 구분
+    private readonly int iicNum = 5;                             // 이미지 집합 배열의 갯수
+
     public void Start()
     {
         countTxt = GetComponentInChildren<Text>();
-        slotListTr = GameObject.FindWithTag("CANVAS_CHRACTER").transform.GetChild(0).GetChild(0);
+        slotListTr = GameObject.FindWithTag("CANVAS_CHARACTER").transform.GetChild(0).GetChild(0).GetChild(0).GetChild(0);
         
         // 인스펙터뷰 상에서 달아놓은 스프라이트 이미지 집합을 참조합니다.
         Transform imageCollectionsTr = CreateManager.instance.transform.GetChild(0);
 
+        // 배열을 해당 갯수만큼 생성해줍니다.
+        iicArr = new ItemImageCollection[iicNum];
+
         // 각 iicArr은 imageCollectionsTr의 하위 자식오브젝트로서 ItemImageCollection 스크립트를 컴포넌트로 가지고 있습니다
-        for( int i = 0; i<5; i++)
+        for( int i = 0; i<iicNum; i++)
             iicArr[i] = imageCollectionsTr.GetChild(i).GetComponent<ItemImageCollection>();
+                
+
+        // 정보를 업데이트하는 메서드를호출하여야 합니다.
+        OnItemChanged(); 
     }
 
 
@@ -120,7 +141,6 @@ public class ItemInfo : MonoBehaviour
     {
         set {
                 item =  value;
-                OnItemChanged();      // 개념아이템 참조값이 들어오면 내부에서 자동 호출해준다. 
             }
         get {return item;}
     }
@@ -131,7 +151,7 @@ public class ItemInfo : MonoBehaviour
     /// </summary>
     private void OnEnable()
     {
-        innerImage = GetComponent<Image>();
+        itemImage = GetComponent<Image>();
         countTxt = GetComponentInChildren<Text>();
         countTxt.enabled = false;
     }
@@ -154,6 +174,9 @@ public class ItemInfo : MonoBehaviour
     /// </summary>
     public void UpdateImage()
     {
+        if(iicArr.Length == 0 )    // 아이템 생성 시점에 iicArr을 참조하는 것을 방지하여 줍니다.
+            return;
+
         switch( item.Type ) // 아이템의 메인타입을 구분합니다.
         {
             case ItemType.Weapon:
@@ -161,13 +184,13 @@ public class ItemInfo : MonoBehaviour
 
                 if( weaponType==WeaponType.Sword )
                 {
-                    innerImage.sprite=iicArr[((int)eIIC.Sword)].icArrImg[item.sImageRefIndex.innerImgIdx].innerSprite;
-                    statusImage.sprite=iicArr[(int)eIIC.Bow].icArrImg[item.sImageRefIndex.statusImgIdx].statusSprite;
+                    innerSprite = iicArr[((int)eIIC.Sword)].icArrImg[item.sImageRefIndex.innerImgIdx].innerSprite;
+                    statusSprite = iicArr[(int)eIIC.Bow].icArrImg[item.sImageRefIndex.statusImgIdx].statusSprite;
                 }
                 else if( weaponType==WeaponType.Bow )
                 {
-                    innerImage.sprite=iicArr[(int)eIIC.Bow].icArrImg[item.sImageRefIndex.innerImgIdx].innerSprite;
-                    statusImage.sprite=iicArr[(int)eIIC.Bow].icArrImg[item.sImageRefIndex.statusImgIdx].statusSprite;
+                    innerSprite = iicArr[(int)eIIC.Bow].icArrImg[item.sImageRefIndex.innerImgIdx].innerSprite;
+                    statusSprite = iicArr[(int)eIIC.Bow].icArrImg[item.sImageRefIndex.statusImgIdx].statusSprite;
                 }
                 break;
                 // 아이템 오브젝트 이미지를 인스펙터뷰에 직렬화되어 있는 ItemImageCollection 클래스의
@@ -178,21 +201,24 @@ public class ItemInfo : MonoBehaviour
 
                 if( miscType==MiscType.Basic )
                 {
-                    innerImage.sprite=iicArr[(int)eIIC.MiscBase].icArrImg[item.sImageRefIndex.innerImgIdx].innerSprite;
-                    statusImage.sprite=iicArr[(int)eIIC.MiscBase].icArrImg[item.sImageRefIndex.statusImgIdx].statusSprite;
+                    innerSprite = iicArr[(int)eIIC.MiscBase].icArrImg[item.sImageRefIndex.innerImgIdx].innerSprite;
+                    statusSprite = iicArr[(int)eIIC.MiscBase].icArrImg[item.sImageRefIndex.statusImgIdx].statusSprite;
                 }
                 else if( miscType==MiscType.Additive )
                 {
-                    innerImage.sprite=iicArr[(int)eIIC.MiscAdd].icArrImg[item.sImageRefIndex.innerImgIdx].innerSprite;
-                    statusImage.sprite=iicArr[(int)eIIC.MiscAdd].icArrImg[item.sImageRefIndex.statusImgIdx].statusSprite;
+                    innerSprite = iicArr[(int)eIIC.MiscAdd].icArrImg[item.sImageRefIndex.innerImgIdx].innerSprite;
+                    statusSprite = iicArr[(int)eIIC.MiscAdd].icArrImg[item.sImageRefIndex.statusImgIdx].statusSprite;
                 }
                 else
                 {
-                    innerImage.sprite=iicArr[(int)eIIC.MiscOther].icArrImg[item.sImageRefIndex.innerImgIdx].innerSprite;
-                    statusImage.sprite=iicArr[(int)eIIC.MiscOther].icArrImg[item.sImageRefIndex.statusImgIdx].statusSprite;
+                    innerSprite = iicArr[(int)eIIC.MiscOther].icArrImg[item.sImageRefIndex.innerImgIdx].innerSprite;
+                    statusSprite = iicArr[(int)eIIC.MiscOther].icArrImg[item.sImageRefIndex.statusImgIdx].statusSprite;
                 }
                 break;
         }
+
+        // 참조한 스프라이트 이미지를 기반으로 아이템이 보여질 2D이미지를 장착합니다.
+        itemImage.sprite = innerSprite;
     }
 
 

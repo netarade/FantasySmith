@@ -1,6 +1,4 @@
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+using System;
 /*
  * [작업 사항]
  * 
@@ -22,6 +20,7 @@ namespace ItemData
     /// <summary>
     /// 무기 제작에 필요한 재료 - 재료 이름과 갯수
     /// </summary>
+    [Serializable]
     public struct CraftMaterial
     {
         public string name;
@@ -44,6 +43,7 @@ namespace ItemData
     /// <summary>
     /// 제작 무기 아이템
     /// </summary>
+    [Serializable]
     public sealed class ItemCraftWeapon : ItemWeapon
     {
         /*** 제작 관련 속성 ***/

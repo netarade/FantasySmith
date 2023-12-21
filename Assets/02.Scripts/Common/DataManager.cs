@@ -6,7 +6,6 @@
 using UnityEngine;
 using System.IO;
 using Newtonsoft.Json;
-using System.Collections.Generic;
 
 /*
  * [작업 사항]  
@@ -90,10 +89,13 @@ namespace DataManagement
             if( IsDataExistInSlot(loadSlot) )
             {
                 string data = File.ReadAllText(Path + loadSlot.ToString() + ".json");
-                return JsonConvert.DeserializeObject<GameData>(data);                
+                return JsonConvert.DeserializeObject<GameData>(data); 
             }
             else
-                return new GameData();            
+            {
+                GameData gameData = new GameData();
+                return gameData;   
+            }
         }
         #else
         /// <summary>

@@ -287,11 +287,42 @@
  * CraftSimulation.cs - 모든 코드 일시적으로 주석처리
  * 
  * <2023_1221_최원준>
- * (수정내용)
- * Inventory.cs v4.3 -  WeapCount와 MiscCount가 서로 miscDic과 weapDic의 Values를 바꿔서 참조하던 점 수정
- * InventoryManagement.cs v4.2 - inventory 변수의 잘못된 참조 수정 (invenInfo의 GetComponent참조에서 .inventory 참조로 변경)
  * 
  * 1. 현재 이슈 인벤토리 생성자에서 new 키워드로 
  * Dictionary<string, List<GameObject>> 을 생성하려고 할 때 생성되지 않는 현상이 발생하여 확인작업 중.
+ * =>(완료) Inventory의 분할 클래스에서 Monobehaviour를 제거하지 않아 발생하였음.
+ * 
+ * 2. DataManager클래스에서 gameData를 통해 string을 형성할 때 
+ * string data = File.ReadAllText(Path + loadSlot.ToString() + ".json");
+ * 이후 문장이 호출되지 않는 문제 발생 (저장파일이 형성되지 않음)
+ * =>(일부 완료)ivnentory 변수 주석처리 및 STransform에 Serializable키워드 추가
+ * 
+ * 3. 저장파일이 형성되지만 savedInventory만 string값으로 생성되지 않는 문제발생
+ * => (완료) savedInventory를 private에서 public으로 변경해야 함.
+ * 
+ * 4. savedInventory의 List<Item> weapList, miscList가 스트링으로 생성되지 않는 문제
+ * a. Item클래스에 모두 Serializable키워드 추가
+ * b. 저장할변수는 반드시 private, protected가 아니라 -> public 멤버 필드로 변경해야함.
+ * 저장할 쪽의 savedInventory도 public 해야 하며, 상대쪽의 weapDic도 public으로 변경해야 함.
+ * c. public 프로퍼티도 저장이 가능하다. protected 변수는 되지 않는다.
+ * d. List<GameObject>를 가지고 있는 Inventory 를 저장하는 프로퍼티를 한번이라도 set 호출하는 순간 저장이 불가능하다. (직렬화 될 수 없기 때문)
+ * => (완료) Inventroy클래스를 메서드를 호출하여 저장과 로드함으로서 해결
+ * 
+ * 
+ * 6. 슬롯에 아이템이 생성되면 크기가 슬롯을 초과하므로 Vertical Layout Group을 달아주어 Child Size를 강제로 조절하였음.(완료)
+ * 
+ * 7. (해결 못한 마지막 이슈) - Item클래스와 하위 자식클래스에 private변수는 저장되지 않으므로 public 변수를 추가하여야 한다.
+ * => private 변수를 public으로 바꾸는 것이 아니라, public변수인 프로퍼티에 저장하는 형태로 변경해야 할 듯 보인다. 
+ * (프로퍼티를 통한 연산처리 로직을 구성하여야 한다. 내부적으로 private변수를 통해 연산처리를 하지만, 저장할때는 프로퍼티가 마지막 순간에 값을 가질 필요가 있다.)
+ * 
+ * (수정사항)
+ * Inventory.cs v4.3 -  WeapCount와 MiscCount가 서로 miscDic과 weapDic의 Values를 바꿔서 참조하던 점 수정
+ * InventoryManagement.cs v4.2 - inventory 변수의 잘못된 참조 수정 (invenInfo의 GetComponent참조에서 .inventory 참조로 변경 * GameData.cs v3.0 - Inventory프로퍼티 삭제, SaveInventory, LoadInventory메서드를 추가
+ * InventoryInfo.cs v5.0 - 클래스와 파일명을 PlayerInven에서 InventoryInfo로 수정 (ItemInfo와 이름의 일관성을 맞추기 위함)
+ * Inventory_p2 v1.1 - 분할클래스를 만들면서 MonoBehaviour를 지우지 않아 new 키워드 경고가 발생하여 제거
+ * ButtonPlayTest.cs v1.1 - playerInven의 변수명을 inventory로 수정, inventory 잘못된 참조 수정
+ * Drop.cs v3.2 - playerInvenInfo의 잘못된 참조 수정
+ * ItemInfo v9.0 - 태그철자 오류 및 SlotListTr 참조오류 수정, ItemImageCollection[]의 배열의 bounds오류 수정, OnItemChanged메서드를 아이템의 생성시점 호출이 아니라 등장 시점에 호출하도록 수정
+ * 
  */
  

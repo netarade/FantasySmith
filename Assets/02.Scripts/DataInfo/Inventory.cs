@@ -161,6 +161,7 @@ namespace CraftData
                     }
                     break;
             }
+
             return itemList;    // item 정보가 하나씩 저장되어있는 itemList를 반환합니다.
         }
 
@@ -222,11 +223,11 @@ namespace CraftData
         /// 기본 인벤토리 생성자입니다. 새로운 게임을 시작할 때 사용해주세요.
         /// </summary>
         public Inventory()
-        {            
-            weapDic = new Dictionary< string, List<GameObject> >();
-            miscDic = new Dictionary< string, List<GameObject> >();
-            WeapCountLimit = InitialCountLimit;
-            MiscCountLimit = InitialCountLimit;
+        {
+            weapDic=new Dictionary<string, List<GameObject>>();
+            miscDic=new Dictionary<string, List<GameObject>>();
+            WeapCountLimit=InitialCountLimit;
+            MiscCountLimit=InitialCountLimit;
         }
 
         /// <summary>
@@ -234,8 +235,8 @@ namespace CraftData
         /// </summary>
         public Inventory( SerializableInventory savedInventory )
         {
-            ConvertItemListToDic(ItemType.Weapon, savedInventory.weapList);
-            ConvertItemListToDic(ItemType.Misc, savedInventory.miscList);
+            ConvertItemListToDic( ItemType.Weapon, savedInventory.weapList );
+            ConvertItemListToDic( ItemType.Misc, savedInventory.miscList );
             WeapCountLimit = savedInventory.WeapCountLimit;
             MiscCountLimit = savedInventory.MiscCountLimit;
         }
@@ -256,14 +257,13 @@ namespace CraftData
         public int WeapCountLimit {get;}
         public int MiscCountLimit {get;}
         
-
         /// <summary>
         /// 기존의 인벤토리 클래스의 인스턴스를 인자로 받아서 직렬화 가능한 인벤토리 인스턴스를 생성해 줍니다.
         /// </summary>
         public SerializableInventory( Inventory inventory )
         {
-            weapList = inventory.ConvertDicToItemList(ItemType.Weapon);
-            miscList = inventory.ConvertDicToItemList(ItemType.Misc);
+            weapList=inventory.ConvertDicToItemList( ItemType.Weapon );
+            miscList=inventory.ConvertDicToItemList( ItemType.Misc );
             WeapCountLimit = inventory.WeapCountLimit;
             MiscCountLimit = inventory.MiscCountLimit;
         }

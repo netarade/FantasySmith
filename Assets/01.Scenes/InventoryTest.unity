@@ -259,10 +259,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 9122947}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f2340d9840d938641a16cba97c2c07a5, type: 3}
+  m_Script: {fileID: 11500000, guid: 3711192ec7be82a4c8baa4fa25e993ec, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  inventory: {fileID: 0}
   gold: 0
   silver: 0
 --- !u!1 &10357008

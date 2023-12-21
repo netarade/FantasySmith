@@ -109,6 +109,7 @@ namespace ItemData
     /// <summary>
     /// 기본 아이템 추상 클래스 - 인스턴스를 생성하지 못합니다. 반드시 상속하여 사용하세요. 상속한 클래스는 ICloneable을 구현해야합니다.
     /// </summary>
+    [Serializable]
     public abstract class Item : ICloneable
     {
         protected ItemType enumType;        // 타입

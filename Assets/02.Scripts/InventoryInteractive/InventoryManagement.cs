@@ -128,13 +128,13 @@ public class InventoryManagement : MonoBehaviour
 
 
         //플레이어 오브젝트를 참조하여 인벤토리 정보를 받아옵니다
-        PlayerInven invenInfo = GameObject.FindWithTag("Player").GetComponent<PlayerInven>();
+        InventoryInfo invenInfo = GameObject.FindWithTag("Player").GetComponent<InventoryInfo>();
         inventory = invenInfo.inventory;
 
 
         // 플레이어 인벤토리 정보(전체 탭 슬롯 칸수)를 참조하여 슬롯을 동적으로 생성
-        for(int i=0; i< invenInfo.inventory.AllCountLimit; i++)
-            Instantiate(slotPrefab, slotListTr);
+        for( int i = 0; i<invenInfo.inventory.AllCountLimit; i++ )
+            Instantiate( slotPrefab, slotListTr );
     }
 
 

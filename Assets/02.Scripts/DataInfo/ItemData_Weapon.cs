@@ -53,6 +53,7 @@ namespace ItemData
     /// <summary>
     /// 일반 무기 아이템
     /// </summary>
+    [Serializable]
     public class ItemWeapon : Item
     {       
         /*** 기본 고유 정보 ***/

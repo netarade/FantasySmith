@@ -128,7 +128,7 @@ public class ItemPointerStatusWindow : MonoBehaviour, IPointerEnterHandler, IPoi
         
 
 
-        itemStatusImage.sprite = itemInfo.statusImage.sprite;   // 이미지에 등록한 statusSprite 이미지를 보여준다.
+        itemStatusImage.sprite = itemInfo.statusSprite;         // 이미지에 등록한 statusSprite 이미지를 보여준다.
         txtName.text = item.Name;                               // 이름 텍스트에 아이템 이름을 보여준다.
         txtDesc.text = item.Name;                               // 설명 텍스트에 아이템 이름을 임시적으로 보여준다.
 

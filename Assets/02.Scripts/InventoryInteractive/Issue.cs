@@ -268,5 +268,23 @@
  * ItemMisc에서는 메서드로 인벤토리 수량을 조절하게 되면 최대수량 넘어가면 최대수량까지만 채워주고 나머지를 반환해주는 메서드를 정의
  * 이 메서드의 호출을 통해 나머지 수량을 확인하고 남은 수량이 없을 때 까지 잡화아이템을 계속만들어주는 로직을 작성하였음
  * 
+ * <2023_1221_최원준>
+ * 수정내용
+ * 인벤토리 프리팹 내부의 미리 생성시켜놓았던 Slot프리팹을 삭제
+ * 테스트 버튼의 이벤트 새롭게 연결 
+ * 
+ * ButtonPlayTest.cs v1.0 - 테스트를 위한 버튼스크립트 새롭게 생성
+ * InventoryManagement.cs - 부착위치를 Canvas-Character오브젝트로 변경, 슬롯프리팹을 수동참조로 등록
+ * 
+ * CreateManager.cs v10.1 - CreateItemToNearstSlot 메서드를 수정 완료, CreateAllItemDictionary메서드 내부의 월드아이템 데이터를 
+ * MonoBehaviour를 상속하지 않는 WorldItemData_Misc과 Weapon 스크립트로 분리시켜 이동
+ * 
+ * WorldItemData_Misc v1.0 - WordItem클래스의 분할파일 새롭게 생성
+ * WorldItemData_Weapon v1.0 - WordItem클래스의 분할파일 새롭게 생성
+ * Inventory_p2.cs v1.0 - Inventory클래스의 분할파일 새롭게 생성
+ * CraftData.cs v5.2 - weaponDic참조를 CreateManager의 싱글톤에서 참조하던 것을 따로 MonoBehaviour를 상속하지 않는 스크립트인 WorldItemData_Weapon의 참조로 변경
+ * PlayerInven v4.2 - 게임매니저의 인스턴스로 isNewGame을 판별하던 구문을 PlayerPrefs의 키값 참조로 변경
+ * CraftSimulation.cs - 모든 코드 일시적으로 주석처리
+ * 
  */
  

@@ -69,6 +69,9 @@ using Unity.VisualScripting;
  *<v8.1 - 2023_1217_최원준>
  *1- ItemImageCollection 변수들을 하나씩 참조하던 것을 배열로 만들어서 참조
  *
+ *<v8.2 - 2023_1221_최원준>
+ *1- GameObject.Find()메서드로 오브젝트를 검색하던 것을 빠른참조로 변경
+ *
  */
 
 
@@ -98,14 +101,14 @@ public class ItemInfo : MonoBehaviour
     public void Start()
     {
         countTxt = GetComponentInChildren<Text>();
-        slotListTr = GameObject.Find("Inventory").transform.GetChild(0);
+        slotListTr = GameObject.FindWithTag("CANVAS_CHRACTER").transform.GetChild(0).GetChild(0);
         
         // 인스펙터뷰 상에서 달아놓은 스프라이트 이미지 집합을 참조합니다.
-        Transform imageCollectionsTr = GameObject.Find( "ImageCollections" ).transform;
+        Transform imageCollectionsTr = CreateManager.instance.transform.GetChild(0);
 
+        // 각 iicArr은 imageCollectionsTr의 하위 자식오브젝트로서 ItemImageCollection 스크립트를 컴포넌트로 가지고 있습니다
         for( int i = 0; i<5; i++)
             iicArr[i] = imageCollectionsTr.GetChild(i).GetComponent<ItemImageCollection>();
-
     }
 
 

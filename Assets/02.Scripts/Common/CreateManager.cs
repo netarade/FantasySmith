@@ -4,10 +4,9 @@ using UnityEngine;
 using ItemData;
 using CraftData;
 using System;
-using UnityEngine.UI;
-using DataManagement;
 using UnityEngine.SceneManagement;
-using UnityEditor.Experimental.GraphView;
+using WorldItemData;
+
 
 /*
  * 
@@ -112,8 +111,15 @@ using UnityEditor.Experimental.GraphView;
 * 1-속성석을 수금지화풍 이름으로 나눈 후 MiscType.Attribute로 변경
 * 
 * <v10.0 - 2023_1220_최원준>
-* 1- CreateManager를 수정된 인벤토리 클래스에 맞게 변경을 진행하는 중
+* 1- CreateItemToNearstSlot 메서드를 수정된 인벤토리 클래스에 맞게 변경을 진행하는 중
 * 
+* <v10.1 - 2023_1221_최원준>
+* 1- CreateItemToNearstSlot 메서드를 수정 완료하였습니다
+* 내부적으로 AddCloneItemToInventory 메서드와 CreateMiscItemRepeatly 를 호출하고 있습니다
+* 
+* 2- CreateAllItemDictionary메서드 내부의 월드아이템 데이터를 
+* MonoBehaviour를 상속하지 않는 WorldItemData_Misc과 Weapon 스크립트로 분리시켜 이동하였습니다.
+* 이유는 MonoBehaviour를 상속하지 않는 CraftData에서 CreateManager의 싱글톤에 접근하지 못하기 때문입니다.
 * 
 */
 
@@ -144,7 +150,9 @@ public class CreateManager : MonoBehaviour
             Destroy( this.gameObject );           // 싱글톤 이외 인스턴스는 삭제
 
         itemPrefab=Resources.Load<GameObject>( "ItemOrigin" );  // 리소스 폴더에서 원본 프리팹 가져오기
-        slotListTr=GameObject.Find( "SlotList" ).transform;     // 슬롯리스트를 인식 시켜 남아있는 슬롯을 확인할 것이다.
+
+        Transform canvasTr = GameObject.FindWithTag("CANVAS_CHARACTER").transform;
+        slotListTr=canvasTr.GetChild(0).GetChild(0).GetChild(0).GetChild(0);        // 슬롯리스트를 인식 시켜 남아있는 슬롯을 확인할 것이다.
 
 
         // 모든 월드 아이템 등록
@@ -161,7 +169,9 @@ public class CreateManager : MonoBehaviour
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
         itemPrefab=Resources.Load<GameObject>( "ItemOrigin" );  // 리소스 폴더에서 원본 프리팹 가져오기
-        slotListTr=GameObject.Find( "SlotList" ).transform;     // 슬롯리스트를 인식 시켜 남아있는 슬롯을 확인할 것이다.
+
+        Transform canvasTr = GameObject.FindWithTag("CANVAS_CHARACTER").transform;
+        slotListTr=canvasTr.GetChild(0).GetChild(0).GetChild(0).GetChild(0);        // 슬롯리스트를 인식 시켜 남아있는 슬롯을 확인할 것이다.
     }
 
     /// <summary>
@@ -216,7 +226,7 @@ public class CreateManager : MonoBehaviour
         if( isWeapName )         // 이름이 무기 종류라면
         {
             // 인벤토리의 무기목록에 해당 아이템 리스트가 없다면 리스트를 새롭게 생성합니다
-            if( !inventory.weapDic.ContainsKey( itemName) )  
+            if( !inventory.weapDic.ContainsKey( itemName ) )  
                 inventory.weapDic[itemName] = new List<GameObject>();
             
             // 인벤토리의 해당 딕셔너리에 접근하여 아이템 오브젝트 리스트 참조를 설정합니다
@@ -226,7 +236,7 @@ public class CreateManager : MonoBehaviour
             itemClone=(ItemWeapon)weaponDic[itemName].Clone();   
                         
             // 인벤토리 리스트에 개념아이템을 장착한 오브젝트를 추가합니다
-            AddItemToInventory( itemObjList, itemClone, findSlotIdx );
+            AddCloneItemToInventory( itemObjList, itemClone, findSlotIdx );
 
         }
         else if( isMiscName )     // 이름이 잡화 종류라면 
@@ -265,11 +275,8 @@ public class CreateManager : MonoBehaviour
                 if( remainCount>0 )   // 반환값이 남아있다면,
                 {            
                     // 남은 수량을 인자로 넣어서 다시 아이템을 생성하는 재귀호출에 들어갑니다
-                    return CreateMiscItemRepeat(inventory, itemName, remainCount);
+                    return CreateMiscItemRepeatly(inventory, itemName, remainCount);
                 }
-
-
-
 
 
             }
@@ -277,6 +284,9 @@ public class CreateManager : MonoBehaviour
             {                
                 itemClone=(ItemMisc)miscDic[itemName].Clone();    // 개념아이템을 클론하고,
                 ( (ItemMisc)itemClone ).SetOverlapCount( count );   // 클론의 중첩 갯수를 받은 인자로 지정합니다.
+
+                // 인벤토리 리스트에 개념아이템을 장착한 오브젝트를 추가합니다
+                AddCloneItemToInventory( itemObjList, itemClone, findSlotIdx );
             }
 
         }
@@ -294,11 +304,14 @@ public class CreateManager : MonoBehaviour
 
 
 
-    private int CreateMiscItemRepeat(Inventory inventory, string itemName, int remainCount)
-    {
+    private int CreateMiscItemRepeatly(Inventory inventory, string itemName, int remainCount)
+    {        
+        if(remainCount==0)  // 인자로 호출 된 수량이 0이라면 더이상 재귀호출을 진행하지 않고 0을 반환합니다. 
+            return 0;
 
         int findSlotIdx = FindNearstRemainSlotIdx();
         int remCount;
+
 
         // 새롭게 개념아이템을 클론합니다.
         ItemMisc itemClone=(ItemMisc)miscDic[itemName].Clone();
@@ -306,17 +319,22 @@ public class CreateManager : MonoBehaviour
         // 오브젝트리스트 설정
         List<GameObject> itemObjList = inventory.miscDic[itemName];
 
+
         // SetOVerlapCount메서드를호출하여 최대수량까지 채우고 나머지를 새롭게 반환받습니다.
         remCount = ( (ItemMisc)itemClone ).SetOverlapCount( remainCount );                                               
                                                                        
         // 인벤토리 리스트에 개념아이템을 장착한 오브젝트를 추가합니다
-        AddItemToInventory( itemObjList, itemClone, findSlotIdx );
+        AddCloneItemToInventory( itemObjList, itemClone, findSlotIdx );
+        
+
+        // 남은 수량을 새로운 인자로 넣어서 재귀호출을 진행합니다.
+        return CreateMiscItemRepeatly(inventory, itemName, remCount);
     }
 
 
 
 
-    private void AddItemToInventory( List<GameObject> itemObjList, Item itemClone, int findSlotIdx )
+    private void AddCloneItemToInventory( List<GameObject> itemObjList, Item itemClone, int findSlotIdx )
     {
         // 개념 아이템의 슬롯의 인덱스 정보를 찾은 위치로 수정한다.
         itemClone.SlotIndex=findSlotIdx;
@@ -383,265 +401,9 @@ public class CreateManager : MonoBehaviour
         // 플레이어와 상관없이 게임 시스템 자체가 들고 있어야할 집합이며,
         // 플레이어는 아이템이 생성될 때 이 집합에서 복제해서 들고있게 될 것이다.
 
-        miscDic=new Dictionary<string, Item>()
-        {           //0x1000
-            { "철", new ItemMisc( ItemType.Misc, MiscType.Basic, "0000000", "철", 3.0f, new ImageReferenceIndex(0) ) },
-            { "강철", new ItemMisc( ItemType.Misc, MiscType.Basic, "0000001", "강철", 5.0f, new ImageReferenceIndex(1) ) },
-            { "흑철", new ItemMisc( ItemType.Misc, MiscType.Basic, "0000002", "흑철", 7.0f, new ImageReferenceIndex(2) ) },
-            { "미스릴", new ItemMisc( ItemType.Misc, MiscType.Basic,"0000003", "미스릴", 20.0f, new ImageReferenceIndex(3) ) }, 
-            { "코발트", new ItemMisc( ItemType.Misc, MiscType.Basic,"0000004", "코발트", 16.0f, new ImageReferenceIndex(4) ) },
-            { "티타늄", new ItemMisc( ItemType.Misc, MiscType.Basic,"0000005", "티타늄", 25.0f, new ImageReferenceIndex(5) ) },
-            { "오리하르콘", new ItemMisc( ItemType.Misc, MiscType.Basic,"0000006", "오리하르콘", 60.0f, new ImageReferenceIndex(6) ) },
-            { "단단한 나뭇가지", new ItemMisc( ItemType.Misc, MiscType.Basic,"0000007", "단단한 나뭇가지", 2.0f, new ImageReferenceIndex(7) ) },
-            { "튼튼한 나뭇가지", new ItemMisc( ItemType.Misc, MiscType.Basic,"0000008", "튼튼한 나뭇가지", 3.0f, new ImageReferenceIndex(8) ) },
-            { "가벼운 나뭇가지", new ItemMisc( ItemType.Misc, MiscType.Basic,"0000009", "가벼운 나뭇가지", 4.0f, new ImageReferenceIndex(9) ) },
-            { "부드러운 나뭇가지", new ItemMisc( ItemType.Misc, MiscType.Basic,"0000010", "부드러운 나뭇가지", 5.0f, new ImageReferenceIndex(10) ) },
-            { "엘프의 나뭇가지", new ItemMisc( ItemType.Misc, MiscType.Basic,"0000011", "엘프의 나뭇가지", 20.0f, new ImageReferenceIndex(11) ) },
-            { "축복받은 나뭇가지", new ItemMisc( ItemType.Misc, MiscType.Basic,"0000012", "축복받은 나뭇가지", 40.0f, new ImageReferenceIndex(12) ) },
-
-            { "하늘의 룬", new ItemMisc( ItemType.Misc, MiscType.Additive, "0000300", "하늘의 룬", 100.0f, new ImageReferenceIndex(0) ) },
-            { "불타는 심장", new ItemMisc( ItemType.Misc, MiscType.Additive, "0000301", "불타는 심장", 100.0f, new ImageReferenceIndex(1) ) },
-            { "영롱한 구슬", new ItemMisc( ItemType.Misc, MiscType.Additive, "0000302", "영롱한 구슬", 100.0f, new ImageReferenceIndex(2) ) },
-            { "요정의 목화", new ItemMisc( ItemType.Misc, MiscType.Additive,"0000303", "요정의 목화", 100.0f, new ImageReferenceIndex(3) ) }, 
-            { "달의 조각", new ItemMisc( ItemType.Misc, MiscType.Additive,"0000304", "달의 조각", 30.0f, new ImageReferenceIndex(4) ) },
-            { "신비한 조각", new ItemMisc( ItemType.Misc, MiscType.Additive,"0000305", "신비한 조각", 30.0f, new ImageReferenceIndex(5) ) },
-            { "크롬 결정", new ItemMisc( ItemType.Misc, MiscType.Additive,"0000306", "크롬 결정", 25.0f, new ImageReferenceIndex(6) ) },
-            { "수은 결정", new ItemMisc( ItemType.Misc, MiscType.Additive,"0000307", "수은 결정", 20.0f, new ImageReferenceIndex(7) ) },
-            { "얼음 결정", new ItemMisc( ItemType.Misc, MiscType.Additive,"0000308", "얼음 결정", 15.0f, new ImageReferenceIndex(8) ) },
-            { "백금", new ItemMisc( ItemType.Misc, MiscType.Additive,"0000309", "백금", 60.0f, new ImageReferenceIndex(9) ) },
-            { "흑요석", new ItemMisc( ItemType.Misc, MiscType.Additive,"0000310", "흑요석", 40.0f, new ImageReferenceIndex(10) ) },
-            { "금", new ItemMisc( ItemType.Misc, MiscType.Additive,"0000311", "금", 30.0f, new ImageReferenceIndex(11) ) },
-            { "은", new ItemMisc( ItemType.Misc, MiscType.Additive,"0000312", "은", 20.0f, new ImageReferenceIndex(12) ) },
-            { "점토", new ItemMisc( ItemType.Misc, MiscType.Additive,"0000313", "점토", 2.0f, new ImageReferenceIndex(13) ) },
-            { "솜뭉치", new ItemMisc( ItemType.Misc, MiscType.Additive,"0000314", "솜뭉치", 1.0f, new ImageReferenceIndex(14) ) },
-            { "물소의 뿔", new ItemMisc( ItemType.Misc, MiscType.Additive,"0000315", "물소의 뿔", 15.0f, new ImageReferenceIndex(15) ) },
-            { "짐승 가죽", new ItemMisc( ItemType.Misc, MiscType.Additive,"0000316", "짐승 가죽", 6.0f, new ImageReferenceIndex(16) ) },
-            
-            { "초급 물리의 각인", new ItemMisc( ItemType.Misc, MiscType.Enhancement,"0000700", "초급 물리의 각인", 50.0f, new ImageReferenceIndex(0) ) },
-            { "초급 공속의 각인", new ItemMisc( ItemType.Misc, MiscType.Enhancement,"0000701", "초급 공속의 각인", 50.0f, new ImageReferenceIndex(1) ) },
-            { "초급 흡혈의 각인", new ItemMisc( ItemType.Misc, MiscType.Enhancement,"0000702", "초급 흡혈의 각인", 50.0f, new ImageReferenceIndex(2) ) },
-            { "초급 사격의 각인", new ItemMisc( ItemType.Misc, MiscType.Enhancement,"0000703", "초급 사격의 각인", 50.0f, new ImageReferenceIndex(3) ) },
-            { "초급 피해의 각인", new ItemMisc( ItemType.Misc, MiscType.Enhancement,"0000704", "초급 피해의 각인", 50.0f, new ImageReferenceIndex(4) ) },
-            { "중급 물리의 각인", new ItemMisc( ItemType.Misc, MiscType.Enhancement,"0000705", "중급 물리의 각인", 125.0f, new ImageReferenceIndex(0) ) },
-            { "중급 공속의 각인", new ItemMisc( ItemType.Misc, MiscType.Enhancement,"0000706", "중급 공속의 각인", 125.0f, new ImageReferenceIndex(1) ) },
-            { "중급 흡혈의 각인", new ItemMisc( ItemType.Misc, MiscType.Enhancement,"0000707", "중급 흡혈의 각인", 125.0f, new ImageReferenceIndex(2) ) },
-            { "중급 사격의 각인", new ItemMisc( ItemType.Misc, MiscType.Enhancement,"0000708", "중급 사격의 각인", 125.0f, new ImageReferenceIndex(3) ) },
-            { "중급 피해의 각인", new ItemMisc( ItemType.Misc, MiscType.Enhancement,"0000709", "중급 피해의 각인", 125.0f, new ImageReferenceIndex(4) ) },
-            { "고급 물리의 각인", new ItemMisc( ItemType.Misc, MiscType.Enhancement,"0000710", "고급 물리의 각인", 200.0f, new ImageReferenceIndex(0) ) },
-            { "고급 공속의 각인", new ItemMisc( ItemType.Misc, MiscType.Enhancement,"0000711", "고급 공속의 각인", 200.0f, new ImageReferenceIndex(1) ) },
-            { "고급 흡혈의 각인", new ItemMisc( ItemType.Misc, MiscType.Enhancement,"0000712", "고급 흡혈의 각인", 200.0f, new ImageReferenceIndex(2) ) },
-            { "고급 사격의 각인", new ItemMisc( ItemType.Misc, MiscType.Enhancement,"0000713", "고급 사격의 각인", 200.0f, new ImageReferenceIndex(3) ) },
-            { "고급 피해의 각인", new ItemMisc( ItemType.Misc, MiscType.Enhancement,"0000714", "고급 피해의 각인", 200.0f, new ImageReferenceIndex(4) ) },
-            
-            { "나무", new ItemMisc( ItemType.Misc, MiscType.Fire, "0000600", "나무", 1.0f, new ImageReferenceIndex(5) ) },
-            { "석탄", new ItemMisc( ItemType.Misc, MiscType.Fire, "0000601", "석탄", 6.0f, new ImageReferenceIndex(6) ) },
-            { "석유", new ItemMisc( ItemType.Misc, MiscType.Fire, "0000602", "석유", 15.0f, new ImageReferenceIndex(7) ) },
-            { "강화석", new ItemMisc( ItemType.Misc, MiscType.Enhancement,"0000610", "강화석", 50.0f, new ImageReferenceIndex(9) ) }, 
-            
-            { "속성석-수", new ItemMisc( ItemType.Misc, MiscType.Attribute,"0000611", "속성석-수", 500.0f, new ImageReferenceIndex(8) ) }, 
-            { "속성석-금", new ItemMisc( ItemType.Misc, MiscType.Attribute,"0000612", "속성석-금", 500.0f, new ImageReferenceIndex(8) ) }, 
-            { "속성석-지", new ItemMisc( ItemType.Misc, MiscType.Attribute,"0000613", "속성석-지", 500.0f, new ImageReferenceIndex(8) ) }, 
-            { "속성석-화", new ItemMisc( ItemType.Misc, MiscType.Attribute,"0000614", "속성석-화", 500.0f, new ImageReferenceIndex(8) ) }, 
-            { "속성석-풍", new ItemMisc( ItemType.Misc, MiscType.Attribute,"0000615", "속성석-풍", 500.0f, new ImageReferenceIndex(8) ) }, 
-        };
-
-        weaponDic=new Dictionary<string, Item>()
-        {
-            /*** 검 ***/
-            { "철 검", new ItemCraftWeapon( ItemType.Weapon, WeaponType.Sword, "0001000", "철 검", 10.0f, new ImageReferenceIndex(0)
-                , ItemGrade.Low, 10, 100, 1.0f, 10, AttributeType.None
-                , new CraftMaterial[]{new CraftMaterial("철",2)} 
-                , new CraftMaterial[]{new CraftMaterial("점토",1)} 
-                , Recipie.Eu) 
-            },
-            { "강철 검", new ItemCraftWeapon( ItemType.Weapon, WeaponType.Sword, "0001001", "강철 검", 20.0f, new ImageReferenceIndex(1)
-                , ItemGrade.Low, 12, 100, 1.0f, 18, AttributeType.None
-                , new CraftMaterial[]{new CraftMaterial("강철",2), new CraftMaterial("철",1)}
-                , new CraftMaterial[]{new CraftMaterial("점토",2)}
-                , Recipie.Na)
-            },
-            { "미스릴 검", new ItemCraftWeapon( ItemType.Weapon, WeaponType.Sword, "0001002", "미스릴 검", 40.0f, new ImageReferenceIndex(2) 
-                , ItemGrade.Low, 18, 100, 1.0f, 10, AttributeType.None
-                , new CraftMaterial[]{new CraftMaterial("미스릴",2), new CraftMaterial("강철",1),new CraftMaterial("철",1)}
-                , new CraftMaterial[]{new CraftMaterial("은",2)}
-                , Recipie.Ma)
-            
-            },
-            { "흑철 검", new ItemCraftWeapon( ItemType.Weapon, WeaponType.Sword, "0001003", "흑철 검", 60.0f, new ImageReferenceIndex(3) 
-                , ItemGrade.Low, 23, 100, 1.0f, 40, AttributeType.None
-                , new CraftMaterial[]{new CraftMaterial("흑철",2), new CraftMaterial("강철",3)}
-                , new CraftMaterial[]{new CraftMaterial("점토",3)}
-                , Recipie.Ga)
-            },
-            { "프레첼", new ItemCraftWeapon( ItemType.Weapon, WeaponType.Sword, "0001004", "프레첼", 80.0f, new ImageReferenceIndex(4) 
-                , ItemGrade.Low, 25, 100, 1.0f, 20, AttributeType.None
-                , new CraftMaterial[]{new CraftMaterial("미스릴",2), new CraftMaterial("강철",2),new CraftMaterial("흑철",1)}
-                , new CraftMaterial[]{new CraftMaterial("점토",2),new CraftMaterial("흑요석",1)}
-                , Recipie.Da)
-            },
-
-
-            { "얼음칼날", new ItemCraftWeapon( ItemType.Weapon, WeaponType.Sword, "0001100", "얼음칼날", 120.0f, new ImageReferenceIndex(5)
-                , ItemGrade.Medium, 36, 150, 1.0f, 25, AttributeType.Water
-                , new CraftMaterial[]{new CraftMaterial("미스릴",7)}
-                , new CraftMaterial[]{new CraftMaterial("얼음 결정",5)}
-                , Recipie.Da)
-            },
-            { "백은의 검", new ItemCraftWeapon( ItemType.Weapon, WeaponType.Sword, "0001101", "백은의 검", 180.0f, new ImageReferenceIndex(6)
-                , ItemGrade.Medium, 38, 150, 1.0f, 30, AttributeType.Wind
-                , new CraftMaterial[]{new CraftMaterial("티타늄",2),new CraftMaterial("미스릴",4)}
-                , new CraftMaterial[]{new CraftMaterial("백금",5)}
-                , Recipie.Ga)
-            },
-            { "기사단의 검", new ItemCraftWeapon( ItemType.Weapon, WeaponType.Sword, "0001102", "기사단의 검", 150.0f, new ImageReferenceIndex(7)
-                , ItemGrade.Medium, 48, 150, 1.0f, 30, AttributeType.None
-                , new CraftMaterial[]{new CraftMaterial("티타늄",1),new CraftMaterial("미스릴",3),new CraftMaterial("강철",2)}
-                , new CraftMaterial[]{new CraftMaterial("금",3),new CraftMaterial("은",2)}
-                , Recipie.Na)
-            },
-            { "아밍 소드", new ItemCraftWeapon( ItemType.Weapon, WeaponType.Sword, "0001103", "아밍 소드", 110.0f, new ImageReferenceIndex(8) 
-                , ItemGrade.Medium, 32, 150, 1.0f, 12, AttributeType.None
-                , new CraftMaterial[]{new CraftMaterial("티타늄",1),new CraftMaterial("미스릴",3)}
-                , new CraftMaterial[]{new CraftMaterial("금",2),new CraftMaterial("흑요석",2)}
-                , Recipie.Ma)
-            },
-            { "하플랑", new ItemCraftWeapon( ItemType.Weapon, WeaponType.Sword, "0001104", "하플랑", 100.0f, new ImageReferenceIndex(9) 
-                , ItemGrade.Medium, 38, 150, 1.0f, 20, AttributeType.None
-                , new CraftMaterial[]{new CraftMaterial("미스릴",4),new CraftMaterial("강철",2)}
-                , new CraftMaterial[]{new CraftMaterial("은",3),new CraftMaterial("크롬 결정",1)}
-                , Recipie.Ee)
-            },
-
-            { "천공의 지배", new ItemCraftWeapon( ItemType.Weapon, WeaponType.Sword, "0001200", "천공의 지배", 680.0f, new ImageReferenceIndex(10)
-                , ItemGrade.High, 80, 200, 1.10f, 10, AttributeType.Wind
-                , new CraftMaterial[]{new CraftMaterial("오리하르콘",3),new CraftMaterial("티타늄",5),new CraftMaterial("미스릴",10)}
-                , new CraftMaterial[]{new CraftMaterial("하늘의 룬",2), new CraftMaterial("수은 결정",5)}
-                , Recipie.Da)
-            },
-            { "파멸의 불꽃", new ItemCraftWeapon( ItemType.Weapon, WeaponType.Sword, "0001201", "파멸의 불꽃", 640.0f, new ImageReferenceIndex(11)
-                , ItemGrade.High, 105, 200, 1.10f, 30, AttributeType.Fire
-                , new CraftMaterial[]{new CraftMaterial("오리하르콘",5),new CraftMaterial("티타늄",10),new CraftMaterial("미스릴",3)}
-                , new CraftMaterial[]{new CraftMaterial("불타는 심장",1), new CraftMaterial("신비한 조각",5)}
-                , Recipie.Ra)
-            },
-            { "듀란달", new ItemCraftWeapon( ItemType.Weapon, WeaponType.Sword, "0001202", "듀란달", 480.0f, new ImageReferenceIndex(12) 
-                , ItemGrade.High, 120, 200, 1.10f, 50, AttributeType.Wind
-                , new CraftMaterial[]{new CraftMaterial("오리하르콘",3),new CraftMaterial("티타늄",5),new CraftMaterial("흑철",8)}
-                , new CraftMaterial[]{new CraftMaterial("금",2),new CraftMaterial("달의 조각",5)}
-                , Recipie.Ma)
-            },
-            { "미스틸테인", new ItemCraftWeapon( ItemType.Weapon, WeaponType.Sword, "0001203", "미스틸테인", 700.0f, new ImageReferenceIndex(13) 
-                , ItemGrade.High, 95, 200, 1.10f, 25, AttributeType.Gold
-                , new CraftMaterial[]{new CraftMaterial("오리하르콘",5),new CraftMaterial("미스릴",5),new CraftMaterial("코발트",12)}
-                , new CraftMaterial[]{new CraftMaterial("신비한 조각",5),new CraftMaterial("영롱한 구슬",2)}
-                , Recipie.Ra)
-            },
-            { "크시포스", new ItemCraftWeapon( ItemType.Weapon, WeaponType.Sword, "0001204", "크시포스", 350.0f, new ImageReferenceIndex(14) 
-                , ItemGrade.High, 80, 200, 1.10f, 30, AttributeType.Earth
-                , new CraftMaterial[]{new CraftMaterial("미스릴",13),new CraftMaterial("강철",6)}
-                , new CraftMaterial[]{new CraftMaterial("은",2),new CraftMaterial("백금",2), new CraftMaterial("크롬 결정",3)}
-                , Recipie.Ga)
-            },
-
-            /**** 활 ****/
-            { "사냥꾼의 활", new ItemCraftWeapon( ItemType.Weapon, WeaponType.Bow, "0008000", "사냥꾼의 활", 10.0f, new ImageReferenceIndex(0)
-                , ItemGrade.Low, 10, 100, 0.8f, 10, AttributeType.None
-                , new CraftMaterial[]{new CraftMaterial("철",3), new CraftMaterial("단단한 나뭇가지",3)} 
-                , null 
-                , Recipie.Eu) 
-            },
-            { "롱 보우", new ItemCraftWeapon( ItemType.Weapon, WeaponType.Bow, "0008001", "롱 보우", 20.0f, new ImageReferenceIndex(1)
-                , ItemGrade.Low, 12, 100, 0.8f, 18, AttributeType.None
-                , new CraftMaterial[]{new CraftMaterial("철",5), new CraftMaterial("부드러운 나뭇가지",2)}
-                , new CraftMaterial[]{new CraftMaterial("물소의 뿔",2)}
-                , Recipie.Na)
-            },
-            { "컴뱃 보우", new ItemCraftWeapon( ItemType.Weapon, WeaponType.Bow, "0008002", "컴뱃 보우", 40.0f, new ImageReferenceIndex(2) 
-                , ItemGrade.Low, 18, 100, 0.8f, 10, AttributeType.None
-                , new CraftMaterial[]{new CraftMaterial("강철",5), new CraftMaterial("단단한 나뭇가지",2)}
-                , null
-                , Recipie.Ma)
-            
-            },
-            { "양치기의 활", new ItemCraftWeapon( ItemType.Weapon, WeaponType.Bow, "0008003", "양치기의 활", 60.0f, new ImageReferenceIndex(3) 
-                , ItemGrade.Low, 23, 100, 0.8f, 40, AttributeType.None
-                , new CraftMaterial[]{new CraftMaterial("철",3), new CraftMaterial("가벼운 나뭇가지",2)}
-                , new CraftMaterial[]{new CraftMaterial("솜뭉치",4)}
-                , Recipie.Ga)
-            },
-            { "도망자의 활", new ItemCraftWeapon( ItemType.Weapon, WeaponType.Bow, "0008004", "도망자의 활", 80.0f, new ImageReferenceIndex(4) 
-                , ItemGrade.Low, 25, 100, 0.8f, 20, AttributeType.None
-                , new CraftMaterial[]{new CraftMaterial("철",4), new CraftMaterial("가벼운 나뭇가지",3)}
-                , new CraftMaterial[]{new CraftMaterial("짐승가죽",2)}
-                , Recipie.Da)
-            },
-
-
-            { "샤이닝 보우", new ItemCraftWeapon( ItemType.Weapon, WeaponType.Bow, "0008100", "샤이닝 보우", 120.0f, new ImageReferenceIndex(5)
-                , ItemGrade.Medium, 36, 150, 0.8f, 25, AttributeType.Water
-                , new CraftMaterial[]{new CraftMaterial("티타늄",5),new CraftMaterial("단단한 나뭇가지",5)}
-                , new CraftMaterial[]{new CraftMaterial("백금",3)}
-                , Recipie.Da)
-            },
-            { "이글 보우", new ItemCraftWeapon( ItemType.Weapon, WeaponType.Bow, "0008101", "이글 보우", 180.0f, new ImageReferenceIndex(6)
-                , ItemGrade.Medium, 38, 150, 0.8f, 30, AttributeType.Wind
-                , new CraftMaterial[]{new CraftMaterial("코발트",6),new CraftMaterial("튼튼한 나뭇가지",2)}
-                , new CraftMaterial[]{new CraftMaterial("수은 결정",4)}
-                , Recipie.Ra)
-            },
-            { "탄궁", new ItemCraftWeapon( ItemType.Weapon, WeaponType.Bow, "0008102", "탄궁", 150.0f, new ImageReferenceIndex(7) 
-                , ItemGrade.Medium, 48, 150, 0.8f, 30, AttributeType.None
-                , new CraftMaterial[]{new CraftMaterial("미스릴",5),new CraftMaterial("부드러운 나뭇가지",4)}
-                , new CraftMaterial[]{new CraftMaterial("물소의 뿔",3)}
-                , Recipie.Ma)
-            },
-            { "각궁", new ItemCraftWeapon( ItemType.Weapon, WeaponType.Bow, "0008103", "각궁", 110.0f, new ImageReferenceIndex(8) 
-                , ItemGrade.Medium, 32, 150, 0.8f, 12, AttributeType.None
-                , new CraftMaterial[]{new CraftMaterial("미스릴",4),new CraftMaterial("가벼운 나뭇가지",3)}
-                , new CraftMaterial[]{new CraftMaterial("크롬 결정",5)}
-                , Recipie.Ee)
-            },
-            { "추격자의 활", new ItemCraftWeapon( ItemType.Weapon, WeaponType.Bow, "0008104", "추격자의 활", 100.0f, new ImageReferenceIndex(9) 
-                , ItemGrade.Medium, 38, 150, 0.8f, 20, AttributeType.None
-                , new CraftMaterial[]{new CraftMaterial("흑철",3),new CraftMaterial("가벼운 나뭇가지",5)}
-                , new CraftMaterial[]{new CraftMaterial("짐승 가죽",4)}
-                , Recipie.Ga)
-            },
-
-
-            { "취풍 파르티아", new ItemCraftWeapon( ItemType.Weapon, WeaponType.Bow, "0008200", "취풍 파르티아", 450.0f, new ImageReferenceIndex(10)
-                , ItemGrade.High, 80, 200, 0.88f, 16, AttributeType.Wind
-                , new CraftMaterial[]{new CraftMaterial("티타늄",7),new CraftMaterial("미스릴",13),new CraftMaterial("엘프의 나뭇가지",3)}
-                , new CraftMaterial[]{new CraftMaterial("하늘의 룬",4), new CraftMaterial("크롬 결정",3)}
-                , Recipie.Da)
-            },
-            { "피닉스의 속삭임", new ItemCraftWeapon( ItemType.Weapon, WeaponType.Bow, "0008201", "피닉스의 속삭임", 640.0f, new ImageReferenceIndex(11)
-                , ItemGrade.High, 105, 200, 0.88f, 28, AttributeType.Fire
-                , new CraftMaterial[]{new CraftMaterial("오리하르콘",3),new CraftMaterial("티타늄",14),new CraftMaterial("축복받은 나뭇가지",4)}
-                , new CraftMaterial[]{new CraftMaterial("불타는 심장",1), new CraftMaterial("영롱한 구슬",3)}
-                , Recipie.Ga)
-            },
-            { "태양의 활", new ItemCraftWeapon( ItemType.Weapon, WeaponType.Bow, "0008202", "태양의 활", 530.0f, new ImageReferenceIndex(12) 
-                , ItemGrade.High, 120, 200, 0.88f, 50, AttributeType.Fire
-                , new CraftMaterial[]{new CraftMaterial("오리하르콘",7),new CraftMaterial("흑철",18),new CraftMaterial("엘프의 나뭇가지",5)}
-                , new CraftMaterial[]{new CraftMaterial("불타는 심장",3),new CraftMaterial("하늘의 룬",2)}
-                , Recipie.Ra)
-            },
-            { "장미의 신궁", new ItemCraftWeapon( ItemType.Weapon, WeaponType.Bow, "0008203", "장미의 신궁", 480.0f, new ImageReferenceIndex(13) 
-                , ItemGrade.High, 95, 200, 0.88f, 32, AttributeType.Earth
-                , new CraftMaterial[]{new CraftMaterial("오리하르콘",5),new CraftMaterial("코발트",14),new CraftMaterial("축복받은 나뭇가지",3)}
-                , new CraftMaterial[]{new CraftMaterial("요정의 목화",7)}
-                , Recipie.Na)
-            },
-            { "파마의 활", new ItemCraftWeapon( ItemType.Weapon, WeaponType.Bow, "0008204", "파마의 활", 420.0f, new ImageReferenceIndex(14) 
-                , ItemGrade.High, 80, 200, 0.88f, 36, AttributeType.Gold
-                , new CraftMaterial[]{new CraftMaterial("오리하르콘",5),new CraftMaterial("미스릴",11),new CraftMaterial("축복받은 나뭇가지",4)}
-                , new CraftMaterial[]{new CraftMaterial("신비한 조각",4),new CraftMaterial("영롱한 구슬",1)}
-                , Recipie.Ma)
-            }
-
-        };    
-
+        WorldItem worldItemData = new WorldItem();
+        miscDic = worldItemData.miscDic;
+        weaponDic = worldItemData.weaponDic;
     }
 
 

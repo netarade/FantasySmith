@@ -65,12 +65,16 @@ using CraftData;
 * 2- 인벤토리 오브젝트에 캔버스 그룹 컴포넌트를 등록 후 InventoryOnOffSwitch 메서드에서 이를 조절하는 방식으로 변경
 * (내부의 인벤토리 이미지와 텍스트를 매번 직접 찾아서 참조하는 방식에서 변경)
 * 
+* <4.1 -2023_1221_최원준>
+* 1- 스크립트 부착위치 GameController오브젝트에서 Canvas-Chracter로 수정
+* 
 */
 
 /// <summary>
 /// 인벤토리 인터엑티브 로직을 담당합니다. 컴포넌트로 붙여야 하며, 별다른 인스턴스 선언 접근이 필요하지 않습니다.<br/>
 /// 인벤토리 닫기, 각 종류 탭 버튼 클릭 시 동작이 정의되어 있습니다<br/>
 /// 이 스크립트의 외부에서 다양한 참조를 할 수 있습니다.<br/>
+/// 현재 Canvas-Character에 부착되어 있습니다.<br/>
 /// </summary>
 public class InventoryManagement : MonoBehaviour
 {
@@ -94,15 +98,16 @@ public class InventoryManagement : MonoBehaviour
 
     void Start()
     {
-        Transform canvas = GameObject.FindWithTag("CANVAS_CHARACTER").transform;    // 캐릭터 캔버스 참조
-        InventoryPanelTr = canvas.GetChild(0);                                      // 인벤토리 판넬 참조
-        slotListTr = InventoryPanelTr.GetChild(0).GetChild(0).GetChild(0);          // 뷰포트-컨텐트-전체 슬롯리스트
-        emptyListTr = InventoryPanelTr.GetChild(0).GetChild(1);                     // 뷰포트-EmptyList
+        Transform canvas = transform;                                       // 캐릭터 캔버스 참조
+        InventoryPanelTr = canvas.GetChild(0);                              // 인벤토리 판넬 참조
+        slotListTr = InventoryPanelTr.GetChild(0).GetChild(0).GetChild(0);  // 뷰포트-컨텐트-전체 슬롯리스트
+        emptyListTr = InventoryPanelTr.GetChild(0).GetChild(1);             // 뷰포트-EmptyList
 
-        
+        btnTap = new Button[3]; //버튼 배열의 갯수 설정
+
         // 탭 버튼 컴포넌트 참조 후 버튼의 이벤트를 등록합니다.(int값 인자를 다르게 줘서 등록합니다)
         for( int i = 0; i<3; i++ )
-        {          
+        {
             btnTap[i]=InventoryPanelTr.GetChild( 1 ).GetChild( i ).GetComponent<Button>(); //인벤토리-Buttons하위에 존재
             btnTap[i].onClick.AddListener( () => BtnTapClick( i ) );
         }

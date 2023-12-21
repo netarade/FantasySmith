@@ -47,6 +47,11 @@ using UnityEngine;
  * <v4.1 - 2023_1122_최원준>
  * 1- 무기, 기타 사전의 주석 보완
  * 
+ * <v4.2 - 2023_1221_최원준>
+ * 1- 분할클래스인 Inventory_p2.cs 파일 추가
+ * AddItem메서드를 추가하였음.
+ *
+ * 
  */
 
 
@@ -55,7 +60,9 @@ using UnityEngine;
 namespace CraftData
 {
     /// <summary>
-    /// 인벤토리를 정의하는 클래스, 내부에 GameObject를 저장하는 weapList와 miscList가 있다. save, Load시 저장해야 한다.
+    /// 인벤토리를 정의하는 클래스, 딕셔너리에 이름참조를 통하여 접근하면
+    /// 내부에 GameObject를 저장하는 weapList와 miscList가 있습니다.<br/> 
+    /// ******Save, Load시 인벤토리 클래스를 저장해야 합니다.******
     /// </summary>
     [Serializable]
     public partial class Inventory

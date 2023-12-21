@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using ItemData;
+using WorldItemData;
 
 /*
  * [파일 목적]
@@ -43,6 +44,9 @@ using ItemData;
  * <v5.1 - 2023_1122>
  * 1- 딕셔너리 멤버변수 주석 수정
  * 
+ * <v5.2 - 2023_1221>
+ * 1- weaponDic참조를 CreateManager의 싱글톤에서 참조하던 것을 따로 MonoBehaviour를 상속하지 않는 스크립트인 WorldItemData_Weapon의 참조로 변경
+ * Craftdic스크립트가 Monobehviour를 상속하지 않기 때문에 싱글톤의 참조가 어렵기 때문
  * 
  */
 
@@ -74,8 +78,7 @@ namespace CraftData
             swordDic = new Dictionary<string, CraftProficiency> ();
             bowDic = new Dictionary<string, CraftProficiency> ();           
 
-
-            Dictionary<string, Item> weaponDic = CreateManager.instance.weaponDic;  // 월드 무기사전을 참조합니다.
+            Dictionary<string, Item> weaponDic = new WorldItem().weaponDic;         // 월드 무기사전을 참조합니다.
 
             foreach( Item item in weaponDic.Values )                                // 모든 무기사전에서 하나씩 꺼냅니다.
             {

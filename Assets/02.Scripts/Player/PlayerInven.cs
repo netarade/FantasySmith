@@ -58,6 +58,12 @@ using UnityEngine.SceneManagement;
  * Awake,OnDestroy,OnApplicationQuit에서 호출되도록 수정
  * 
  * 2- 게임매니저 싱글톤에서 isNewGame상태를 읽어와서 새로운 인벤토리를 생성하는 구문 추가
+ * 
+ * <v4.2 - 2023_1221_최원준>
+ * 1- OnApplicationQuit 메서드내부에 에디터와 프로그램 종료 로직을 넣었던 점 삭제 
+ * 2- 게임매니저의 인스턴스로 isNewGame을 판별하던 구문을 PlayerPrefs의 키값 참조로 변경
+ * 이유는 PlayerInven 스크립트가 Awake로 빠른 초기화를 해야하는데 싱글톤으로의 접근시점이 같아서 불러오기 어렵기 때문 
+ * 3- 테스트용 키삭제 구문 PlayerPrefs.DeleteAll 추가
  */
 
     
@@ -95,13 +101,18 @@ public class PlayerInven : MonoBehaviour
     // 인스턴스가 새롭게 생성될 때마다 저장된 파일을 불러옵니다.
     void Awake()
     {
-        if( GameManager.instance.isNewGame ) //게임 상태가 첫 시작이라면,
+        //테스트용 키삭제
+        PlayerPrefs.DeleteAll();
+
+        if( !PlayerPrefs.HasKey("IsNewGame") ) // 게임 상태가 첫 시작이라면,(해당키를 보유하고 있지 않다면)
         {
+            PlayerPrefs.SetInt("IsNewGame", 1);
+
             InitPlayerData();        // 플레이어 데이터를 초기화
             SavePlayerData();        // 플레이어 데이터를 한번 세이브 해줍니다.
         }
-
-        LoadPlayerData();       // 저장된 플레이어 데이터를 불러옵니다.
+        else
+            LoadPlayerData();       // 저장된 플레이어 데이터를 불러옵니다.
     }
         
 
@@ -117,13 +128,6 @@ public class PlayerInven : MonoBehaviour
     public void OnApplicationQuit()
     {
         SavePlayerData(); // 플레이어 데이터 저장
-        
-        #if UNITY_EDITOR
-            PlayerPrefs.SetInt("IsContinuedGamePlay", 0);   //현재 세이브 로드가 불안정하므로 일시적으로 초기화
-            UnityEditor.EditorApplication.isPlaying = false;
-        #else
-            Application.Quit();
-        #endif
     }
 
 

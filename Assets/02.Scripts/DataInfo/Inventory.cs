@@ -50,6 +50,9 @@ using UnityEngine;
  * <v4.2 - 2023_1221_최원준>
  * 1- 분할클래스인 Inventory_p2.cs 파일 추가
  * AddItem메서드를 추가하였음.
+ * 
+ * <v4.3 - 2023_1221_최원준>
+ * 1- WeapCount와 MiscCount가 서로 miscDic과 weapDic의 Values를 바꿔서 참조하던 점 수정
  *
  * 
  */
@@ -115,7 +118,7 @@ namespace CraftData
         public int WeapCount { 
             get{ 
                 int count = 0;
-                foreach(List<GameObject> objList in miscDic.Values)
+                foreach(List<GameObject> objList in weapDic.Values)
                     count += objList.Count;    
                 // 딕셔너리에서 게임오브젝트 리스트를 꺼내고 리스트의 Count 프로퍼티를 통해 게임오브젝트 숫자를 누적시킵니다.
                 return count; } }
@@ -125,7 +128,7 @@ namespace CraftData
         /// </summary>
         public int MiscCount { get{
                 int count = 0;
-                foreach(List<GameObject> objList in weapDic.Values)
+                foreach(List<GameObject> objList in miscDic.Values)
                     count += objList.Count;    
                 // 딕셔너리에서 게임오브젝트 리스트를 꺼내고 리스트의 Count 프로퍼티를 통해 게임오브젝트 숫자를 누적시킵니다.
                 return count; } }

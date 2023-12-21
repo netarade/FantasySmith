@@ -15,19 +15,20 @@ using CraftData;
 /// </summary>
 public class ButtonPlayTest : MonoBehaviour
 {
-    Inventory playerInven;
+    //Inventory playerInven;
     private void Start()
     {
-        playerInven = GameObject.FindWithTag("Player").GetComponent<Inventory>();
+        //playerInven = GameObject.FindWithTag("Player").GetComponent<Inventory>();
+        DataManagement.DataManager dataManager = new DataManagement.DataManager();
+        Debug.Log(dataManager.Path);
     }
 
 
     public void btnCreateItem()
     {
-        playerInven.AddItem("Ã¶", 10);
-        playerInven.AddItem("°­Ã¶", 10);
-        playerInven.AddItem("¹Ì½º¸±", 10);
-
+        //playerInven.AddItem("Ã¶", 10);
+        //playerInven.AddItem("°­Ã¶", 10);
+        //playerInven.AddItem("¹Ì½º¸±", 10);
     }
 
     public void btnNext()

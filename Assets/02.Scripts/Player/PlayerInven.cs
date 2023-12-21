@@ -104,15 +104,18 @@ public class PlayerInven : MonoBehaviour
         //테스트용 키삭제
         PlayerPrefs.DeleteAll();
 
-        if( !PlayerPrefs.HasKey("IsNewGame") ) // 게임 상태가 첫 시작이라면,(해당키를 보유하고 있지 않다면)
+        if( !PlayerPrefs.HasKey( "IsNewGame" ) ) // 게임 상태가 첫 시작이라면,(해당키를 보유하고 있지 않다면)
         {
-            PlayerPrefs.SetInt("IsNewGame", 1);
-
+            Debug.Log("새로운 게임을 시작합니다.");
+            PlayerPrefs.SetInt( "IsNewGame", 1 );
             InitPlayerData();        // 플레이어 데이터를 초기화
-            SavePlayerData();        // 플레이어 데이터를 한번 세이브 해줍니다.
+            //SavePlayerData();        // 플레이어 데이터를 한번 세이브 해줍니다.
         }
         else
+        {            
+            Debug.Log("이어하기를 시작합니다.");
             LoadPlayerData();       // 저장된 플레이어 데이터를 불러옵니다.
+        }
     }
         
 

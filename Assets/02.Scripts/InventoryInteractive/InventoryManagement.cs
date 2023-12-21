@@ -68,6 +68,10 @@ using CraftData;
 * <4.1 -2023_1221_최원준>
 * 1- 스크립트 부착위치 GameController오브젝트에서 Canvas-Chracter로 수정
 * 
+* <v4.2 - 2023_1221_최원준>
+* 1- inventory의 잘못된 참조 수정
+* PlayerInven변수인 invenInfo.GetComponent<Inventory>()를 참조하고 있었으나, invenInfo.inventory로 변경
+* 
 */
 
 /// <summary>
@@ -125,7 +129,7 @@ public class InventoryManagement : MonoBehaviour
 
         //플레이어 오브젝트를 참조하여 인벤토리 정보를 받아옵니다
         PlayerInven invenInfo = GameObject.FindWithTag("Player").GetComponent<PlayerInven>();
-        inventory = invenInfo.GetComponent<Inventory>();
+        inventory = invenInfo.inventory;
 
 
         // 플레이어 인벤토리 정보(전체 탭 슬롯 칸수)를 참조하여 슬롯을 동적으로 생성

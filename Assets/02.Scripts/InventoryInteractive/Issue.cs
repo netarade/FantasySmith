@@ -286,5 +286,12 @@
  * PlayerInven v4.2 - 게임매니저의 인스턴스로 isNewGame을 판별하던 구문을 PlayerPrefs의 키값 참조로 변경
  * CraftSimulation.cs - 모든 코드 일시적으로 주석처리
  * 
+ * <2023_1221_최원준>
+ * (수정내용)
+ * Inventory.cs v4.3 -  WeapCount와 MiscCount가 서로 miscDic과 weapDic의 Values를 바꿔서 참조하던 점 수정
+ * InventoryManagement.cs v4.2 - inventory 변수의 잘못된 참조 수정 (invenInfo의 GetComponent참조에서 .inventory 참조로 변경)
+ * 
+ * 1. 현재 이슈 인벤토리 생성자에서 new 키워드로 
+ * Dictionary<string, List<GameObject>> 을 생성하려고 할 때 생성되지 않는 현상이 발생하여 확인작업 중.
  */
  

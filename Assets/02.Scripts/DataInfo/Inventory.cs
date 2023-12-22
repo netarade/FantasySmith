@@ -51,9 +51,15 @@ using UnityEngine;
  * 1- 분할클래스인 Inventory_p2.cs 파일 추가
  * AddItem메서드를 추가하였음.
  * 
- * <v4.3 - 2023_1221_최원준>
+ * <v5.0 - 2023_1221_최원준>
  * 1- WeapCount와 MiscCount가 서로 miscDic과 weapDic의 Values를 바꿔서 참조하던 점 수정
- *
+ * 
+ * 2- 새로운 게임을 시작하는 경우 DataManager의 Load메서드로 GameData가 생성은 되지만
+ * 디폴트 생성자가 아닌 Inventory( SerializableInventory savedInventory ) 생성자가 호출됨으로 인해
+ * 딕셔너리가 초기화되지 않아 null레퍼런스가 발생하였습니다.
+ * 이를 없애기 위해 해당 생성자에 딕셔너리의 null값 검사를 추가하여 새로운 딕셔너리를 생성하도록 하였습니다.
+ * 
+ * 
  * 
  */
 
@@ -92,20 +98,23 @@ namespace CraftData
         /// </summary>
         public int MiscCountLimit { get; }
         
+
+
+        
+
+        /**** 자동으로 지정되는 속성들 ****/
+
         /// <summary>
         /// 플레이어 인벤토리의 전체 탭의 칸의 제한 수 입니다. 게임 중에 업그레이드 등으로 인해 변동될 수 있습니다.
         /// </summary>
         public int AllCountLimit { get{return WeapCountLimit+MiscCountLimit; } }
 
 
-        /**** 자동으로 지정되는 속성들 ****/
-
         /// <summary>
         /// 플레이어 인벤토리의 각 탭에 공통으로 주어지는 초기 칸의 제한 수입니다.
         /// </summary>
         public int InitialCountLimit { get{ return 50; } }
-        
-        
+                
         
         /// <summary>
         /// 플레이어 인벤토리에 종류와 상관없이 모든 아이템이 차지하고 있는 현재 칸 수입니다.
@@ -235,6 +244,13 @@ namespace CraftData
         /// </summary>
         public Inventory( SerializableInventory savedInventory )
         {
+            // 새로운 게임이라면 weapDic, miscDic이 null이므로 dic을 생성해줘야합니다.
+            if( weapDic==null||miscDic==null )      
+            {
+                weapDic = new Dictionary<string, List<GameObject>>();
+                miscDic = new Dictionary<string, List<GameObject>>();
+            }
+
             ConvertItemListToDic( ItemType.Weapon, savedInventory.weapList );
             ConvertItemListToDic( ItemType.Misc, savedInventory.miscList );
             WeapCountLimit = savedInventory.WeapCountLimit;

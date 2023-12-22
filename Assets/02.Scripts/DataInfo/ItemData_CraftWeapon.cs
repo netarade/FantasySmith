@@ -1,3 +1,4 @@
+using Newtonsoft.Json;
 using System;
 /*
  * [작업 사항]
@@ -14,6 +15,9 @@ using System;
  * 
  * <v1.2 - 2023_1116_최원준>
  * 1- 아이템 클래스 구조 변경으로 인한 생성자내부의 이미지 참조 변수를 이미지 인덱스 변수로 수정
+ * 
+ * <v2.0 - 2023_1222_최원준>
+ * 1- private변수를 직렬화하기 위해 [JsonProperty] 어트리뷰트를 추가하였음
  */
 namespace ItemData
 {
@@ -47,11 +51,11 @@ namespace ItemData
     public sealed class ItemCraftWeapon : ItemWeapon
     {
         /*** 제작 관련 속성 ***/
-        private float fCraftChance;                 // 제작 확률 (기본 등급에 따라 결정 90%, 60%, 25%)
-        private Recipie enumRecipie;                        // 2단계 레시피
-        private CraftMaterial[] cmArrBaseMaterial;          // 제작 시 필요한 기본 재료
-        private CraftMaterial[] cmArrAdditiveMaterial;      // 제작 시 필요한 추가 재료
-        private int iFirePower;                   // 2단계 제작에 필요한 화력
+        [JsonProperty] private float fCraftChance;                 // 제작 확률 (기본 등급에 따라 결정 90%, 60%, 25%)
+        [JsonProperty] private Recipie enumRecipie;                        // 2단계 레시피
+        [JsonProperty] private CraftMaterial[] cmArrBaseMaterial;          // 제작 시 필요한 기본 재료
+        [JsonProperty] private CraftMaterial[] cmArrAdditiveMaterial;      // 제작 시 필요한 추가 재료
+        [JsonProperty] private int iFirePower;                   // 2단계 제작에 필요한 화력
 
         /// <summary>
         /// 제작 무기의 기본 제작 확률입니다.

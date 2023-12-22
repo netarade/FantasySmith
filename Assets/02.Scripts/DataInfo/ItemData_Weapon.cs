@@ -1,3 +1,4 @@
+using Newtonsoft.Json;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -30,6 +31,10 @@ using UnityEngine.UI;
  * 4- Engrave메서드에 EquipEngraveArrInfo에 접근하여 값을 수정 하던 점을 ieArrEquipEngrave에 접근하여 수정하는 것으로 변경
  * 5- IsAttrUnlocked 프로퍼티로 속성 개방여부를 수정할 수 있던 점을 삭제하고 새로운 메서드를 만듬.
  * 6- 열거형 EnumAttribute를 AttributeType으로 수정, enumAttribute변수명을 eAttribute로 수정
+ * 
+ * <v3.0 - 2023_1222_최원준>
+ * 1- private변수를 직렬화하기 위해 [JsonProperty] 어트리뷰트를 추가하였음
+ * 
  */
 namespace ItemData
 {    
@@ -57,22 +62,22 @@ namespace ItemData
     public class ItemWeapon : Item
     {       
         /*** 기본 고유 정보 ***/
-        protected WeaponType enumWeaponType;    // 무기 소분류 타입
-        protected ItemGrade enumBasicGrade;     // 기본 분류 등급 (초급, 중급, 고급)
-        protected int iPower;                   // 공격력
-        protected int iDurability;              // 내구
-        protected float fSpeed;                 // 공격속도
-        protected int iWeight;                  // 무게
-        protected AttributeType eAttribute;     // 고유 속성
+        [JsonProperty] protected WeaponType enumWeaponType;    // 무기 소분류 타입
+        [JsonProperty] protected ItemGrade enumBasicGrade;     // 기본 분류 등급 (초급, 중급, 고급)
+        [JsonProperty] protected int iPower;                   // 공격력
+        [JsonProperty] protected int iDurability;              // 내구
+        [JsonProperty] protected float fSpeed;                 // 공격속도
+        [JsonProperty] protected int iWeight;                  // 무게
+        [JsonProperty] protected AttributeType eAttribute;     // 고유 속성
 
 
         /** 아이템 업그레이드 정보 **/
-        protected int iEnhanceNum;                      // 무기 강화 횟수
-        protected bool isAttrUnlocked;                  // 속성 해방 여부       
-        protected int iRemainEngraveNum;                // 남은 각인 횟수 
-        protected int iMaxEngraveNum;                   // 최대 각인 횟수 (무기 분류 등급에 따른 제한)
-        protected ItemEngraving[] ieArrEquipEngrave;    // 장착 중인 각인
-        protected float fBasePerformance;               // 장비 기본 성능 (일반 무기-100, 제작무기-제작에따른 변화)
+        [JsonProperty] protected int iEnhanceNum;                      // 무기 강화 횟수
+        [JsonProperty] protected bool isAttrUnlocked;                  // 속성 해방 여부       
+        [JsonProperty] protected int iRemainEngraveNum;                // 남은 각인 횟수 
+        [JsonProperty] protected int iMaxEngraveNum;                   // 최대 각인 횟수 (무기 분류 등급에 따른 제한)
+        [JsonProperty] protected ItemEngraving[] ieArrEquipEngrave;    // 장착 중인 각인
+        [JsonProperty] protected float fBasePerformance;               // 장비 기본 성능 (일반 무기-100, 제작무기-제작에따른 변화)
                     
         
         /// <summary>

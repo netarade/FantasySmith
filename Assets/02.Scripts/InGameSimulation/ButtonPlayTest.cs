@@ -28,8 +28,8 @@ public class ButtonPlayTest : MonoBehaviour
 
     public void btnCreateItem()
     {
-        //inventory.AddItem( "Ã¶", 10 );
-        //inventory.AddItem( "°­Ã¶", 10 );
+        inventory.AddItem( "Ã¶", 1 );
+        inventory.AddItem( "°­Ã¶", 3 );
         inventory.AddItem( "¹Ì½º¸±", 10 );
     }
 

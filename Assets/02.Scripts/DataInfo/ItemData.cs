@@ -1,3 +1,4 @@
+using Newtonsoft.Json;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -46,6 +47,11 @@ using UnityEngine.UI;
  * (Item클래스의 이미지 직접 저장 방식에서 이미지 인덱스 저장방식으로 변경)
  * 
  * 2- slotIndex는 각 아이템 종류 탭의 인덱스로 처리하고 전체 탭에서의 인덱스를 처리하기 위한 slotIndexAll을 추가하였음.
+ * 
+ * <v6.0 - 2023_1222_최원준>
+ * 1- private변수를 직렬화하기 위해 [JsonProperty] 어트리뷰트를 추가하였음
+ * 
+ * 
  */
 
 namespace ItemData
@@ -108,19 +114,19 @@ namespace ItemData
     
     /// <summary>
     /// 기본 아이템 추상 클래스 - 인스턴스를 생성하지 못합니다. 반드시 상속하여 사용하세요. 상속한 클래스는 ICloneable을 구현해야합니다.
-    /// </summary>
+    /// </summary>  
     [Serializable]
     public abstract class Item : ICloneable
-    {
-        protected ItemType enumType;        // 타입
-        protected string strNo;             // 번호
-        protected string strName;           // 이름
-        protected float fPrice;             // 가격   
+    {   
+        [JsonProperty] protected ItemType enumType;        // 타입
+        [JsonProperty] protected string strNo;             // 번호
+        [JsonProperty] protected string strName;           // 이름
+        [JsonProperty] protected float fPrice;             // 가격   
 
-        protected int slotIndex;            // 아이템은 자신이 놓여있는 인벤토리의 슬롯 인덱스 정보를 가진다.
-        protected int slotIndexAll;         // 아이템의 전체 탭에서의 위치를 결정
+        [JsonProperty] protected int slotIndex;            // 아이템은 자신이 놓여있는 인벤토리의 슬롯 인덱스 정보를 가진다.
+        [JsonProperty] protected int slotIndexAll;         // 아이템의 전체 탭에서의 위치를 결정
         
-        protected ImageReferenceIndex sImgRefIdx;    // 아이템의 이미지를 참조할 인덱스 정보를 가진 구조체 변수 
+        [JsonProperty] protected ImageReferenceIndex sImgRefIdx;    // 아이템의 이미지를 참조할 인덱스 정보를 가진 구조체 변수 
 
 
         public ItemType Type { get { return enumType; } }

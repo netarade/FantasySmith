@@ -256,6 +256,8 @@ public class CreateManager : MonoBehaviour
                 // 리스트에 들어있는 잡화 게임오브젝트를 읽어들여서 남은수량이 0이될 때까지 최대 수량으로 채워줍니다.
                 for(int i=0; i<itemObjList.Count; i++) 
                 {
+                    Debug.Log("------기존 잡화아이템이 있는경우------");
+
                     // 해당 오브젝트의 개념아이템 정보를 뽑아옵니다
                     ItemMisc itemMisc = (ItemMisc) itemObjList[i].GetComponent<ItemInfo>().Item; 
 
@@ -274,6 +276,7 @@ public class CreateManager : MonoBehaviour
 
                 if( remainCount>0 )   // 반환값이 남아있다면,
                 {            
+                    Debug.Log("------기존 잡화아이템에다가 들어온 수량을 다 못채운 경우------");
                     // 남은 수량을 인자로 넣어서 다시 아이템을 생성하는 재귀호출에 들어갑니다
                     return CreateMiscItemRepeatly(inventory, itemName, remainCount);
                 }
@@ -282,8 +285,12 @@ public class CreateManager : MonoBehaviour
             }
             else if(itemObjList.Count == 0)     //들어가있는 오브젝트가 하나도 없다면 (바로위의 for문이 한번도 돌아가지 않았다면)
             {                
+                Debug.Log("------새로운 잡화아이템에다가 수량을 채워야하는 경우------");
+                Debug.Log("인자로 들어온 count : "+ count);
                 itemClone=(ItemMisc)miscDic[itemName].Clone();    // 개념아이템을 클론하고,
                 ( (ItemMisc)itemClone ).SetOverlapCount( count );   // 클론의 중첩 갯수를 받은 인자로 지정합니다.
+
+                Debug.Log("Item에 등록된 Count : " + ((ItemMisc)itemClone).OverlapCount);
 
                 // 인벤토리 리스트에 개념아이템을 장착한 오브젝트를 추가합니다
                 AddCloneItemToInventory( itemObjList, itemClone, findSlotIdx );

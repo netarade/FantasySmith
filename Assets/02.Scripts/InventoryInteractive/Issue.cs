@@ -201,6 +201,9 @@
  * (2023_1215_1차완료_스크립트 연동해서 테스트 해봐야함)
  * 
  * 
+ * 
+ * 
+ * 
  * <2023_1215_최원준>
  * 1- Canvas-UI를 Canvas_Craft, Canvas_Character로 분리시켜 제작관련UI와 캐릭터관련UI로 나눈후 태그 부여 )
  * 2- 슬롯리스트가 여러개일 필요가 없다는 생각. 전체 슬롯리스트를 만들고 탭을 클릭했을 때 개별 슬롯리스트 만큼 비활성화 시킨다음 
@@ -233,6 +236,9 @@
  * 이는 복잡성을 증가시키므로 InventoryManagement의 슬롯정보를 업데이트해주는 UpdateSlotList메서드를 만들 필요가 있다.
  * 
  * 
+ * 
+ * 
+ * 
  * <2023_1217_최원준>
  * 1- 씬의 CreateManager 오브젝트 하위에 ItemCollections 오브젝트를 넣어둠
  * 
@@ -255,6 +261,9 @@
  * 
  * 
  * 
+ * 
+ * 
+ * 
  * <2023_1219_최원준>
  * 1- 잡화아이템의 중첩갯수를 수정할 때 오버플로우 되는 것을 어떻게 구조적으로 처리할 것인지
  * ItemMisc은 MonoBehaviour을 상속하지 않으므로 다른 인벤토리 등의 컴포넌트를 참조할 수 없어서 클론기능을 자체적으로 호출해줄 수 없다.
@@ -267,6 +276,10 @@
  * => (완료_1220) 
  * ItemMisc에서는 메서드로 인벤토리 수량을 조절하게 되면 최대수량 넘어가면 최대수량까지만 채워주고 나머지를 반환해주는 메서드를 정의
  * 이 메서드의 호출을 통해 나머지 수량을 확인하고 남은 수량이 없을 때 까지 잡화아이템을 계속만들어주는 로직을 작성하였음
+ * 
+ * 
+ * 
+ * 
  * 
  * <2023_1221_최원준>
  * 수정내용
@@ -286,6 +299,10 @@
  * PlayerInven v4.2 - 게임매니저의 인스턴스로 isNewGame을 판별하던 구문을 PlayerPrefs의 키값 참조로 변경
  * CraftSimulation.cs - 모든 코드 일시적으로 주석처리
  * 
+ * 
+ * 
+ * 
+ * 
  * <2023_1221_최원준>
  * 
  * 1. 현재 이슈 인벤토리 생성자에서 new 키워드로 
@@ -295,7 +312,7 @@
  * 2. DataManager클래스에서 gameData를 통해 string을 형성할 때 
  * string data = File.ReadAllText(Path + loadSlot.ToString() + ".json");
  * 이후 문장이 호출되지 않는 문제 발생 (저장파일이 형성되지 않음)
- * =>(일부 완료)ivnentory 변수 주석처리 및 STransform에 Serializable키워드 추가
+ * =>(일부 완료)inventory 변수 주석처리 및 STransform에 Serializable키워드 추가
  * 
  * 3. 저장파일이 형성되지만 savedInventory만 string값으로 생성되지 않는 문제발생
  * => (완료) savedInventory를 private에서 public으로 변경해야 함.
@@ -314,7 +331,9 @@
  * 7. (해결 못한 마지막 이슈) - Item클래스와 하위 자식클래스에 private변수는 저장되지 않으므로 public 변수를 추가하여야 한다.
  * => private 변수를 public으로 바꾸는 것이 아니라, public변수인 프로퍼티에 저장하는 형태로 변경해야 할 듯 보인다. 
  * (프로퍼티를 통한 연산처리 로직을 구성하여야 한다. 내부적으로 private변수를 통해 연산처리를 하지만, 저장할때는 프로퍼티가 마지막 순간에 값을 가질 필요가 있다.)
- * 
+ * => (해결완료) 
+ * [JsonProperty] 어트리뷰트를 통해 Json에게 직렬화해야하는 변수임을 알리는 방법이 있음.
+ *  
  * (수정사항)
  * Inventory.cs v4.3 -  WeapCount와 MiscCount가 서로 miscDic과 weapDic의 Values를 바꿔서 참조하던 점 수정
  * InventoryManagement.cs v4.2 - inventory 변수의 잘못된 참조 수정 (invenInfo의 GetComponent참조에서 .inventory 참조로 변경 * GameData.cs v3.0 - Inventory프로퍼티 삭제, SaveInventory, LoadInventory메서드를 추가
@@ -323,6 +342,23 @@
  * ButtonPlayTest.cs v1.1 - playerInven의 변수명을 inventory로 수정, inventory 잘못된 참조 수정
  * Drop.cs v3.2 - playerInvenInfo의 잘못된 참조 수정
  * ItemInfo v9.0 - 태그철자 오류 및 SlotListTr 참조오류 수정, ItemImageCollection[]의 배열의 bounds오류 수정, OnItemChanged메서드를 아이템의 생성시점 호출이 아니라 등장 시점에 호출하도록 수정
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ * <2023_1222_최원준>
+ * 수정사항
+ * ItemData.cs_v6.0             private변수를 직렬화하기 위해 [JsonProperty] 어트리뷰트를 추가
+ * ItemData_Misc.cs_v5.0        private변수를 직렬화하기 위해 [JsonProperty] 어트리뷰트를 추가
+ * ItemData_Weapon.cs_v3.0      private변수를 직렬화하기 위해 [JsonProperty] 어트리뷰트를 추가
+ * ItemData_CraftWeapon.cs_v2.0 private변수를 직렬화하기 위해 [JsonProperty] 어트리뷰트를 추가
+ * CraftData.cs_v6.0            private변수를 직렬화하기 위해 [JsonProperty] 어트리뷰트를 추가
+ * GameData.cs_v3.1             private변수를 직렬화하기 위해 [JsonProperty] 어트리뷰트를 추가, STransform 직렬화메서드 추가
+ * InventoryInfo_v5.1           LoadData하나만 호출해도 처음 데이터가 만들어지도록 변경
+ * Inventory_v5.0               새로운 게임을 시작하는 경우 디폴트 생성자가 아닌 생성자가 호출됨으로 인해 딕셔너리가 초기화되지 않아 null레퍼런스가 발생문제를 해결
  * 
  */
  

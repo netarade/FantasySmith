@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using ItemData;
 using WorldItemData;
+using Newtonsoft.Json;
 
 /*
  * [파일 목적]
@@ -47,6 +48,9 @@ using WorldItemData;
  * <v5.2 - 2023_1221>
  * 1- weaponDic참조를 CreateManager의 싱글톤에서 참조하던 것을 따로 MonoBehaviour를 상속하지 않는 스크립트인 WorldItemData_Weapon의 참조로 변경
  * Craftdic스크립트가 Monobehviour를 상속하지 않기 때문에 싱글톤의 참조가 어렵기 때문
+ * 
+ * <v6.0 - 2023_1222_최원준>
+ * 1- private변수를 직렬화하기 위해 [JsonProperty] 어트리뷰트를 추가하였음
  * 
  */
 
@@ -104,9 +108,9 @@ namespace CraftData
     [Serializable]
     public struct CraftProficiency
     {   
-        private string sName;               // 제작 장비의 이름
-        private int iProficiency;           // 제작 장비의 제작 숙련도
-        private int iRecipieHitCount;       // 제작 장비의 레시피 횟수 
+        [JsonProperty] private string sName;               // 제작 장비의 이름
+        [JsonProperty] private int iProficiency;           // 제작 장비의 제작 숙련도
+        [JsonProperty] private int iRecipieHitCount;       // 제작 장비의 레시피 횟수 
         
         /// <summary>
         /// 제작 장비의 이름입니다.

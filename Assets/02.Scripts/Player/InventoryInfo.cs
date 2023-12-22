@@ -68,6 +68,11 @@ using UnityEngine.SceneManagement;
  * <v5.0 - 2023_1222_최원준>
  * 1- 클래스와 파일명을 PlayerInven에서 InventoryInfo로 수정 
  * (ItemInfo와 이름의 일관성을 맞추기 위함)
+ * 
+ * <v5.1 - 2023_1222_최원준>
+ * 1- Awkae문에서 PlayerPrefs의 키값을 통해 처음시작과 이어하기를 구분해서 메서드를 호출하던 구문을 삭제하고
+ * LoadData하나만 호출해도 처음 데이터가 만들어지도록 변경하였습니다.
+ * 
  */
 
     
@@ -104,22 +109,8 @@ public class InventoryInfo : MonoBehaviour
 
     // 인스턴스가 새롭게 생성될 때마다 저장된 파일을 불러옵니다.
     void Awake()
-    {
-        //테스트용 키삭제
-        PlayerPrefs.DeleteAll();
-
-        if( !PlayerPrefs.HasKey( "IsNewGame" ) ) // 게임 상태가 첫 시작이라면,(해당키를 보유하고 있지 않다면)
-        {
-            Debug.Log("새로운 게임을 시작합니다.");
-            PlayerPrefs.SetInt( "IsNewGame", 1 );
-            InitPlayerData();        // 플레이어 데이터를 초기화
-            SavePlayerData();        // 플레이어 데이터를 한번 세이브 해줍니다.
-        }
-        else
-        {            
-            Debug.Log("이어하기를 시작합니다.");
-            LoadPlayerData();       // 저장된 플레이어 데이터를 불러옵니다.
-        }
+    {        
+        LoadPlayerData();       // 저장된 플레이어 데이터를 불러옵니다.        
     }
         
 
@@ -155,7 +146,7 @@ public class InventoryInfo : MonoBehaviour
     void LoadPlayerData()
     {
         DataManager dataManager = new DataManager();
-        GameData loadData = dataManager.LoadData();
+        GameData loadData = dataManager.LoadData(9);
 
         inventory=loadData.LoadInventory();
         craftDic = loadData.craftDic;
@@ -172,13 +163,13 @@ public class InventoryInfo : MonoBehaviour
         DataManager dataManager = new DataManager();
         
         // 메서드 호출 시점에 다른 스크립트에서 save했을 수도 있으므로 새롭게 생성하지 않고 기존 데이터 최신화합니다
-        GameData saveData = dataManager.LoadData();
+        GameData saveData = dataManager.LoadData(9);
 
         saveData.SaveInventory(inventory);
         saveData.craftDic = craftDic;
         saveData.gold = gold;
         saveData.silver = silver;
-        dataManager.SaveData(saveData);
+        dataManager.SaveData(saveData,9);
     }
 
     

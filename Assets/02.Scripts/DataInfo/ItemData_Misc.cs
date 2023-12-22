@@ -1,3 +1,4 @@
+using Newtonsoft.Json;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -48,6 +49,9 @@ using UnityEngine;
  * <v4.1 - 2023_1220_최원준>
  * 1- 중첩수량을 지정하는 메서드 SetOverlapCount 추가하여 수량을 입력 시 초과수량을 반환받도록 하였음
  * 
+ * <v5.0 - 2023_1222_최원준>
+ * 1- private변수를 직렬화하기 위해 [JsonProperty] 어트리뷰트를 추가하였음
+ * 2- SetOverlapCount 메서드 내부 조건식 ==0에서 <=0으로 수정
  */
 
 
@@ -70,7 +74,7 @@ namespace ItemData
     [Serializable]
     public sealed class ItemMisc : Item
     {        
-        private int iOverlapCount = 0;  // 인벤토리 중첩 횟수
+        [JsonProperty] private int iOverlapCount = 0;  // 인벤토리 중첩 횟수
         public readonly int MaxCount = 99;
         
         /// <summary>
@@ -103,7 +107,7 @@ namespace ItemData
                 iOverlapCount=MaxCount;                     // 현재 아이템의 갯수를 최대수량으로 맞춰줍니다
                 return remainCount;                         // 나머지를 반환해줍니다
             }
-            else if(remainCount==0)                         // 반환할 나머지가 없다면
+            else if(remainCount<=0)                         // 반환할 나머지가 없다면
             {
                 iOverlapCount += count;                     // 기존수량에 들어온 수량을 더해줍니다
             }
@@ -201,8 +205,8 @@ namespace ItemData
     [Serializable]
     public struct ItemEngraving             
     {
-        private float fIncreaseValue;        // 증가 수치
-        private float fMultiplier;           // 증가 배율
+        [JsonProperty] private float fIncreaseValue;        // 증가 수치
+        [JsonProperty] private float fMultiplier;           // 증가 배율
         
         /// <summary>
         /// 각인의 전체 이름 (ex. 초급 물리의 각인)

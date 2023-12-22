@@ -2,6 +2,7 @@ using System;
 using UnityEngine;
 using CraftData;
 using System.Collections.Generic;
+using Newtonsoft.Json;
 
 /*
  * [파일 목적]
@@ -41,6 +42,12 @@ using System.Collections.Generic;
  * GameData에 해당 프로퍼티가 포함되어 있으면 직렬화 처리가 불가능한 것을 발견하였음. 
  * (Inventory 클래스는 List<GameObject>를 포함하기 때문에 프로퍼티로 GameData에 담기는 순간 직렬화처리 불가능해 저장이 안되었음.)
  * 
+ * 
+ * <v3.1 - 2023_1222_최원준>
+ * 1- private변수를 직렬화하기 위해 [JsonProperty] 어트리뷰트를 추가하였음
+ * 2- STransform 클래스에 Seiralize메서드를 추가하여 일관성을 주었으며, 주석 보완
+ * 
+ * 
  */
 
 
@@ -63,7 +70,12 @@ namespace DataManagement
         /// 저장 할 Transform 컴포넌트를 전달해서 생성 해야되며, 불러 올때는 Deserialize 메서드에 연동할 Transform 인자를 전달하여 정보를 전달받습니다. 
         /// </summary>
         public STransform playerTr;
-                
+
+                      
+
+
+
+
         /// <summary>
         /// 금화
         /// </summary>
@@ -80,7 +92,7 @@ namespace DataManagement
         public Craftdic craftDic;
 
         
-        public SerializableInventory savedInventory;
+        [JsonProperty] private SerializableInventory savedInventory;
 
         
         public Inventory LoadInventory()
@@ -144,11 +156,21 @@ namespace DataManagement
             zRot = 0f;
         }
 
-
         /// <summary>
-        /// 전달 받은 Transform 컴포넌트의 위치와 회전정보만 가지고 와서 STransform 인스턴스를 생성하여 반환합니다.
+        /// 전달 받은 Transform 컴포넌트의 위치와 회전정보만 가지고 와서 STransform 인스턴스를 생성하여 반환합니다.<br/>
+        /// 내부적으로 Serialize메서드를 전달받은 Transform 인스턴스를 인자로 넣어 호출합니다. (즉, Serialize메서드를 호출한것과 동일합니다.)
         /// </summary>
         public STransform(Transform tr)
+        {
+            Serialize(tr);
+        }
+
+
+        /// <summary>
+        /// 인자로 원본 캐릭터의 위치정보를 전달하면 STransform에 정보를 자동으로 입력하여 줍니다.<br/>
+        /// 기본 생성자로 STransform을 생성한 경우에 사용하세요.
+        /// </summary>
+        public void Serialize( Transform tr )
         {
             x = tr.position.x;
             y = tr.position.y;
@@ -158,8 +180,10 @@ namespace DataManagement
             zRot = tr.rotation.z;
         }
 
+
         /// <summary>
-        /// 저장되어있는 STransform의 위치와 회전 정보를 전달한 Transform 컴포넌트 인자에 동기화 시켜줍니다.
+        /// 저장되어있는 STransform의 위치와 회전 정보를 전달한 Transform 컴포넌트 인자에 동기화 시켜줍니다.<br/>
+        /// 즉, 직렬화 가능한 STransform 변수를 로드하여 불러온 경우에 Transform 정보와 동기화 시켜 저장값을 적용시킵니다.
         /// </summary>
         public void Deserialize( ref Transform tr )
         {

@@ -15,6 +15,9 @@ using Newtonsoft.Json;
  * 1 - Json방식으로 변경
  * 2 - 딕셔너리 직렬화 안되는 문제로 인해 Newtonsoft.Json 패키지 방식으로 구현
  * Window > Package Manager > Add Package from GIT URL > com.unity.nuget.newtonsoft-json 검색을 통해 Add해주기 바랍니다.
+ * 
+ * <v2.1 - 2023_1222_최원준>
+ * 1- 주석추가
  */
 
 namespace DataManagement
@@ -86,12 +89,12 @@ namespace DataManagement
         /// <returns>사용자 정의 자료형</returns>
         public GameData LoadData( int loadSlot=0 )
         {
-            if( IsDataExistInSlot(loadSlot) )
+            if( IsDataExistInSlot(loadSlot) ) //저장된 슬롯이 있따면 기존 게임데이터를 만들어 반환
             {
                 string data = File.ReadAllText(Path + loadSlot.ToString() + ".json");
                 return JsonConvert.DeserializeObject<GameData>(data); 
             }
-            else
+            else //저장된 슬롯이 없다면 새롭게 게임데이터를 만들어 반환
             {
                 GameData gameData = new GameData();
                 return gameData;   

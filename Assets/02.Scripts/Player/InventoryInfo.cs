@@ -73,6 +73,12 @@ using UnityEngine.SceneManagement;
  * 1- Awkae문에서 PlayerPrefs의 키값을 통해 처음시작과 이어하기를 구분해서 메서드를 호출하던 구문을 삭제하고
  * LoadData하나만 호출해도 처음 데이터가 만들어지도록 변경하였습니다.
  * 
+ * <v5.2 - 2023_1224_최원준>
+ * 1- InitPlayerData() 메서드 삭제
+ * 2- LoadPlayerData() 메서드를 Start문으로 옮김
+ * 이유는 인벤토리가 역직렬화 될 때 내부적으로 CreateManager의 싱글톤의 메서드를 불러오기 때문에 호출시점을 늦출 필요가 있음
+ * 
+ * 
  */
 
     
@@ -107,14 +113,19 @@ public class InventoryInfo : MonoBehaviour
     public int silver;      
          
 
-    // 인스턴스가 새롭게 생성될 때마다 저장된 파일을 불러옵니다.
-    void Awake()
+    /// <summary>
+    /// 인스턴스가 새롭게 생성될 때마다 저장된 파일을 불러옵니다.<br/>
+    /// 인벤토리를 역직렬화 할 때 내부적으로 CreateManager의 싱글톤의 메서드를 호출하므로 Start문에서 플레이어 데이터를 불러옵니다.
+    /// </summary>
+    void Start()
     {        
         LoadPlayerData();       // 저장된 플레이어 데이터를 불러옵니다.        
     }
         
 
-    // 파괴 되기전에 파일에 저장합니다.
+    /// <summary>
+    /// 파괴 되기전에 파일에 저장합니다.
+    /// </summary>
     private void OnDestroy()
     {
         SavePlayerData();   // 플레이어 데이터 저장
@@ -130,17 +141,6 @@ public class InventoryInfo : MonoBehaviour
 
 
     /// <summary>
-    /// 플레이어 변수들을 초기화 시켜주는 메서드
-    /// </summary>
-    private void InitPlayerData()
-    {        
-        inventory=new Inventory();
-        craftDic=new Craftdic();
-        gold=0;
-        silver=0;            
-    }
-
-    /// <summary>
     /// 인벤토리 관련 플레이어 데이터를 불러옵니다
     /// </summary>
     void LoadPlayerData()
@@ -152,6 +152,8 @@ public class InventoryInfo : MonoBehaviour
         craftDic = loadData.craftDic;
         gold = loadData.gold;
         silver = loadData.silver;
+
+        inventory.LoadAllItem();
     }
 
 

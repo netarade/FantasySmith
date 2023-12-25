@@ -1,9 +1,6 @@
 using Newtonsoft.Json;
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI;
 
 /*
  * [작업 사항]
@@ -35,6 +32,12 @@ using UnityEngine.UI;
  * <v3.0 - 2023_1222_최원준>
  * 1- private변수를 직렬화하기 위해 [JsonProperty] 어트리뷰트를 추가하였음
  * 
+ * <v3.1 - 2023_1224_최원준>
+ * 1- Clone메서드 삭제 (Item클래스에서 같은 기능을 상속하므로)
+ * 2- 기본 protected 변수 enumWeaponType과 enumBasicGrade을 삭제하고, 
+ * get만 가능한 자동 구현 프로퍼티 eWeaponType, eBasicGrade으로 변경
+ *  
+ * 
  */
 namespace ItemData
 {    
@@ -62,8 +65,6 @@ namespace ItemData
     public class ItemWeapon : Item
     {       
         /*** 기본 고유 정보 ***/
-        [JsonProperty] protected WeaponType enumWeaponType;    // 무기 소분류 타입
-        [JsonProperty] protected ItemGrade enumBasicGrade;     // 기본 분류 등급 (초급, 중급, 고급)
         [JsonProperty] protected int iPower;                   // 공격력
         [JsonProperty] protected int iDurability;              // 내구
         [JsonProperty] protected float fSpeed;                 // 공격속도
@@ -79,6 +80,14 @@ namespace ItemData
         [JsonProperty] protected ItemEngraving[] ieArrEquipEngrave;    // 장착 중인 각인
         [JsonProperty] protected float fBasePerformance;               // 장비 기본 성능 (일반 무기-100, 제작무기-제작에따른 변화)
                     
+        /// <summary>
+        /// 무기 아이템 소분류 타입 - Sword, Blade, Spear, Dagger 등이 있습니다.
+        /// </summary>
+        public WeaponType eWeaponType { get; }
+        /// <summary>
+        /// 무기 아이템의 기본 분류 타입 - 초급, 중급, 고급
+        /// </summary>
+        public ItemGrade eBasicGrade { get; }
         
         /// <summary>
         /// 남은 각인 횟수를 자동으로 연산해서 반환합니다.
@@ -164,15 +173,7 @@ namespace ItemData
 
 
 
-        /// <summary>
-        /// 무기 아이템 소분류 타입 - Sword, Blade, Spear, Dagger 등이 있습니다.
-        /// </summary>
-        public WeaponType EnumWeaponType { get {return enumWeaponType;} }
-        /// <summary>
-        /// 무기 아이템의 기본 분류 타입 - 초급, 중급, 고급
-        /// </summary>
-        public ItemGrade BasicGrade { get {return enumBasicGrade;} }
-
+        
         /// <summary>
         /// 공격력은 최종성능의 백분율과 1:1관계를 가집니다.
         /// </summary>
@@ -245,8 +246,8 @@ namespace ItemData
             ,ItemGrade basicGrade, int power, int durability, float speed, int weight, AttributeType attribute                      // 무기 고유 정보
         ) : base( mainType, No, name, price, imgRefIdx )
         {
-            enumWeaponType = subType;
-            enumBasicGrade = basicGrade;
+            eWeaponType = subType;
+            eBasicGrade = basicGrade;
             iPower = power;
             iDurability = durability;
             fSpeed = speed;
@@ -262,13 +263,5 @@ namespace ItemData
             fBasePerformance = 100f;                                // 제작아이템이 아닌 경우 기본 성능 100f
         }
 
-
-        /// <summary>
-        /// 무기 아이템의 객체를 쉽게 복제하여 줍니다.
-        /// </summary>
-        public override object Clone()
-        {
-            return this.MemberwiseClone();
-        }
     }
 }

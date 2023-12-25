@@ -1,10 +1,6 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
-using ItemData;
 using UnityEngine.UI;
-using System;
-using Unity.VisualScripting;
+using ItemData;
 
 /*
  * [작업 사항]
@@ -81,6 +77,12 @@ using Unity.VisualScripting;
  * OnItemChanged메서드를 아이템의 생성시점 호출이 아니라, 아이템의 등장 시점에 호출하도록 수정하였음.
  *
  *4 - SlotListTr이 뷰포트로 잡혀있던 점을 수정
+ *
+ *<v9.1 - 2023_1224_최원준>
+ *1- Item프로퍼티의 주석일부 삭제
+ *2- 컴포넌트 참조 구문 Start에서 OnEanble로 이동 및 정리
+ *3- UpdataImage메서드 아이템 종류에 따른 중복로직 제거 후 간략화
+ *
  */
 
 
@@ -112,37 +114,18 @@ public class ItemInfo : MonoBehaviour
     public enum eIIC { MiscBase,MiscAdd,MiscOther,Sword,Bow }    // 이미지 집합 배열의 인덱스 구분
     private readonly int iicNum = 5;                             // 이미지 집합 배열의 갯수
 
-    public void Start()
-    {
-        countTxt = GetComponentInChildren<Text>();
-        slotListTr = GameObject.FindWithTag("CANVAS_CHARACTER").transform.GetChild(0).GetChild(0).GetChild(0).GetChild(0);
-        
-        // 인스펙터뷰 상에서 달아놓은 스프라이트 이미지 집합을 참조합니다.
-        Transform imageCollectionsTr = CreateManager.instance.transform.GetChild(0);
-
-        // 배열을 해당 갯수만큼 생성해줍니다.
-        iicArr = new ItemImageCollection[iicNum];
-
-        // 각 iicArr은 imageCollectionsTr의 하위 자식오브젝트로서 ItemImageCollection 스크립트를 컴포넌트로 가지고 있습니다
-        for( int i = 0; i<iicNum; i++)
-            iicArr[i] = imageCollectionsTr.GetChild(i).GetComponent<ItemImageCollection>();
-                
-
-        // 정보를 업데이트하는 메서드를호출하여야 합니다.
-        OnItemChanged(); 
-    }
-
+    
 
     /// <summary>
-    /// 클론 한 Item 인스턴스를 저장하고, 저장 되어있는 인스턴스를 불러올 수 있습니다.<br/> 
-    /// 아이템이 저장될 때 자동으로 OnItemChanged()메서드를 호출하여 오브젝트 상의 정보를 반영합니다.
+    /// 클론 한 Item 인스턴스를 저장하고, 저장 되어있는 인스턴스를 불러올 수 있습니다.
     /// </summary>
     public Item Item                // 외부에서 개념아이템을 참조시킬 때 호출해야할 프로퍼티
     {
-        set {
-                item =  value;
-            }
-        get {return item;}
+        get; set;
+        //set {
+        //        item =  value;
+        //    }
+        //get {return item;}
     }
 
 
@@ -153,8 +136,28 @@ public class ItemInfo : MonoBehaviour
     {
         itemImage = GetComponent<Image>();
         countTxt = GetComponentInChildren<Text>();
-        countTxt.enabled = false;
+
+        slotListTr = GameObject.FindWithTag("CANVAS_CHARACTER").transform.GetChild(0).GetChild(0).GetChild(0).GetChild(0);
+        
+        // 인스펙터뷰 상에서 달아놓은 스프라이트 이미지 집합을 참조합니다.
+        Transform imageCollectionsTr = GameObject.FindAnyObjectByType<CreateManager>().transform.GetChild(0);
+
+        // 배열을 해당 갯수만큼 생성해줍니다.
+        iicArr = new ItemImageCollection[iicNum];
+
+        // 각 iicArr은 imageCollectionsTr의 하위 자식오브젝트로서 ItemImageCollection 스크립트를 컴포넌트로 가지고 있습니다
+        for( int i = 0; i<iicNum; i++)
+            iicArr[i] = imageCollectionsTr.GetChild(i).GetComponent<ItemImageCollection>();
+        
+        Debug.Log("OnEnable 호출 여부");
+        // 아이템 오브젝트가 씬에 생성되면 정보를 업데이트하는 메서드를호출하여야 합니다.
+        OnItemChanged(); 
     }
+
+    //public void Start()
+    //{
+
+    //}
 
     /// <summary>
     /// 오브젝트에 item의 참조가 이루어졌다면 item이 가지고 있는 이미지를 반영하고 잡화아이템의 경우 중첩 횟수까지 최신화 합니다.<br/>
@@ -174,48 +177,55 @@ public class ItemInfo : MonoBehaviour
     /// </summary>
     public void UpdateImage()
     {
-        if(iicArr.Length == 0 )    // 아이템 생성 시점에 iicArr을 참조하는 것을 방지하여 줍니다.
+        if(iicArr.Length == 0 )     // 아이템 생성 시점에 iicArr을 참조하는 것을 방지하여 줍니다.
             return;
 
-        switch( item.Type ) // 아이템의 메인타입을 구분합니다.
+
+        int imgIdx = -1;            // 참조할 이미지 인덱스 선언
+                   
+        Debug.Log(Item.Type);
+        switch( Item.Type )         // 아이템의 메인타입을 구분합니다.
         {
             case ItemType.Weapon:
-                WeaponType weaponType = ((ItemWeapon)item).EnumWeaponType;  // 아이템의 서브타입을 구분합니다.
+                ItemWeapon weapItem = (ItemWeapon)Item;
+                WeaponType weaponType = weapItem.eWeaponType;  // 아이템의 서브타입을 구분합니다.
 
-                if( weaponType==WeaponType.Sword )
+                switch (weaponType)
                 {
-                    innerSprite = iicArr[((int)eIIC.Sword)].icArrImg[item.sImageRefIndex.innerImgIdx].innerSprite;
-                    statusSprite = iicArr[(int)eIIC.Bow].icArrImg[item.sImageRefIndex.statusImgIdx].statusSprite;
-                }
-                else if( weaponType==WeaponType.Bow )
-                {
-                    innerSprite = iicArr[(int)eIIC.Bow].icArrImg[item.sImageRefIndex.innerImgIdx].innerSprite;
-                    statusSprite = iicArr[(int)eIIC.Bow].icArrImg[item.sImageRefIndex.statusImgIdx].statusSprite;
+                    case WeaponType.Sword :             // 서브타입이 검이라면,
+                        imgIdx = (int)eIIC.Sword;
+                        break;
+                    case WeaponType.Bow :               // 서브타입이 활이라면,
+                        imgIdx = (int)eIIC.Bow;
+                        break;
                 }
                 break;
-                // 아이템 오브젝트 이미지를 인스펙터뷰에 직렬화되어 있는 ItemImageCollection 클래스의
-                // 내부 구조체 배열 ImageColection[]에 개념아이템이 고유 정보로 가지고 있는 ImageReferenceIndex 구조체의 인덱스를 가져옵니다.                
                 
             case ItemType.Misc:
-                MiscType miscType = ((ItemMisc)item).eMiscType;
 
-                if( miscType==MiscType.Basic )
+                ItemMisc miscItem = (ItemMisc)Item; 
+                MiscType miscType = miscItem.eMiscType;
+
+                switch (miscType)
                 {
-                    innerSprite = iicArr[(int)eIIC.MiscBase].icArrImg[item.sImageRefIndex.innerImgIdx].innerSprite;
-                    statusSprite = iicArr[(int)eIIC.MiscBase].icArrImg[item.sImageRefIndex.statusImgIdx].statusSprite;
-                }
-                else if( miscType==MiscType.Additive )
-                {
-                    innerSprite = iicArr[(int)eIIC.MiscAdd].icArrImg[item.sImageRefIndex.innerImgIdx].innerSprite;
-                    statusSprite = iicArr[(int)eIIC.MiscAdd].icArrImg[item.sImageRefIndex.statusImgIdx].statusSprite;
-                }
-                else
-                {
-                    innerSprite = iicArr[(int)eIIC.MiscOther].icArrImg[item.sImageRefIndex.innerImgIdx].innerSprite;
-                    statusSprite = iicArr[(int)eIIC.MiscOther].icArrImg[item.sImageRefIndex.statusImgIdx].statusSprite;
+                    case MiscType.Basic :           // 서브타입이 기본 재료라면,
+                        imgIdx = (int)eIIC.MiscBase;
+                        break;
+                    case MiscType.Additive :        // 서브타입이 추가 재료라면,
+                        imgIdx = (int)eIIC.MiscAdd;
+                        break;
+                    default :                       // 서브타입이 기타 재료라면,
+                        imgIdx = (int)eIIC.MiscOther;
+                        break;
                 }
                 break;
         }
+
+        // 아이템 오브젝트 이미지를 인스펙터뷰에 직렬화되어 있는 ItemImageCollection 클래스의 내부 구조체 배열 ImageColection[]에
+        // 개념아이템이 고유 정보로 가지고 있는 ImageReferenceIndex 구조체의 인덱스를 가져와서 접근합니다.                
+             
+        innerSprite = iicArr[imgIdx].icArrImg[Item.sImageRefIndex.innerImgIdx].innerSprite;
+        statusSprite = iicArr[imgIdx].icArrImg[Item.sImageRefIndex.statusImgIdx].statusSprite;
 
         // 참조한 스프라이트 이미지를 기반으로 아이템이 보여질 2D이미지를 장착합니다.
         itemImage.sprite = innerSprite;
@@ -227,10 +237,10 @@ public class ItemInfo : MonoBehaviour
     /// </summary>
     public void UpdateCountTxt()
     {
-        if( item.Type==ItemType.Misc )                // 잡화 아이템의 중첩 갯수를 표시합니다.
+        if( Item.Type==ItemType.Misc )                // 잡화 아이템의 중첩 갯수를 표시합니다.
         {
             countTxt.enabled=true;
-            countTxt.text = ((ItemMisc)item).OverlapCount.ToString();
+            countTxt.text = ((ItemMisc)Item).OverlapCount.ToString();
         }
         else
             countTxt.enabled = false;                // 잡화아이템이 아니라면 중첩 텍스트를 비활성화합니다.
@@ -240,7 +250,7 @@ public class ItemInfo : MonoBehaviour
     // 아이템의 위치정보 반영  (현재 어디서 아이템 위치를 참조해서 슬롯에 넣어주고 있는가? => CreateManager에서 Instantiate할때 미리 붙인다.)
     public void UpdatePosition()
     {
-        transform.SetParent( slotListTr.GetChild(item.SlotIndex) );  // 오브젝트의 현 부모를 아이템 정보상의 슬롯 위치로 변경한다.
+        transform.SetParent( slotListTr.GetChild(Item.SlotIndex) );  // 오브젝트의 현 부모를 아이템 정보상의 슬롯 위치로 변경한다.
         transform.localPosition = Vector3.zero;                    // 로컬위치를 부모기준으로부터 0,0,0으로 맞춘다.
     }
 

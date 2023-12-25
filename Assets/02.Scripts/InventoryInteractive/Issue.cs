@@ -360,5 +360,12 @@
  * InventoryInfo_v5.1           LoadData하나만 호출해도 처음 데이터가 만들어지도록 변경
  * Inventory_v5.0               새로운 게임을 시작하는 경우 디폴트 생성자가 아닌 생성자가 호출됨으로 인해 딕셔너리가 초기화되지 않아 null레퍼런스가 발생문제를 해결
  * 
+ * 
+ * <2023_1225_최원준>
+ * 1- Unspecified casting 이슈 (게임오브젝트가 만들어질 때, Item의 null값이 들어가있는 점을 확인 중)
+ * 2- ItemInfo의 OnEnable에 OnItemChanged를 넣으면 그 당시에 Item이 null로 잡혀있는점
+ * 
+ * 
+ * 
  */
  

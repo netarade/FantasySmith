@@ -1,10 +1,7 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using ItemData;
 using UnityEngine.UI;
-using Unity.VisualScripting;
 using System;
 
 /* [작업 사항]
@@ -36,6 +33,11 @@ using System;
  * <v3.1 -2023_1217_최원준>
  * 1- 각인석 정보 구조체에서 인덱스를 받아서 IIC 직렬화 스크립트에서 이미지를 참조하여 각인석 이미지를 반영하도록 수정 
  * 2- iicMiscOther의 참조를 CreateManager의 싱글톤을 통한 참조로 변경
+ * 
+ * <v4.0 - 2023_1223_최원준>
+ * 1- 상태창 위치 조절
+ * 인벤토리 아이템이 상단 놓여 있을 때는 하단으로 내려서 보여주고, 하단에 놓여 있을 때는 상단으로 올려서 보여주게 변경
+ * 
  */
 
 
@@ -65,6 +67,7 @@ public class ItemPointerStatusWindow : MonoBehaviour, IPointerEnterHandler, IPoi
 
     RectTransform statusRectTr; // 상태창의 렉트 트랜스폼
     RectTransform itemRectTr;   // 아이템의 렉트 트랜스폼
+    RectTransform slotListTr;   // 슬롯전체 판넬의 렉트 트랜스폼
 
     void Start()
     {        
@@ -97,6 +100,10 @@ public class ItemPointerStatusWindow : MonoBehaviour, IPointerEnterHandler, IPoi
         }
         statusRectTr = statusWindow.GetComponent<RectTransform>();
         itemRectTr = this.gameObject.GetComponent<RectTransform>();
+        slotListTr = itemRectTr.parent.parent.gameObject.GetComponent<RectTransform>();
+
+
+
         statusRectTr.SetAsLastSibling();  // 상태창을 캔버스의 최하위 자식으로 배치하여 이미지 표시 우선순위를 높게 한다.
                                           
         // 게임 시작 시 상태창을 꺼둔다
@@ -121,10 +128,18 @@ public class ItemPointerStatusWindow : MonoBehaviour, IPointerEnterHandler, IPoi
         /*** 아이템 종류 상관없이 공통 로직 ***/
         statusWindow.SetActive(true);               // 상태창 활성화
 
-        statusRectTr.position = itemRectTr.position 
-            + Vector3.right*(statusRectTr.sizeDelta.x/2 + 10f);  
-        //상태창의 위치는 아이템 위치로부터 상태창 크기, 아이템크기를 고려하여 우측으로 마진 10만큼 떨어진 거리이다.
-    
+        
+        float delta = slotListTr.position.y - itemRectTr.position.y;              // 상태창을 띄울 위치 판단기준
+        Vector3 rightPadding = Vector3.right*(statusRectTr.sizeDelta.x/2 + 30f);  // 상태창 오른쪽 여백
+        Vector3 upPadding = Vector3.up*(statusRectTr.sizeDelta.y/2);              // 상태창 상단 여백
+
+
+        if( delta < statusRectTr.sizeDelta.y/3)          // 인벤토리 상단에서 1/3미만 떨어져있다면,
+            statusRectTr.position = itemRectTr.position + rightPadding - upPadding; 
+        else if(delta < statusRectTr.sizeDelta.y *2/3)   // 인벤토리 상단에서 2/3미만 떨어져 있다면,
+            statusRectTr.position = itemRectTr.position + rightPadding; 
+        else                                             // 인벤토리 상단에서 2/3이상 떨어져 있다면,
+            statusRectTr.position = itemRectTr.position + rightPadding + upPadding;
         
 
 
@@ -191,7 +206,7 @@ public class ItemPointerStatusWindow : MonoBehaviour, IPointerEnterHandler, IPoi
                     break;
             }
 
-            switch(itemWeap.EnumWeaponType)     // 무기 종류의 한글 문자열을 지정
+            switch(itemWeap.eWeaponType)     // 무기 종류의 한글 문자열을 지정
             {
                 case WeaponType.Sword :
                     strType="검";

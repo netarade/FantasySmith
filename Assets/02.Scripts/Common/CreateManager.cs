@@ -121,6 +121,9 @@ using WorldItemData;
 * MonoBehaviour를 상속하지 않는 WorldItemData_Misc과 Weapon 스크립트로 분리시켜 이동하였습니다.
 * 이유는 MonoBehaviour를 상속하지 않는 CraftData에서 CreateManager의 싱글톤에 접근하지 못하기 때문입니다.
 * 
+* <v10.2 - 2023-1224_최원준>
+* 1- CreateAllItemDic 메서드를 LoadAllItemDic으로 변경
+* 
 */
 
 
@@ -149,14 +152,15 @@ public class CreateManager : MonoBehaviour
         else if( instance!=null )
             Destroy( this.gameObject );           // 싱글톤 이외 인스턴스는 삭제
 
-        itemPrefab=Resources.Load<GameObject>( "ItemOrigin" );  // 리소스 폴더에서 원본 프리팹 가져오기
+        // 리소스 폴더에서 원본 프리팹 가져오기
+        itemPrefab=Resources.Load<GameObject>( "ItemOrigin" );  
 
+        // 슬롯리스트를 인식 시켜 남아있는 슬롯을 확인하기 위해
         Transform canvasTr = GameObject.FindWithTag("CANVAS_CHARACTER").transform;
-        slotListTr=canvasTr.GetChild(0).GetChild(0).GetChild(0).GetChild(0);        // 슬롯리스트를 인식 시켜 남아있는 슬롯을 확인할 것이다.
-
-
+        slotListTr=canvasTr.GetChild(0).GetChild(0).GetChild(0).GetChild(0);       
+        
         // 모든 월드 아이템 등록
-        CreateAllItemDictionary();
+        LoadAllItemDictionary();    
 
         SceneManager.sceneLoaded += OnSceneLoaded; // 씬이로드될때 새롭게 참조를 잡아준다.
                 
@@ -168,17 +172,22 @@ public class CreateManager : MonoBehaviour
     /// </summary>
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
-        itemPrefab=Resources.Load<GameObject>( "ItemOrigin" );  // 리소스 폴더에서 원본 프리팹 가져오기
+        // 리소스 폴더에서 원본 프리팹 가져오기
+        itemPrefab=Resources.Load<GameObject>( "ItemOrigin" );  
 
+        // 슬롯리스트를 인식 시켜 남아있는 슬롯을 확인하기 위해
         Transform canvasTr = GameObject.FindWithTag("CANVAS_CHARACTER").transform;
-        slotListTr=canvasTr.GetChild(0).GetChild(0).GetChild(0).GetChild(0);        // 슬롯리스트를 인식 시켜 남아있는 슬롯을 확인할 것이다.
+        slotListTr=canvasTr.GetChild(0).GetChild(0).GetChild(0).GetChild(0);       
+        
+        // 모든 월드 아이템 등록
+        LoadAllItemDictionary();     
     }
 
     /// <summary>
     /// 오브젝트 삭제 시 이벤트 연결 해제
     /// </summary>
     public void OnDestroy()
-    {
+    {        
         SceneManager.sceneLoaded -= OnSceneLoaded;
     }
 
@@ -256,7 +265,7 @@ public class CreateManager : MonoBehaviour
                 // 리스트에 들어있는 잡화 게임오브젝트를 읽어들여서 남은수량이 0이될 때까지 최대 수량으로 채워줍니다.
                 for(int i=0; i<itemObjList.Count; i++) 
                 {
-                    Debug.Log("------기존 잡화아이템이 있는경우------");
+                    //Debug.Log("------기존 잡화아이템이 있는경우------");
 
                     // 해당 오브젝트의 개념아이템 정보를 뽑아옵니다
                     ItemMisc itemMisc = (ItemMisc) itemObjList[i].GetComponent<ItemInfo>().Item; 
@@ -276,7 +285,7 @@ public class CreateManager : MonoBehaviour
 
                 if( remainCount>0 )   // 반환값이 남아있다면,
                 {            
-                    Debug.Log("------기존 잡화아이템에다가 들어온 수량을 다 못채운 경우------");
+                    //Debug.Log("------기존 잡화아이템에다가 들어온 수량을 다 못채운 경우------");
                     // 남은 수량을 인자로 넣어서 다시 아이템을 생성하는 재귀호출에 들어갑니다
                     return CreateMiscItemRepeatly(inventory, itemName, remainCount);
                 }
@@ -285,12 +294,12 @@ public class CreateManager : MonoBehaviour
             }
             else if(itemObjList.Count == 0)     //들어가있는 오브젝트가 하나도 없다면 (바로위의 for문이 한번도 돌아가지 않았다면)
             {                
-                Debug.Log("------새로운 잡화아이템에다가 수량을 채워야하는 경우------");
-                Debug.Log("인자로 들어온 count : "+ count);
+                //Debug.Log("------새로운 잡화아이템에다가 수량을 채워야하는 경우------");
+                //Debug.Log("인자로 들어온 count : "+ count);
                 itemClone=(ItemMisc)miscDic[itemName].Clone();    // 개념아이템을 클론하고,
                 ( (ItemMisc)itemClone ).SetOverlapCount( count );   // 클론의 중첩 갯수를 받은 인자로 지정합니다.
 
-                Debug.Log("Item에 등록된 Count : " + ((ItemMisc)itemClone).OverlapCount);
+                //Debug.Log("Item에 등록된 Count : " + ((ItemMisc)itemClone).OverlapCount);
 
                 // 인벤토리 리스트에 개념아이템을 장착한 오브젝트를 추가합니다
                 AddCloneItemToInventory( itemObjList, itemClone, findSlotIdx );
@@ -356,18 +365,17 @@ public class CreateManager : MonoBehaviour
     }
 
 
-
-
-
-
-
+    
     /// <summary>
     /// 개념 아이템 정보가 이미 있다면 이를 가지고 그에 맞는 아이템 오브젝트를 만들어 줍니다.
     /// </summary>
     /// <param name="item"></param>
-    public GameObject CreateItemByInfo(Item item)
+    public GameObject CreateItemByInfo(Item item, bool isActive=true)
     {
         GameObject itemObject = Instantiate(itemPrefab);    // 프리팹하나를 복제해 옵니다.
+
+        itemObject.SetActive(isActive);                     // 아이템 활성화 상태를 받은 인자로 변경합니다.
+
         itemObject.GetComponent<ItemInfo>().Item = item;    // 아이템 정보 할당이 이루어질 때 자동으로 이미지,수량,위치가 동기화 됩니다.
 
         return itemObject;
@@ -403,7 +411,7 @@ public class CreateManager : MonoBehaviour
     /// <summary>
     /// 월드의 모든 개념 아이템을 담아두는 딕셔너리를 초기화합니다.
     /// </summary>
-    private void CreateAllItemDictionary()
+    private void LoadAllItemDictionary()
     {
         // 플레이어와 상관없이 게임 시스템 자체가 들고 있어야할 집합이며,
         // 플레이어는 아이템이 생성될 때 이 집합에서 복제해서 들고있게 될 것이다.

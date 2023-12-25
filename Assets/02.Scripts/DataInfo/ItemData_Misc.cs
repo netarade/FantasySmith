@@ -1,8 +1,5 @@
 using Newtonsoft.Json;
 using System;
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
 
 /*
  * [작업 사항]
@@ -52,6 +49,10 @@ using UnityEngine;
  * <v5.0 - 2023_1222_최원준>
  * 1- private변수를 직렬화하기 위해 [JsonProperty] 어트리뷰트를 추가하였음
  * 2- SetOverlapCount 메서드 내부 조건식 ==0에서 <=0으로 수정
+ * 
+ * <v5.1 - 2023_1224_최원준>
+ * 1- Clone메서드 삭제 (Item클래스에서 같은 기능을 상속하므로)
+ * 
  */
 
 
@@ -188,13 +189,7 @@ namespace ItemData
             }
         }
 
-        /// <summary>
-        /// 잡화 아이템의 객체를 쉽게 복제하여 줍니다.
-        /// </summary>
-        public override object Clone()
-        {
-            return this.MemberwiseClone();
-        }
+        
     }
 
 

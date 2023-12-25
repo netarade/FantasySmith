@@ -1,11 +1,6 @@
 using Newtonsoft.Json;
 using System;
-using System.Collections;
-using System.Collections.Generic;
-using Unity.VisualScripting;
-using Unity.VisualScripting.FullSerializer;
 using UnityEngine;
-using UnityEngine.UI;
 
 /*
  * [작업 사항]
@@ -51,22 +46,16 @@ using UnityEngine.UI;
  * <v6.0 - 2023_1222_최원준>
  * 1- private변수를 직렬화하기 위해 [JsonProperty] 어트리뷰트를 추가하였음
  * 
+ * <v7.0 - 2023_1224_최원준>
+ * 1- Item클래스의 추상클래스 기능을 삭제하고, Clone메서드의 abstract구문 삭제
+ * 이유는 JSON에서 직렬화할 때 인스턴스화 할 수 없다는 오류가 자주 등장하기 때문
+ * 2- 모든 기본 변수를 삭제하고 자동구현 프로퍼티로 사용하였습니다.
+ * 이유는 생성되어질 때 한번 입력되면 더 이상 정보의 변동이 필요없고 읽기 전용으로 할당되어야 하는 속성이기 때문입니다.
  * 
  */
 
 namespace ItemData
 {    
-    /// <summary>
-    /// 아이템의 대분류
-    /// </summary>
-    public enum ItemType { Misc, Weapon };
-    
-    /// <summary>
-    /// 아이템 고유 등급
-    /// </summary>
-    public enum ItemGrade { Low, Medium, High }
-
-
     /// <summary>
     /// 외부의 아이템 이미지를 참조할 인덱스가 모여있는 구조체 입니다.
     /// </summary>
@@ -111,68 +100,87 @@ namespace ItemData
     }
 
 
+
+
+    /// <summary>
+    /// 아이템의 대분류로 잡화, 무기 등의 종류가 있습니다.
+    /// </summary>
+    public enum ItemType { Misc, Weapon };
     
     /// <summary>
-    /// 기본 아이템 추상 클래스 - 인스턴스를 생성하지 못합니다. 반드시 상속하여 사용하세요. 상속한 클래스는 ICloneable을 구현해야합니다.
+    /// 아이템 고유 등급으로 초급, 중급, 고급이 있습니다.
+    /// </summary>
+    public enum ItemGrade { Low, Medium, High }
+        
+    /// <summary>
+    /// 기본 아이템 클래스 - 반드시 상속하여 사용하세요.
     /// </summary>  
     [Serializable]
-    public abstract class Item : ICloneable
+    public class Item : ICloneable
     {   
-        [JsonProperty] protected ItemType enumType;        // 타입
-        [JsonProperty] protected string strNo;             // 번호
-        [JsonProperty] protected string strName;           // 이름
-        [JsonProperty] protected float fPrice;             // 가격   
+        /// <summary>
+        /// 해당 아이템의 대분류 상의 종류로 무기는 Weapon, 잡화는 Misc등을 나타냅니다.
+        /// </summary>
+        public ItemType Type { get; }
 
-        [JsonProperty] protected int slotIndex;            // 아이템은 자신이 놓여있는 인벤토리의 슬롯 인덱스 정보를 가진다.
-        [JsonProperty] protected int slotIndexAll;         // 아이템의 전체 탭에서의 위치를 결정
-        
-        [JsonProperty] protected ImageReferenceIndex sImgRefIdx;    // 아이템의 이미지를 참조할 인덱스 정보를 가진 구조체 변수 
+        /// <summary>
+        /// 해당 아이템의 아이템 테이블에 정의된 넘버로서 0001000 등의 넘버링을 가집니다. 
+        /// </summary>
+        public string No {get;}
 
 
-        public ItemType Type { get { return enumType; } }
-        public string Name { get { return strName; } }
-        public float Price { get { return fPrice; } }
+        /// <summary>
+        /// 해당 아이템의 아이템 테이블에 정의 되어있는 이름으로, string 형식의 변수입니다.
+        /// </summary>
+        public string Name { get; }
+
+        /// <summary>
+        /// 해당 아이템의 가격으로 float형식의 변수입니다.
+        /// </summary>
+        public float Price { get; set; }
         
         /// <summary>
-        /// 아이템의 이미지를 표현하는 인덱스 정보가 담긴 구조체 변수입니다. 
+        /// 해당 아이템의 이미지를 표현하는 인덱스 정보가 담긴 구조체 변수입니다. 
         /// </summary>
-        public ImageReferenceIndex sImageRefIndex { 
-            get { return sImgRefIdx;} 
-            set { sImgRefIdx = value; }
-        }
+        public ImageReferenceIndex sImageRefIndex { get; }
         
         /// <summary>
         /// 해당 아이템이 담긴 슬롯 인덱스 정보입니다. 아이템이 슬롯을 이동할 때 마다 이 정보를 변경해야 합니다.
         /// </summary>
-        public int SlotIndex 
-        { 
-            set { slotIndex = value; }
-            get { return slotIndex; } 
-        }
+        public int SlotIndex { get; set; }
 
         /// <summary>
         /// 해당 아이템이 담긴 전체 슬롯에 대한 인덱스 정보입니다.
         /// </summary>
-        public int SlotIndexAll { set { slotIndexAll=value;} get { return slotIndexAll;} }
+        public int SlotIndexAll { get; set; }
 
         public Item( ItemType type, string No, string name, float price, ImageReferenceIndex imageRefIndex ) 
         {
-            enumType = type;
-            strName = name;
-            strNo = No;
-            fPrice = price; 
-            sImgRefIdx = imageRefIndex;
+            Type = type;
+            Name = name;
+            this.No = No;
+            Price = price; 
+            sImageRefIndex = imageRefIndex;
         }
 
-        public abstract object Clone();
+        /// <summary>
+        /// 해당 아이템의 객체를 복사해서 반환해주는 메서드입니다.<br/>
+        /// 기본 객체의 =연산은 참조전달이므로 하나의 인스턴스를 공유하게 되는데 이를 방지하여 새로운 인스턴스를 갖게 합니다.<br/>
+        /// </summary>
+        public object Clone() { return this.MemberwiseClone(); }
+
+
+        /// <summary>
+        /// 해당 아이템의 정보를 디버그 창에 출력해주는 메서드입니다.
+        /// </summary>
         public void ItemDeubgInfo()
         {
-            Debug.Log("Type : " + enumType);
-            Debug.Log("No : " + strNo);
-            Debug.Log("Name : " + strName);
-            Debug.Log("Price : " + fPrice);
-            Debug.Log("SlotIndex : " + slotIndex);
-            Debug.Log("SlotIndexAll : " + slotIndexAll);
+            Debug.Log("Type : " + Type);
+            Debug.Log("No : " + No);
+            Debug.Log("Name : " + Name);
+            Debug.Log("Price : " + Price);
+            Debug.Log("SlotIndex : " + SlotIndex);
+            Debug.Log("SlotIndexAll : " + SlotIndexAll);
         }
     }
 }

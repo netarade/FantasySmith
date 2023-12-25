@@ -1,6 +1,7 @@
 using ItemData;
 using System;
 using System.Collections.Generic;
+using UnityEditor.Timeline.Actions;
 using UnityEngine;
 
 /*
@@ -58,6 +59,13 @@ using UnityEngine;
  * 디폴트 생성자가 아닌 Inventory( SerializableInventory savedInventory ) 생성자가 호출됨으로 인해
  * 딕셔너리가 초기화되지 않아 null레퍼런스가 발생하였습니다.
  * 이를 없애기 위해 해당 생성자에 딕셔너리의 null값 검사를 추가하여 새로운 딕셔너리를 생성하도록 하였습니다.
+ * 
+ * <5.1 - 2023_1224_최원준>
+ * 1- 아이템 생성시 ConvertItemListToDic 메서드에서
+ * The given key '철' was not present in the dictionary. 오류가 발생하여
+ * miscDic[item.Name]==null로 검사하는 구문을 miscDic.ContainsKey(item.Name) 구문으로 변경
+ * 
+ * 2- ConvertDicToItemList과 ConvertItemListToDic 메서드 개별적으로 사전에 따라 중복로직으로 작성되어있던 것을 일반화
  * 
  * 
  * 
@@ -152,26 +160,26 @@ namespace CraftData
         public List<Item> ConvertDicToItemList(ItemType itemType)
         {
             List<Item> itemList = new List<Item>();
+            Dictionary<string, List<GameObject>> itemDic = null;
+
             switch(itemType)
             {
-                case ItemType.Weapon:
-                    foreach( List<GameObject> objList in weapDic.Values ) // 무기사전에서 게임오브젝트 리스트를 하나씩 꺼내어
-                    {
-                        for(int i=0; i<objList.Count; i++)                // 리스트의 게임오브젝트를 모두 가져옵니다.
-                            itemList.Add( objList[i].GetComponent<ItemInfo>().Item );   // item 스크립트를 하나씩 꺼내어 저장합니다.
-                    }
+                case ItemType.Weapon:      // 무기 종류라면 
+                    itemDic = weapDic;     // 인벤토리의 무기 사전 참조
                     break;
 
-                case ItemType.Misc:
-                    foreach( List<GameObject> objList in miscDic.Values ) // 잡화사전에서 게임오브젝트 리스트를 하나씩 꺼내어
-                    {
-                        for(int i=0; i<objList.Count; i++)                // 리스트의 게임오브젝트를 모두 가져옵니다.
-                            itemList.Add( objList[i].GetComponent<ItemInfo>().Item );   // item 스크립트를 하나씩 꺼내어 저장합니다.
-                    }
-                    break;
+                case ItemType.Misc:        // 잡화 종류라면
+                    itemDic = miscDic;     // 인벤토리의 잡화 사전 참조
+                    break; 
             }
 
-            return itemList;    // item 정보가 하나씩 저장되어있는 itemList를 반환합니다.
+            foreach( List<GameObject> objList in itemDic.Values )             // 해당 사전에서 게임오브젝트 리스트를 하나씩 꺼내어
+            {
+                for(int i=0; i<objList.Count; i++)                            // 리스트의 게임오브젝트를 모두 가져옵니다.
+                    itemList.Add( objList[i].GetComponent<ItemInfo>().Item ); // item 스크립트를 하나씩 꺼내어 저장합니다.
+            }
+
+            return itemList;                                                  // item 정보가 하나씩 저장되어있는 itemList를 반환합니다.
         }
 
         /// <summary>
@@ -182,51 +190,48 @@ namespace CraftData
         /// <param name="itemList">딕셔너리로 변환 시킬 item정보가 보관되어 있는 List</param>
         public void ConvertItemListToDic( ItemType itemType, List<Item> itemList )
         {
+            Dictionary<string, List<GameObject>> itemDic = null;    // 어떤 딕셔너리를 참조할 것인지 선언
+
             switch(itemType)
             {
-                case ItemType.Weapon:
-                    foreach(Item item in itemList) // 아이템 리스트에서 개념 아이템 정보를 하나씩 꺼내옵니다.
-                    {
-                        // 아이템 정보를 바탕으로 하는 게임오브젝트를 만듭니다.
-                        GameObject itemObject = CreateManager.instance.CreateItemByInfo( item );
-
-                        if( weapDic[item.Name] == null )            // 사전에 해당하는 아이템의 이름이 없다면
-                        {
-                            List<GameObject> itemObjList = new List<GameObject>();
-                            itemObjList.Add( itemObject );          // 새로운 리스트를 만들어 오브젝트를 넣습니다.
-                            weapDic.Add(item.Name, itemObjList );   // 사전에 아이템 이름과, 리스트를 추가합니다.
-                        }
-                        else // 사전에 해당하는 아이템의 이름이 있다면
-                        {
-                            weapDic[item.Name].Add(itemObject);     // 사전에 접근하여, 해당 리스트에 오브젝트만 추가합니다.
-                        }
-                    }
+                case ItemType.Weapon:   // 무기 종류라면 
+                    itemDic = weapDic;  // 인벤토리의 무기 사전 참조
                     break;
 
-                case ItemType.Misc:
-                    foreach(Item item in itemList) // 아이템 리스트에서
-                    {
-                        // 아이템 정보를 바탕으로 하는 게임오브젝트를 만듭니다.
-                        GameObject itemObject = CreateManager.instance.CreateItemByInfo( item );
-
-                        if( miscDic[item.Name] == null )            // 사전에 해당하는 아이템의 이름이 없다면
-                        {
-                            List<GameObject> itemObjList = new List<GameObject>();
-                            itemObjList.Add( itemObject );          // 새로운 리스트를 만들어 오브젝트를 넣습니다.
-                            miscDic.Add(item.Name, itemObjList );   // 사전에 아이템 이름과, 리스트를 추가합니다.
-                        }
-                        else // 사전에 해당하는 아이템의 이름이 있다면
-                        {
-                            miscDic[item.Name].Add(itemObject);     // 사전에 접근하여, 해당 리스트에 오브젝트만 추가합니다.
-                        }
-                    }
+                case ItemType.Misc:     // 잡화 종류라면
+                    itemDic = miscDic;  // 인벤토리의 잡화 사전 참조
                     break;
-                    
-                // 참고) 잡화아이템의 최대 수량 검사를 따로 하지 않습니다.
-                // 아이템 정보 상에 MaxCount이상일 때 예외 처리 로직이 있으며, Inventory에서 미리 MaxCount일 때의 새로운 오브젝트 생성 등을 처리했다고 판단합니다.
-                // 씬 이동이나 로드 등을 거치면서 해당 아이템 정보를 가진 오브젝트 그대로 전달해야 합니다.
             }
+
+            foreach(Item item in itemList) // 아이템 리스트에서 개념 아이템 정보를 하나씩 꺼내옵니다.
+            {
+                // 아이템 정보를 바탕으로 하는 게임오브젝트를 만듭니다.
+                GameObject itemObject = CreateManager.instance.CreateItemByInfo( item, false );
+                        
+                if( !itemDic.ContainsKey(item.Name) )       // 사전에 해당하는 아이템의 이름이 없다면
+                {
+                    // 새로운 리스트를 만들어 오브젝트를 넣습니다.
+                    List<GameObject> itemObjList = new List<GameObject> { itemObject };          
+                    
+                    itemDic.Add(item.Name, itemObjList );   // 인벤토리 사전에 아이템 이름으로 오브젝트 리스트를 추가합니다.
+                }
+                else                                        // 사전에 해당하는 아이템의 이름이 있다면
+                {
+                    itemDic[item.Name].Add(itemObject);     // 인벤토리 사전에 접근하여, 해당 리스트에 오브젝트만 추가합니다.
+                }
+            }
+            
+            // 참고) 잡화아이템의 최대 수량 검사를 따로 하지 않습니다.
+            // 아이템 정보 상에 MaxCount이상일 때 예외 처리 로직이 있으며, Inventory에서 미리 MaxCount일 때의 새로운 오브젝트 생성 등을 처리했다고 판단합니다.
+            // 씬 이동이나 로드 등을 거치면서 해당 아이템 정보를 가진 오브젝트 그대로 전달해야 합니다.
         }
+
+
+
+
+
+
+
 
         /// <summary>
         /// 기본 인벤토리 생성자입니다. 새로운 게임을 시작할 때 사용해주세요.

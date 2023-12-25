@@ -1,5 +1,6 @@
 using Newtonsoft.Json;
 using System;
+
 /*
  * [작업 사항]
  * 
@@ -18,6 +19,9 @@ using System;
  * 
  * <v2.0 - 2023_1222_최원준>
  * 1- private변수를 직렬화하기 위해 [JsonProperty] 어트리뷰트를 추가하였음
+ * 
+ * <v2.1 - 2023_1224_최원준>
+ * 1- Clone메서드 삭제 (Item클래스에서 같은 기능을 상속하므로)
  */
 namespace ItemData
 {
@@ -112,13 +116,7 @@ namespace ItemData
                 iFirePower += baseMaterial[i].count;        // 2단계 화력 - 기본 재료의 수에 따라 결정 
         }
 
-        /// <summary>
-        /// 무기 아이템의 객체를 쉽게 복제하여 줍니다.
-        /// </summary>
-        public override object Clone()
-        {
-            return this.MemberwiseClone();
-        }
+        
     }
 
 }

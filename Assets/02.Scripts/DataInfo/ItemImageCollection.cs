@@ -1,9 +1,5 @@
 using System;
-using System.Collections;
-using System.Collections.Generic;
-using Unity.VisualScripting;
 using UnityEngine;
-using UnityEngine.UIElements;
 /*
  * [작업 사항]
  * 
@@ -19,6 +15,7 @@ using UnityEngine.UIElements;
  * (2d, 3d오브젝트를 따로 관리)
  * 
  * 2- 주석 처리
+ * 
  * 
  */
 
@@ -37,10 +34,14 @@ public class ItemImageCollection : MonoBehaviour
 /// <summary>
 /// 실제 이미지 집합입니다. 직렬화 되어 인스펙터 뷰 상에서 보여질 수 있습니다.
 /// </summary>
-[System.Serializable]
+[Serializable]
 public struct ImageCollection
 {
     public string itemDesc;         // 인스펙터뷰에서 보여질 아이템 이름 또는 설명
     public Sprite innerSprite;      // 인벤토리 내부에서 보여질 이미지
     public Sprite statusSprite;     // 인벤토리 상태창에서 커서를 포커싱했을 때 보여질 이미지
 }
+
+
+
+

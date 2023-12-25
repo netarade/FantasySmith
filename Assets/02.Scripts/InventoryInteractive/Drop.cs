@@ -32,6 +32,10 @@ using UnityEngine.EventSystems;
  * 1- playerInvenInfo의 잘못된 참조 수정
  * 단순 GetComponent<InventoryInfo>()에서 GameObject.FindWithTag("Player").GetComponent<InventoryInfo>()으로 변경
  * 
+ * <v4.0 - 2023_1224_최원준>
+ * 1- dragObj의 null 레퍼런스에 대한 return문 추가하여
+ * 드래깅 중인 아이템 오브젝트가 없을 때 Drop 이벤트의 로직 실행을 막음
+ * 
  */
 
 
@@ -54,9 +58,12 @@ public class Drop : MonoBehaviour, IDropHandler
     /// <param name="eventData"></param>
     public void OnDrop( PointerEventData eventData )
     {
-        GameObject dragObj = Drag.draggingItem;
-        Item draggingItem = dragObj.GetComponent<ItemInfo>().Item;   // 자주 사용하므로 캐싱처리
+        GameObject dragObj = Drag.draggingObj;  // 현재 드래그 중인 오브젝트
 
+        if(dragObj == null)                     // 드래그 중인 오브젝트가 없는 경우 하위 로직을 실행하지 않음 
+            return;
+
+        Item draggingItem = dragObj.GetComponent<ItemInfo>().Item;  // 아이템 정보 - 자주 사용하므로 캐싱처리
 
 
         // 드래그 중인 아이템이 속성석이나 강화석, 각인석이라면, 수행하는 로직들.

@@ -386,7 +386,7 @@
  * 저장할때부터 개별 리스트인 ItemMisc 형식, ItemWeapon형식으로 맞춰서 저장해봐야할 듯함. (해당방법으로 해결 진행중)
  * 
  * (수정내용)
- * Inventory.cs v5.2 - SerializableInventory의 misc,weapList를 개별타입으로 변경하여 저장, 
+ * Inventory.cs v6.0 - SerializableInventory의 misc,weapList를 개별타입으로 변경하여 저장, 
  *                     ConvertDicToItemList, ConvertItemListToDic 아이템 종류에 따른 일반화 메서드로 변경
  * 
  * CreateManager.cs v10.4 - AddCloneItemToInventory메서드에서 아이템 정보 입력 시 OnItemChanged를 메서드를 직접 호출해주는 것으로 변경 
@@ -401,9 +401,37 @@
  * 
  * (현재이슈)
  * 역직렬화해서 DeserializeItemListToDic메서드 내부에서 OnItemChanged메서드를 호출하여 아이템 정보를 오브젝트화 동기화를 진행할 때
- * 슬롯이 아직 생성안된 시점이어서 인덱스참조를 못하는 상황이 발생하고 있음.
+ * 슬롯이 아직 생성안된 시점이어서 인덱스참조를 못하는 상황이 발생하고 있음. (완료_1226)
+ * => (해결완료_1226)InventoryManagement에서 슬롯을 생성하고 있는데, Start문에서 Awake문으로 고쳐서 슬롯 생성시점을 로드시점보다 빠르게 변경
+ * 
+ * (현재이슈)
+ * 1-로드시 중첩 수량이 기존의 2배로 증가 
+ * => (해결완료_1226) 역직렬화시 ItemMisc의 OverlapCount프로퍼티의 대입연산 호출이 이루어지는데, 내부적으로 누적연산을 해버리기 때문
+ * 2-이미지 반영이 제대로 안되어있음(하나로 통일되는 현상)
+ * => 세이브시 인덱스값이 모두 0가 되있는 것을 발견하였는데, 이는 자동구현프로퍼티에 set이 없기 때문에 JSon에서 값을 대입해주지 못하기 때문임을 발견.
+ * (해결완료_1226) 자동구현프로퍼티를 일반프로퍼티로 변경하고 JsonIgnore처리하여 저장을방지 하고, 내부 private변수를 JsonProperty처리하여 저장
  * 
  * 
+ * <2023_1227_최원준>
+ * (수정내용)
+ * 씬의 Inventory - Buttons의 각버튼에 클릭이벤트 등록 - InventoryManagement의 메서드 호출
+ * ItemInfo v9.2 - UpdatePosition에 slotListTr의 childCount 검사구문 추가
+ * InventoryManagement v4.3 - Start문을 Awake문으로 변경 (슬롯을 빨리 생성하기 위해)
+ * ItemData v8.0 - 일반프로퍼티 JsonIgnore처리
+ * ItemData_Misc v6.0 - OverlapCount누적연산을 대입연산으로 변경, 일반프로퍼티로 변경 및 JsonIgnore처리
+ * ItemData_Weapon v4.0 - 일반프로퍼티로 변경 및 JsonIgnore처리
+ * ItemData_CraftWeapon v3.0 - 일반프로퍼티로 변경 및 JsonIgnore처리
+ * 
+ * GameData.cs v4.0 - GameData클래스의 변수와 메서드들을 PlayerBasicData와 PlayerInvenData로 나눈 후, GameData를 인터페이스 처리
+ * Inventory.cs v7.0 - SerializableInventory의 클래스 명을 SInventory로 변경하고 Serialize메서드와 Deserialize메서드를 구현
+ *                     Inventory클래스의 SerialzableInventory를 인자로 받는 생성자 제거
+ * DataManager.cs v3.0 - SaveData와 LoadData를 일반화 메서드로 변경, Extension(확장자) 속성추가, Path와 Extension을 변경할 수 있는 생성자 추가
+ * InventoryInfo.cs v5.4 - 인벤토리 세이브 로드메서드를 일반화 메서드 호출로 변경
+ * 
+ * (향후 추가로 구현, 수정해야할 내용)
+ * 1- 인벤토리 탭버튼 클릭시 각 탭의 기능에 맞게 오브젝트가 보여지게하기. 슬롯줄어들기. (현재 에러가 뜸)
+ * 2- 돌도끼(공격력존재), 나무, 돌 아이템 넣기.(팀원 요구사항). 
+ * 3- 아이템 인벤토리에서 밖으로 떨어트렸을 때 3D로 표시되는지, 그리고 주웠을 때 다시 들어오는지 여부
  * 
  */
  

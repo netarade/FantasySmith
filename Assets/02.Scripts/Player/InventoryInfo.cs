@@ -80,7 +80,8 @@ using UnityEngine.SceneManagement;
  * 
  * <V5.3 - 2023_1226_최원준>
  * 1- 인벤토리 로드시 LoadAllItem메서드에서 UpdateItemInfo메서드 호출로 변경
- * 
+ * <v5.4 - 2023_1226_최원준>
+ * 1- 인벤토리 세이브 로드메서드를 일반화 메서드 호출로 변경
  */
 
     
@@ -148,13 +149,13 @@ public class InventoryInfo : MonoBehaviour
     void LoadPlayerData()
     {
         DataManager dataManager = new DataManager();
-        GameData loadData = dataManager.LoadData(9);
+        PlayerInvenData loadData = dataManager.LoadData<PlayerInvenData>(9);
 
-        inventory=loadData.LoadInventory();
         craftDic = loadData.craftDic;
         gold = loadData.gold;
         silver = loadData.silver;
-
+        
+        inventory=loadData.savedInventory.Deserialize();
         inventory.UpdateAllItemInfo();
     }
 
@@ -167,13 +168,14 @@ public class InventoryInfo : MonoBehaviour
         DataManager dataManager = new DataManager();
         
         // 메서드 호출 시점에 다른 스크립트에서 save했을 수도 있으므로 새롭게 생성하지 않고 기존 데이터 최신화합니다
-        GameData saveData = dataManager.LoadData(9);
+        PlayerInvenData saveData = dataManager.LoadData<PlayerInvenData>(9);
 
-        saveData.SaveInventory(inventory);
         saveData.craftDic = craftDic;
         saveData.gold = gold;
         saveData.silver = silver;
-        dataManager.SaveData(saveData,9);
+        saveData.savedInventory.Serialize(inventory);
+
+        dataManager.SaveData<PlayerInvenData>(saveData, 9);
     }
 
     

@@ -57,6 +57,11 @@ using UnityEngine;
  * 이유는 직렬화하여 저장할 때 최상위 클래스로 저장해버리면 자식의 형정보가 사라지기 때문에 다시 자식으로 형변환시 캐스팅오류가 발생하기 때문
  * 해당 오류를 해결하기 위해 저장할 때, 각 개별 자식 클래스로 담아서 저장하는 형식으로 구현 중임
  * 
+ * <v8.0 - 2023_1226_최원준>
+ * 1- 저장할 때 인덱스 구조체 정보가 0으로 로드되는 현상이 발생하여 
+ * 살펴보니 Json에서 역직렬화 시 프로퍼티 값을 채워줘야 하는데 자동구현 프로퍼티에 set이 없기 때문임을 발견
+ * set을 추가하면 보안의 단점이 있기에, 프로퍼티 방식으로 다시 롤백하여 프로퍼티는 JsonIgnore 처리하여 저장 및 연산자원 소모를 방지
+ * 
  */
 
 namespace ItemData
@@ -123,48 +128,56 @@ namespace ItemData
     [Serializable]
     public abstract class Item : ICloneable
     {   
+        [JsonProperty] ItemType eType;
+        [JsonProperty] string sNo;
+        [JsonProperty] string sName;
+        [JsonProperty] float fPrice;
+        [JsonProperty] ImageReferenceIndex sImageRefIndex;
+        [JsonProperty] int iSlotIndex;
+        [JsonProperty] int iSlotIndexAll;
+
         /// <summary>
         /// 해당 아이템의 대분류 상의 종류로 무기는 Weapon, 잡화는 Misc등을 나타냅니다.
         /// </summary>
-        public ItemType Type { get; }
+        [JsonIgnore] public ItemType Type { get {return eType; } }
 
         /// <summary>
         /// 해당 아이템의 아이템 테이블에 정의된 넘버로서 0001000 등의 넘버링을 가집니다. 
         /// </summary>
-        public string No {get;}
+        [JsonIgnore] public string No { get {return sNo;} } 
 
 
         /// <summary>
         /// 해당 아이템의 아이템 테이블에 정의 되어있는 이름으로, string 형식의 변수입니다.
         /// </summary>
-        public string Name { get; }
+        [JsonIgnore] public string Name { get {return sName;} }
 
         /// <summary>
         /// 해당 아이템의 가격으로 float형식의 변수입니다.
         /// </summary>
-        public float Price { get; set; }
+        [JsonIgnore] public float Price { get {return fPrice;} set{ fPrice=value; } }
         
         /// <summary>
         /// 해당 아이템의 이미지를 표현하는 인덱스 정보가 담긴 구조체 변수입니다. 
         /// </summary>
-        public ImageReferenceIndex sImageRefIndex { get; }
+        [JsonIgnore] public ImageReferenceIndex ImageRefIndex { get {return sImageRefIndex;} }
         
         /// <summary>
         /// 해당 아이템이 담긴 슬롯 인덱스 정보입니다. 아이템이 슬롯을 이동할 때 마다 이 정보를 변경해야 합니다.
         /// </summary>
-        public int SlotIndex { get; set; }
+        [JsonIgnore] public int SlotIndex { get{return iSlotIndex;} set{iSlotIndex = value;} }
 
         /// <summary>
         /// 해당 아이템이 담긴 전체 슬롯에 대한 인덱스 정보입니다.
         /// </summary>
-        public int SlotIndexAll { get; set; }
+        [JsonIgnore] public int SlotIndexAll { get{return iSlotIndexAll; } set{iSlotIndexAll=value;} }
 
         public Item( ItemType type, string No, string name, float price, ImageReferenceIndex imageRefIndex ) 
         {
-            Type = type;
-            Name = name;
-            this.No = No;
-            Price = price; 
+            eType = type;
+            sName = name;
+            sNo = No;
+            fPrice = price; 
             sImageRefIndex = imageRefIndex;
         }
 

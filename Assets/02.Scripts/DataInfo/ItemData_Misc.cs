@@ -53,6 +53,14 @@ using System;
  * <v5.1 - 2023_1224_최원준>
  * 1- Clone메서드 삭제 (Item클래스에서 같은 기능을 상속하므로)
  * 
+ * <v6.0 - 2023_1226_최원준>
+ * 1- OverlapCount 프로퍼티가 중첩갯수를 누적연산(+=)하던 것에서 대입연산(=)으로 변경
+ * 세이브하고 로드시 역직렬화 메서드가 호출되면서 값ㅇ르 넣어줄 때 해당 프로퍼티의 호출이 이루어 지는데 
+ * 이때 값이 iOverlapCount를 읽은 다음 다시 누적해버리기 때문에 2배가 되어버리는 현상이 발생하기 때문
+ * 
+ * 2- 자동구현프로퍼티 변수를 내부변수 하나 더 만들고 일반프로퍼티로 변경 및 JsonProperty와 JsonIgnore처리
+ * (프로퍼티는 저장공간 낭비 및 로드시 프로퍼티는 set이 없기 때문에 정보가 반영되지 않기 때문)
+ * 
  */
 
 
@@ -69,23 +77,33 @@ namespace ItemData
     /// </summary>
     public enum StatType { Power, Speed, Leech, Range, Splash }
     
+
+
+
+
     /// <summary>
     /// 잡화 아이템 - 기본 아이템과 다른점은 인벤토리에 중복해서 쌓을 수 있다는 점 (count가 존재)
     /// </summary>
     [Serializable]
     public sealed class ItemMisc : Item
     {        
-        [JsonProperty] private int iOverlapCount = 0;  // 인벤토리 중첩 횟수
-        public readonly int MaxCount = 99;
-        
+        [JsonProperty] private int iOverlapCount = 0;   // 인벤토리 중첩 횟수        
+        [JsonProperty] MiscType eMiscType;              // 서브타입 (잡화 소분류 타입)
+        [JsonProperty] ItemEngraving eEngraveInfo;      // 각인 정보
+        [JsonProperty] AttributeType eAttributeType;    // 속성석 정보
+        [JsonProperty] public int iFirePower;           // 화력
+
+        [JsonIgnore] public readonly int MaxCount = 99; // 잡화 아이템 최대 갯수
+
+
         /// <summary>
         /// 잡화 아이템의 중첩횟수를 표시합니다. 기본 값은 1입니다.<br/>
         /// **해당 프로퍼티를 통해 중첩횟수를 설정할 시 ItemMisc.MaxCount를 초과하면 예외를 발생시킵니다.**
         /// SetOverlapCount를 통해 남은 수량을 반환받아야 합니다.
         /// </summary>
-        public int OverlapCount { 
+        [JsonIgnore] public int OverlapCount { 
             set { 
-                    iOverlapCount += value;         // 값이 들어오면 누적시켜 줍니다.
+                    iOverlapCount = value;          // 값이 들어오면 대입시켜 줍니다.
 
                     if(iOverlapCount > MaxCount)    // 중첩횟수가 최대갯수보다 크다면
                         throw new Exception("최대 수량에 도달하였습니다.");
@@ -118,37 +136,38 @@ namespace ItemData
 
 
 
-
+        
         /// <summary>
         /// 잡화아이템 소분류 타입 - Basic, Additive, Fire 등이 있습니다.
         /// </summary>
-        public MiscType eMiscType { get; }
+        [JsonIgnore] public MiscType MiscType { get{ return eMiscType; } }
+
 
         /// <summary>
         /// 잡화 아이템의 종류가 각인이라면 engraveInfo를 가집니다. 이 변수에 접근하여 추가 정보를 확인가능합니다.
         /// </summary>
-        public ItemEngraving EngraveInfo {get;}
+        [JsonIgnore] public ItemEngraving EngraveInfo { get{ return eEngraveInfo; } }
 
         /// <summary>
         /// 잡화 아이템의 종류가 속성석이라면 eAttributeType을 가집니다.
         /// </summary>
-        public AttributeType eAttributeType { get; }
+        [JsonIgnore] public AttributeType AttributeType { get{ return eAttributeType; } }
 
 
         /// <summary>
         /// 잡화 아이템의 종류가 연료라면 연료 고유의 화력을 가집니다. 연료가 아니라면 0입니다.
         /// </summary>
-        public int FirePower {get;}
+        [JsonIgnore] public int FirePower { get{ return iFirePower; } }
 
         public ItemMisc( ItemType mainType, MiscType subType, string No, string name, float price, ImageReferenceIndex imgRefIdx )
             : base( mainType, No, name, price, imgRefIdx ) 
         { 
             iOverlapCount = 1;
             eMiscType = subType;
-            FirePower = 0;
+            iFirePower = 0;
 
             if(subType == MiscType.Engraving)           // 각인석이라면 이름과 상태창 이미지 인덱스를 넣어서 구조체 정보를 가지게 합니다.
-                EngraveInfo = new ItemEngraving(name, imgRefIdx.statusImgIdx); 
+                eEngraveInfo = new ItemEngraving(name, imgRefIdx.statusImgIdx); 
             else if( subType == MiscType.Attribute )    // 속성석이라면 '-'이후의 이름을 참고하여 정보를 가지게 합니다 
             {
                 switch( name.Split('-')[1] )
@@ -177,13 +196,13 @@ namespace ItemData
                 switch(name)
                 {
                     case "나무" :
-                        FirePower = 1;
+                        iFirePower = 1;
                         break;
                     case "석탄" :
-                        FirePower = 5;
+                        iFirePower = 5;
                         break;
                     case "석유" :
-                        FirePower = 10;
+                        iFirePower = 10;
                         break;
                 }
             }
@@ -203,41 +222,49 @@ namespace ItemData
         [JsonProperty] private float fIncreaseValue;        // 증가 수치
         [JsonProperty] private float fMultiplier;           // 증가 배율
         
+        [JsonProperty] string sName;                        // 이름
+        [JsonProperty] ItemGrade eGrade;                    // 등급
+        [JsonProperty] StatType eStatusType;                // 상태이상 타입
+        [JsonProperty] float fLastIncrVal;                  // 최종 증가 수치
+        [JsonProperty] string sDesc;                        // 설명
+        [JsonProperty] float fPerformMult;                  // 최종 성능 증가율
+        [JsonProperty] int iStatusImageIdx;                 // 상태창 이미지 인덱스 번호
+
         /// <summary>
         /// 각인의 전체 이름 (ex. 초급 물리의 각인)
         /// </summary>
-        public string Name { get; }
+        [JsonIgnore] public string Name { get{ return sName;} }
 
         /// <summary>
         /// 각인 등급 - 초급,중급,고급
         /// </summary>
-        public ItemGrade Grade { get; }              
+        [JsonIgnore] public ItemGrade Grade { get{ return eGrade;} }              
 
         /// <summary>
         /// 각인 종류 - 물리,공속,흡혈,사격,피해
         /// </summary>
-        public StatType StatusType { get; }
+        [JsonIgnore] public StatType StatusType { get{ return eStatusType;} }
         
         /// <summary>
         /// 각인 별 해당 스텟 최종 증가 수치
         /// </summary>
-        public float LastIncrVal { get; }           
+        [JsonIgnore] public float LastIncrVal { get{ return fLastIncrVal;} }           
 
 
         /// <summary>
         /// 상태창에 표기 될 설명
         /// </summary>
-        public string Desc { get; }                 
+        [JsonIgnore] public string Desc { get{ return sDesc;} }                 
 
         /// <summary>
         /// 각인 등급 별 장비 아이템의 최종 성능 증가율 1.1f, 1.15f, 1.2f의 값을 가집니다.
         /// </summary>
-        public float PerformMult { get; }               
+        [JsonIgnore] public float PerformMult { get{ return fPerformMult;} }               
         
         /// <summary>
         /// 각인이 가지는 상태창 이미지의 인덱스 번호
         /// </summary>
-        public int StatusImageIdx {get;}
+        [JsonIgnore] public int StatusImageIdx { get{ return iStatusImageIdx;} }
 
 
         /// <summary>
@@ -247,7 +274,7 @@ namespace ItemData
         /// <param name="statusImageIndex"></param>
         public ItemEngraving( string fullName, int statusImageIndex ) : this(fullName)            
         {
-            StatusImageIdx = statusImageIndex; // 상태창 이미지 인덱스 설정                         
+            iStatusImageIdx = statusImageIndex; // 상태창 이미지 인덱스 설정                         
         }
 
         /// <summary>
@@ -256,27 +283,27 @@ namespace ItemData
         /// </summary>
         public ItemEngraving(string fullName)
         {            
-            Name = fullName;
+            sName = fullName;
             string strGrade = fullName.Split(" ")[0];                   // 풀네임의 첫부분
             string strType = fullName.Split(" ")[1].Substring(0, 2);    // 풀네임의 둘째 부분에서 '의'를 제외한 앞 두글자
                         
             switch( strGrade )
             {
                 case "초급" :
-                    Grade = ItemGrade.Low;
+                    eGrade = ItemGrade.Low;
                     fMultiplier = 1;
-                    PerformMult = 1.1f;
+                    fPerformMult = 1.1f;
                     break;
                 
                 case "중급":
-                    Grade = ItemGrade.Medium;
+                    eGrade = ItemGrade.Medium;
                     fMultiplier = 2;
-                    PerformMult = 1.15f;
+                    fPerformMult = 1.15f;
                     break;
                 case "고급":
-                    Grade = ItemGrade.High;
+                    eGrade = ItemGrade.High;
                     fMultiplier = 3;
-                    PerformMult = 1.2f;
+                    fPerformMult = 1.2f;
                     break;
                     
                 default :
@@ -286,39 +313,39 @@ namespace ItemData
             switch(strType)
             {
                 case "물리" :
-                    StatusType = StatType.Power;
+                    eStatusType = StatType.Power;
                     fIncreaseValue = 10f;
-                    LastIncrVal = fIncreaseValue * fMultiplier;
-                    Desc = string.Format( $"물리 피해 {LastIncrVal} 증가" );
-                    StatusImageIdx = 0; // 상태창 이미지 인덱스 직접 설정
+                    fLastIncrVal = fIncreaseValue * fMultiplier;
+                    sDesc = string.Format( $"물리 피해 {fLastIncrVal} 증가" );
+                    iStatusImageIdx = 0; // 상태창 이미지 인덱스 직접 설정
                     break;
                 case "공속" :
-                    StatusType = StatType.Speed;
+                    eStatusType = StatType.Speed;
                     fIncreaseValue = 0.1f;
-                    LastIncrVal = fIncreaseValue * fMultiplier;
-                    Desc = string.Format( $"공격 속도 {LastIncrVal}% 증가" );
-                    StatusImageIdx = 1; // 상태창 이미지 인덱스 직접 설정
+                    fLastIncrVal = fIncreaseValue * fMultiplier;
+                    sDesc = string.Format( $"공격 속도 {fLastIncrVal}% 증가" );
+                    iStatusImageIdx = 1; // 상태창 이미지 인덱스 직접 설정
                     break;
                 case "흡혈" :
-                    StatusType = StatType.Leech;
+                    eStatusType = StatType.Leech;
                     fIncreaseValue = 0.1f;
-                    LastIncrVal = fIncreaseValue * fMultiplier;
-                    Desc = string.Format( $"흡혈량 {LastIncrVal}% 증가" );
-                    StatusImageIdx = 2; // 상태창 이미지 인덱스 직접 설정
+                    fLastIncrVal = fIncreaseValue * fMultiplier;
+                    sDesc = string.Format( $"흡혈량 {fLastIncrVal}% 증가" );
+                    iStatusImageIdx = 2; // 상태창 이미지 인덱스 직접 설정
                     break;
                 case "사격" :
-                    StatusType = StatType.Range;
+                    eStatusType = StatType.Range;
                     fIncreaseValue = 0.15f;
-                    LastIncrVal = fIncreaseValue * fMultiplier;
-                    Desc = string.Format( $"공격 사거리 {LastIncrVal}% 증가" );
-                    StatusImageIdx = 3; // 상태창 이미지 인덱스 직접 설정
+                    fLastIncrVal = fIncreaseValue * fMultiplier;
+                    sDesc = string.Format( $"공격 사거리 {fLastIncrVal}% 증가" );
+                    iStatusImageIdx = 3; // 상태창 이미지 인덱스 직접 설정
                     break;
                 case "피해" :
-                    StatusType = StatType.Splash;
+                    eStatusType = StatType.Splash;
                     fIncreaseValue = 0.1f;
-                    LastIncrVal = fIncreaseValue * fMultiplier;
-                    Desc = string.Format( $"범위 피해 {LastIncrVal}% 증가" );
-                    StatusImageIdx = 4; // 상태창 이미지 인덱스 직접 설정
+                    fLastIncrVal = fIncreaseValue * fMultiplier;
+                    sDesc = string.Format( $"범위 피해 {fLastIncrVal}% 증가" );
+                    iStatusImageIdx = 4; // 상태창 이미지 인덱스 직접 설정
                     break;
                     
                 default :

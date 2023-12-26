@@ -3899,51 +3899,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1274657784}
   m_CullTransparentMesh: 1
---- !u!1 &1298506743
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1298506745}
-  - component: {fileID: 1298506744}
-  m_Layer: 0
-  m_Name: GameObject
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &1298506744
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1298506743}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9d89ed200e86d85459ebf111c913dd10, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  item: {fileID: 11400000, guid: 49e997ba7d981e04aa4e780e6e7758ee, type: 2}
---- !u!4 &1298506745
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1298506743}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_RootOrder: 9
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1324894030
 GameObject:
   m_ObjectHideFlags: 0
@@ -4375,6 +4330,18 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 7115266601353286017, guid: ef10d0f747e970f41ae699cd9d062b36, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Mode
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7115266601353286017, guid: ef10d0f747e970f41ae699cd9d062b36, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
+      value: 
+      objectReference: {fileID: 1649624387}
+    - target: {fileID: 7115266601353286017, guid: ef10d0f747e970f41ae699cd9d062b36, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
+      value: InventoryQuit
+      objectReference: {fileID: 0}
     - target: {fileID: 7115266601824868864, guid: ef10d0f747e970f41ae699cd9d062b36, type: 3}
       propertyPath: m_AnchorMax.x
       value: 0
@@ -4403,6 +4370,22 @@ PrefabInstance:
       propertyPath: m_AnchorMax.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 7115266602297057829, guid: ef10d0f747e970f41ae699cd9d062b36, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
+      value: 
+      objectReference: {fileID: 1649624387}
+    - target: {fileID: 7115266602297057829, guid: ef10d0f747e970f41ae699cd9d062b36, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
+      value: BtnTapClick
+      objectReference: {fileID: 0}
+    - target: {fileID: 7115266602332480550, guid: ef10d0f747e970f41ae699cd9d062b36, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
+      value: 
+      objectReference: {fileID: 1649624387}
+    - target: {fileID: 7115266602332480550, guid: ef10d0f747e970f41ae699cd9d062b36, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
+      value: BtnTapClick
+      objectReference: {fileID: 0}
     - target: {fileID: 7115266602452157770, guid: ef10d0f747e970f41ae699cd9d062b36, type: 3}
       propertyPath: m_AnchorMax.x
       value: 0
@@ -4418,6 +4401,14 @@ PrefabInstance:
     - target: {fileID: 7115266602452157770, guid: ef10d0f747e970f41ae699cd9d062b36, type: 3}
       propertyPath: m_SizeDelta.y
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7115266602869774059, guid: ef10d0f747e970f41ae699cd9d062b36, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
+      value: 
+      objectReference: {fileID: 1649624387}
+    - target: {fileID: 7115266602869774059, guid: ef10d0f747e970f41ae699cd9d062b36, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
+      value: BtnTapClick
       objectReference: {fileID: 0}
     - target: {fileID: 7115266602918711842, guid: ef10d0f747e970f41ae699cd9d062b36, type: 3}
       propertyPath: m_SizeDelta.y

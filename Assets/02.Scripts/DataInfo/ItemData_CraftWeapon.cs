@@ -22,6 +22,13 @@ using System;
  * 
  * <v2.1 - 2023_1224_최원준>
  * 1- Clone메서드 삭제 (Item클래스에서 같은 기능을 상속하므로)
+ * 
+ * <v3.0 - 2023_1226_최원준>
+ * 1- 프로퍼티 모두 JsonIgnore처리
+ * (프로퍼티는 저장공간 낭비 및 로드시 프로퍼티는 set이 없기 때문에 정보가 반영되지 않기 때문)
+ * 2- cmArr 변수를 sArr명칭으로 변경
+ * 
+ * 
  */
 namespace ItemData
 {
@@ -57,34 +64,34 @@ namespace ItemData
         /*** 제작 관련 속성 ***/
         [JsonProperty] private float fCraftChance;                 // 제작 확률 (기본 등급에 따라 결정 90%, 60%, 25%)
         [JsonProperty] private Recipie enumRecipie;                        // 2단계 레시피
-        [JsonProperty] private CraftMaterial[] cmArrBaseMaterial;          // 제작 시 필요한 기본 재료
-        [JsonProperty] private CraftMaterial[] cmArrAdditiveMaterial;      // 제작 시 필요한 추가 재료
+        [JsonProperty] private CraftMaterial[] sArrBaseMaterial;          // 제작 시 필요한 기본 재료
+        [JsonProperty] private CraftMaterial[] sArrAdditiveMaterial;      // 제작 시 필요한 추가 재료
         [JsonProperty] private int iFirePower;                   // 2단계 제작에 필요한 화력
 
         /// <summary>
         /// 제작 무기의 기본 제작 확률입니다.
         /// </summary>
-        public float BaseCraftChance { get{return fCraftChance;} }
+        [JsonIgnore] public float BaseCraftChance { get{ return fCraftChance; } }
 
         /// <summary>
         /// 제작 무기의 레시피 입니다.
         /// </summary>
-        public Recipie EnumRecipie { get{return enumRecipie;} }
+        [JsonIgnore] public Recipie EnumRecipie { get{ return enumRecipie; } }
         
         /// <summary>
         /// 제작 무기의 기본 재료입니다. 2단계 제작에 사용되며, 구조체 배열을 참조하고 있습니다.
         /// </summary>
-        public CraftMaterial[] BaseMaterials { get{return cmArrBaseMaterial;} }
+        [JsonIgnore] public CraftMaterial[] BaseMaterials { get{ return sArrBaseMaterial; } }
 
         /// <summary>
         /// 제작 무기의 추가 재료입니다. 3단계 제작에 사용되며, 구조체 배열을 참조하고 있습니다.
         /// </summary>
-        public CraftMaterial[] AdditiveMaterals { get{return cmArrAdditiveMaterial;} }
+        [JsonIgnore] public CraftMaterial[] AdditiveMaterals { get{ return sArrAdditiveMaterial; } }
 
         /// <summary>
         /// 제작에 필요한 화력입니다. 2단계에 제작에 사용됩니다.
         /// </summary>
-        public int FirePower { get{return iFirePower;} }
+        [JsonIgnore] public int FirePower { get{ return iFirePower; } }
 
 
         public ItemCraftWeapon(ItemType mainType, WeaponType subType, string No, string name, float price, ImageReferenceIndex imgRefIdx // 아이템 기본 정보 
@@ -107,8 +114,8 @@ namespace ItemData
                     break;
             }
 
-            cmArrBaseMaterial = baseMaterial;
-            cmArrAdditiveMaterial = additiveMaterial;
+            sArrBaseMaterial = baseMaterial;
+            sArrAdditiveMaterial = additiveMaterial;
             enumRecipie = recipie;
             
             iFirePower = 0;

@@ -68,6 +68,19 @@ using UnityEngine;
  * 1- SerializableInventory의 weapList, miscList를 Item 타입에서 개별 타입인 ItemWeapon, ItemMisc타입으로 변경
  * 2- ConvertDicToItemList과 ConvertItemListToDic 메서드 개별적으로 사전에 따라 중복로직으로 작성되어있던 것을 일반화메서드로 변경
  * 
+ * <v7.0 - 2023_1226_최원준>
+ * 1- DeserializeItemListToDic의 디버그 출력용 메서드라인 제거
+ * 
+ * 2- SerializableInventory의 WeapCountLimit, MiscCountLimit변수 자동구현 프로퍼티가 아닌 public변수로 변경
+ * 
+ * 3- SerializableInventory의 클래스 명을 SInventory로 변경하고 Serialize메서드와 Deserialize메서드를 구현하였음.
+ * 이유는 STransform과 사용에 일관성을 주어 헷깔리지 않게 하기 위함
+ * 
+ * 4- Inventory클래스의 SerialzableInventory를 인자로 받는 생성자 제거
+ * SInventory의 Deserialize메서드에서 새롭게 인벤토리를 생성해서 하나씩 값을 넣어줘서 인벤토리클래스를 반환하게끔 구현
+ * 
+ * 5- WeapCountLimit, MiscCountLimit 프로퍼티 set기능 추가
+ * 
  * 
  * 
  */
@@ -100,12 +113,12 @@ namespace CraftData
         /// <summary>
         /// 플레이어 인벤토리의 무기 탭의 칸의 제한 수 입니다. 게임 중에 업그레이드 등으로 인해 변동될 수 있습니다.
         /// </summary>
-        public int WeapCountLimit { get; }
+        public int WeapCountLimit { get; set; }
 
         /// <summary>
         /// 플레이어 인벤토리의 잡화 탭의 칸의 제한 수 입니다. 게임 중에 업그레이드 등으로 인해 변동될 수 있습니다.
         /// </summary>
-        public int MiscCountLimit { get; }
+        public int MiscCountLimit { get; set; }
         
 
 
@@ -196,9 +209,6 @@ namespace CraftData
                         
             foreach(Item item in itemList) // 아이템 리스트에서 개념 아이템 정보를 하나씩 꺼내옵니다.
             {
-                
-                //item.ItemDeubgInfo();
-
                 // 아이템 정보를 바탕으로 하는 게임오브젝트를 만듭니다.
                 GameObject itemObject = CreateManager.instance.CreateItemByInfo( item );
                         
@@ -225,11 +235,6 @@ namespace CraftData
 
 
 
-
-
-
-
-
         /// <summary>
         /// 기본 인벤토리 생성자입니다. 새로운 게임을 시작할 때 사용해주세요.
         /// </summary>
@@ -240,24 +245,7 @@ namespace CraftData
             WeapCountLimit=InitialCountLimit;
             MiscCountLimit=InitialCountLimit;
         }
-
-        /// <summary>
-        /// 기존의 직렬화 된 인벤토리가 존재하는 경우 해당 정보를 바탕으로 다시 인벤토리를 만들어주는 생성자입니다. 
-        /// </summary>
-        public Inventory( SerializableInventory savedInventory )
-        {
-            // 새로운 게임이라면 weapDic, miscDic이 null이므로 dic을 생성해줘야합니다.
-            if( weapDic==null||miscDic==null )      
-            {
-                weapDic = new Dictionary<string, List<GameObject>>();
-                miscDic = new Dictionary<string, List<GameObject>>();
-            }
-
-            DeserializeItemListToDic<ItemWeapon>( savedInventory.weapList );
-            DeserializeItemListToDic<ItemMisc>( savedInventory.miscList );
-            WeapCountLimit = savedInventory.WeapCountLimit;
-            MiscCountLimit = savedInventory.MiscCountLimit;
-        }
+               
     }
 
 
@@ -268,23 +256,60 @@ namespace CraftData
     /// 기존의 인벤토리에서 GameObject 형식의 리스트를 Item 형식의 리스트로 변환하여 보관합니다.<br/>
     /// </summary>
     [Serializable]
-    public class SerializableInventory
+    public class SInventory
     {
         public List<ItemWeapon> weapList;
         public List<ItemMisc> miscList;
-        public int WeapCountLimit {get;}
-        public int MiscCountLimit {get;}
+        public int WeapCountLimit;
+        public int MiscCountLimit;
         
+        /// <summary>
+        /// SerializableInventory의 디폴트 생성자입니다. 직렬화 가능한 인벤토리 인스턴스를 생성해 줍니다.
+        /// </summary>
+        public SInventory()
+        {
+            Serialize(new Inventory());
+        }
+
+
         /// <summary>
         /// 기존의 인벤토리 클래스의 인스턴스를 인자로 받아서 직렬화 가능한 인벤토리 인스턴스를 생성해 줍니다.
         /// </summary>
-        public SerializableInventory( Inventory inventory )
+        public SInventory( Inventory inventory )
         {
-            weapList=inventory.SerializeDicToItemList<ItemWeapon>();
-            miscList=inventory.SerializeDicToItemList<ItemMisc>();
-            WeapCountLimit = inventory.WeapCountLimit;
-            MiscCountLimit = inventory.MiscCountLimit;
+            Serialize(inventory);
         }
+
+         /// <summary>
+        /// 저장 되어있는 인벤토리를 역직렬화하여 로드하는 메서드입니다.<br/>
+        /// 로드되어있는 내부변수를 자동으로 변환하여 Inventory 인스턴스를 반환받습니다.
+        /// </summary>
+        public Inventory Deserialize()
+        {
+            Inventory inventory = new Inventory();
+                      
+            inventory.DeserializeItemListToDic<ItemWeapon>( this.weapList );
+            inventory.DeserializeItemListToDic<ItemMisc>( this.miscList );
+            inventory.WeapCountLimit = this.WeapCountLimit;
+            inventory.MiscCountLimit = this.MiscCountLimit;
+
+            return inventory;
+        }
+
+        /// <summary>
+        /// 인벤토리를 직렬화하여 저장하는 메서드입니다. 인자로 저장할 인벤토리를 전달하여야 합니다.
+        /// </summary>
+        public void Serialize(Inventory inventory)
+        {
+            this.weapList=inventory.SerializeDicToItemList<ItemWeapon>();
+            this.miscList=inventory.SerializeDicToItemList<ItemMisc>();
+            this.WeapCountLimit = inventory.WeapCountLimit;
+            this.MiscCountLimit = inventory.MiscCountLimit;
+        }
+
+
+
+
     }
 
 }

@@ -71,9 +71,9 @@ public class Drop : MonoBehaviour, IDropHandler
         {
             ItemMisc draggingMisc = ( (ItemMisc)draggingItem );
 
-            if( draggingMisc.eMiscType==MiscType.Engraving||
-                draggingMisc.eMiscType==MiscType.Enhancement||
-                draggingMisc.eMiscType==MiscType.Attribute )
+            if( draggingMisc.MiscType==MiscType.Engraving||
+                draggingMisc.MiscType==MiscType.Enhancement||
+                draggingMisc.MiscType==MiscType.Attribute )
             {
                 Item applyItem = slotTr.GetChild( 0 ).gameObject.GetComponent<ItemInfo>().Item;   //강화를 적용할 아이템의 정보를 봅니다.
                 if( applyItem.Type==ItemType.Weapon )                 // 적용 대상이 무기라면 강화 로직을 수행하고 아니라면 스위칭 로직을 수행합니다.

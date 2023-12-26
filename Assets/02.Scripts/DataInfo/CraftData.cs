@@ -88,11 +88,11 @@ namespace CraftData
             {
                 ItemWeapon weapItem = (ItemWeapon)item;                             // 하나씩 꺼냈을 때 value값은 Item형이며, 더 많은 정보 참조를 위해 ItemWeapon형으로 변환합니다.
 
-                if( weapItem.eBasicGrade==ItemGrade.Low )                            // 무기 사전에서 꺼낸 아이템이 초급 무기라면,
+                if( weapItem.BasicGrade==ItemGrade.Low )                            // 무기 사전에서 꺼낸 아이템이 초급 무기라면,
                 {
-                    if( weapItem.eWeaponType==WeaponType.Sword )                             // 검-장검 타입이라면,                
+                    if( weapItem.WeaponType==WeaponType.Sword )                             // 검-장검 타입이라면,                
                         swordDic.Add( weapItem.Name, new CraftProficiency(weapItem.Name) );     // 플레이어 제작 목록 검-장검 목록에 추가합니다.                
-                    else if( weapItem.eWeaponType==WeaponType.Bow )                          // 활-보우 타입이라면,
+                    else if( weapItem.WeaponType==WeaponType.Bow )                          // 활-보우 타입이라면,
                         bowDic.Add( weapItem.Name, new CraftProficiency(weapItem.Name) );       // 플레이어 제작 목록 활-보우 목록에 추가합니다.
                 }
             }

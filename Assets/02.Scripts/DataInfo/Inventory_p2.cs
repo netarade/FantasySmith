@@ -35,22 +35,6 @@ namespace CraftData
 
         }
 
-        //public void LoadAllItem()
-        //{
-        //    foreach( List<GameObject> objList in weapDic.Values )          // 무기사전에서 게임오브젝트 리스트를 하나씩 꺼내어
-        //    {
-        //        for(int i=0; i<objList.Count; i++)                         // 리스트의 게임오브젝트를 모두 가져옵니다.
-        //            objList[i].SetActive(true);                            // 아이템 오브젝트를 활성화 상태로 변경합니다.
-        //    }
-
-        //    foreach( List<GameObject> objList in miscDic.Values )          // 잡화사전에서 게임오브젝트 리스트를 하나씩 꺼내어
-        //    {
-        //        for(int i=0; i<objList.Count; i++)                         // 리스트의 게임오브젝트를 모두 가져옵니다.
-        //            objList[i].SetActive(true);                            // 아이템 오브젝트를 활성화 상태로 변경합니다.
-        //    }
-        //}
-
-
         public void UpdateAllItemInfo()
         {
             foreach( List<GameObject> objList in weapDic.Values )          // 무기사전에서 게임오브젝트 리스트를 하나씩 꺼내어

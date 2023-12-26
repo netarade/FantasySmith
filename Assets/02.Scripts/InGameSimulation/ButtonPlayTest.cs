@@ -44,7 +44,6 @@ public class ButtonPlayTest : MonoBehaviour
     public void btnExit()
     {
         #if UNITY_EDITOR
-            PlayerPrefs.SetInt("IsContinuedGamePlay", 0);   //현재 세이브 로드가 불안정하므로 일시적으로 초기화
             UnityEditor.EditorApplication.isPlaying = false;
         #else
             Application.Quit();

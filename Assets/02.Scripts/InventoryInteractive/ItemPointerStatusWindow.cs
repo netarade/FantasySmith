@@ -215,7 +215,7 @@ public class ItemPointerStatusWindow : MonoBehaviour, IPointerEnterHandler, IPoi
                     break;
             }
 
-            switch(itemWeap.eWeaponType)     // 무기 종류의 한글 문자열을 지정
+            switch(itemWeap.WeaponType)     // 무기 종류의 한글 문자열을 지정
             {
                 case WeaponType.Sword :
                     strType="검";
@@ -228,7 +228,7 @@ public class ItemPointerStatusWindow : MonoBehaviour, IPointerEnterHandler, IPoi
                     break;
             }
                         
-            switch(itemWeap.CurAttribute)       // 무기 속성의 한글 문자열을 지정
+            switch(itemWeap.CurrentAttribute)       // 무기 속성의 한글 문자열을 지정
             {
                 case AttributeType.Water :
                     strAttr="수(水)";

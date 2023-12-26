@@ -72,6 +72,14 @@ using CraftData;
 * 1- inventory의 잘못된 참조 수정
 * PlayerInven변수인 invenInfo.GetComponent<Inventory>()를 참조하고 있었으나, invenInfo.inventory로 변경
 * 
+* <v4.3 - 2023_1226_최원준>
+* 1- Start문을 Awake문으로 변경
+* 이유는 인벤토리의 슬롯이 빨리 생성되어야 아이템 오브젝트를 슬롯에 담을 수 있기 때문
+* (인벤토리를 로드하면서 UpdateAllItemInfo()메서드를 호출하기 위해)
+* 
+* 2- InventoryOnOffSwitch private메서드로 변경 및 내부의 주석삭제
+* 
+* 
 */
 
 /// <summary>
@@ -100,7 +108,7 @@ public class InventoryManagement : MonoBehaviour
 
 
 
-    void Start()
+    void Awake()
     {
         Transform canvas = transform;                                       // 캐릭터 캔버스 참조
         InventoryPanelTr = canvas.GetChild(0);                              // 인벤토리 판넬 참조
@@ -165,36 +173,10 @@ public class InventoryManagement : MonoBehaviour
     /// <summary>
     /// 인벤토리의 모든 이미지와 텍스트를 꺼줍니다.
     /// </summary>
-    public void InventoryOnOffSwitch(bool onOffState )
+    private void InventoryOnOffSwitch(bool onOffState )
     {
-
         inventoryCvGroup.blocksRaycasts = onOffState;   // 그룹의 블록 레이캐스트를 조절해줍니다
         inventoryCvGroup.alpha = onOffState ? 1f : 0f;  // 그룹의 투명도를 조절해줍니다
-        
-
-
-
-        //Image[] inventoryImgArr;    // 인벤토리의 모든 이미지
-        //Text[] inventoryTextArr;    // 인벤토리의 모든 텍스트        
-        //inventoryImgArr = InventoryPanelTr.GetComponentsInChildren<Image>();  
-        //inventoryTextArr = InventoryPanelTr.GetComponentsInChildren<Text>();
-
-        //foreach(Image image in inventoryImgArr)
-        //    image.enabled = onOffState;
-        //foreach(Text text in inventoryTextArr)
-        //    text.enabled = onOffState;
-
-        //// 인벤토리의 이미지를 키고 끌때마다 현재 슬롯에 있는 아이템의 이미지와 텍스트도 동일한 상태로 동기화 해줍니다.        
-        //ItemInfo[] itemInfos = slotListTr.GetComponentsInChildren<ItemInfo>();
-        //foreach(ItemInfo info in itemInfos)
-        //{
-        //    info.gameObject.GetComponent<Image>().enabled = onOffState;
-
-        //    if(info.Item.Type==ItemType.Misc)   //잡화 아이템의 경우 중첩 텍스트가 있다.
-        //    info.gameObject.GetComponentInChildren<Text>().enabled = onOffState;
-        //}
-
-        
     }
 
 

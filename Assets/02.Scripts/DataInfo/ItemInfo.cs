@@ -83,6 +83,11 @@ using ItemData;
  *2- 컴포넌트 참조 구문 Start에서 OnEanble로 이동 및 정리
  *3- UpdataImage메서드 아이템 종류에 따른 중복로직 제거 후 간략화
  *
+ *<v9.2 - 2023_1226_최원준>
+ *1- 일부 디버그 출력메서드 정리
+ *2- UpdatePosition에 slotListTr의 childCount 검사구문 추가
+ *3- Item 프로퍼티 다시 주석해제 
+ *
  */
 
 
@@ -104,8 +109,8 @@ public class ItemInfo : MonoBehaviour
     private Item item;              // 모든 아이템 클래스를 관리 가능한 변수
     private Image itemImage;        // 아이템이 인벤토리에서 2D상에서 보여질 이미지     
 
-    public Sprite innerSprite;      // 아이템이 인벤토리에서 보여질 이미지 스프라이트
-    public Sprite statusSprite;     // 아이템이 상태창에서 보여질 이미지 스프라이트
+    public Sprite innerSprite;     // 아이템이 인벤토리에서 보여질 이미지 스프라이트
+    public Sprite statusSprite;    // 아이템이 상태창에서 보여질 이미지 스프라이트 (상태창 스크립트에서 참조를 하게 됩니다.)
 
     public Text countTxt;           // 잡화 아이템의 수량을 반영할 텍스트
     public Transform slotListTr;    // 아이템이 놓이게 될 슬롯 들의 부모인 슬롯리스트 트랜스폼 참조
@@ -114,18 +119,16 @@ public class ItemInfo : MonoBehaviour
     public enum eIIC { MiscBase,MiscAdd,MiscOther,Sword,Bow }    // 이미지 집합 배열의 인덱스 구분
     private readonly int iicNum = 5;                             // 이미지 집합 배열의 갯수
 
-    
-
     /// <summary>
     /// 클론 한 Item 인스턴스를 저장하고, 저장 되어있는 인스턴스를 불러올 수 있습니다.
     /// </summary>
     public Item Item                // 외부에서 개념아이템을 참조시킬 때 호출해야할 프로퍼티
     {
-        get; set;
-        //set {
-        //        item =  value;
-        //    }
-        //get {return item;}
+        set
+        {
+            item=value;
+        }
+        get { return item; }
     }
 
 
@@ -148,16 +151,9 @@ public class ItemInfo : MonoBehaviour
 
         // 각 iicArr은 imageCollectionsTr의 하위 자식오브젝트로서 ItemImageCollection 스크립트를 컴포넌트로 가지고 있습니다
         for( int i = 0; i<iicNum; i++)
-            iicArr[i] = imageCollectionsTr.GetChild(i).GetComponent<ItemImageCollection>();
-        
-        // 아이템 오브젝트가 씬에 생성되면 정보를 업데이트하는 메서드를호출하여야 합니다.
-        //OnItemChanged(); 
+            iicArr[i] = imageCollectionsTr.GetChild(i).GetComponent<ItemImageCollection>();        
     }
 
-    //public void Start()
-    //{
-
-    //}
 
     /// <summary>
     /// 오브젝트에 item의 참조가 이루어졌다면 item이 가지고 있는 이미지를 반영하고 잡화아이템의 경우 중첩 횟수까지 최신화 합니다.<br/>
@@ -180,17 +176,14 @@ public class ItemInfo : MonoBehaviour
         if(iicArr.Length == 0 )     // 아이템 생성 시점에 iicArr을 참조하는 것을 방지하여 줍니다.
             return;
 
-
         int imgIdx = -1;            // 참조할 이미지 인덱스 선언
                    
-        //Debug.Log(Item.Type);
         switch( Item.Type )         // 아이템의 메인타입을 구분합니다.
         {
 
             case ItemType.Weapon:
-            //Item.ItemDeubgInfo();
                 ItemWeapon weapItem = (ItemWeapon)Item;
-                WeaponType weaponType = weapItem.eWeaponType;  // 아이템의 서브타입을 구분합니다.
+                WeaponType weaponType = weapItem.WeaponType;  // 아이템의 서브타입을 구분합니다.
 
                 switch (weaponType)
                 {
@@ -204,10 +197,8 @@ public class ItemInfo : MonoBehaviour
                 break;
                 
             case ItemType.Misc:
-            //Item.ItemDeubgInfo();
-
                 ItemMisc miscItem = (ItemMisc)Item; 
-                MiscType miscType = miscItem.eMiscType;
+                MiscType miscType = miscItem.MiscType;
 
                 switch (miscType)
                 {
@@ -227,8 +218,8 @@ public class ItemInfo : MonoBehaviour
         // 아이템 오브젝트 이미지를 인스펙터뷰에 직렬화되어 있는 ItemImageCollection 클래스의 내부 구조체 배열 ImageColection[]에
         // 개념아이템이 고유 정보로 가지고 있는 ImageReferenceIndex 구조체의 인덱스를 가져와서 접근합니다.                
              
-        innerSprite = iicArr[imgIdx].icArrImg[Item.sImageRefIndex.innerImgIdx].innerSprite;
-        statusSprite = iicArr[imgIdx].icArrImg[Item.sImageRefIndex.statusImgIdx].statusSprite;
+        innerSprite = iicArr[imgIdx].icArrImg[Item.ImageRefIndex.innerImgIdx].innerSprite;
+        statusSprite = iicArr[imgIdx].icArrImg[Item.ImageRefIndex.statusImgIdx].statusSprite;
 
         // 참조한 스프라이트 이미지를 기반으로 아이템이 보여질 2D이미지를 장착합니다.
         itemImage.sprite = innerSprite;

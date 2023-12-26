@@ -18,6 +18,13 @@ using Newtonsoft.Json;
  * 
  * <v2.1 - 2023_1222_최원준>
  * 1- 주석추가
+ * 
+ * <v3.0 - 2023_1227_최원준>
+ * 1- SaveData와 LoadData를 일반화 메서드로 변경
+ * 이유는 GameData의 클래스 분리가 필요하여 GameData를 인터페이스로 만들고 상속하는 새로운 클래스를 인자로 받도록 설정하였음.
+ * 2- 기존 path변수 삭제, Path 프로퍼티 set추가, SetPath메서드 추가
+ * 3- Extension(확장자) 속성추가
+ * 4- Path와 Extension을 변경할 수 있는 생성자 추가
  */
 
 namespace DataManagement
@@ -31,7 +38,7 @@ namespace DataManagement
     /// 2. 로드 된 데이터에 수정작업을 합니다.                                                   <br/>
     /// gameData.playTime = timePassed;                                                     <br/><br/>
     /// 3. 다시 저장합니다.                                                                   <br/>
-    /// dataManager.Save();                                                                 <br/><br/>
+    /// dataManager.SaveData();                                                             <br/><br/>
     /// 
     /// 기본 0번 슬롯으로 되어있으며, 오버로딩하여 두번 째 인자에 슬롯 번호를 지정하여 다른 슬롯으로 저장이 가능합니다.<br/>
     /// 
@@ -39,24 +46,54 @@ namespace DataManagement
     public class DataManager
     {
         /// <summary>
-        /// 현재 폴더 경로를 반환합니다.
+        /// 현재 저장과 로드를 하고있는 폴더 경로를 설정하고 반환합니다. 설정하지 않았다면 기본 경로를 반환합니다.<br/>
+        /// *****해당 폴더가 실제로 존재하지 않으면 저장, 로드가 되지 않으니 주의합니다.*****
         /// </summary>
-        public string Path {get;}           
-    
+        public string Path { get; set; }           
+        
         /// <summary>
-        /// 디폴트 생성자에서 기본 경로를 지정합니다.
+        /// 확장자를 설정하고 반환합니다.
+        /// </summary>
+        public string Extension {get; set;}
+
+        /// <summary>
+        /// 디폴트 생성자에서 기본 경로와 기본확장자를 초기화합니다.
         /// </summary>
         public DataManager()
         {
-            Path = Application.persistentDataPath + "/save";	
+            Path = Application.persistentDataPath + "/";
+            Extension = ".json";
         }
 
         /// <summary>
-        /// 사용자가 원하는 경로를 지정할 수 있습니다.
+        /// 사용자가 원하는 경로를 지정할 수 있습니다.<br/>
+        /// *****해당 폴더가 실제로 존재하지 않으면 저장, 로드가 되지 않으니 주의합니다.*****
         /// </summary>
-        public DataManager(string path)
+        /// <param name="path">절대경로 또는 상대경로입니다.</param>
+        /// <param name="isRelative">상대경로인지 여부(기본값 true)</param>
+        /// <param name="extension">확장자명(기본값 .json)</param>
+        public DataManager(string path, bool isRelative=true, string extension=".json")
         {
-            Path = Application.persistentDataPath + path;	
+            if(isRelative)
+                Path = Application.persistentDataPath + "/" + path + "/";	
+            else
+                Path = path;
+
+            Extension = extension;
+        }
+
+        /// <summary>
+        /// 사용자가 원하는 경로를 지정할 수 있습니다.<br/>
+        /// *****해당 폴더가 실제로 존재하지 않으면 저장, 로드가 되지 않으니 주의합니다.*****
+        /// </summary>
+        /// <param name="path">절대경로 또는 상대경로입니다.</param>
+        /// <param name="isRelative">상대경로인지 여부(기본값 true)</param>
+        public void SetPath(string path, bool isRelative=true)
+        {
+            if(isRelative)
+                Path = Application.persistentDataPath + "/" + path + "/";	
+            else
+                Path = path;
         }
 
 
@@ -68,36 +105,37 @@ namespace DataManagement
         /// <returns>true or false</returns>
         public bool IsDataExistInSlot(int slotNum)
         {
-            return File.Exists(Path + $"{slotNum}" +".json");
+            return File.Exists(Path + $"S{slotNum}" + Extension);
         }
+
         /// <summary>
         /// Newtonsoft.Json 패키지를 설치한 경우 사용할 수 있습니다. 딕셔너리까지 직렬화 해줍니다.<br/>
         /// Window > Package Manager > Add Package from GIT URL > com.unity.nuget.newtonsoft-json <br/>
         /// </summary>
         /// <param name="gameData">사용자 정의 자료형</param>
         /// <param name="saveSlot">세이브할 슬롯</param>
-        public void SaveData(GameData gameData, int saveSlot=0 )
+        public void SaveData<T>(T gameData, int saveSlot=0 ) where T : GameData
         {
             string data = JsonConvert.SerializeObject(gameData, Formatting.Indented);
-            File.WriteAllText(Path + saveSlot.ToString() + ".json", data);
+            File.WriteAllText(Path + "S" + saveSlot.ToString() + Extension, data);
         }
+
         /// <summary>
         /// Newtonsoft.Json 패키지를 설치한 경우 사용할 수 있습니다. 딕셔너리까지 역직렬화 해줍니다. <br/>
         /// Window > Package Manager > Add Package from GIT URL > com.unity.nuget.newtonsoft-json <br/>
         /// </summary>
         /// <param name="loadSlot">로드할 슬롯</param>
         /// <returns>사용자 정의 자료형</returns>
-        public GameData LoadData( int loadSlot=0 )
+        public T LoadData<T>(int loadSlot=0 ) where T : GameData, new()  // 제약조건: GameData 인터페이스의 종류이며, 디폴트 생성자가 존재
         {
-            if( IsDataExistInSlot(loadSlot) ) //저장된 슬롯이 있따면 기존 게임데이터를 만들어 반환
+            if( IsDataExistInSlot(loadSlot) ) // 저장된 슬롯이 있따면 기존 게임데이터를 만들어 반환
             {
-                string data = File.ReadAllText(Path + loadSlot.ToString() + ".json");
-                return JsonConvert.DeserializeObject<GameData>(data); 
+                string data = File.ReadAllText(Path + "S" + loadSlot.ToString() + Extension);
+                return JsonConvert.DeserializeObject<T>(data); 
             }
             else //저장된 슬롯이 없다면 새롭게 게임데이터를 만들어 반환
             {
-                GameData gameData = new GameData();
-                return gameData;   
+                return new T();   
             }
         }
         #else

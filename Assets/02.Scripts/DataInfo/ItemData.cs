@@ -52,6 +52,11 @@ using UnityEngine;
  * 2- 모든 기본 변수를 삭제하고 자동구현 프로퍼티로 사용하였습니다.
  * 이유는 생성되어질 때 한번 입력되면 더 이상 정보의 변동이 필요없고 읽기 전용으로 할당되어야 하는 속성이기 때문입니다.
  * 
+ * <v7.1 - 2023_1226_최원준>
+ * 1- Item클래스를 다시 abstract클래스로 다시 롤백하였음.
+ * 이유는 직렬화하여 저장할 때 최상위 클래스로 저장해버리면 자식의 형정보가 사라지기 때문에 다시 자식으로 형변환시 캐스팅오류가 발생하기 때문
+ * 해당 오류를 해결하기 위해 저장할 때, 각 개별 자식 클래스로 담아서 저장하는 형식으로 구현 중임
+ * 
  */
 
 namespace ItemData
@@ -116,7 +121,7 @@ namespace ItemData
     /// 기본 아이템 클래스 - 반드시 상속하여 사용하세요.
     /// </summary>  
     [Serializable]
-    public class Item : ICloneable
+    public abstract class Item : ICloneable
     {   
         /// <summary>
         /// 해당 아이템의 대분류 상의 종류로 무기는 Weapon, 잡화는 Misc등을 나타냅니다.

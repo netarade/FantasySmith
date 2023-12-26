@@ -363,7 +363,45 @@
  * 
  * <2023_1225_최원준>
  * 1- Unspecified casting 이슈 (게임오브젝트가 만들어질 때, Item의 null값이 들어가있는 점을 확인 중)
- * 2- ItemInfo의 OnEnable에 OnItemChanged를 넣으면 그 당시에 Item이 null로 잡혀있는점
+ * 2- ItemInfo의 OnEnable에 OnItemChanged를 넣으면 그 당시에 Item이 null로 잡혀있는점 (완료_1226)
+ * 
+ * <2023_1226_최원준>
+ * 1-
+ * 아이템 생성(Instantiate) 후 오브젝트가 만들어지는데, 이 오브젝트에 Item스크립트를 바로 넣으면 Item스크립트가 채워져있지만,
+ * 게임 오브젝트를 반환받아서 반환 받은 오브젝트에 Item스크립트를 넣어주게 될 경우 
+ * (역직렬화시 CreateManager의 싱글톤을 통해 CreateItemByInfo 메서드를 호출하게될 경우)
+ * 호출 시점 차이로 인해 Start에서 먼저 OnItemChanged메서드가 호출되어버리면서 Item스크립트가 잡혀있지 않았다고 오류가 떠버림.
+ * 
+ * 이를해결하기 위해 게임오브젝트를 반환받기전 비활성화 해서 받은 다음, 스크립트를 넣어주고 활성화시켜주는 방법을 사용하거나,
+ * OnItemChanged 메서드를 OnEnable이나 Start에서 자동실행시키지 않고, Item스크립트를 넣어준다음 수동으로 호출하는 방법으로 변경하여야 함.
+ * 
+ * 
+ * 2-
+ * 직렬화시 Item타입으로 변환하여 저장하고 불러온다음,
+ * 역직렬화시 Item타입을 ItemMisc으로 변환하려고 하면 명시적 캐스팅 오류로 변환이 안되는 현상이 있음
+ * => 확인 결과 Item타입으로 저장하면 불러오고나서 부터는 자식클래스인 ItemMisc이나 ItemWeapon으로 변환이 불가능한것으로 보임.
+ * (형정보가 손실된 것으로 보임.)
+ * 
+ * 해결 방법은 필수정보만 불러온 다음 딕셔너리에서 새롭게 같은 아이템을 클론해서 생성하고 item의 필수정보만 바꿔주는 방법이 있고,
+ * 저장할때부터 개별 리스트인 ItemMisc 형식, ItemWeapon형식으로 맞춰서 저장해봐야할 듯함. (해당방법으로 해결 진행중)
+ * 
+ * (수정내용)
+ * Inventory.cs v5.2 - SerializableInventory의 misc,weapList를 개별타입으로 변경하여 저장, 
+ *                     ConvertDicToItemList, ConvertItemListToDic 아이템 종류에 따른 일반화 메서드로 변경
+ * 
+ * CreateManager.cs v10.4 - AddCloneItemToInventory메서드에서 아이템 정보 입력 시 OnItemChanged를 메서드를 직접 호출해주는 것으로 변경 
+ * 
+ * ItemPointerStatusWindow v4.1 - 슬롯리스트 참조가 아이템오브젝트 기준으로 잡혀있던 점 수정, 변수명 일부 수정 및 형식 수정 
+ * 
+ * Inventory_p2.cs v2.0 - UpdateAllItem메서드를 UpdateAllItemInfo메서드로 변경, LoadAllItem 주석처리
+ * 
+ * InventoryInfo v5.3 - 인벤토리 로드시 LoadAllItem메서드에서 UpdateItemInfo메서드 호출로 변경
+ * 
+ * ItemData v7.1 - abstract클래스로 다시 롤백 (해당 클래스로 직렬화하지 않으므로)
+ * 
+ * (현재이슈)
+ * 역직렬화해서 DeserializeItemListToDic메서드 내부에서 OnItemChanged메서드를 호출하여 아이템 정보를 오브젝트화 동기화를 진행할 때
+ * 슬롯이 아직 생성안된 시점이어서 인덱스참조를 못하는 상황이 발생하고 있음.
  * 
  * 
  * 

@@ -137,7 +137,8 @@ public class ItemInfo : MonoBehaviour
         itemImage = GetComponent<Image>();
         countTxt = GetComponentInChildren<Text>();
 
-        slotListTr = GameObject.FindWithTag("CANVAS_CHARACTER").transform.GetChild(0).GetChild(0).GetChild(0).GetChild(0);
+        Transform canvasTr = GameObject.FindWithTag("CANVAS_CHARACTER").transform;
+        slotListTr = canvasTr.GetChild(0).GetChild(0).GetChild(0).GetChild(0);
         
         // 인스펙터뷰 상에서 달아놓은 스프라이트 이미지 집합을 참조합니다.
         Transform imageCollectionsTr = GameObject.FindAnyObjectByType<CreateManager>().transform.GetChild(0);
@@ -149,9 +150,8 @@ public class ItemInfo : MonoBehaviour
         for( int i = 0; i<iicNum; i++)
             iicArr[i] = imageCollectionsTr.GetChild(i).GetComponent<ItemImageCollection>();
         
-        Debug.Log("OnEnable 호출 여부");
         // 아이템 오브젝트가 씬에 생성되면 정보를 업데이트하는 메서드를호출하여야 합니다.
-        OnItemChanged(); 
+        //OnItemChanged(); 
     }
 
     //public void Start()
@@ -183,10 +183,12 @@ public class ItemInfo : MonoBehaviour
 
         int imgIdx = -1;            // 참조할 이미지 인덱스 선언
                    
-        Debug.Log(Item.Type);
+        //Debug.Log(Item.Type);
         switch( Item.Type )         // 아이템의 메인타입을 구분합니다.
         {
+
             case ItemType.Weapon:
+            //Item.ItemDeubgInfo();
                 ItemWeapon weapItem = (ItemWeapon)Item;
                 WeaponType weaponType = weapItem.eWeaponType;  // 아이템의 서브타입을 구분합니다.
 
@@ -202,6 +204,7 @@ public class ItemInfo : MonoBehaviour
                 break;
                 
             case ItemType.Misc:
+            //Item.ItemDeubgInfo();
 
                 ItemMisc miscItem = (ItemMisc)Item; 
                 MiscType miscType = miscItem.eMiscType;
@@ -250,6 +253,11 @@ public class ItemInfo : MonoBehaviour
     // 아이템의 위치정보 반영  (현재 어디서 아이템 위치를 참조해서 슬롯에 넣어주고 있는가? => CreateManager에서 Instantiate할때 미리 붙인다.)
     public void UpdatePosition()
     {
+        if( slotListTr.childCount==0 )
+        {
+            Debug.Log( "현재 슬롯이 생성되지 않은 상태입니다." );
+            return;
+        }
         transform.SetParent( slotListTr.GetChild(Item.SlotIndex) );  // 오브젝트의 현 부모를 아이템 정보상의 슬롯 위치로 변경한다.
         transform.localPosition = Vector3.zero;                    // 로컬위치를 부모기준으로부터 0,0,0으로 맞춘다.
     }

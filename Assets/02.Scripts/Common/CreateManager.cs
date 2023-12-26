@@ -124,6 +124,14 @@ using WorldItemData;
 * <v10.2 - 2023-1224_최원준>
 * 1- CreateAllItemDic 메서드를 LoadAllItemDic으로 변경
 * 
+* <v10.3 - 2023_1224_최원준>
+* 1- CreateItemByInfo메서드에서 두번째 인자에서 게임오브젝트 활성화여부를 묻던점을 삭제하였음.
+* (비활성화해서 반환하기 위한 목적이었으나 다른 형태로 해결하기 위해)
+* 
+* <v10.4 - 2023_1226_최원준>
+* 1- AddCloneItemToInventory메서드에서 OnItemChanged를 메서드를 호출해주는 것으로 변경
+* 
+* 
 */
 
 
@@ -319,7 +327,14 @@ public class CreateManager : MonoBehaviour
 
 
 
-
+    /// <summary>
+    /// 잡화 아이템의 수량을 인자로 넣어서 계속해서 인벤토리에 생성해주는 메서드입니다.<br/>
+    /// 남은 수량이 0이될 때까지 재귀호출을 반복합니다.
+    /// </summary>
+    /// <param name="inventory">생성할 인벤토리</param>
+    /// <param name="itemName">잡화아이템 이름</param>
+    /// <param name="remainCount">남은 수량</param>
+    /// <returns></returns>
     private int CreateMiscItemRepeatly(Inventory inventory, string itemName, int remainCount)
     {        
         if(remainCount==0)  // 인자로 호출 된 수량이 0이라면 더이상 재귀호출을 진행하지 않고 0을 반환합니다. 
@@ -349,7 +364,12 @@ public class CreateManager : MonoBehaviour
 
 
 
-
+    /// <summary>
+    /// 인자로 전달한 게임오브젝트 리스트에 게임오브젝트를 생성하여 아이템 정보를 추가한 상태로 넣어줍니다.
+    /// </summary>
+    /// <param name="itemObjList">인벤토리의 게임오브젝트가 담긴 리스트</param>
+    /// <param name="itemClone">추가 할 아이템 인스턴스</param>
+    /// <param name="findSlotIdx">추가 할 슬롯 인덱스</param>
     private void AddCloneItemToInventory( List<GameObject> itemObjList, Item itemClone, int findSlotIdx )
     {
         // 개념 아이템의 슬롯의 인덱스 정보를 찾은 위치로 수정한다.
@@ -362,6 +382,8 @@ public class CreateManager : MonoBehaviour
         itemObject.GetComponent<ItemInfo>().Item=itemClone;
 
         itemObjList.Add( itemObject );    // 인벤토리는 GameObject 인스턴스를 보관함으로서 transform정보와 개념 아이템을 정보를 포함하게 된다.            
+        
+        itemObject.GetComponent<ItemInfo>().OnItemChanged();    //아이템 수정사항을 반영해줍니다.
     }
 
 
@@ -370,11 +392,9 @@ public class CreateManager : MonoBehaviour
     /// 개념 아이템 정보가 이미 있다면 이를 가지고 그에 맞는 아이템 오브젝트를 만들어 줍니다.
     /// </summary>
     /// <param name="item"></param>
-    public GameObject CreateItemByInfo(Item item, bool isActive=true)
+    public GameObject CreateItemByInfo(Item item)
     {
         GameObject itemObject = Instantiate(itemPrefab);    // 프리팹하나를 복제해 옵니다.
-
-        itemObject.SetActive(isActive);                     // 아이템 활성화 상태를 받은 인자로 변경합니다.
 
         itemObject.GetComponent<ItemInfo>().Item = item;    // 아이템 정보 할당이 이루어질 때 자동으로 이미지,수량,위치가 동기화 됩니다.
 

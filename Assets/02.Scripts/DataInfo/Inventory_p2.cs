@@ -14,6 +14,11 @@ using UnityEngine;
  * <v1.2 - 2023_1122_최원준>
  * 1- 인벤토리가 로드되었을 때 아이템 오브젝트가 원위치를 시킬 수 있도록 UpdateAllItem메서드 추가
  * 
+ * <v2.0 - 2023_1226_최원준>
+ * 1- UpdateAllItem메서드를 UpdateAllItemInfo메서드로 변경
+ * 2- LoadAllItem 주석처리 
+ * - 개별 종류로 직렬화했을 때 잘 불러와진다면 해당 메서드 삭제 예정
+ * 
  */
 
 namespace CraftData
@@ -30,23 +35,23 @@ namespace CraftData
 
         }
 
-        public void LoadAllItem()
-        {
-            foreach( List<GameObject> objList in weapDic.Values )          // 무기사전에서 게임오브젝트 리스트를 하나씩 꺼내어
-            {
-                for(int i=0; i<objList.Count; i++)                         // 리스트의 게임오브젝트를 모두 가져옵니다.
-                    objList[i].SetActive(true);                            // 아이템 오브젝트를 활성화 상태로 변경합니다.
-            }
+        //public void LoadAllItem()
+        //{
+        //    foreach( List<GameObject> objList in weapDic.Values )          // 무기사전에서 게임오브젝트 리스트를 하나씩 꺼내어
+        //    {
+        //        for(int i=0; i<objList.Count; i++)                         // 리스트의 게임오브젝트를 모두 가져옵니다.
+        //            objList[i].SetActive(true);                            // 아이템 오브젝트를 활성화 상태로 변경합니다.
+        //    }
 
-            foreach( List<GameObject> objList in miscDic.Values )          // 잡화사전에서 게임오브젝트 리스트를 하나씩 꺼내어
-            {
-                for(int i=0; i<objList.Count; i++)                         // 리스트의 게임오브젝트를 모두 가져옵니다.
-                    objList[i].SetActive(true);                            // 아이템 오브젝트를 활성화 상태로 변경합니다.
-            }
-        }
+        //    foreach( List<GameObject> objList in miscDic.Values )          // 잡화사전에서 게임오브젝트 리스트를 하나씩 꺼내어
+        //    {
+        //        for(int i=0; i<objList.Count; i++)                         // 리스트의 게임오브젝트를 모두 가져옵니다.
+        //            objList[i].SetActive(true);                            // 아이템 오브젝트를 활성화 상태로 변경합니다.
+        //    }
+        //}
 
 
-        public void UpdateAllItem()
+        public void UpdateAllItemInfo()
         {
             foreach( List<GameObject> objList in weapDic.Values )          // 무기사전에서 게임오브젝트 리스트를 하나씩 꺼내어
             {

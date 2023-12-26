@@ -38,6 +38,13 @@ using System;
  * 1- 상태창 위치 조절
  * 인벤토리 아이템이 상단 놓여 있을 때는 하단으로 내려서 보여주고, 하단에 놓여 있을 때는 상단으로 올려서 보여주게 변경
  * 
+ * <v4.1 - 2023_1226_최원준>
+ * 1- 슬롯리스트 참조가 아이템오브젝트 기준으로 잡혀있던 점 수정
+ * 아이템이 슬롯리스트 외부에 생성되어지는 경우 슬롯리스트를 참조하지 못하게 되기 때문
+ * 
+ * 2- 변수명 SlotListTr을 SlotListRectTr로 수정
+ * 
+ * 3- GameObject형식의 statusWindow를 Transform형식의 statusWindowTr로 변경
  */
 
 
@@ -47,7 +54,7 @@ using System;
 /// </summary>
 public class ItemPointerStatusWindow : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
 {    
-    private GameObject statusWindow;    // 상태창 오브젝트
+    private Transform statusWindowTr;    // 상태창 오브젝트
     private Image itemStatusImage;      // 상태창의 아이템 이미지
     private Text txtEnhancement;        // 상태창의 아이템 강화 텍스트
     private Text txtName;               // 상태창의 아이템 이름
@@ -67,21 +74,21 @@ public class ItemPointerStatusWindow : MonoBehaviour, IPointerEnterHandler, IPoi
 
     RectTransform statusRectTr; // 상태창의 렉트 트랜스폼
     RectTransform itemRectTr;   // 아이템의 렉트 트랜스폼
-    RectTransform slotListTr;   // 슬롯전체 판넬의 렉트 트랜스폼
+    RectTransform slotListRectTr;   // 슬롯전체 판넬의 렉트 트랜스폼
 
     void Start()
     {        
         // 하위 오브젝트의 모든 참조는 캐릭터 Canvas의 1번째 자식인 상태창 오브젝트의 참조를 기반으로 합니다.
-        statusWindow= GameObject.FindWithTag("CANVAS_CHARACTER").transform.GetChild(1).gameObject;
+        statusWindowTr= GameObject.FindWithTag("CANVAS_CHARACTER").transform.GetChild(1);
 
-        if(statusWindow == null)
+        if(statusWindowTr == null)
             throw new Exception("상태창의 참조를 확인하여 주세요.");
 
-        itemStatusImage = statusWindow.transform.GetChild(0).GetChild(0).GetComponent<Image>();
-        txtEnhancement = statusWindow.transform.GetChild(1).GetComponent<Text>();
-        txtName = statusWindow.transform.GetChild(2).GetComponent<Text>();
-        txtDesc = statusWindow.transform.GetChild(3).GetComponent<Text>();
-        txtSpec = statusWindow.transform.GetChild(4).GetComponent<Text>();
+        itemStatusImage = statusWindowTr.GetChild(0).GetChild(0).GetComponent<Image>();
+        txtEnhancement = statusWindowTr.GetChild(1).GetComponent<Text>();
+        txtName = statusWindowTr.GetChild(2).GetComponent<Text>();
+        txtDesc = statusWindowTr.GetChild(3).GetComponent<Text>();
+        txtSpec = statusWindowTr.GetChild(4).GetComponent<Text>();
 
         itemInfo = GetComponent<ItemInfo>();
         item = itemInfo.Item;
@@ -93,22 +100,24 @@ public class ItemPointerStatusWindow : MonoBehaviour, IPointerEnterHandler, IPoi
 
         for(int i=0; i<AnyEngraveMaxNum; i++)
         {
-            PanelEngraveArr[i] = statusWindow.transform.GetChild(5+i).gameObject;
+            PanelEngraveArr[i] = statusWindowTr.GetChild(5+i).gameObject;  //각인판넬은 상태창의 5번자식부터 존재
             imageEngraveArr[i] = PanelEngraveArr[i].transform.GetChild(0).GetChild(0).GetComponent<Image>();
             txtNameArr[i] = PanelEngraveArr[i].transform.GetChild(1).GetComponent<Text>();
             txtDescArr[i] = PanelEngraveArr[i].transform.GetChild(2).GetComponent<Text>();
         }
-        statusRectTr = statusWindow.GetComponent<RectTransform>();
+        statusRectTr = statusWindowTr.GetComponent<RectTransform>();
         itemRectTr = this.gameObject.GetComponent<RectTransform>();
-        slotListTr = itemRectTr.parent.parent.gameObject.GetComponent<RectTransform>();
 
+        Transform canvasTr = GameObject.FindWithTag("CANVAS_CHARACTER").transform;
+        slotListRectTr=canvasTr.GetChild(0).GetChild(0).GetChild(0).GetChild(0).gameObject.GetComponent<RectTransform>();    
 
 
         statusRectTr.SetAsLastSibling();  // 상태창을 캔버스의 최하위 자식으로 배치하여 이미지 표시 우선순위를 높게 한다.
                                           
         // 게임 시작 시 상태창을 꺼둔다
-        statusWindow.SetActive(false);        
+        statusWindowTr.gameObject.SetActive(false);        
 
+        // 싱글톤 참조이므로 Start로직에서만 사용!
         iicMiscOther=CreateManager.instance.transform.GetChild(0).GetChild(2).gameObject.GetComponent<ItemImageCollection>();
         if(iicMiscOther == null)
             throw new Exception("iicMiscOther의 참조를 확인하여 주세요.");
@@ -126,10 +135,10 @@ public class ItemPointerStatusWindow : MonoBehaviour, IPointerEnterHandler, IPoi
 
 
         /*** 아이템 종류 상관없이 공통 로직 ***/
-        statusWindow.SetActive(true);               // 상태창 활성화
+        statusWindowTr.gameObject.SetActive(true);               // 상태창 활성화
 
         
-        float delta = slotListTr.position.y - itemRectTr.position.y;              // 상태창을 띄울 위치 판단기준
+        float delta = slotListRectTr.position.y - itemRectTr.position.y;              // 상태창을 띄울 위치 판단기준
         Vector3 rightPadding = Vector3.right*(statusRectTr.sizeDelta.x/2 + 30f);  // 상태창 오른쪽 여백
         Vector3 upPadding = Vector3.up*(statusRectTr.sizeDelta.y/2);              // 상태창 상단 여백
 
@@ -286,7 +295,7 @@ public class ItemPointerStatusWindow : MonoBehaviour, IPointerEnterHandler, IPoi
     /// <exception cref="System.NotImplementedException"></exception>
     public void OnPointerExit( PointerEventData eventData )
     {
-        statusWindow.SetActive(false);      // 상태창 비활성화
+        statusWindowTr.gameObject.SetActive(false);      // 상태창 비활성화
     }
 
 

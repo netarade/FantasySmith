@@ -78,6 +78,8 @@ using UnityEngine.SceneManagement;
  * 2- LoadPlayerData() 메서드를 Start문으로 옮김
  * 이유는 인벤토리가 역직렬화 될 때 내부적으로 CreateManager의 싱글톤의 메서드를 불러오기 때문에 호출시점을 늦출 필요가 있음
  * 
+ * <V5.3 - 2023_1226_최원준>
+ * 1- 인벤토리 로드시 LoadAllItem메서드에서 UpdateItemInfo메서드 호출로 변경
  * 
  */
 
@@ -153,7 +155,7 @@ public class InventoryInfo : MonoBehaviour
         gold = loadData.gold;
         silver = loadData.silver;
 
-        inventory.LoadAllItem();
+        inventory.UpdateAllItemInfo();
     }
 
 

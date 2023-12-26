@@ -1,7 +1,6 @@
 using ItemData;
 using System;
 using System.Collections.Generic;
-using UnityEditor.Timeline.Actions;
 using UnityEngine;
 
 /*
@@ -60,12 +59,14 @@ using UnityEngine;
  * 딕셔너리가 초기화되지 않아 null레퍼런스가 발생하였습니다.
  * 이를 없애기 위해 해당 생성자에 딕셔너리의 null값 검사를 추가하여 새로운 딕셔너리를 생성하도록 하였습니다.
  * 
- * <5.1 - 2023_1224_최원준>
+ * <v5.1 - 2023_1224_최원준>
  * 1- 아이템 생성시 ConvertItemListToDic 메서드에서
  * The given key '철' was not present in the dictionary. 오류가 발생하여
  * miscDic[item.Name]==null로 검사하는 구문을 miscDic.ContainsKey(item.Name) 구문으로 변경
  * 
- * 2- ConvertDicToItemList과 ConvertItemListToDic 메서드 개별적으로 사전에 따라 중복로직으로 작성되어있던 것을 일반화
+ * <v6.0 - 2023_1226_최원준>
+ * 1- SerializableInventory의 weapList, miscList를 Item 타입에서 개별 타입인 ItemWeapon, ItemMisc타입으로 변경
+ * 2- ConvertDicToItemList과 ConvertItemListToDic 메서드 개별적으로 사전에 따라 중복로직으로 작성되어있던 것을 일반화메서드로 변경
  * 
  * 
  * 
@@ -157,29 +158,24 @@ namespace CraftData
         /// 게임 오브젝트 리스트를 직렬화 할 때, 씬을 넘어가기 전에 전달해야하는 용도로 사용합니다.
         /// </summary>
         /// <param name="itemType"> GameObject타입에서 Item타입으로 리스트화 할 사전목록의 종류를 정해주세요. Weapon, Misc등이 있습니다. </param>
-        public List<Item> ConvertDicToItemList(ItemType itemType)
+        public List<T> SerializeDicToItemList<T>() where T : Item
         {
-            List<Item> itemList = new List<Item>();
+            List<T> itemList = new List<T>();       // 새로운 T형식 아이템리스트 생성
             Dictionary<string, List<GameObject>> itemDic = null;
 
-            switch(itemType)
-            {
-                case ItemType.Weapon:      // 무기 종류라면 
-                    itemDic = weapDic;     // 인벤토리의 무기 사전 참조
-                    break;
+            if( typeof(T)==typeof(ItemWeapon) )     // 무기 종류라면 인벤토리의 무기 사전 참조
+                    itemDic = weapDic;          
+            else if( typeof(T)==typeof(ItemMisc) )  // 잡화 종류라면 인벤토리의 잡화 사전 참조
+                itemDic = miscDic;              
+              
 
-                case ItemType.Misc:        // 잡화 종류라면
-                    itemDic = miscDic;     // 인벤토리의 잡화 사전 참조
-                    break; 
+            foreach( List<GameObject> objList in itemDic.Values )                // 해당 사전에서 게임오브젝트 리스트를 하나씩 꺼내어
+            {
+                for(int i=0; i<objList.Count; i++)                               // 리스트의 게임오브젝트를 모두 가져옵니다.
+                    itemList.Add( (T)objList[i].GetComponent<ItemInfo>().Item ); // item 스크립트를 하나씩 꺼내어 T형식으로 저장합니다.
             }
 
-            foreach( List<GameObject> objList in itemDic.Values )             // 해당 사전에서 게임오브젝트 리스트를 하나씩 꺼내어
-            {
-                for(int i=0; i<objList.Count; i++)                            // 리스트의 게임오브젝트를 모두 가져옵니다.
-                    itemList.Add( objList[i].GetComponent<ItemInfo>().Item ); // item 스크립트를 하나씩 꺼내어 저장합니다.
-            }
-
-            return itemList;                                                  // item 정보가 하나씩 저장되어있는 itemList를 반환합니다.
+            return itemList;                                                     // item 정보가 하나씩 저장되어있는 itemList를 반환합니다.
         }
 
         /// <summary>
@@ -188,25 +184,23 @@ namespace CraftData
         /// </summary>
         /// <param name="itemType">해당 itemList의 item의 종류</param>
         /// <param name="itemList">딕셔너리로 변환 시킬 item정보가 보관되어 있는 List</param>
-        public void ConvertItemListToDic( ItemType itemType, List<Item> itemList )
+        public void DeserializeItemListToDic<T>( List<T> itemList ) where T : Item
         {
             Dictionary<string, List<GameObject>> itemDic = null;    // 어떤 딕셔너리를 참조할 것인지 선언
 
-            switch(itemType)
-            {
-                case ItemType.Weapon:   // 무기 종류라면 
-                    itemDic = weapDic;  // 인벤토리의 무기 사전 참조
-                    break;
-
-                case ItemType.Misc:     // 잡화 종류라면
-                    itemDic = miscDic;  // 인벤토리의 잡화 사전 참조
-                    break;
-            }
-
+            
+            if( typeof(T)==typeof(ItemWeapon))
+                itemDic = weapDic;
+            else if( typeof(T)==typeof(ItemMisc) )
+                itemDic = miscDic;
+                        
             foreach(Item item in itemList) // 아이템 리스트에서 개념 아이템 정보를 하나씩 꺼내옵니다.
             {
+                
+                //item.ItemDeubgInfo();
+
                 // 아이템 정보를 바탕으로 하는 게임오브젝트를 만듭니다.
-                GameObject itemObject = CreateManager.instance.CreateItemByInfo( item, false );
+                GameObject itemObject = CreateManager.instance.CreateItemByInfo( item );
                         
                 if( !itemDic.ContainsKey(item.Name) )       // 사전에 해당하는 아이템의 이름이 없다면
                 {
@@ -219,8 +213,11 @@ namespace CraftData
                 {
                     itemDic[item.Name].Add(itemObject);     // 인벤토리 사전에 접근하여, 해당 리스트에 오브젝트만 추가합니다.
                 }
+
             }
             
+            
+
             // 참고) 잡화아이템의 최대 수량 검사를 따로 하지 않습니다.
             // 아이템 정보 상에 MaxCount이상일 때 예외 처리 로직이 있으며, Inventory에서 미리 MaxCount일 때의 새로운 오브젝트 생성 등을 처리했다고 판단합니다.
             // 씬 이동이나 로드 등을 거치면서 해당 아이템 정보를 가진 오브젝트 그대로 전달해야 합니다.
@@ -256,8 +253,8 @@ namespace CraftData
                 miscDic = new Dictionary<string, List<GameObject>>();
             }
 
-            ConvertItemListToDic( ItemType.Weapon, savedInventory.weapList );
-            ConvertItemListToDic( ItemType.Misc, savedInventory.miscList );
+            DeserializeItemListToDic<ItemWeapon>( savedInventory.weapList );
+            DeserializeItemListToDic<ItemMisc>( savedInventory.miscList );
             WeapCountLimit = savedInventory.WeapCountLimit;
             MiscCountLimit = savedInventory.MiscCountLimit;
         }
@@ -273,8 +270,8 @@ namespace CraftData
     [Serializable]
     public class SerializableInventory
     {
-        public List<Item> weapList;
-        public List<Item> miscList;
+        public List<ItemWeapon> weapList;
+        public List<ItemMisc> miscList;
         public int WeapCountLimit {get;}
         public int MiscCountLimit {get;}
         
@@ -283,8 +280,8 @@ namespace CraftData
         /// </summary>
         public SerializableInventory( Inventory inventory )
         {
-            weapList=inventory.ConvertDicToItemList( ItemType.Weapon );
-            miscList=inventory.ConvertDicToItemList( ItemType.Misc );
+            weapList=inventory.SerializeDicToItemList<ItemWeapon>();
+            miscList=inventory.SerializeDicToItemList<ItemMisc>();
             WeapCountLimit = inventory.WeapCountLimit;
             MiscCountLimit = inventory.MiscCountLimit;
         }

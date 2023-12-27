@@ -45,6 +45,9 @@ using System;
  * 2- 변수명 SlotListTr을 SlotListRectTr로 수정
  * 
  * 3- GameObject형식의 statusWindow를 Transform형식의 statusWindowTr로 변경
+ * 
+ * <v4.2 - 2023_1227_최원준>
+ * 1- statusWindowTr의 참조를 새로운 임시변수 Transform canvasTr기반으로 변경
  */
 
 
@@ -78,8 +81,10 @@ public class ItemPointerStatusWindow : MonoBehaviour, IPointerEnterHandler, IPoi
 
     void Start()
     {        
+        Transform canvasTr = GameObject.FindWithTag("CANVAS_CHARACTER").transform;
+
         // 하위 오브젝트의 모든 참조는 캐릭터 Canvas의 1번째 자식인 상태창 오브젝트의 참조를 기반으로 합니다.
-        statusWindowTr= GameObject.FindWithTag("CANVAS_CHARACTER").transform.GetChild(1);
+        statusWindowTr= canvasTr.GetChild(1);
 
         if(statusWindowTr == null)
             throw new Exception("상태창의 참조를 확인하여 주세요.");
@@ -108,7 +113,6 @@ public class ItemPointerStatusWindow : MonoBehaviour, IPointerEnterHandler, IPoi
         statusRectTr = statusWindowTr.GetComponent<RectTransform>();
         itemRectTr = this.gameObject.GetComponent<RectTransform>();
 
-        Transform canvasTr = GameObject.FindWithTag("CANVAS_CHARACTER").transform;
         slotListRectTr=canvasTr.GetChild(0).GetChild(0).GetChild(0).GetChild(0).gameObject.GetComponent<RectTransform>();    
 
 

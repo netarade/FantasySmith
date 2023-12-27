@@ -135,7 +135,7 @@ namespace ItemData
         [JsonProperty] ImageReferenceIndex sImageRefIndex;
         [JsonProperty] int iSlotIndex;
         [JsonProperty] int iSlotIndexAll;
-
+        
         /// <summary>
         /// 해당 아이템의 대분류 상의 종류로 무기는 Weapon, 잡화는 Misc등을 나타냅니다.
         /// </summary>

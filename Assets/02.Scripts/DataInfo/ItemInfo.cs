@@ -116,8 +116,8 @@ public class ItemInfo : MonoBehaviour
     public Transform slotListTr;    // 아이템이 놓이게 될 슬롯 들의 부모인 슬롯리스트 트랜스폼 참조
 
     public ItemImageCollection[] iicArr;      // 인스펙터 뷰 상에서 등록할 아이템 이미지 집합 배열
-    public enum eIIC { MiscBase,MiscAdd,MiscOther,Sword,Bow }    // 이미지 집합 배열의 인덱스 구분
-    private readonly int iicNum = 5;                             // 이미지 집합 배열의 갯수
+    public enum eIIC { MiscBase,MiscAdd,MiscOther,Sword,Bow,Axe }    // 이미지 집합 배열의 인덱스 구분
+    private readonly int iicNum = 6;                             // 이미지 집합 배열의 갯수
 
     /// <summary>
     /// 클론 한 Item 인스턴스를 저장하고, 저장 되어있는 인스턴스를 불러올 수 있습니다.

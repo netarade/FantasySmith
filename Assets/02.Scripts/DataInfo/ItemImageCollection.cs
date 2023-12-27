@@ -16,6 +16,8 @@ using UnityEngine;
  * 
  * 2- 주석 처리
  * 
+ *<v3.0 - 2023_1227_최원준>
+ *1- 아이템이 외부에서 3D오브젝트로 보여지기 위한 MeshFilter와 Material변수 추가
  * 
  */
 
@@ -40,6 +42,8 @@ public struct ImageCollection
     public string itemDesc;         // 인스펙터뷰에서 보여질 아이템 이름 또는 설명
     public Sprite innerSprite;      // 인벤토리 내부에서 보여질 이미지
     public Sprite statusSprite;     // 인벤토리 상태창에서 커서를 포커싱했을 때 보여질 이미지
+    public MeshFilter meshFilter;   // 월드에서 아이템이 보여질 메쉬의 모습
+    public Material material;       // 월드에서 아이템이 보여질 3D 머터리얼
 }
 
 

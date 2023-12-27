@@ -8,6 +8,8 @@ using ItemData;
 * <v1.0 - 2023_1221_최원준>
 * 1- CreateManager의 CreateAllItemDictionary메서드의 정보를 분리시켜 클래스 생성
 * 
+* <v1.1 -2023_1227_최원준>
+* 1- 손도끼 아이템 추가
 * 
 */
 
@@ -210,6 +212,14 @@ namespace WorldItemData
                 , new CraftMaterial[]{new CraftMaterial("오리하르콘",5),new CraftMaterial("미스릴",11),new CraftMaterial("축복받은 나뭇가지",4)}
                 , new CraftMaterial[]{new CraftMaterial("신비한 조각",4),new CraftMaterial("영롱한 구슬",1)}
                 , Recipie.Ma)
+            },
+
+            /**** 도끼 ****/
+            { "손도끼", new ItemCraftWeapon( ItemType.Weapon, WeaponType.Axe, "0002000", "손도끼", 10.0f, new ImageReferenceIndex(0)
+                , ItemGrade.Low, 10, 100, 0.8f, 10, AttributeType.None
+                , new CraftMaterial[]{new CraftMaterial("철",3), new CraftMaterial("단단한 나뭇가지",3)} 
+                , null 
+                , Recipie.Na) 
             }
 
         };    

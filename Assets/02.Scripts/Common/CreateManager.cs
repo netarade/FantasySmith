@@ -131,6 +131,9 @@ using WorldItemData;
 * <v10.4 - 2023_1226_최원준>
 * 1- AddCloneItemToInventory메서드에서 OnItemChanged를 메서드를 호출해주는 것으로 변경
 * 
+* <v11.0 - 2023_1228_최원준>
+* 1- Item프리팹의 계층구조 변경(3D오브젝트 하위에 2D오브젝트를 둠)으로 인해 ItemInfo를 GetComponent로 참조하던 것에서 GetComponentInChildren으로 변경
+* 2- slotListTr을 Start문에서 참조하는것이 아니라 inventory를 인자로 받을때 생성할 위치정보도 같이 받아야 하기  
 * 
 */
 

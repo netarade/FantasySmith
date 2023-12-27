@@ -36,6 +36,10 @@ using UnityEngine.EventSystems;
  * 1- dragObj의 null 레퍼런스에 대한 return문 추가하여
  * 드래깅 중인 아이템 오브젝트가 없을 때 Drop 이벤트의 로직 실행을 막음
  * 
+ * <v5.0 - 2023_1227_최원준>
+ * 1- 아이템 계층구조 변경으로 인해 참조하던 dragObj를 dragObj3D와 dragObj2D 참조로 변경.(최상위 3D전용, 하위 2D전용 오브젝트)
+ * 2- OnDrop에서 선언하던 변수들을 Drop 클래스 변수로 선언위치를 변경
+ * 
  */
 
 

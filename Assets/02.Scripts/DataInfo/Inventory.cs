@@ -81,6 +81,8 @@ using UnityEngine;
  * 
  * 5- WeapCountLimit, MiscCountLimit 프로퍼티 set기능 추가
  * 
+ * <v7.1 - 2023_1227_최원준>
+ * 1- Item프리팹의 계층구조 변경으로 인해 SerializeDicToItemList메서드에서 GetComponent로 ItemInfo를 참조하던 것을 GetComponentInChildren으로 변경
  * 
  * 
  */
@@ -185,7 +187,7 @@ namespace CraftData
             foreach( List<GameObject> objList in itemDic.Values )                // 해당 사전에서 게임오브젝트 리스트를 하나씩 꺼내어
             {
                 for(int i=0; i<objList.Count; i++)                               // 리스트의 게임오브젝트를 모두 가져옵니다.
-                    itemList.Add( (T)objList[i].GetComponent<ItemInfo>().Item ); // item 스크립트를 하나씩 꺼내어 T형식으로 저장합니다.
+                    itemList.Add( (T)objList[i].GetComponentInChildren<ItemInfo>().Item ); // item 스크립트를 하나씩 꺼내어 T형식으로 저장합니다.
             }
 
             return itemList;                                                     // item 정보가 하나씩 저장되어있는 itemList를 반환합니다.

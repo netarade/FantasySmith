@@ -442,6 +442,40 @@
  * 
  * 2- 월드(3D)에 놓여진 아이템의 정보는 위치 및 ItemInfo 포함하여 저장하지 않을 예정. (종료시 아이템 소멸)
  * 
+ * <2023_1228_최원준>
+ * (수정사항)
+ * Drag.cs v4.0 - Item 프리팹 계층구조 변경으로 인한 새로운 변수 선언, 참조 수정
+ * Drop.cs v5.0 - Item 프리팹 계층구조 변경으로 인한 참조 변경
+ * Inventory.cs v7.1 - Item 프리팹 계층구조 변경으로 인한 참조 수정
+ * Inventory_p2.cs v2.1 - Item 프리팹 계층구조 변경으로 인한 참조 수정
+ * CreateManager.cs -> 아직 수정 미완료
+ * 
+ * (이슈)
+ * 1- 스테이터스창 오브젝트를 Inventory하위에 둬야할 필요성
+ * 인벤토리가 Off되면 상태창도 보여질일이 없기 때문이고, 인벤토리에 종속되는 상태창(해당 인벤토리 전용 상태창)일 필요가 있기 때문.
+ * 
+ * 2- InventoryManagement클래스가 SlotListTr을 주소를 참조하고 있을 필요성.
+ * SlotListTr의 주소는 InventoryManagement, CreateManager, ItemInfo, ItemPointerStatusWindow 네곳의 스크립트에서 필요로한다.
+ * (각각 슬롯자체 생성, 아이템을 슬롯에 생성, 아이템위치 업데이트, 상태창의 보여질 위치를 위한 용도로)
+ * CreateManager는 다른 플레이어의 슬롯도 받아야 하므로 하나의 슬롯리스트를 저장하면 안되고 참조를 계속해서 변경해야 하고,
+ * ItemInfo, ItemPointerStatusWindow는 아이템 종속적으로 인벤토리가 꺼져버릴때 같이 꺼야하고, 다른 슬롯으로 옮겨다니기도 해야 한다.
+ * 
+ * 3- CreateManager의 slotListTr을 Start문에서 참조하는것이 아니라 inventory를 인자로 받을때 생성할 위치정보도 같이 받아야 하는데, 여기서 현 인벤토리의 구조적 문제가 발생.
+ * InventoryInfo에 있는 inventory에 AddItem메서드를 호출할 때, CreateManager의 싱글톤에 inventory는 정보는 줄 수 있어도 위치정보를 주지 못한다.
+ * inventory가 AddItem메서드에 슬롯리스트 또는 3D공간 위치정보를 줄 수 있는 방법은 
+ * 
+ * a- InventoryInfo가 ItemInfo처럼 AddItem메서드를 갖게하는 방법   
+ * (문제점 - 사용할때 GetComponent<InventoryInfo>().AddItem()형식으로 사용해야 하기 때문에 클래스명 변경필요 및 
+ * InventoryInfo 클래스내부에 inventory하나만 둔다음 플레이어 정보에서 InvenInfo를 참조해야할 필요성. 
+ * - 즉 저장구조가 한번더 바뀌게 되고 ItemInfo클래스 사용법과 혼선이 생기게된다. )
+ * 
+ * b- InvenInfo에 index를 주고. Start문에서 static변수인 cnt값을 index에 대입해준 후 cnt를 증가시키면 InvenInfo마다 index값이 틀리게 나올것이다.
+ * 이를 inventory에 다시 넣어주는 형식으로 구성하면 어떨까 생각
+ * (문제점 - 위와 마찬가지로 팀원이 Inventory inventory와 더불어 index, cnt까지 정의해야하는 상황이 발생하게 된다.)
+ * 
+ * c- Inventory 내부에 b와 마찬가지로 생성자에서 static cnt를 ++시키고 index로 기억하는 것을 추가하는 방법.
+ * (문제점 - b와 마찬가지로 Inventory inventory선언과 더불어 int index를 같이 선언해놓고 load해야하는 불편함이 생기게된다.)
+ *  
  * 
  * 
  * 

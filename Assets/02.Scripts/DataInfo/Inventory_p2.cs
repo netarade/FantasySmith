@@ -19,6 +19,10 @@ using UnityEngine;
  * 2- LoadAllItem 주석처리 
  * - 개별 종류로 직렬화했을 때 잘 불러와진다면 해당 메서드 삭제 예정
  * 
+ * <v2.1 - 2023_1227_최원준>
+ * 1- Item 프리팹 계층구조 변경으로 인해(3D 오브젝트 하위 2D오브젝트) 
+ * UpdateAllItemInfo메서드의 ItemInfo를 참조하는 GetComponent메서드를 GetComponentInChildren으로 변경
+ * 
  */
 
 namespace CraftData
@@ -37,16 +41,16 @@ namespace CraftData
 
         public void UpdateAllItemInfo()
         {
-            foreach( List<GameObject> objList in weapDic.Values )          // 무기사전에서 게임오브젝트 리스트를 하나씩 꺼내어
+            foreach( List<GameObject> objList in weapDic.Values )                   // 무기사전에서 게임오브젝트 리스트를 하나씩 꺼내어
             {
-                for(int i=0; i<objList.Count; i++)                         // 리스트의 게임오브젝트를 모두 가져옵니다.
-                    objList[i].GetComponent<ItemInfo>().OnItemChanged();   // item 스크립트를 하나씩 꺼내어 OnItemChnaged메서드를 호출합니다.
+                for(int i=0; i<objList.Count; i++)                                  // 리스트의 게임오브젝트를 모두 가져옵니다.
+                    objList[i].GetComponentInChildren<ItemInfo>().OnItemChanged();  // item 스크립트를 하나씩 꺼내어 OnItemChnaged메서드를 호출합니다.
             }
 
-            foreach( List<GameObject> objList in miscDic.Values )          // 잡화사전에서 게임오브젝트 리스트를 하나씩 꺼내어
+            foreach( List<GameObject> objList in miscDic.Values )                   // 잡화사전에서 게임오브젝트 리스트를 하나씩 꺼내어
             {
-                for(int i=0; i<objList.Count; i++)                         // 리스트의 게임오브젝트를 모두 가져옵니다.
-                    objList[i].GetComponent<ItemInfo>().OnItemChanged();   // item 스크립트를 하나씩 꺼내어 OnItemChnaged메서드를 호출합니다.
+                for(int i=0; i<objList.Count; i++)                                  // 리스트의 게임오브젝트를 모두 가져옵니다.
+                    objList[i].GetComponentInChildren<ItemInfo>().OnItemChanged();  // item 스크립트를 하나씩 꺼내어 OnItemChnaged메서드를 호출합니다.
             }      
         }
 

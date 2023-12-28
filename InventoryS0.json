@@ -1,0 +1,8 @@
+{
+  "savedInventory": {
+    "weapList": [],
+    "miscList": [],
+    "WeapCountLimit": 50,
+    "MiscCountLimit": 50
+  }
+}

@@ -88,6 +88,18 @@ using ItemData;
  *2- UpdatePosition에 slotListTr의 childCount 검사구문 추가
  *3- Item 프로퍼티 다시 주석해제 
  *
+ *<v9.3 - 2023_1228_최원준>
+ *1- 아이템 프리팹 계층 구조 변경으로 인해 (3D오브젝트 하위에 2D 오브젝트를 두는 구조)
+ *각각 Transform, RectTransform itemTr와 itemRectTr 변수를 선언하여 자기트랜스폼 캐싱처리
+ *
+ *2- UpdatePosition 2D오브젝트의 부모를 변경하던 점을 최상위 3D오브젝트를 변경하도록 수정
+ *
+ *3- UpdatePosition 변수명을 UpdateInventoryPosition으로 변경
+ *
+ *4- (추후 수정해야할 점) UpdateInventoryPosition이 현재 자신 인벤토리 기준으로 수정하고 있으나,
+ * 나중에 UpdatePosition을 할 때 아이템이 보관함 슬롯의 인덱스 뿐만 아니라 어느 보관함에 담겨있는지도 정보가 있어야 한다.
+ *
+ *
  */
 
 
@@ -115,6 +127,10 @@ public class ItemInfo : MonoBehaviour
     public Text countTxt;           // 잡화 아이템의 수량을 반영할 텍스트
     public Transform slotListTr;    // 아이템이 놓이게 될 슬롯 들의 부모인 슬롯리스트 트랜스폼 참조
 
+    private Transform itemTr;           // 자기자신 3D 트랜스폼 참조(계층 최상위)
+    private RectTransform itemRectTr;   // 자기자신 2D 트랜스폼 참조(계층 하위)
+
+
     public ItemImageCollection[] iicArr;      // 인스펙터 뷰 상에서 등록할 아이템 이미지 집합 배열
     public enum eIIC { MiscBase,MiscAdd,MiscOther,Sword,Bow,Axe }    // 이미지 집합 배열의 인덱스 구분
     private readonly int iicNum = 6;                             // 이미지 집합 배열의 갯수
@@ -137,6 +153,9 @@ public class ItemInfo : MonoBehaviour
     /// </summary>
     private void OnEnable()
     {
+        itemTr = transform.parent;                              // 자기자신 3d 트랜스폼 참조(계층 최상위)
+        itemRectTr = transform.GetComponent<RectTransform>();   // 자기자신 2d 트랜스폼 참조(계층 하위)
+
         itemImage = GetComponent<Image>();
         countTxt = GetComponentInChildren<Text>();
 
@@ -163,7 +182,7 @@ public class ItemInfo : MonoBehaviour
     {
         UpdateImage();
         UpdateCountTxt();
-        UpdatePosition();
+        UpdateInventoryPosition();
     }
 
     /// <summary>
@@ -242,15 +261,15 @@ public class ItemInfo : MonoBehaviour
 
     
     // 아이템의 위치정보 반영  (현재 어디서 아이템 위치를 참조해서 슬롯에 넣어주고 있는가? => CreateManager에서 Instantiate할때 미리 붙인다.)
-    public void UpdatePosition()
+    public void UpdateInventoryPosition()
     {
         if( slotListTr.childCount==0 )
         {
             Debug.Log( "현재 슬롯이 생성되지 않은 상태입니다." );
             return;
         }
-        transform.SetParent( slotListTr.GetChild(Item.SlotIndex) );  // 오브젝트의 현 부모를 아이템 정보상의 슬롯 위치로 변경한다.
-        transform.localPosition = Vector3.zero;                    // 로컬위치를 부모기준으로부터 0,0,0으로 맞춘다.
+        itemTr.SetParent( slotListTr.GetChild(Item.SlotIndex) );  // 오브젝트의 현 부모를 아이템 정보상의 슬롯 위치로 변경한다.
+        itemRectTr.localPosition = Vector3.zero;                  // 로컬위치를 부모기준으로부터 0,0,0으로 맞춘다.
     }
 
 

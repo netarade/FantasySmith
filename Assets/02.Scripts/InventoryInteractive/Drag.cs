@@ -23,6 +23,13 @@ using UnityEngine.UI;
  * 1- 아이템 프리팹 계층구조 변경(Transform 컴포넌트 최상위, RectTransform컴포넌트 하위자식)으로 인해
  * itemTr의 이름을 itemRectTr로 변경, dragginObj를 draggingObj2D로 변경하고 참조 조정
  * 
+ * <v4.1 - 2023_1228_최원준>
+ * 1- 아이템 프리팹 계층구조 변경(3D오브젝트, 2D오브젝트 전환구조)으로 인해
+ * 코드를 2D 트랜스폼기준으로 다시 수정
+ * 
+ * 2-(추후 예정) prevParentTrByDrag를 static변수로 두면 곤란한 문제가 추후에 발생 예정
+ * 플레이어 마다 Drag스크립트를 가지고 있으므로 인벤토리별 분리가 필요. InventoryManagement클래스에서 해당 정보를 가지고 있을 필요성
+ * 
  */
 
 
@@ -33,7 +40,7 @@ using UnityEngine.UI;
 public class Drag : MonoBehaviour, IDragHandler, IBeginDragHandler, IEndDragHandler
 {
     private RectTransform itemRectTr;               // 여러번 반복 호출 해야 하므로 자신 transform 캐싱처리
-    private Transform itemTr;                       // 아이템의 계층 최상위 부모 오브젝트의 Transform
+    //private Transform itemTr;                       // 아이템의 계층 최상위 부모 오브젝트의 Transform
 
     public static GameObject draggingObj2D;         // 현재 드래그 중인 아이템 2D 오브젝트의 참조값이 들어갑니다.
     public static GameObject draggingObj3D;         // 현재 드래그 중인 아이템 3D 오브젝트의 참조값이 들어갑니다.
@@ -44,10 +51,10 @@ public class Drag : MonoBehaviour, IDragHandler, IBeginDragHandler, IEndDragHand
     void Start()
     {
         itemRectTr = transform.GetComponent<RectTransform>(); // 아이템의 계층구조 하위의 RectTransform 참조 설정
-        itemTr = transform.parent;                            // 아이템의 계층구조 최상위 오브젝트 Transform 참조 설정
+        //itemTr = transform.parent;                            // 아이템의 계층구조 최상위 오브젝트 Transform 참조 설정
 
         draggingObj2D = null;
-        draggingObj3D = null;
+        //draggingObj3D = null;
 
         Transform canvasTr = GameObject.FindWithTag("CANVAS_CHARACTER").transform;
         inventoryTr = canvasTr.GetChild(0);                     // 인벤토리는 캐릭터 캔버스의 0번째 자식             
@@ -63,24 +70,24 @@ public class Drag : MonoBehaviour, IDragHandler, IBeginDragHandler, IEndDragHand
     {
 
         draggingObj2D = transform.gameObject;                   // 드래그가 시작되면 드래그 중인 아이템 정보가 있어야 한다
-        draggingObj3D = transform.parent.gameObject;
+        //draggingObj3D = transform.parent.gameObject;
                                                                 
 
-        prevParentTrByDrag = itemTr.parent;                     // 이전 부모 위치(개별 슬롯)를 저장해둔다.
-        itemTr.SetParent( inventoryTr.transform );              // 부모를 계층하위로 잡아서 이미지 우선순위를 높인다.
+        prevParentTrByDrag = itemRectTr.parent;                 // 이전 부모 위치(개별 슬롯)를 저장해둔다.
+        itemRectTr.SetParent( inventoryTr.transform );          // 부모를 계층하위로 잡아서 이미지 우선순위를 높인다.
         itemRectTr.GetComponent<Image>().raycastTarget=false;   // 드래그 이벤트 이외에는 받지 않는다.
     }
 
     public void OnEndDrag( PointerEventData eventData )
     {
         draggingObj2D = null;                                   // 드래그 중인 아이템 정보를 null로 만든다.
-        draggingObj3D = null;
+        //draggingObj3D = null;
 
         itemRectTr.GetComponent<Image>().raycastTarget=true;    // 드래그가 끝나면 다시 이벤트를 받게 만든다.
        
-        if( itemTr.parent == inventoryTr )                      // 슬롯으로 드래그 하지 않았을 때
+        if( itemRectTr.parent == inventoryTr )                  // 슬롯으로 드래그 하지 않았을 때
         {
-            itemTr.SetParent( prevParentTrByDrag );             // 원래의 부모로 돌린다.
+            itemRectTr.SetParent( prevParentTrByDrag );         // 원래의 부모로 돌린다.
             itemRectTr.localPosition = Vector3.zero;            // 슬롯의 정중앙에 와야한다.
         }
 

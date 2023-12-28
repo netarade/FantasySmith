@@ -726,68 +726,42 @@ MonoBehaviour:
   - itemDesc: "00\uCCA0"
     innerSprite: {fileID: 21300000, guid: 65b246c1c0c0ac1479dd188550da07a0, type: 3}
     statusSprite: {fileID: 21300000, guid: 65b246c1c0c0ac1479dd188550da07a0, type: 3}
-    meshFilter: {fileID: 0}
-    material: {fileID: 0}
   - itemDesc: "01\uAC15\uCCA0"
     innerSprite: {fileID: 21300000, guid: d072e3a2b1fa8d24783055b5262edf10, type: 3}
     statusSprite: {fileID: 21300000, guid: d072e3a2b1fa8d24783055b5262edf10, type: 3}
-    meshFilter: {fileID: 0}
-    material: {fileID: 0}
   - itemDesc: "02\uD751\uCCA0"
     innerSprite: {fileID: 21300000, guid: dd8f1ee0513aa2541881add541319263, type: 3}
     statusSprite: {fileID: 21300000, guid: dd8f1ee0513aa2541881add541319263, type: 3}
-    meshFilter: {fileID: 0}
-    material: {fileID: 0}
   - itemDesc: "03\uBBF8\uC2A4\uB9B4"
     innerSprite: {fileID: 21300000, guid: 7feb5786b27168044846bf50ab27c72f, type: 3}
     statusSprite: {fileID: 21300000, guid: 7feb5786b27168044846bf50ab27c72f, type: 3}
-    meshFilter: {fileID: 0}
-    material: {fileID: 0}
   - itemDesc: "04\uCF54\uBC1C\uD2B8"
     innerSprite: {fileID: 21300000, guid: 89479923ce5b55b4780ec34d7093207b, type: 3}
     statusSprite: {fileID: 21300000, guid: 89479923ce5b55b4780ec34d7093207b, type: 3}
-    meshFilter: {fileID: 0}
-    material: {fileID: 0}
   - itemDesc: "05\uD2F0\uD0C0\uB284"
     innerSprite: {fileID: 21300000, guid: 43eb74326b39c2748b40107afd263dab, type: 3}
     statusSprite: {fileID: 21300000, guid: 43eb74326b39c2748b40107afd263dab, type: 3}
-    meshFilter: {fileID: 0}
-    material: {fileID: 0}
   - itemDesc: "06\uC624\uB9AC\uD558\uB974\uCF58"
     innerSprite: {fileID: 21300000, guid: c298ef98005332047bf6289350a7f3c9, type: 3}
     statusSprite: {fileID: 21300000, guid: c298ef98005332047bf6289350a7f3c9, type: 3}
-    meshFilter: {fileID: 0}
-    material: {fileID: 0}
   - itemDesc: "07\uB2E8\uB2E8\uD55C \uB098\uBB47\uAC00\uC9C0"
     innerSprite: {fileID: 21300000, guid: 9e32e8157671d314fbafe740ccf2906d, type: 3}
     statusSprite: {fileID: 21300000, guid: 9e32e8157671d314fbafe740ccf2906d, type: 3}
-    meshFilter: {fileID: 0}
-    material: {fileID: 0}
   - itemDesc: "08\uD2BC\uD2BC\uD55C \uB098\uBB47\uAC00\uC9C0"
     innerSprite: {fileID: 21300000, guid: 94a9dfa63a6636c40b00ef85b59aa0a9, type: 3}
     statusSprite: {fileID: 21300000, guid: 94a9dfa63a6636c40b00ef85b59aa0a9, type: 3}
-    meshFilter: {fileID: 0}
-    material: {fileID: 0}
   - itemDesc: "09\uAC00\uBCBC\uC6B4 \uB098\uBB47\uAC00\uC9C0"
     innerSprite: {fileID: 21300000, guid: 3a06b2780e7cb354c8dfcf31791516f8, type: 3}
     statusSprite: {fileID: 21300000, guid: 3a06b2780e7cb354c8dfcf31791516f8, type: 3}
-    meshFilter: {fileID: 0}
-    material: {fileID: 0}
   - itemDesc: "10\uBD80\uB4DC\uB7EC\uC6B4 \uB098\uBB47\uAC00\uC9C0"
     innerSprite: {fileID: 21300000, guid: 29d5aef3347dc7040aa433b56b19efe4, type: 3}
     statusSprite: {fileID: 21300000, guid: 29d5aef3347dc7040aa433b56b19efe4, type: 3}
-    meshFilter: {fileID: 0}
-    material: {fileID: 0}
   - itemDesc: "11\uC5D8\uD504\uC758 \uB098\uBB47\uAC00\uC9C0"
     innerSprite: {fileID: 21300000, guid: f1e1d876e23a42a489352e671d11449d, type: 3}
     statusSprite: {fileID: 21300000, guid: f1e1d876e23a42a489352e671d11449d, type: 3}
-    meshFilter: {fileID: 0}
-    material: {fileID: 0}
   - itemDesc: "12\uCD95\uBCF5\uBC1B\uC740 \uB098\uBB47\uAC00\uC9C0"
     innerSprite: {fileID: 21300000, guid: a172cf5b08c4bc84cbced3611f2a4135, type: 3}
     statusSprite: {fileID: 21300000, guid: a172cf5b08c4bc84cbced3611f2a4135, type: 3}
-    meshFilter: {fileID: 0}
-    material: {fileID: 0}
 --- !u!4 &108264672
 Transform:
   m_ObjectHideFlags: 0
@@ -851,53 +825,33 @@ MonoBehaviour:
   - itemDesc: "00\uBB3C\uB9AC\uC758 \uAC01\uC778"
     innerSprite: {fileID: 21300000, guid: 41fc97d2fbb37b74b934836afde59411, type: 3}
     statusSprite: {fileID: 21300000, guid: 41fc97d2fbb37b74b934836afde59411, type: 3}
-    meshFilter: {fileID: 0}
-    material: {fileID: 0}
   - itemDesc: "01\uACF5\uC18D\uC758 \uAC01\uC778"
     innerSprite: {fileID: 21300000, guid: 02f5167a3bea5ba44ba3c5cd2028d372, type: 3}
     statusSprite: {fileID: 21300000, guid: 02f5167a3bea5ba44ba3c5cd2028d372, type: 3}
-    meshFilter: {fileID: 0}
-    material: {fileID: 0}
   - itemDesc: "02\uD761\uD608\uC758 \uAC01\uC778"
     innerSprite: {fileID: 21300000, guid: 04e01b4df9c2bb549a556b1229040d72, type: 3}
     statusSprite: {fileID: 21300000, guid: 04e01b4df9c2bb549a556b1229040d72, type: 3}
-    meshFilter: {fileID: 0}
-    material: {fileID: 0}
   - itemDesc: "03\uC0AC\uACA9\uC758 \uAC01\uC778"
     innerSprite: {fileID: 21300000, guid: 8da483bd495b2594dbc63a5798bc264f, type: 3}
     statusSprite: {fileID: 21300000, guid: 8da483bd495b2594dbc63a5798bc264f, type: 3}
-    meshFilter: {fileID: 0}
-    material: {fileID: 0}
   - itemDesc: "04\uD53C\uD574\uC758 \uAC01\uC778"
     innerSprite: {fileID: 21300000, guid: fffc9bbc8b18bae4cbd5b9f2099b0e8d, type: 3}
     statusSprite: {fileID: 21300000, guid: fffc9bbc8b18bae4cbd5b9f2099b0e8d, type: 3}
-    meshFilter: {fileID: 0}
-    material: {fileID: 0}
   - itemDesc: "05\uB098\uBB34"
     innerSprite: {fileID: 21300000, guid: a7c1938f0681fe547ac6fa539850255a, type: 3}
     statusSprite: {fileID: 21300000, guid: a7c1938f0681fe547ac6fa539850255a, type: 3}
-    meshFilter: {fileID: 0}
-    material: {fileID: 0}
   - itemDesc: "06\uC11D\uD0C4"
     innerSprite: {fileID: 21300000, guid: d92cf6240c708d2438efd0e980d15875, type: 3}
     statusSprite: {fileID: 21300000, guid: d92cf6240c708d2438efd0e980d15875, type: 3}
-    meshFilter: {fileID: 0}
-    material: {fileID: 0}
   - itemDesc: "07\uC11D\uC720"
     innerSprite: {fileID: 21300000, guid: 5c07842a5c45d07408b1b1a25de6ff42, type: 3}
     statusSprite: {fileID: 21300000, guid: 5c07842a5c45d07408b1b1a25de6ff42, type: 3}
-    meshFilter: {fileID: 0}
-    material: {fileID: 0}
   - itemDesc: "08\uC18D\uC131\uC11D"
     innerSprite: {fileID: 21300000, guid: a2bb3ce6fdb59524b821562dff7f5e4a, type: 3}
     statusSprite: {fileID: 21300000, guid: a2bb3ce6fdb59524b821562dff7f5e4a, type: 3}
-    meshFilter: {fileID: 0}
-    material: {fileID: 0}
   - itemDesc: "09\uAC15\uD654\uC11D"
     innerSprite: {fileID: 21300000, guid: 5d9c80d58b8893b45aaad457ff89624e, type: 3}
     statusSprite: {fileID: 21300000, guid: 5d9c80d58b8893b45aaad457ff89624e, type: 3}
-    meshFilter: {fileID: 0}
-    material: {fileID: 0}
 --- !u!1 &128587207
 GameObject:
   m_ObjectHideFlags: 0
@@ -1707,88 +1661,54 @@ MonoBehaviour:
   - itemDesc: "00\uD558\uB298\uC758 \uB8EC"
     innerSprite: {fileID: 21300000, guid: 5f1a1cf0fceba4e0b9e6339dadc0e098, type: 3}
     statusSprite: {fileID: 21300000, guid: 5f1a1cf0fceba4e0b9e6339dadc0e098, type: 3}
-    meshFilter: {fileID: 0}
-    material: {fileID: 0}
   - itemDesc: "01\uBD88\uD0C0\uB294 \uC2EC\uC7A5"
     innerSprite: {fileID: 21300000, guid: 029170a57c252408eae52798eb097aeb, type: 3}
     statusSprite: {fileID: 21300000, guid: 029170a57c252408eae52798eb097aeb, type: 3}
-    meshFilter: {fileID: 0}
-    material: {fileID: 0}
   - itemDesc: "02\uC601\uB871\uD55C \uAD6C\uC2AC"
     innerSprite: {fileID: 21300000, guid: 879b65f7be8a74453a53e4d7f6a87e64, type: 3}
     statusSprite: {fileID: 21300000, guid: 879b65f7be8a74453a53e4d7f6a87e64, type: 3}
-    meshFilter: {fileID: 0}
-    material: {fileID: 0}
   - itemDesc: "03\uC694\uC815\uC758 \uBAA9\uD654"
     innerSprite: {fileID: 21300000, guid: b570928da823f4d96842cdc283f0b8ae, type: 3}
     statusSprite: {fileID: 21300000, guid: b570928da823f4d96842cdc283f0b8ae, type: 3}
-    meshFilter: {fileID: 0}
-    material: {fileID: 0}
   - itemDesc: "04\uB2EC\uC758 \uC870\uAC01"
     innerSprite: {fileID: 21300000, guid: b570928da823f4d96842cdc283f0b8ae, type: 3}
     statusSprite: {fileID: 21300000, guid: b570928da823f4d96842cdc283f0b8ae, type: 3}
-    meshFilter: {fileID: 0}
-    material: {fileID: 0}
   - itemDesc: "05\uC2E0\uBE44\uD55C \uC870\uAC01"
     innerSprite: {fileID: 21300000, guid: b570928da823f4d96842cdc283f0b8ae, type: 3}
     statusSprite: {fileID: 21300000, guid: b570928da823f4d96842cdc283f0b8ae, type: 3}
-    meshFilter: {fileID: 0}
-    material: {fileID: 0}
   - itemDesc: "06\uD06C\uB86C \uACB0\uC815"
     innerSprite: {fileID: 21300000, guid: b570928da823f4d96842cdc283f0b8ae, type: 3}
     statusSprite: {fileID: 21300000, guid: b570928da823f4d96842cdc283f0b8ae, type: 3}
-    meshFilter: {fileID: 0}
-    material: {fileID: 0}
   - itemDesc: "07\uC218\uC740 \uACB0\uC815"
     innerSprite: {fileID: 21300000, guid: b570928da823f4d96842cdc283f0b8ae, type: 3}
     statusSprite: {fileID: 21300000, guid: b570928da823f4d96842cdc283f0b8ae, type: 3}
-    meshFilter: {fileID: 0}
-    material: {fileID: 0}
   - itemDesc: "08\uC5BC\uC74C \uACB0\uC815"
     innerSprite: {fileID: 21300000, guid: b570928da823f4d96842cdc283f0b8ae, type: 3}
     statusSprite: {fileID: 21300000, guid: b570928da823f4d96842cdc283f0b8ae, type: 3}
-    meshFilter: {fileID: 0}
-    material: {fileID: 0}
   - itemDesc: "09\uBC31\uAE08"
     innerSprite: {fileID: 21300000, guid: b570928da823f4d96842cdc283f0b8ae, type: 3}
     statusSprite: {fileID: 21300000, guid: b570928da823f4d96842cdc283f0b8ae, type: 3}
-    meshFilter: {fileID: 0}
-    material: {fileID: 0}
   - itemDesc: "10\uD751\uC694\uC11D"
     innerSprite: {fileID: 21300000, guid: b570928da823f4d96842cdc283f0b8ae, type: 3}
     statusSprite: {fileID: 21300000, guid: b570928da823f4d96842cdc283f0b8ae, type: 3}
-    meshFilter: {fileID: 0}
-    material: {fileID: 0}
   - itemDesc: "11\uAE08"
     innerSprite: {fileID: 21300000, guid: b570928da823f4d96842cdc283f0b8ae, type: 3}
     statusSprite: {fileID: 21300000, guid: b570928da823f4d96842cdc283f0b8ae, type: 3}
-    meshFilter: {fileID: 0}
-    material: {fileID: 0}
   - itemDesc: "12\uC740"
     innerSprite: {fileID: 21300000, guid: b570928da823f4d96842cdc283f0b8ae, type: 3}
     statusSprite: {fileID: 21300000, guid: b570928da823f4d96842cdc283f0b8ae, type: 3}
-    meshFilter: {fileID: 0}
-    material: {fileID: 0}
   - itemDesc: "13\uC810\uD1A0"
     innerSprite: {fileID: 21300000, guid: b570928da823f4d96842cdc283f0b8ae, type: 3}
     statusSprite: {fileID: 21300000, guid: b570928da823f4d96842cdc283f0b8ae, type: 3}
-    meshFilter: {fileID: 0}
-    material: {fileID: 0}
   - itemDesc: "14\uC19C\uBB49\uCE58"
     innerSprite: {fileID: 21300000, guid: b570928da823f4d96842cdc283f0b8ae, type: 3}
     statusSprite: {fileID: 21300000, guid: b570928da823f4d96842cdc283f0b8ae, type: 3}
-    meshFilter: {fileID: 0}
-    material: {fileID: 0}
   - itemDesc: "15\uBB3C\uC18C\uC758 \uBFD4"
     innerSprite: {fileID: 21300000, guid: b570928da823f4d96842cdc283f0b8ae, type: 3}
     statusSprite: {fileID: 21300000, guid: b570928da823f4d96842cdc283f0b8ae, type: 3}
-    meshFilter: {fileID: 0}
-    material: {fileID: 0}
   - itemDesc: "16\uC9D0\uC2B9 \uAC00\uC8FD"
     innerSprite: {fileID: 21300000, guid: b570928da823f4d96842cdc283f0b8ae, type: 3}
     statusSprite: {fileID: 21300000, guid: b570928da823f4d96842cdc283f0b8ae, type: 3}
-    meshFilter: {fileID: 0}
-    material: {fileID: 0}
 --- !u!1 &322211775
 GameObject:
   m_ObjectHideFlags: 0
@@ -1950,6 +1870,103 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 363906015}
   m_CullTransparentMesh: 1
+--- !u!1001 &373056991
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 2122377946822496248, guid: c28ae09e10d843d41aa7ea6b85335092, type: 3}
+      propertyPath: m_Name
+      value: ItemOrigin
+      objectReference: {fileID: 0}
+    - target: {fileID: 2122377946822496251, guid: c28ae09e10d843d41aa7ea6b85335092, type: 3}
+      propertyPath: m_Pivot.x
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 2122377946822496251, guid: c28ae09e10d843d41aa7ea6b85335092, type: 3}
+      propertyPath: m_Pivot.y
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 2122377946822496251, guid: c28ae09e10d843d41aa7ea6b85335092, type: 3}
+      propertyPath: m_RootOrder
+      value: 8
+      objectReference: {fileID: 0}
+    - target: {fileID: 2122377946822496251, guid: c28ae09e10d843d41aa7ea6b85335092, type: 3}
+      propertyPath: m_AnchorMax.x
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 2122377946822496251, guid: c28ae09e10d843d41aa7ea6b85335092, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 2122377946822496251, guid: c28ae09e10d843d41aa7ea6b85335092, type: 3}
+      propertyPath: m_AnchorMin.x
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 2122377946822496251, guid: c28ae09e10d843d41aa7ea6b85335092, type: 3}
+      propertyPath: m_AnchorMin.y
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 2122377946822496251, guid: c28ae09e10d843d41aa7ea6b85335092, type: 3}
+      propertyPath: m_SizeDelta.x
+      value: 100
+      objectReference: {fileID: 0}
+    - target: {fileID: 2122377946822496251, guid: c28ae09e10d843d41aa7ea6b85335092, type: 3}
+      propertyPath: m_SizeDelta.y
+      value: 100
+      objectReference: {fileID: 0}
+    - target: {fileID: 2122377946822496251, guid: c28ae09e10d843d41aa7ea6b85335092, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2122377946822496251, guid: c28ae09e10d843d41aa7ea6b85335092, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2122377946822496251, guid: c28ae09e10d843d41aa7ea6b85335092, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2122377946822496251, guid: c28ae09e10d843d41aa7ea6b85335092, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2122377946822496251, guid: c28ae09e10d843d41aa7ea6b85335092, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2122377946822496251, guid: c28ae09e10d843d41aa7ea6b85335092, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2122377946822496251, guid: c28ae09e10d843d41aa7ea6b85335092, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2122377946822496251, guid: c28ae09e10d843d41aa7ea6b85335092, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2122377946822496251, guid: c28ae09e10d843d41aa7ea6b85335092, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2122377946822496251, guid: c28ae09e10d843d41aa7ea6b85335092, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2122377946822496251, guid: c28ae09e10d843d41aa7ea6b85335092, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2122377946822496251, guid: c28ae09e10d843d41aa7ea6b85335092, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: c28ae09e10d843d41aa7ea6b85335092, type: 3}
 --- !u!1 &384923956
 GameObject:
   m_ObjectHideFlags: 0
@@ -2030,56 +2047,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 384923956}
   m_CullTransparentMesh: 1
---- !u!1 &412475346
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 412475347}
-  - component: {fileID: 412475348}
-  m_Layer: 0
-  m_Name: IC_Axe
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &412475347
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 412475346}
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1382244209}
-  m_RootOrder: 5
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &412475348
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 412475346}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bd63a2a2725a2fa458782e4eec5e6a93, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  icArrImg:
-  - itemDesc: "00\uC190\uB3C4\uB07C"
-    innerSprite: {fileID: 21300000, guid: 556def944fd02f54c98ac89a1fd817a7, type: 3}
-    statusSprite: {fileID: 21300000, guid: 556def944fd02f54c98ac89a1fd817a7, type: 3}
-    meshFilter: {fileID: 0}
-    material: {fileID: 0}
 --- !u!1 &475597745
 GameObject:
   m_ObjectHideFlags: 0
@@ -3335,78 +3302,48 @@ MonoBehaviour:
   - itemDesc: "00\uC0AC\uB0E5\uAFBC\uC758 \uD65C"
     innerSprite: {fileID: 21300000, guid: c6b96b87adbd25343b9079d963ffb637, type: 3}
     statusSprite: {fileID: 21300000, guid: c6b96b87adbd25343b9079d963ffb637, type: 3}
-    meshFilter: {fileID: 0}
-    material: {fileID: 0}
   - itemDesc: "01\uB871 \uBCF4\uC6B0"
     innerSprite: {fileID: 21300000, guid: 0c7f2b30efde63b4e85506baea6e3484, type: 3}
     statusSprite: {fileID: 21300000, guid: 0c7f2b30efde63b4e85506baea6e3484, type: 3}
-    meshFilter: {fileID: 0}
-    material: {fileID: 0}
   - itemDesc: "02\uCEF4\uBC43 \uBCF4\uC6B0"
     innerSprite: {fileID: 21300000, guid: 51d0cbd98e5243c4eac6f1e283a558c2, type: 3}
     statusSprite: {fileID: 21300000, guid: 51d0cbd98e5243c4eac6f1e283a558c2, type: 3}
-    meshFilter: {fileID: 0}
-    material: {fileID: 0}
   - itemDesc: "03\uC591\uCE58\uAE30\uC758 \uD65C"
     innerSprite: {fileID: 21300000, guid: fb2acd264db5e24428dbf84cf8f0f467, type: 3}
     statusSprite: {fileID: 21300000, guid: fb2acd264db5e24428dbf84cf8f0f467, type: 3}
-    meshFilter: {fileID: 0}
-    material: {fileID: 0}
   - itemDesc: "04\uB3C4\uB9DD\uC790\uC758 \uD65C"
     innerSprite: {fileID: 21300000, guid: cfddf38e2d0fcbb40b169564fd58ea23, type: 3}
     statusSprite: {fileID: 21300000, guid: cfddf38e2d0fcbb40b169564fd58ea23, type: 3}
-    meshFilter: {fileID: 0}
-    material: {fileID: 0}
   - itemDesc: "05\uC0E4\uC774\uB2DD \uBCF4\uC6B0"
     innerSprite: {fileID: 21300000, guid: bd414a9002c9cc743a6b1481e409997d, type: 3}
     statusSprite: {fileID: 21300000, guid: bd414a9002c9cc743a6b1481e409997d, type: 3}
-    meshFilter: {fileID: 0}
-    material: {fileID: 0}
   - itemDesc: "06\uC774\uAE00 \uBCF4\uC6B0"
     innerSprite: {fileID: 21300000, guid: fbbb6b2fa97334433bb41eaa87834b5a, type: 3}
     statusSprite: {fileID: 21300000, guid: fbbb6b2fa97334433bb41eaa87834b5a, type: 3}
-    meshFilter: {fileID: 0}
-    material: {fileID: 0}
   - itemDesc: "07\uD0C4\uAD81"
     innerSprite: {fileID: 21300000, guid: fbbb6b2fa97334433bb41eaa87834b5a, type: 3}
     statusSprite: {fileID: 21300000, guid: fbbb6b2fa97334433bb41eaa87834b5a, type: 3}
-    meshFilter: {fileID: 0}
-    material: {fileID: 0}
   - itemDesc: "08\uAC01\uAD81"
     innerSprite: {fileID: 21300000, guid: fbbb6b2fa97334433bb41eaa87834b5a, type: 3}
     statusSprite: {fileID: 21300000, guid: fbbb6b2fa97334433bb41eaa87834b5a, type: 3}
-    meshFilter: {fileID: 0}
-    material: {fileID: 0}
   - itemDesc: "09\uCD94\uACA9\uC790\uC758 \uD65C"
     innerSprite: {fileID: 21300000, guid: fbbb6b2fa97334433bb41eaa87834b5a, type: 3}
     statusSprite: {fileID: 21300000, guid: fbbb6b2fa97334433bb41eaa87834b5a, type: 3}
-    meshFilter: {fileID: 0}
-    material: {fileID: 0}
   - itemDesc: "10\uCDE8\uD48D \uD30C\uB974\uD2F0\uC544"
     innerSprite: {fileID: 21300000, guid: fbbb6b2fa97334433bb41eaa87834b5a, type: 3}
     statusSprite: {fileID: 21300000, guid: fbbb6b2fa97334433bb41eaa87834b5a, type: 3}
-    meshFilter: {fileID: 0}
-    material: {fileID: 0}
   - itemDesc: "11\uD53C\uB2C9\uC2A4\uC758 \uC18D\uC0AD\uC784"
     innerSprite: {fileID: 21300000, guid: fbbb6b2fa97334433bb41eaa87834b5a, type: 3}
     statusSprite: {fileID: 21300000, guid: fbbb6b2fa97334433bb41eaa87834b5a, type: 3}
-    meshFilter: {fileID: 0}
-    material: {fileID: 0}
   - itemDesc: "12\uD0DC\uC591\uC758 \uD65C"
     innerSprite: {fileID: 21300000, guid: fbbb6b2fa97334433bb41eaa87834b5a, type: 3}
     statusSprite: {fileID: 21300000, guid: fbbb6b2fa97334433bb41eaa87834b5a, type: 3}
-    meshFilter: {fileID: 0}
-    material: {fileID: 0}
   - itemDesc: "13\uC7A5\uBBF8\uC758 \uC2E0\uAD81"
     innerSprite: {fileID: 21300000, guid: fbbb6b2fa97334433bb41eaa87834b5a, type: 3}
     statusSprite: {fileID: 21300000, guid: fbbb6b2fa97334433bb41eaa87834b5a, type: 3}
-    meshFilter: {fileID: 0}
-    material: {fileID: 0}
   - itemDesc: "14\uD30C\uB9C8\uC758 \uD65C"
     innerSprite: {fileID: 21300000, guid: fbbb6b2fa97334433bb41eaa87834b5a, type: 3}
     statusSprite: {fileID: 21300000, guid: fbbb6b2fa97334433bb41eaa87834b5a, type: 3}
-    meshFilter: {fileID: 0}
-    material: {fileID: 0}
 --- !u!1 &963044011
 GameObject:
   m_ObjectHideFlags: 0
@@ -4205,7 +4142,6 @@ Transform:
   - {fileID: 119480570}
   - {fileID: 1538316742}
   - {fileID: 936817443}
-  - {fileID: 412475347}
   m_Father: {fileID: 901355467}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -4257,78 +4193,48 @@ MonoBehaviour:
   - itemDesc: "00\uCCA0 \uAC80"
     innerSprite: {fileID: 21300000, guid: a4910fbe75cd4b14c82d45526ae4f58f, type: 3}
     statusSprite: {fileID: 21300000, guid: a4910fbe75cd4b14c82d45526ae4f58f, type: 3}
-    meshFilter: {fileID: 0}
-    material: {fileID: 0}
   - itemDesc: "01\uAC15\uCCA0 \uAC80"
     innerSprite: {fileID: 21300000, guid: aea726aafb3676541a79900d1bc4768d, type: 3}
     statusSprite: {fileID: 21300000, guid: aea726aafb3676541a79900d1bc4768d, type: 3}
-    meshFilter: {fileID: 0}
-    material: {fileID: 0}
   - itemDesc: "02\uBBF8\uC2A4\uB9B4 \uAC80"
     innerSprite: {fileID: 21300000, guid: 0a4f476fd0c15c44b8bc37e3c376bed6, type: 3}
     statusSprite: {fileID: 21300000, guid: 0a4f476fd0c15c44b8bc37e3c376bed6, type: 3}
-    meshFilter: {fileID: 0}
-    material: {fileID: 0}
   - itemDesc: "03\uD751\uCCA0 \uAC80"
     innerSprite: {fileID: 21300000, guid: 170c0214d753cde48b8c34130cf22d27, type: 3}
     statusSprite: {fileID: 21300000, guid: 170c0214d753cde48b8c34130cf22d27, type: 3}
-    meshFilter: {fileID: 0}
-    material: {fileID: 0}
   - itemDesc: "04\uD504\uB808\uCCBC"
     innerSprite: {fileID: 21300000, guid: 419b2253f61d76f44b62b79333e29d37, type: 3}
     statusSprite: {fileID: 21300000, guid: 419b2253f61d76f44b62b79333e29d37, type: 3}
-    meshFilter: {fileID: 0}
-    material: {fileID: 0}
   - itemDesc: "05\uC5BC\uC74C \uCE7C\uB0A0"
     innerSprite: {fileID: 21300000, guid: fbbb6b2fa97334433bb41eaa87834b5a, type: 3}
     statusSprite: {fileID: 21300000, guid: fbbb6b2fa97334433bb41eaa87834b5a, type: 3}
-    meshFilter: {fileID: 0}
-    material: {fileID: 0}
   - itemDesc: "06\uBC31\uC740\uC758 \uAC80"
     innerSprite: {fileID: 21300000, guid: fbbb6b2fa97334433bb41eaa87834b5a, type: 3}
     statusSprite: {fileID: 21300000, guid: fbbb6b2fa97334433bb41eaa87834b5a, type: 3}
-    meshFilter: {fileID: 0}
-    material: {fileID: 0}
   - itemDesc: "07\uAE30\uC0AC\uB2E8\uC758 \uAC80"
     innerSprite: {fileID: 21300000, guid: fbbb6b2fa97334433bb41eaa87834b5a, type: 3}
     statusSprite: {fileID: 21300000, guid: fbbb6b2fa97334433bb41eaa87834b5a, type: 3}
-    meshFilter: {fileID: 0}
-    material: {fileID: 0}
   - itemDesc: "08\uC544\uBC0D \uC18C\uB4DC"
     innerSprite: {fileID: 21300000, guid: fbbb6b2fa97334433bb41eaa87834b5a, type: 3}
     statusSprite: {fileID: 21300000, guid: fbbb6b2fa97334433bb41eaa87834b5a, type: 3}
-    meshFilter: {fileID: 0}
-    material: {fileID: 0}
   - itemDesc: "09\uD558\uD50C\uB791"
     innerSprite: {fileID: 21300000, guid: fbbb6b2fa97334433bb41eaa87834b5a, type: 3}
     statusSprite: {fileID: 21300000, guid: fbbb6b2fa97334433bb41eaa87834b5a, type: 3}
-    meshFilter: {fileID: 0}
-    material: {fileID: 0}
   - itemDesc: "10\uCC9C\uACF5\uC758 \uC9C0\uBC30"
     innerSprite: {fileID: 21300000, guid: fbbb6b2fa97334433bb41eaa87834b5a, type: 3}
     statusSprite: {fileID: 21300000, guid: fbbb6b2fa97334433bb41eaa87834b5a, type: 3}
-    meshFilter: {fileID: 0}
-    material: {fileID: 0}
   - itemDesc: "11\uD30C\uBA78\uC758 \uBD88\uAF43"
     innerSprite: {fileID: 21300000, guid: fbbb6b2fa97334433bb41eaa87834b5a, type: 3}
     statusSprite: {fileID: 21300000, guid: fbbb6b2fa97334433bb41eaa87834b5a, type: 3}
-    meshFilter: {fileID: 0}
-    material: {fileID: 0}
   - itemDesc: "12\uB4C0\uB780\uB2EC"
     innerSprite: {fileID: 21300000, guid: fbbb6b2fa97334433bb41eaa87834b5a, type: 3}
     statusSprite: {fileID: 21300000, guid: fbbb6b2fa97334433bb41eaa87834b5a, type: 3}
-    meshFilter: {fileID: 0}
-    material: {fileID: 0}
   - itemDesc: "13\uBBF8\uC2A4\uD2F8\uD14C\uC778"
     innerSprite: {fileID: 21300000, guid: fbbb6b2fa97334433bb41eaa87834b5a, type: 3}
     statusSprite: {fileID: 21300000, guid: fbbb6b2fa97334433bb41eaa87834b5a, type: 3}
-    meshFilter: {fileID: 0}
-    material: {fileID: 0}
   - itemDesc: "14\uD06C\uC2DC\uD3EC\uC2A4"
     innerSprite: {fileID: 21300000, guid: fbbb6b2fa97334433bb41eaa87834b5a, type: 3}
     statusSprite: {fileID: 21300000, guid: fbbb6b2fa97334433bb41eaa87834b5a, type: 3}
-    meshFilter: {fileID: 0}
-    material: {fileID: 0}
 --- !u!1001 &1559124927
 PrefabInstance:
   m_ObjectHideFlags: 0

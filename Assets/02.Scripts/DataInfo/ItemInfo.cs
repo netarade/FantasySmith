@@ -96,7 +96,15 @@ using ItemData;
  *
  *3- UpdatePosition 변수명을 UpdateInventoryPosition으로 변경
  *
- *4- (추후 수정해야할 점) UpdateInventoryPosition이 현재 자신 인벤토리 기준으로 수정하고 있으나,
+ *<v9.4 - 2023_1228_최원준
+ *1- 아이템 프리팹 계층구조 재변경으로 인해 (3D오브젝트, 2D오브젝트 전환방식)
+ *코드를 2D기준으로 임시 변경 (itemTr->itemRectTr)
+ *
+ *
+ *
+ *
+ *[추후 수정해야할 점] 
+ * 1- UpdateInventoryPosition이 현재 자신 인벤토리 기준으로 수정하고 있으나,
  * 나중에 UpdatePosition을 할 때 아이템이 보관함 슬롯의 인덱스 뿐만 아니라 어느 보관함에 담겨있는지도 정보가 있어야 한다.
  *
  *
@@ -153,7 +161,7 @@ public class ItemInfo : MonoBehaviour
     /// </summary>
     private void OnEnable()
     {
-        itemTr = transform.parent;                              // 자기자신 3d 트랜스폼 참조(계층 최상위)
+        //itemTr = transform.parent;                              // 자기자신 3d 트랜스폼 참조(계층 최상위)
         itemRectTr = transform.GetComponent<RectTransform>();   // 자기자신 2d 트랜스폼 참조(계층 하위)
 
         itemImage = GetComponent<Image>();
@@ -268,7 +276,7 @@ public class ItemInfo : MonoBehaviour
             Debug.Log( "현재 슬롯이 생성되지 않은 상태입니다." );
             return;
         }
-        itemTr.SetParent( slotListTr.GetChild(Item.SlotIndex) );  // 오브젝트의 현 부모를 아이템 정보상의 슬롯 위치로 변경한다.
+        itemRectTr.SetParent( slotListTr.GetChild(Item.SlotIndex) );  // 오브젝트의 현 부모를 아이템 정보상의 슬롯 위치로 변경한다.
         itemRectTr.localPosition = Vector3.zero;                  // 로컬위치를 부모기준으로부터 0,0,0으로 맞춘다.
     }
 

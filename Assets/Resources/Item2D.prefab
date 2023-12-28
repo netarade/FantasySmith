@@ -95,7 +95,7 @@ GameObject:
   - component: {fileID: -466012075503803452}
   - component: {fileID: -5022671759351565396}
   m_Layer: 5
-  m_Name: ItemOrigin
+  m_Name: Item2D
   m_TagString: ITEM
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

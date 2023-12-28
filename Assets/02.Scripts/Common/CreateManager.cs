@@ -139,7 +139,9 @@ using WorldItemData;
 * 3- Item프리팹 참조를 리소스폴더의 ItemOrigin에서 Item3D로 변경
 * 
 * 4- slotListTr을 Start문에서 참조하는것이 아니라 inventory를 인자로 받을때 생성할 위치정보도 같이 받아야할 필요성(추후구현예정)  
-*  
+* 
+* <v11.1 - 2023_1228_최원준>
+* 1- Item프리팹 참조를 리소스폴더의 ItemOrigin에서 Item2D로 변경
 * 
 * 
 */
@@ -181,7 +183,7 @@ public class CreateManager : MonoBehaviour
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
         // 리소스 폴더에서 원본 프리팹 가져오기
-        itemPrefab=Resources.Load<GameObject>( "Item3D" );  
+        itemPrefab=Resources.Load<GameObject>( "Item2D" );  
 
         // 슬롯리스트를 인식 시켜 남아있는 슬롯을 확인하기 위해
         Transform canvasTr = GameObject.FindWithTag("CANVAS_CHARACTER").transform;

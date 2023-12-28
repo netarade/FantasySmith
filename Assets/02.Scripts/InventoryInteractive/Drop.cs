@@ -5,7 +5,7 @@ using UnityEngine.EventSystems;
 
 /* [작업 사항]
  * <v1.0 - 2023_1105_최원준>
- * 1- d초기 로직 작성, 아이템 스위칭 구현
+ * 1- 초기 로직 작성, 아이템 스위칭 구현
  * 
  * <v1.1 - 2023_1106_최원준>
  * 드랍 시 슬롯의 위치를 저장하도록 구현
@@ -37,8 +37,21 @@ using UnityEngine.EventSystems;
  * 드래깅 중인 아이템 오브젝트가 없을 때 Drop 이벤트의 로직 실행을 막음
  * 
  * <v5.0 - 2023_1227_최원준>
- * 1- 아이템 계층구조 변경으로 인해 참조하던 dragObj를 dragObj3D와 dragObj2D 참조로 변경.(최상위 3D전용, 하위 2D전용 오브젝트)
+ * 1- 아이템 계층구조 변경으로 인해(3D오브젝트하위 2D오브젝트 두는 방식) 참조하던 dragObj를 dragObj3D와 dragObj2D 참조로 변경.
  * 2- OnDrop에서 선언하던 변수들을 Drop 클래스 변수로 선언위치를 변경
+ * 
+ * <v5.1 - 2023_1228_최원준>
+ * 1- 다시 아이템 계층구조 변경으로 인해(3D오브젝트, 2D오브젝트 스위칭 방식) 코드를 2D기준으로 수정
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ * [추후 수정해야할 이슈정리]
+ * 1- playerInvenInfo를 태그 방식이 아니라 계층참조방식으로 변경 (멀티플레이어 염두)
+ * 2- 수량1개가 되었을때 오브젝트를 바로파괴하지 않고 0.5초후 파괴했던 코드를 적은 이유가 기억이 안남. 바로파괴하는 형식으로 바꿔볼 것
  * 
  */
 
@@ -51,8 +64,6 @@ public class Drop : MonoBehaviour, IDropHandler
 
     GameObject dragObj3D;                          // 현재 드래그 중인 3D 오브젝트
     GameObject dragObj2D;                          // 현재 드래그 중인 3D 오브젝트 하위의 2D 오브젝트
-    Item draggingItem;                             // 현재 드래그 중인 아이템 정보
-    ItemMisc draggingMisc;                         // 현재 드래그 중인 잡화 아이템의 정보
 
     Item applyItem;                                // 강화를 적용할 아이템
     Transform switchingItemTr;                     // 드롭했을 때 위치를 바꿀 아이템의 Transform
@@ -75,25 +86,24 @@ public class Drop : MonoBehaviour, IDropHandler
     /// <param name="eventData"></param>
     public void OnDrop( PointerEventData eventData )
     {
-        dragObj3D = Drag.draggingObj3D;  // 현재 드래그 중인 3D 오브젝트 참조
-        dragObj2D = Drag.draggingObj2D;  // 현재 드래그 중인 3D 오브젝트 하위의 2D 오브젝트 참조
+        GameObject dragObj2D = Drag.draggingObj2D;  // 현재 드래그 중인 3D 오브젝트 하위의 2D 오브젝트 참조
 
-        if(dragObj3D == null)                       // 드래그 중인 오브젝트가 없는 경우 하위 로직을 실행하지 않음 
+        if(dragObj2D == null)                       // 드래그 중인 오브젝트가 없는 경우 하위 로직을 실행하지 않음 
             return;
 
-        draggingItem = dragObj3D.GetComponentInChildren<ItemInfo>().Item;  // 아이템 정보참조
+        Item draggingItem = dragObj2D.GetComponent<ItemInfo>().Item;  // 현재 드래그 중인 아이템 정보
 
 
         // 드래그 중인 아이템이 속성석이나 강화석, 각인석이라면, 수행하는 로직들.
         if( draggingItem.Type==ItemType.Misc )
         {
-            draggingMisc = ( (ItemMisc)draggingItem );      // 잡화아이템 정보 참조
+            ItemMisc draggingMisc = ( (ItemMisc)draggingItem );      // 현재 드래그 중인 잡화 아이템의 정보
 
             if( draggingMisc.MiscType==MiscType.Engraving||
                 draggingMisc.MiscType==MiscType.Enhancement||
                 draggingMisc.MiscType==MiscType.Attribute )
             {
-                applyItem = slotTr.GetChild(0).gameObject.GetComponentInChildren<ItemInfo>().Item;   //강화를 적용할 아이템의 정보를 봅니다.
+                applyItem = slotTr.GetChild(0).gameObject.GetComponent<ItemInfo>().Item;   //강화를 적용할 아이템의 정보를 봅니다.
                 
                 if( applyItem.Type==ItemType.Weapon )                 // 적용 대상이 무기라면 강화 로직을 수행하고 아니라면 스위칭 로직을 수행합니다.
                 {
@@ -125,14 +135,14 @@ public class Drop : MonoBehaviour, IDropHandler
 
                     if( draggingMisc.OverlapCount==1 )    // 아이템 갯수가 1개라면,
                     {
-                        miscDic[draggingItem.Name].Remove( dragObj3D );   // 아이템을 플레이어 인벤토리의 잡화목록에서 제거합니다.
-                        Destroy( dragObj3D, 0.5f );                       // 0.5초후 삭제 시킵니다.
-                        dragObj3D.SetActive( false );                     // 아이템을 바로 disable 시킵니다.
+                        miscDic[draggingItem.Name].Remove( dragObj2D );   // 아이템을 플레이어 인벤토리의 잡화목록에서 제거합니다.
+                        Destroy( dragObj2D, 0.5f );                       // 0.5초후 삭제 시킵니다.
+                        dragObj2D.SetActive( false );                     // 아이템을 바로 disable 시킵니다.
                     }
                     else //2개 이상이라면,
                     {
                         draggingMisc.OverlapCount-=1;       // 실제 수량을 뺀다.
-                        dragObj3D.GetComponentInChildren<ItemInfo>().UpdateCountTxt();  // 중첩 텍스트를 수정한다.
+                        dragObj2D.GetComponent<ItemInfo>().UpdateCountTxt();  // 중첩 텍스트를 수정한다.
                     }
 
 
@@ -146,7 +156,7 @@ public class Drop : MonoBehaviour, IDropHandler
 
         if( slotTr.childCount==0 )   // 슬롯이 비어있다면, 부모를 변경하고
         {
-            dragObj3D.transform.SetParent( transform );                 // 해당슬롯으로 부모 변경
+            dragObj2D.transform.SetParent( slotTr );                    // 해당슬롯으로 부모 변경
             dragObj2D.transform.localPosition = Vector3.zero;           // 정중앙 위치
             draggingItem.SlotIndex = slotTr.GetSiblingIndex();          // 바뀐 슬롯의 위치를 저장한다.
         }
@@ -155,17 +165,17 @@ public class Drop : MonoBehaviour, IDropHandler
             int prevIdx = Drag.prevParentTrByDrag.GetSiblingIndex(); // 드래깅 중인 아이템이 속한 부모(슬롯)의 인덱스를 저장
 
             draggingItem.SlotIndex = slotTr.GetSiblingIndex();      // 드래그중인 아이템은 바뀐 슬롯 위치로 저장한다.
-            dragObj3D.transform.SetParent( slotTr );                // 드래그 중인 아이템은 해당 슬롯으로 위치
+            dragObj2D.transform.SetParent( slotTr );                // 드래그 중인 아이템은 해당 슬롯으로 위치
             dragObj2D.transform.localPosition = Vector3.zero;       // 정중앙 위치
 
 
-            // 바꿀 아이템 설정 (현재 자식이 2개가 중첩되어 있다. 그 중 1번째 기존의 자식)
-            switchingItemTr = slotTr.GetChild( 0 );                 
-            switchingItemRectTr = switchingItemTr.GetChild(0).GetComponent<RectTransform>();
+            // 바꿀 아이템 설정
+            //switchingItemTr = slotTr.GetChild( 0 );                 
+            switchingItemRectTr = slotTr.GetChild(0).GetComponent<RectTransform>();
 
-            switchingItemTr.GetComponentInChildren<ItemInfo>().Item.SlotIndex=prevIdx;  // 스위칭할 아이템의 슬롯 번호를 기록해둔 위치로 저장 
-            switchingItemTr.SetParent( Drag.prevParentTrByDrag );                       // 이미지 우선순위 문제로 부모를 일시적으로 바꾸므로, 이전 부모를 받아온다.            
-            switchingItemRectTr.localPosition=Vector3.zero;                             // 정중앙 위치
+            switchingItemRectTr.GetComponent<ItemInfo>().Item.SlotIndex=prevIdx;  // 스위칭할 아이템의 슬롯 번호를 기록해둔 위치로 저장 
+            switchingItemRectTr.SetParent( Drag.prevParentTrByDrag );             // 이미지 우선순위 문제로 부모를 일시적으로 바꾸므로, 이전 부모를 받아온다.            
+            switchingItemRectTr.localPosition=Vector3.zero;                       // 정중앙 위치
         }
 
     }

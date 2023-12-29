@@ -34,6 +34,9 @@ using Newtonsoft.Json;
  * 5- IsDataExistInSlot, SaveData, LoadData 메서드의 슬롯번호를 인자로 넣던 것 삭제
  * 6- 메서드명 변경 IsDataExistInSlot->IsFileExist
  * 
+ * <v4.1 - 2023_1229_최원준>
+ * 1- 매개변수 생성자에서 Path를 초기화안해주던 점 수정
+ * 
  */
 
 namespace DataManagement
@@ -102,6 +105,7 @@ namespace DataManagement
         /// <param name="extension">확장자명(기본값 .json)</param>
         public DataManager(string fileName, int slotNum=0, string extension=".json")
         {
+            Path = Application.persistentDataPath + "/";
             FileName = fileName;
             SlotNum = slotNum;
             Extension = extension;
@@ -142,8 +146,10 @@ namespace DataManagement
         /// <param name="saveSlot">세이브할 슬롯</param>
         public void SaveData<T>(T gameData) where T : SaveData
         {
+            Debug.Log("저장진행 중");
             string data = JsonConvert.SerializeObject(gameData, Formatting.Indented);
             File.WriteAllText(Path + FileName + "S" + SlotNum.ToString() + Extension, data);
+            Debug.Log("저장완료 중");
         }
 
         /// <summary>
@@ -153,13 +159,16 @@ namespace DataManagement
         /// <returns>SaveData 인터페이스를 상속하는 사용자 정의 자료형</returns>
         public T LoadData<T>() where T : SaveData, new()  // 제약조건: SaveData 인터페이스의 종류이며, 디폴트 생성자가 존재
         {
-            if( IsFileExist() ) // 저장된 슬롯이 있따면 기존 게임데이터를 만들어 반환
+            
+            if( IsFileExist() ) // 저장된 파일이 있다면 기존 게임데이터를 만들어 반환
             {
+                Debug.Log("파일이 존재");
                 string data = File.ReadAllText(Path + FileName + "S" + SlotNum.ToString() + Extension);
                 return JsonConvert.DeserializeObject<T>(data); 
             }
             else //저장된 슬롯이 없다면 새롭게 게임데이터를 만들어 반환
             {
+                Debug.Log("파일이 없음");
                 return new T();   
             }
         }

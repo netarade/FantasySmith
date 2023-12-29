@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using ItemData;
+using InventoryManagement;
 
 /*
  * [작업 사항]
@@ -104,11 +105,21 @@ using ItemData;
  *1- 파일 및 클래스명 변경 ItemInfo -> Item
  *이유는 중심기능이 스크립트에서 이루어져야 하며, 저장기능은 DtItem 인스턴스가 담당해야 하기 때문
  *
+ *<v10.1 - 2023-1229_최원준>
+ *1- UpdateSlotPosition에서 선택인자를 추가하여 슬롯리스트 정보를 주는 경우에는 해당 슬롯리스트의 인덱스로 포지션업데이트를 하며,
+ *슬롯리스트 정보를 주지 않은 경우에는 아이템이 현재 담겨있는 슬롯을 기준으로 슬롯리스트를 참조해서 인덱스에 따른 포지션 업데이트를 하도록 변경
+ *
+ *2-
+ *
+ *
  *
  *
  *[추후 수정해야할 점] 
  * 1- UpdateInventoryPosition이 현재 자신 인벤토리 기준으로 수정하고 있으나,
  * 나중에 UpdatePosition을 할 때 아이템이 보관함 슬롯의 인덱스 뿐만 아니라 어느 보관함에 담겨있는지도 정보가 있어야 한다.
+ *
+ *
+ *
  *
  *
  */
@@ -129,27 +140,55 @@ using ItemData;
 /// </summary>
 public class ItemInfo : MonoBehaviour
 {
-    private Item item;              // 모든 아이템 클래스를 관리 가능한 변수
-    private Image itemImage;        // 아이템이 인벤토리에서 2D상에서 보여질 이미지     
+    private Item item;             // 아이템의 실제 정보가 담긴 변수
 
+    private Image itemImage;       // 아이템이 인벤토리에서 2D상에서 보여질 이미지 컴포넌트 참조  
     public Sprite innerSprite;     // 아이템이 인벤토리에서 보여질 이미지 스프라이트
     public Sprite statusSprite;    // 아이템이 상태창에서 보여질 이미지 스프라이트 (상태창 스크립트에서 참조를 하게 됩니다.)
-
-    public Text countTxt;           // 잡화 아이템의 수량을 반영할 텍스트
-    public Transform slotListTr;    // 아이템이 놓이게 될 슬롯 들의 부모인 슬롯리스트 트랜스폼 참조
-
-    private Transform itemTr;           // 자기자신 3D 트랜스폼 참조(계층 최상위)
-    private RectTransform itemRectTr;   // 자기자신 2D 트랜스폼 참조(계층 하위)
-
-
+    private Text countTxt;         // 잡화 아이템의 수량을 반영할 텍스트
+        
     public ItemImageCollection[] iicArr;      // 인스펙터 뷰 상에서 등록할 아이템 이미지 집합 배열
     public enum eIIC { MiscBase,MiscAdd,MiscOther,Sword,Bow,Axe }    // 이미지 집합 배열의 인덱스 구분
     private readonly int iicNum = 6;                             // 이미지 집합 배열의 갯수
 
+
+    private RectTransform itemRectTr;   // 자기자신 2D 트랜스폼 참조(초기 계층 - 상위 부모)
+    private Transform itemTr;           // 자기자신 3D 트랜스폼 참조(초기 계층 - 하위 마지막 자식)
+
+
+    private CanvasGroup itemCG;             // 아이템의 캔버스 그룹 컴포넌트 (아이템이 월드로 나갔을 때 2D이벤트를 막기위한 용도) 
+
+    private bool isWorldPositioned;         // 아이템이 월드에 나와있는지 여부
+    private InventoryInfo inventoryInfo;    // 아이템이 들어있는 인벤토리 오브젝트의 스크립트를 참조합니다.
+    private Transform slotListTr;           // 아이템이 담겨있는 슬롯리스트 트랜스폼 정보
+
+    
     /// <summary>
-    /// 클론 한 Item 인스턴스를 저장하고, 저장 되어있는 인스턴스를 불러올 수 있습니다.
+    /// 아이템이 월드에 나와있는지 (3D 오브젝트 인지) 여부를 반환합니다.
     /// </summary>
-    public Item Item                // 외부에서 개념아이템을 참조시킬 때 호출해야할 프로퍼티
+    public bool IsWorldPoisitioned { get { return isWorldPositioned; } }
+    
+    /// <summary>
+    /// 현재 아이템이 담긴 인벤토리의 정보입니다.
+    /// </summary>
+    public InventoryInfo InventoryInfo { get { return inventoryInfo; } set; }
+
+    /// <summary>
+    /// 현재 아이템이 담겨있는 슬롯리스트의 Transform을 반환합니다.<br/>
+    /// 프로퍼티 호출 시 아이템의 계층구조를 바탕으로 새롭게 정보를 산출합니다.<br/>
+    /// 현재 슬롯의 정보를 직접 수정할 수 있습니다.<br/> 
+    /// </summary>
+    public Transform SlotListTr { get { return slotListTr; } }
+
+    
+
+
+
+    /// <summary>
+    /// 아이템이 담겨있는 실제 정보를 직접 저장하거나 반환받습니다.<br/>
+    /// 클론 한 Item 인스턴스를 저장하고, 저장 되어있는 인스턴스를 불러올 수 있습니다.<br/>
+    /// </summary>
+    public Item Item                
     {
         set
         {
@@ -164,14 +203,14 @@ public class ItemInfo : MonoBehaviour
     /// </summary>
     private void OnEnable()
     {
-        //itemTr = transform.parent;                              // 자기자신 3d 트랜스폼 참조(계층 최상위)
-        itemRectTr = transform.GetComponent<RectTransform>();   // 자기자신 2d 트랜스폼 참조(계층 하위)
+        itemRectTr = transform.GetComponent<RectTransform>();   // 자기자신 2d 트랜스폼 참조(초기 계층 - 상위 부모)
+        itemTr = itemRectTr.GetChild(itemRectTr.childCount-1);  // 자기자신 3d 트랜스폼 참조(초기 계층 - 하위 마지막 자식)
 
         itemImage = GetComponent<Image>();
         countTxt = GetComponentInChildren<Text>();
 
         Transform canvasTr = GameObject.FindWithTag("CANVAS_CHARACTER").transform;
-        slotListTr = canvasTr.GetChild(0).GetChild(0).GetChild(0).GetChild(0);
+        //slotListTr = canvasTr.GetChild(0).GetChild(0).GetChild(0).GetChild(0);
         
         // 인스펙터뷰 상에서 달아놓은 스프라이트 이미지 집합을 참조합니다.
         Transform imageCollectionsTr = GameObject.FindAnyObjectByType<CreateManager>().transform.GetChild(0);
@@ -181,19 +220,24 @@ public class ItemInfo : MonoBehaviour
 
         // 각 iicArr은 imageCollectionsTr의 하위 자식오브젝트로서 ItemImageCollection 스크립트를 컴포넌트로 가지고 있습니다
         for( int i = 0; i<iicNum; i++)
-            iicArr[i] = imageCollectionsTr.GetChild(i).GetComponent<ItemImageCollection>();        
+            iicArr[i] = imageCollectionsTr.GetChild(i).GetComponent<ItemImageCollection>();
+        
+        isWorldPositioned = false;
+        itemCG = GetComponent<CanvasGroup>();
     }
-
+    
 
     /// <summary>
+    /// 아이템의 연관된 모든 정보를 최신화합니다.(아이템의 내부정보를 오브젝트에 반영합니다.)<br/>
     /// 오브젝트에 item의 참조가 이루어졌다면 item이 가지고 있는 이미지를 반영하고 잡화아이템의 경우 중첩 횟수까지 최신화 합니다.<br/>
-    /// 오브젝트의 아이템 값을 입력할 때는 내부 자동 호출이 이루어지는 메서드이기에 아이템 정보 변동이 있을 때만 따로 호출하시면 됩니다.
+    /// **** 외부 스크립트에서 이 스크립트의 메서드를 통하지 않고 프로퍼티를 받아 아이템 내부 정보를 직접 수정했을 때 최신 정보 반영을 위하여 따로 호출해야 합니다. ****<br/>
     /// </summary>
-    public void OnItemChanged()
+    /// <param name="SlotListTr">아이템이 담긴 슬롯 리스트의 트랜스폼</param>
+    public void OnItemChanged(Transform SlotListTr=null)
     {
         UpdateImage();
         UpdateCountTxt();
-        UpdateInventoryPosition();
+        UpdatePositionInSlotList(slotListTr);
     }
 
     /// <summary>
@@ -270,18 +314,200 @@ public class ItemInfo : MonoBehaviour
             countTxt.enabled = false;                // 잡화아이템이 아니라면 중첩 텍스트를 비활성화합니다.
     }
 
+
+
+
+
+
     
-    // 아이템의 위치정보 반영  (현재 어디서 아이템 위치를 참조해서 슬롯에 넣어주고 있는가? => CreateManager에서 Instantiate할때 미리 붙인다.)
-    public void UpdateInventoryPosition()
+    /// <summary>
+    /// 현재 아이템이 슬롯 리스트에 속해있다면 위치를 슬롯 인덱스에 맞게 최신화시켜줍니다.<br/>
+    /// </summary>
+    public void UpdatePositionInSlotList(Transform slotListTr = null)
     {
+        if( isWorldPositioned )   // 아이템이 월드상에 나와있다면 실행하지 않습니다.
+        {
+            Debug.Log( "아이템이 월드에 나와있는 상태이므로 위치정보를 업데이트 할 수 없습니다." );
+            return;
+        }
+
+        // 인자로 슬롯리스트 트랜스폼을 전달하지 않았다면, 현재 아이템이 들어있는 슬롯의 부모를 확인하여 참조합니다.
+        if(slotListTr == null )
+            slotListTr = itemRectTr.parent.parent;  
+
+        // 슬롯 리스트에 슬롯이 생성되어있지 않다면 하위로직을 실행하지 않습니다.
         if( slotListTr.childCount==0 )
         {
             Debug.Log( "현재 슬롯이 생성되지 않은 상태입니다." );
             return;
         }
-        itemRectTr.SetParent( slotListTr.GetChild(Item.SlotIndex) );  // 오브젝트의 현 부모를 아이템 정보상의 슬롯 위치로 변경한다.
-        itemRectTr.localPosition = Vector3.zero;                  // 로컬위치를 부모기준으로부터 0,0,0으로 맞춘다.
+
+        // 오브젝트의 현 부모를 아이템 정보에 저장되어있는 슬롯 위치로 변경 한 후 로컬위치를 슬롯에 맞춥니다.
+        itemRectTr.SetParent( slotListTr.GetChild(item.SlotIndex) );  
+        itemRectTr.localPosition = Vector3.zero;                      
     }
 
+
+    /// <summary>
+    /// 남아있는 슬롯 중에서 가장 작은 인덱스를 반환합니다. 슬롯이 꽉 찬경우 -1을 반환합니다.
+    /// </summary>
+    public int FindNearstRemainSlotIdx( Transform slotListTr = null ) 
+    {
+        // 슬롯리스트 정보를 전달하지 않았다면, 현재 아이템이 담긴 슬롯을 기반으로 슬롯리스트를 참조합니다.
+        if(slotListTr==null)
+            slotListTr = itemRectTr.parent.parent;
+
+        int findIdx = -1;
+
+        for( int i = 0; i<slotListTr.childCount; i++ )
+        {
+            if( slotListTr.GetChild(i).childCount!=0 )  // 해당 슬롯리스트에 자식이 있다면 다음 슬롯리스트로 넘어갑니다.
+                continue;
+
+            findIdx = i;
+            break;
+        }
+
+        // findIdx가 수정되지 않았다면 -1을 반환합니다. 수정되었다면 0이상의 인덱스값을 반환합니다.
+        return findIdx;     
+    }
+
+
+
+    /// <summary>
+    /// 아이템의 2D 기능을 중단하거나 다시 활성화시키는 메서드입니다.<br/>
+    /// 인자로 현재 월드에 놓여진 상태 여부를 전달하여야 합니다.
+    /// </summary>
+    /// <param name="isWorldPositioned"></param>
+    private void TurnOnOffOperationAs2D(bool isWorldPositioned)
+    {        
+        // 월드 상에 아이템이 있다면, UI 이벤트를 더 이상 받지 않으며, 2D이미지를 투명처리합니다.
+        itemCG.blocksRaycasts = !isWorldPositioned;
+        itemCG.alpha = isWorldPositioned ? 0f:1f;
+    }
+
+
+
+    /// <summary>
+    /// 아이템을 2D UI에서 3D 월드로 위치정보를 주어서 계층구조를 변경하여 이동을 해주는 메서드입니다.<br/>
+    /// 상위 부모를 설정할 수 있습니다.
+    /// </summary>
+    /// <returns>이동에 성공한 경우는 true를, 위치정보가 잘못되어 이동할 수 없다면 false를 반환합니다.</returns>
+    public bool Locate2DToWorld(Transform worldTr, bool setParentMode=false)
+    {   
+        // World상태 변수 활성화
+        isWorldPositioned = true;
+                
+        // 3D오브젝트 포지션 설정
+        itemTr.position=worldTr.position;
+        itemTr.rotation=worldTr.rotation;
+
+        // 계층구조 전환                  
+        itemTr.SetParent(null);             // 3D오브젝트의 부모를 인벤토리에서 최상위 씬으로 변경
+        itemTr.gameObject.SetActive(true);  // 3D오브젝트를 활성화
+        itemRectTr.SetParent(itemTr);       // 2D오브젝트의 부모를 3D오브젝트로 변경
+
+        // Mode인자 전달 시 부모 재설정
+        if( setParentMode )                 
+            itemTr.SetParent(worldTr);
+                
+        // 아이템의 2D기능을 중단합니다.
+        TurnOnOffOperationAs2D( isWorldPositioned );
+        return true;
+    }
+
+    /// <summary>
+    /// 아이템을 2D UI에서 3D 월드로 위치정보를 주어서 계층구조를 변경하여 이동을 해주는 메서드입니다.<br/>
+    /// 상위부모를 설정할 수 없습니다.
+    /// </summary>
+    /// <returns>이동에 성공한 경우는 true를, 위치 정보가 잘못되어 이동할 수 없다면 false를 반환합니다.</returns>
+    public bool Locate2DToWorld(Vector3 worldPos, Quaternion worldRot )
+    {
+        // World상태 변수 활성화
+        isWorldPositioned = true;
+
+        // 3D오브젝트 포지션 설정
+        itemTr.position = worldPos;
+        itemTr.rotation = worldRot;
+        
+        // 계층구조 전환
+        itemTr.SetParent(null);             // 3D오브젝트의 부모를 인벤토리에서 최상위 씬으로 변경
+        itemTr.gameObject.SetActive(true);  // 3D오브젝트를 활성화
+        itemRectTr.SetParent(itemTr);       // 2D오브젝트의 부모를 3D오브젝트로 변경
+                
+        // 아이템의 2D기능을 중단합니다.
+        TurnOnOffOperationAs2D( isWorldPositioned );
+
+        return true;
+    }
+    
+    /// <summary>
+    /// 아이템을 3D 월드에서 슬롯으로 계층구조를 변경하여 이동을 해주는 메서드입니다. 
+    /// </summary>
+    /// <returns>이동에 성공한 경우는 true를 슬롯이 꽉차 이동할 수 없다면 false를 반환합니다.</returns>
+    public bool Locate3DToSlot(Transform slotTr)
+    {
+        // 현재 아이템이 월드에 나가있는 상태라면,
+        if( isWorldPositioned )  
+        {
+            isWorldPositioned = false;              // 월드위치 상태여부를 비활성화 합니다.
+            itemRectTr.SetParent( slotTr );         // 2D 오브젝트의 부모를 슬롯으로 설정
+            itemTr.SetParent( itemRectTr );         // 3D 오브젝트의 부모를 2D 오브젝트로 설정
+            itemTr.gameObject.SetActive( false );   // 3D 오브젝트 비활성화
+        }
+                
+        // 아이템의 2D기능을 활성화합니다.
+        TurnOnOffOperationAs2D( isWorldPositioned );
+
+        // 아이템의 인덱스를 전달받은 슬롯을 기반으로 설정해줍니다.
+        item.SlotIndex = slotTr.GetSiblingIndex();  
+
+        // 아이템의 위치정보를 업데이트 해줍니다.
+        UpdatePositionInSlotList();   
+
+        return true;
+    }
+
+    /// <summary>
+    /// 아이템을 3D 월드에서 슬롯리스트로 계층구조를 변경하여 이동을 해주는 메서드입니다.<br/>
+    /// 인자로 슬롯리스트의 트랜스폼과 슬롯인덱스를 전달해야합니다.<br/>
+    /// 인자를 전달하지 않은 경우 슬롯의 가장 가까운 곳에 아이템을 위치시켜줍니다.
+    /// </summary>
+    /// <returns>이동에 성공한 경우는 true를 슬롯이 꽉차 이동할 수 없다면 false를 반환합니다.</returns>
+    public bool Locate3DToSlotList(Transform slotListTr, int slotIndex=-1)
+    {
+        // 인자로 전달받은 인덱스가 -1이하라면, 가장 가까운 슬롯을 찾습니다.
+        if(slotIndex<=-1)                                       
+            slotIndex = FindNearstRemainSlotIdx(slotListTr);
+
+        // 찾거나 전달받은 슬롯 인덱스를 기반으로 아이템을 넣어줄 슬롯을 설정합니다.
+        Transform targetSlot = slotListTr.GetChild(slotIndex);
+
+        // 슬롯정보를 전달하여 계층정보를 변경하는 메서드를 호출합니다.
+        Locate3DToSlot(targetSlot); 
+    }
+
+    /// <summary>
+    /// 아이템을 3D 월드에서 인벤토리의 슬롯으로 계층구조를 변경하여 이동을 해주는 메서드입니다.<br/>
+    /// 전달된 인벤토리를 기반으로 가장 가까운 슬롯을 찾아서 아이템을 넣어줍니다. <br/>
+    /// </summary>
+    /// <param name="inventoryInfo">인벤토리 스크립트</param>
+    /// <returns>이동에 성공한 경우는 true를 슬롯이 꽉차 이동할 수 없다면 false를 반환합니다.</returns>
+    public bool Locate3DToInventory(InventoryInfo inventoryInfo)
+    {
+        return Locate3DToInventory( inventoryInfo.inventory );
+    }
+
+    
+    /// <summary>
+    /// 아이템을 3D 월드에서 인벤토리의 슬롯으로 계층구조를 변경하여 이동을 해주는 메서드입니다.<br/>
+    /// 전달된 인벤토리를 기반으로 가장 가까운 슬롯을 찾아서 아이템을 넣어줍니다. <br/>
+    /// </summary>
+    /// <param name="inventory">인벤토리 정보</param>
+    /// <returns>이동에 성공한 경우는 true를 슬롯이 꽉차 이동할 수 없다면 false를 반환합니다.</returns>
+    public bool Locate3DToInventory( Inventory inventory )
+    {
+        return true;
+    }
 
 }

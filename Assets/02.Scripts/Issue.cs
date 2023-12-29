@@ -460,6 +460,17 @@
  * CreateManager는 다른 플레이어의 슬롯도 받아야 하므로 하나의 슬롯리스트를 저장하면 안되고 참조를 계속해서 변경해야 하고,
  * ItemInfo, ItemPointerStatusWindow는 아이템 종속적으로 인벤토리가 꺼져버릴때 같이 꺼야하고, 다른 슬롯으로 옮겨다니기도 해야 한다.
  * 
+ * => ---- 1229 ----
+ * a. CreateManager 클래스는 요청을 통해 슬롯정보를 입력받아야 하므로, 저장할 필요가 없으며,
+ * b. InventoryInteracive 클래스는 Inventory오브젝트에 InventoryInfo스크립트와 같이 부착되므로 슬롯정보를 자체적으로가진다.
+ * c. ItemInfo는 슬롯정보를 계층구조를 기반으로 산출할 수 있다.(2D상태에서는 항상 슬롯에 담겨있어야 하므로)
+ * d. ItemPointerStatusWindow는 아이템을 기반으로 슬롯정보를 전달받으면 된다.
+ * 결론적으로 InventoryInfo 클래스와 InventoryManagement 클래스에서 슬롯정보를 시작 시 가지도록 하며,
+ * Item은 필요할때마다 산출해서 저장해놓도록하고, 상태창은 아이템으로부터 전달받아 구하도록 할 예정
+ * 
+ * 
+ * 
+ * 
  * 3- CreateManager의 slotListTr을 Start문에서 참조하는것이 아니라 inventory를 인자로 받을때 생성할 위치정보도 같이 받아야 하는데, 여기서 현 인벤토리의 구조적 문제가 발생.
  * InventoryInfo에 있는 inventory에 AddItem메서드를 호출할 때, CreateManager의 싱글톤에 inventory는 정보는 줄 수 있어도 위치정보를 주지 못한다.
  * inventory가 AddItem메서드에 슬롯리스트 또는 3D공간 위치정보를 줄 수 있는 방법은 
@@ -560,6 +571,12 @@
  * 
  * 3- (현재 문제점)
  * 저장 파일이 만들어지지 않는 문제. 런타임 에러는 발생하지 않고 있음.
+ * 
+ * <2023_1220_2_최원준>
+ * (현재이슈) 
+ * 1- 아이템이 2D 3D전환을 위한 다양한 기능을 만들고 있으며, 아이템이 인벤토리와 슬롯리스트 정보를 가지고 있도록 수정작업 진행 중.
+ * 
+ * 
  * 
  */
  

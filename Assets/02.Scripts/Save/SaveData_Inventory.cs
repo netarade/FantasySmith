@@ -3,6 +3,15 @@ using ItemData;
 using System;
 using System.Collections.Generic;
 
+/*
+ * <v1.1 - 2023_1231_최원준>
+ * 1- 변수명 변경 
+ * WeapSlotCountLimit -> SlotCountLimitWeap
+ * MiscSlotCountLimit -> SlotCountLimitMisc
+ * 
+ */
+
+
 namespace DataManagement
 {     
     /// <summary>
@@ -41,8 +50,8 @@ namespace DataManagement
     {
         public List<ItemWeapon> weapList;
         public List<ItemMisc> miscList;
-        public int WeapCountLimit;
-        public int MiscCountLimit;
+        public int slotCountLimitWeap;
+        public int slotCountLimitMisc;
         
         /// <summary>
         /// SerializableInventory의 디폴트 생성자입니다. 직렬화 가능한 인벤토리 인스턴스를 생성해 줍니다.
@@ -71,8 +80,8 @@ namespace DataManagement
                       
             inventory.DeserializeItemListToDic<ItemWeapon>( this.weapList );
             inventory.DeserializeItemListToDic<ItemMisc>( this.miscList );
-            inventory.WeapCountLimit = this.WeapCountLimit;
-            inventory.MiscCountLimit = this.MiscCountLimit;
+            inventory.SlotCountLimitWeap = this.slotCountLimitWeap;
+            inventory.SlotCountLimitMisc = this.slotCountLimitMisc;
 
             return inventory;
         }
@@ -84,8 +93,8 @@ namespace DataManagement
         {
             this.weapList=inventory.SerializeDicToItemList<ItemWeapon>();
             this.miscList=inventory.SerializeDicToItemList<ItemMisc>();
-            this.WeapCountLimit = inventory.WeapCountLimit;
-            this.MiscCountLimit = inventory.MiscCountLimit;
+            this.slotCountLimitWeap = inventory.SlotCountLimitWeap;
+            this.slotCountLimitMisc = inventory.SlotCountLimitMisc;
         }
 
 

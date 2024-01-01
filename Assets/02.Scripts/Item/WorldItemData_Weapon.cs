@@ -11,6 +11,12 @@ using ItemData;
 * <v1.1 -2023_1227_최원준>
 * 1- 손도끼 아이템 추가
 * 
+* <V1.2 - 2023_1230_최원준>
+* 1- 딕셔너리에 readonly속성 추가하여 아이템 속성의 기본값 수정을 방지
+* 
+* <v1.3 - 2023_1231_최원준>
+* 1- 변수명 weaponDic을 weapDic으로 변경
+* 
 */
 
 
@@ -19,7 +25,7 @@ namespace WorldItemData
 {
     public partial class WorldItem
     {
-        public Dictionary<string, Item> weaponDic=new Dictionary<string, Item>()
+        public readonly Dictionary<string, Item> weapDic = new Dictionary<string, Item>()
         {
             /*** 검 ***/
             { "철 검", new ItemCraftWeapon( ItemType.Weapon, WeaponType.Sword, "0001000", "철 검", 10.0f, new ImageReferenceIndex(0)

@@ -8,6 +8,9 @@ using ItemData;
 * <v1.0 - 2023_1221_최원준>
 * 1- CreateManager의 CreateAllItemDictionary메서드의 정보를 분리시켜서 클래스 생성
 * 
+* <V1.1 - 2023_1230_최원준>
+* 1- 딕셔너리에 readonly속성 추가하여 아이템 속성의 기본값 수정을 방지
+* 
 */
 
 namespace WorldItemData
@@ -17,7 +20,7 @@ namespace WorldItemData
     /// </summary>
     public partial class WorldItem
     {
-        public Dictionary<string, Item> miscDic=new Dictionary<string, Item>()
+        public readonly Dictionary<string, Item> miscDic = new Dictionary<string, Item>()
         {           //0x1000
             { "철", new ItemMisc( ItemType.Misc, MiscType.Basic, "0000000", "철", 3.0f, new ImageReferenceIndex(0) ) },
             { "강철", new ItemMisc( ItemType.Misc, MiscType.Basic, "0000001", "강철", 5.0f, new ImageReferenceIndex(1) ) },

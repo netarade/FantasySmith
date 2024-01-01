@@ -66,6 +66,10 @@ using UnityEngine;
  * 1- 파일명 변경 ItemData->Item
  * 2- ImageReferenceIndex 내부변수 outerImgIdx에서 meshFilterIdx와 materialIdx로 수정
  * 
+ * <v8.2 - 2023_1230_최원준>
+ * 1- ItemType에 None을 추가
+ * 선택 인자의 Null값으로 사용하기 위해
+ * 
  */
 
 namespace ItemData
@@ -127,7 +131,7 @@ namespace ItemData
     /// <summary>
     /// 아이템의 대분류로 잡화, 무기 등의 종류가 있습니다.
     /// </summary>
-    public enum ItemType { Misc, Weapon };
+    public enum ItemType { Misc, Weapon, None };
     
     /// <summary>
     /// 아이템 고유 등급으로 초급, 중급, 고급이 있습니다.

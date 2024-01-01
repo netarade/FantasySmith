@@ -64,6 +64,13 @@ using System;
  * <v6.1 - 2023_1229_최원준>
  * 1- 파일명 변경 ItemData_Misc->ItemMisc
  * 
+ * <v6.2 - 2023_1230_최원준>
+ * 1- MaxCount를 MaxOverlapCount로 이름변경
+ * 
+ * <v6.3 - 2023_1231_최원준>
+ * 1- OverlapCount프로퍼티를 읽기전용 변수로 설정하고 수량을 조절할 때 SetOverlapCount 메서드를 호출하도록 변경
+ * 2- SetOverlapCount메서드를 음의인자를 받도록 수정, 매개변수 count를 inCount로 수정
+ * 
  */
 
 
@@ -96,45 +103,62 @@ namespace ItemData
         [JsonProperty] AttributeType eAttributeType;    // 속성석 정보
         [JsonProperty] public int iFirePower;           // 화력
 
-        [JsonIgnore] public readonly int MaxCount = 99; // 잡화 아이템 최대 갯수
+        [JsonIgnore] public readonly int MaxOverlapCount = 99; // 잡화 아이템 최대 갯수
 
 
         /// <summary>
-        /// 잡화 아이템의 중첩횟수를 표시합니다. 기본 값은 1입니다.<br/>
-        /// **해당 프로퍼티를 통해 중첩횟수를 설정할 시 ItemMisc.MaxCount를 초과하면 예외를 발생시킵니다.**
-        /// SetOverlapCount를 통해 남은 수량을 반환받아야 합니다.
+        /// 잡화 아이템의 중첩 갯수를 알려줍니다. <br/>
+        /// 읽기전용이므로, 수량을 조절하기 위해서는 SetOverlapCount메서드를 호출하여야 합니다. <br/>
         /// </summary>
-        [JsonIgnore] public int OverlapCount { 
-            set { 
-                    iOverlapCount = value;          // 값이 들어오면 대입시켜 줍니다.
-
-                    if(iOverlapCount > MaxCount)    // 중첩횟수가 최대갯수보다 크다면
-                        throw new Exception("최대 수량에 도달하였습니다.");
-                }
-            get { return iOverlapCount; } //중첩갯수를 반환합니다
-        }
-
+        [JsonIgnore] public int OverlapCount { get { return iOverlapCount; } }
 
         /// <summary>
-        /// 잡화 아이템의 중첩횟수를 설정합니다. 수량을 인자로 넣으면 초과수량을 반환하여 줍니다
+        /// 잡화 아이템의 중첩횟수를 설정합니다.<br/>
+        /// 음의 인자가 전달되면 기존의 수량을 감산하고, 양의 인자가 전달되면 수량을 가산합니다.<br/><br/>
+        /// 
+        /// 양의 인자가 전달되었을 때 최대수량 이상을 초과하는 경우 해당 초과 수량을 반환하여 줍니다<br/>
+        /// 음의 인자가 전달되었을 때 더이 상 감산할 수 없는 경우(기존 수량이 0이된 경우) 나머지 초과 수량을 반환합니다.<br/>
         /// </summary>
-        /// <param name="count"></param>
-        /// <returns></returns>
-        public int SetOverlapCount(int count)
+        /// <param name="inCount"></param>
+        /// <returns>인자로 전달된 수량이 아이템이 가질 수 있는 최대, 최소 수량을 초과하는 경우 남은 수량 인자를 반환합니다.</returns>
+        public int SetOverlapCount(int inCount)
         {
-            int remainCount = iOverlapCount+count-MaxCount; // 반환되는 갯수 설정 : 기존 수량+들어온 수량-최대수량
+            int remainCount;
 
-            if( remainCount > 0 )                           // 들어온수량을 기존수량에 더했을 때 최대 수량을 초과한다면
+            if( inCount>0 )     // 수량 인자로 양의 값이 들어온 경우
             {
-                iOverlapCount=MaxCount;                     // 현재 아이템의 갯수를 최대수량으로 맞춰줍니다
-                return remainCount;                         // 나머지를 반환해줍니다
-            }
-            else if(remainCount<=0)                         // 반환할 나머지가 없다면
-            {
-                iOverlapCount += count;                     // 기존수량에 들어온 수량을 더해줍니다
-            }
+                // 반환되는 갯수 설정 : 기존 수량+들어온 수량-최대수량
+                remainCount = iOverlapCount + inCount - MaxOverlapCount; 
 
-            return 0;                                       // 0을 반환합니다
+                if( remainCount > 0 )                   // 들어온수량을 기존수량에 더했을 때 최대 수량을 초과한다면
+                {
+                    iOverlapCount = MaxOverlapCount;    // 현재 아이템의 갯수를 최대수량으로 맞춰줍니다
+                    return remainCount;                 // 나머지 수량을 반환합니다.
+                }
+                else if(remainCount<=0)                 // 반환할 나머지가 없다면
+                {
+                    iOverlapCount += inCount;           // 기존수량에 들어온 수량을 더해줍니다
+                    return 0;                           // 0을 반환합니다
+                }
+            }
+            else if( inCount<0 )    // 수량 인자로 음의 값이 들어온 경우
+            {
+                // 반환되는 갯수 설정 : 기존수량 - 뺄수량
+                remainCount = iOverlapCount + inCount;
+
+                if( remainCount>=0 )            // 반환할 나머지가 없는 경우
+                {
+                    iOverlapCount += inCount;   // 기존수량에 들어온 수량을 빼줍니다.
+                    return 0;                   // 0을 반환합니다.
+                }
+                else if( remainCount<0 )        // 반환할 나머지가 있는 경우
+                {
+                    iOverlapCount = 0;          // 기존수량을 0으로 만들어줍니다.
+                    return remainCount;         // 나머지 수량을 반환합니다.
+                }
+            }
+            
+            return 0;
         }
 
 

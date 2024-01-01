@@ -1,6 +1,8 @@
 using UnityEngine;
 using InventoryManagement;
 using DataManagement;
+using ItemData;
+using System;
 
 /*
  * [작업 사항]  
@@ -81,9 +83,31 @@ using DataManagement;
  * <v6.0 - 2023_1229_최원준>
  * 1- craftDic, gold, silver등 연관없는 변수 삭제 및 저장 로드도 inventory만 불러오도록 변경
  * 
+ * <v6.1 - 2023_1230_최원준>
+ * 1- slotListTr변수 추가 - 인벤토리가 자신의 슬롯목록 주소를 관리하도록 하였음
+ * 
+ * 2- InventoryInteractive에서 슬롯 프리팹을 생성하던 코드를 옮겨옴
+ * 이유는 슬롯을 늘리거나 줄이거나 하는 메서드를 만들고, 정보를 반영하기 위해
+ * 
+ * 
+ * <v6.2 - 2024_0101_최원준>
+ * 1-Inventory의 AddItem, RemoveItem메서드를 추가 (내용 정의는 추가예정)
+ * 내부 인벤토리를 숨김처리하고, 사용의 편리함을 주기위해
+ * 
+ * 2-Inventory의 FindNearstSlotIdx메서드 추가
+ * (ItemInfo에서 자신이 속한 인벤토리의 가장 가까운 슬롯 인덱스를 반환받기 위해 필요)
+ * 
+ * 3- isSlotEnough메서드 추가
+ * ItemInfo에서 인벤토리 정보를 업데이트 하기 이전에 먼저 들어갈 공간이 있는지를 확인하고 변경하는 과정이 필요
+ * 
+ * 
+ * [수정 예정]
+ * 1- 인벤토리의 정보가 수정되었음을 반영하는 이벤트 생성 및 호출
+ * 인벤토리 정보를 참조하는 Interactive스크립트에서 사용할 수 있도록 하기 위하여
+ * 
  */
 
-    
+
 
 /// <summary>
 /// 게임 실행 중 제작 관련 실시간 플레이어 정보 들을 보유하고 있는 전용 정보 클래스입니다.<br/>
@@ -97,6 +121,28 @@ public class InventoryInfo : MonoBehaviour
     /// 딕셔너리 내부에 게임 오브젝트를 보유하고 있으므로 씬 전환이나 세이브 로드 시에 반드시 Item 형식의 List로의 Convert가 필요합니다.
     /// </summary>
     public Inventory inventory;
+
+    /// <summary>
+    /// 현재 인벤토리가 관리하는 슬롯 리스트의 Transform 정보입니다.
+    /// </summary>
+    public Transform slotListTr;
+
+    
+    private GameObject slotPrefab;              // 슬롯을 동적으로 생성하기 위한 프리팹 참조
+
+    private InventoryInteractive interactive;   // 자신의 인터렉티브 스크립트를 참조하여 활성화 탭정보를 받아오기 위한 변수 선언
+
+    void Awake()
+    {        
+        slotListTr = transform.GetChild(0).GetChild(0).GetChild(0);
+        slotPrefab = slotListTr.GetChild(0).gameObject;
+        
+        // 플레이어 인벤토리 정보(전체 탭 슬롯 칸수)를 참조하여 슬롯을 동적으로 생성 (현재 인벤토리에 슬롯이 한 개 들어있으므로 하나를 감하고 생성)
+        for( int i = 0; i<inventory.SlotCountLimitAll-1; i++ )
+            Instantiate( slotPrefab, slotListTr );
+
+        interactive = gameObject.GetComponent<InventoryInteractive>();  // 자신의 인터렉티브 스크립트를 참조합니다.
+    }
 
     /// <summary>
     /// 인스턴스가 새롭게 생성될 때마다 저장된 파일을 불러옵니다.<br/>
@@ -153,6 +199,154 @@ public class InventoryInfo : MonoBehaviour
         dataManager.SaveData<InventorySaveData>(saveData);
     }
 
+
+
     
+
+
+    /// <summary>
+    /// 인벤토리의 목록에서 아이템을 제거합니다.
+    /// </summary>
+    public bool RemoveItem(ItemInfo item)
+    {
+        return true;
+    }
+
+    /// <summary>
+    /// 인벤토리의 목록에서 아이템을 추가합니다.
+    /// </summary>
+    public bool AddItem(ItemInfo item)
+    {
+        return true;
+    }
+
+
+
+
+    /// <summary>
+    /// 현재 활성화 중인 가장 가까이 있는 남은 슬롯의 인덱스를 반환합니다.<br/>
+    /// 연산이 빠르며, 인자를 받지 않습니다.<br/><br/>
+    /// *** 활성화 중인 탭의 인덱스 밖에 구할 수 없기 때문에 같은 슬롯간의 이동 시에 호출하는 용도로 사용합니다. ***<br/>
+    /// </summary>
+    /// <returns>활성화 중인 탭에서 비어있는 슬롯의 가장 작은 인덱스입니다. 남은 슬롯이 없다면 -1을 반환합니다.</returns>
+    public int FindNearstRemainActiveSlotIdx()
+    {
+        int findIdx = -1;
+
+        for( int i = 0; i<slotListTr.childCount; i++ )  // 슬롯의 인덱스 0번부터 봅니다
+        {
+            if( slotListTr.GetChild(i).childCount!=0 )  // 해당 슬롯리스트에 자식이 있다면 다음 슬롯리스트로 넘어갑니다.
+                continue;
+
+            findIdx = i;                                // 찾은 인덱스로 설정합니다.
+            break;
+        }
+
+        // findIdx가 수정되지 않았다면 -1을 반환합니다. 수정되었다면 0이상의 인덱스값을 반환합니다.
+        return findIdx;
+    }
+
+    /// <summary>
+    /// 가장 가까운 슬롯의 인덱스를 구합니다. 어떤 종류의 아이템을 넣을 것인지 인자로 전달하여야 합니다.<br/>
+    /// ItemType인자에 해당하는 개별탭 슬롯 인덱스를 반환합니다. ItemType.None을 전달할 경우 전체탭의 슬롯 인덱스를 반환합니다. (기본값: 전체탭)
+    /// </summary>
+    /// <returns>ItemType.None을 전달할 경우 전체탭 슬롯 인덱스를 반환하며, 이외의 인자는 개별탭 슬롯 인덱스를 반환합니다. 
+    /// 슬롯에 자리가 없다면 -1을 반환합니다.</returns>
+    public int FindNearstSlotIdx( ItemType itemType = ItemType.None )
+    {
+        return inventory.FindNearstSlotIdx(itemType);
+    }
+    
+    /// <summary>
+    /// 가장 가까운 슬롯의 인덱스를 구합니다. 어떤 이름의 아이템을 넣을 것인지와 <br/>
+    /// 개별탭 혹은 전체탭의 인덱스를 반환받고자 하는지 여부를 전달하여야 합니다. (기본값: 전체탭)<br/>
+    /// </summary>
+    /// <returns>true을 전달할 경우 전체탭 슬롯 인덱스를 반환하며, false는 개별탭 슬롯 인덱스를 반환합니다. 
+    /// 슬롯에 자리가 없다면 -1을 반환합니다.</returns>
+    public int FindNearstSlotIdx( string itemName, bool isIndexAll=true)
+    {
+        return inventory.FindNearstSlotIdx(itemName, isIndexAll);
+    }
+
+
+
+
+
+
+    /// <summary>
+    /// 이 인벤토리의 슬롯에 아이템이 들어갈 자리가 있는지 여부를 반환하는 메서드입니다.<br/>
+    /// 인자로 아이템 종류를 전달하여야 합니다.
+    /// </summary>
+    /// <returns>슬롯이 자리가 남는다면 true를, 슬롯에 자리가 없다면 false를 반환합니다.</returns>
+    public bool isSlotEnough(ItemType itemType)
+    {
+        if(FindNearstSlotIdx(itemType) == -1)
+            return false;
+        else
+            return true;        
+    }
+
+    /// <summary>
+    /// 이 인벤토리의 슬롯에 아이템이 들어갈 자리가 있는지 여부를 반환하는 메서드입니다.<br/>
+    /// 인자로 아이템 이름을 전달하여야 합니다.
+    /// </summary>
+    /// <returns>슬롯이 자리가 남는다면 true를, 슬롯에 자리가 없다면 false를 반환합니다.</returns>
+    public bool isSlotEnough(string itemName)
+    {
+        if(FindNearstSlotIdx(itemName, false)==-1)
+            return false;
+        else
+            return true;
+    }
+
+    /// <summary>
+    /// 이 인벤토리의 슬롯에 아이템이 들어갈 자리가 있는지 여부를 반환하는 메서드입니다.<br/>
+    /// 인자로 아이템정보 스크립트를 전달하여야 합니다.
+    /// </summary>
+    /// <returns>슬롯이 자리가 남는다면 true를, 슬롯에 자리가 없다면 false를 반환합니다.</returns>
+    public bool isSlotEnough(ItemInfo itemInfo)
+    {
+        return isSlotEnough(itemInfo.Item.Type);
+    }
+
+
+
+
+
+
+
+    /// <summary>
+    /// 아이템 Info 컴포넌트를 인자로 받아서 어떤 슬롯에 들어갈지 최신화 해주는 메서드입니다. <br/>
+    /// 내부적으로 FindNearstSlotIdx메서드를 호출하여 슬롯 정보를 입력해줍니다.<br/>
+    /// </summary>
+    /// <returns>슬롯에 빈자리가 없다면 false를 반환합니다. 아이템이 들어갈 공간이 없다는 뜻입니다.</returns>
+    public bool SetItemSlotIdxBothToNearstSlot( ItemInfo itemInfo )
+    {        
+        // 호출 예외 항목 처리
+        if( itemInfo==null )
+            throw new Exception("ItemInfo 스크립트가 존재하지 않는 아이템입니다.");
+
+        // 아이템 정보와 종류를 저장합니다.
+        Item item = itemInfo.Item;
+        ItemType itemType = item.Type;
+
+        // 종류를 인자로 넣어서 개별 슬롯 인덱스를 반환 받습니다.
+        int slotIdxEach = FindNearstSlotIdx(itemType);
+        
+        // 개별 슬롯 인덱스가 -1이라면 빈자리가 없는 것으로 판단하여 실패를 반환합니다.
+        if(slotIdxEach==-1)     
+            return false;        
+        
+        // 전체 슬롯 인덱스를 구합니다.
+        int slotIdxAll = FindNearstSlotIdx(ItemType.None);;
+
+        // 구한 슬롯 인덱스를 아이템 정보에 입력합니다.
+        item.SlotIndex = slotIdxEach;
+        item.SlotIndexAll = slotIdxAll;
+
+        // 성공을 반환합니다.
+        return true;
+    }
+
 
 }

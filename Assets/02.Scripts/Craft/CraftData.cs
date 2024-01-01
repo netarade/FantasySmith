@@ -82,7 +82,7 @@ namespace CraftData
             swordDic = new Dictionary<string, CraftProficiency> ();
             bowDic = new Dictionary<string, CraftProficiency> ();           
 
-            Dictionary<string, Item> weaponDic = new WorldItem().weaponDic;         // 월드 무기사전을 참조합니다.
+            Dictionary<string, Item> weaponDic = new WorldItem().weapDic;         // 월드 무기사전을 참조합니다.
 
             foreach( Item item in weaponDic.Values )                                // 모든 무기사전에서 하나씩 꺼냅니다.
             {

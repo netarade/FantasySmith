@@ -142,6 +142,26 @@ using WorldItemData;
 * <v11.1 - 2023_1228_최원준>
 * 1- Item프리팹 참조를 리소스폴더의 ItemOrigin에서 Item2D로 변경
 * 
+* <v11.2 - 2023_1230_최원준>
+* 1- CreateItemToNearstSlot메서드의 이름변경 - CreateItemToInventorySlot
+* 
+* 2- CreateItemToInventorySlot메서드의 count인자를 overlapCount로 이름변경(오브젝트의 수량이 아닌 잡화아이템의 중첩수량 옵션이므로)
+* 
+* 3- CreateItemToInventorySlot메서드의 반환값을 int형의 갯수가 아니라 bool값 true, false로 변경
+* 
+* 4- CreateItemToInventorySlot메서드 인자를 InventoryInfo로 받을 수 있도록 변경
+* 
+* 
+* 5- CreateItemToWorld 메서드 추가
+* 인자로 월드의 Transform 정보를 전달받거나 Vector3값을 전달받도록 하였음.
+* 
+* 6- FindNearstRemainSlotIdx메서드 삭제.
+* CreateManager클래스에서 매번 다른 인벤토리 정보를 받아야 하므로 InventoryInfo클래스에서 가지고 있도록 변경
+* 
+* <v11.3 - 2023_1231_최원준>
+* 1- 메서드 CreateItemToInventorySlot를 CreateItemToInventory로 이름변경
+* 
+* 
 * 
 */
 
@@ -154,8 +174,9 @@ public class CreateManager : MonoBehaviour
 {
     public static CreateManager instance;       // 매니저 싱글톤 인스턴스 생성
            
-    public Dictionary<string, Item> worldMiscDic;   // 게임 시작 시 넣어 둘 전체 잡화아이템 사전 
-    public Dictionary<string, Item> worldWeapDic;   // 게임 시작 시 넣어 둘 전체 무기아이템 사전
+    public WorldItem worldItemData;                 // 게임 시작 시 넣어 둘 월드 사전의 참조값입니다.
+    public Dictionary<string, Item> worldMiscDic;   // 게임 시작 시 넣어 둘 월드 잡화아이템 사전 
+    public Dictionary<string, Item> worldWeapDic;   // 게임 시작 시 넣어 둘 월드 무기아이템 사전
 
     [SerializeField] Transform slotListTr;      // 인벤토리의 슬롯 오브젝트의 트랜스폼 참조
     [SerializeField] GameObject itemPrefab;     // 리소스 폴더 또는 직접 드래그해서 복제할 오브젝트를 등록해야 한다.        
@@ -203,37 +224,91 @@ public class CreateManager : MonoBehaviour
 
 
 
+    /// <summary>
+    /// 3D 월드 상에 아이템 오브젝트 1개를 생성합니다.<br/>
+    /// 잡화아이템의 중첩수량을 인자로 전달할 수 있습니다. 중첩 최대 수량을 넘어가는 경우 최대 수량까지만 생성하여 줍니다.<br/>
+    /// Transform인자를 전달한 경우 해당 인자의 position과 rotation값을 가지게 되며,
+    /// 기본적으로 전달 인자의 자식으로서 종속되지 않습니다. 옵션을 통해 자식 속성을 변경가능합니다.<br/>
+    /// </summary>
+    /// <returns>해당 아이템의 게임오브젝트의 참조 값을 반환합니다.</returns>
+    public GameObject CreateItemToWorld(Transform worldTr, string itemName, int overlapCount=1, bool isSetParent=false)
+    {
+        return gameObject;
+    }
 
     /// <summary>
-    /// 가장 가까운 슬롯에 원하는 아이템을 생성합니다.<br/>
-    /// 아이템 생성에 성공했다면 0을 반환합니다.<br/>
-    /// 잡화 아이템의 경우 넣은 수량만큼 아이템을 중첩하여 새롭게 생성하여 주지만,<br/>
-    /// 추가 오브젝트로 인하여 새롭게 아이템을 생성하지 못하는 경우 나머지 수량을 반환합니다.<br/>
+    /// 3D 월드 상에 아이템 오브젝트 1개를 생성합니다.<br/>
+    /// 잡화아이템의 중첩수량을 인자로 전달할 수 있습니다. 중첩 최대 수량을 넘어가는 경우 최대 수량까지만 생성하여 줍니다.<br/>
+    /// 아이템 오브젝트에 지정 좌표와 회전 값을 넣어 생성합니다.
+    /// </summary>
+    /// <returns>해당 아이템의 게임오브젝트의 참조 값을 반환합니다.</returns>
+    public GameObject CreateItemToWorld(Vector3 worldPos, Quaternion worldRot, string itemName, int overlapCount=1)
+    {
+        return gameObject;
+    }
+
+
+
+
+
+    /// <summary>
+    /// 인벤토리의 해당 슬롯에 원하는 아이템 오브젝트를 생성합니다.<br/>
+    /// 슬롯인덱스를 따로 지정하지 않은 경우 비어있는 가장 앞의 슬롯에 아이템이 생성됩니다.<br/><br/>
+    /// 인자로 갯수를 넣으면 여러 오브젝트가 생성될 수 있습니다. 기본 값은 1입니다.<br/>
+    /// 잡화 아이템의 경우 기존 아이템에 해당 수량이 들어간다면 새롭게 오브젝트를 생성하지 않습니다.<br/>
+    /// 새롭게 아이템 오브젝트를 인벤토리에 생성하지 못하는 경우 나머지 수량을 반환합니다.<br/><br/>
     /// * 이름이 일치하지 않을 경우 예외를 발생시킵니다. *
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="inventory">플레이어의 인벤토리 변수가 필요합니다. 해당 인벤토리에 아이템 오브젝트를 추가하여 줍니다.</param>
     /// <param name="itemName">아이템 테이블을 참고하여 한글명을 기입해주세요. 띄어쓰기에 유의해야 합니다. ex)철, 철 검, 미스릴, 미스릴 검</param>
-    /// <param name="count">생성을 원하는 갯수입니다. 하나의 슬롯에 중첩하여 생성될 것입니다. 기본 값은 1이며, 장비류는 반드시 1개만 생성됩니다.</param>
-    /// <returns>반환값은 아이템을 생성하고 더 이상 생성하지 못하는 나머지 수량입니다. 모든 생성이 완료되었다면 0을 반환합니다.</returns>
-    public int CreateItemToNearstSlot(Inventory inventory, string itemName, int count = 1)
+    /// <param name="overlapCount">생성을 원하는 갯수입니다. 하나의 슬롯에 중첩하여 생성될 것입니다. 기본 값은 1이며, 장비류는 반드시 1개만 생성됩니다.</param>
+    /// <returns>생성이 완료되었다면 0을, 슬롯에 빈자리가 더 이상 없어 생성하지 못하는 경우 생성하고 남은 나머지 수량을 반환합니다.</returns>
+    public int CreateItemToInventory( InventoryInfo inventoryInfo, string itemName, int overlapCount = 1 )
     {
-        if( count <=0 ) //수량이 0이하로 들어왔다면 무조건 성공했다고 판단합니다.
+        // 인벤토리 오브젝트의 info컴포넌트에서 inventory를 읽어와서 재전달하여 호출합니다.
+        Inventory inventory = inventoryInfo.inventory;                      
+        return CreateItemToInventory(inventory, itemName, overlapCount);        
+    }
+
+
+    /// <summary>
+    /// 인벤토리의 해당 슬롯에 원하는 아이템 오브젝트를 생성합니다.<br/>
+    /// 슬롯인덱스를 따로 지정하지 않은 경우 비어있는 가장 앞의 슬롯에 아이템이 생성됩니다.<br/><br/>
+    /// 인자로 갯수를 넣으면 여러 오브젝트가 생성될 수 있습니다. 기본 값은 1입니다.<br/>
+    /// 잡화 아이템의 경우 기존 아이템에 해당 수량이 들어간다면 새롭게 오브젝트를 생성하지 않습니다.<br/>
+    /// 새롭게 아이템 오브젝트를 인벤토리에 생성하지 못하는 경우 나머지 수량을 반환합니다.<br/><br/>
+    /// * 이름이 일치하지 않을 경우 예외를 발생시킵니다. *
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="inventory">플레이어의 인벤토리 변수가 필요합니다. 해당 인벤토리에 아이템 오브젝트를 추가하여 줍니다.</param>
+    /// <param name="itemName">아이템 테이블을 참고하여 한글명을 기입해주세요. 띄어쓰기에 유의해야 합니다. ex)철, 철 검, 미스릴, 미스릴 검</param>
+    /// <param name="overlapCount">생성을 원하는 갯수입니다. 하나의 슬롯에 중첩하여 생성될 것입니다. 기본 값은 1이며, 장비류는 반드시 1개만 생성됩니다.</param>
+    /// <returns>생성이 완료되었다면 0을, 슬롯에 빈자리가 더 이상 없어 생성하지 못하는 경우 생성하고 남은 나머지 수량을 반환합니다.</returns>
+    public int CreateItemToInventory( Inventory inventory, string itemName, int overlapCount = 1 )
+    {
+        //수량이 0이하로 들어왔다면 무조건 성공했다고 판단합니다
+        if( overlapCount <=0 ) 
             return 0;
 
-        int findSlotIdx = FindNearstRemainSlotIdx(); //가장 가까운 슬롯인덱스를 반환받습니다
+        // 인자로 들어온 이름이 어떤 종류의 아이템인지를 설정합니다
+        ItemType itemType = worldItemData.GetItemType(itemName);
 
-        // 인자로 들어온 이름이 장비류인지, 잡화류인지를 설정합니다
-        bool isWeapName = worldWeapDic.ContainsKey( itemName );
-        bool isMiscName = worldMiscDic.ContainsKey( itemName );
+        // 아이템이 어떤 종류도 아니라면 예외를 발생시킵니다
+        if( itemType == ItemType.None )
+            throw new Exception("생성 할 아이템 명이 정확하게 일치하지 않습니다. 확인하여 주세요.");
+                      
 
-        // 인벤토리의 남아있는 칸이 없다면 생성하지 못합니다 (잡화라면 인자로 들어온 count를 반환하고, 장비류라면 1을 반환합니다)
-        if( findSlotIdx == -1 && isMiscName ) 
-            return count;
-        else if(findSlotIdx == -1)
-            return 1;
-                
-        
+        // 아이템이 속할 개별 슬롯 인덱스와 전체 슬롯 인덱스를 구합니다.
+        int findSlotIdx = inventory.FindNearstSlotIdx(itemType);  
+        int findSlotIdxAll = inventory.FindNearstSlotIdx(ItemType.None);
+
+
+        // 개별 인벤토리 슬롯의 남아있는 칸이 없다면 생성하지 못하므로 남은 수량을 반환합니다.
+        if( findSlotIdx == -1 ) 
+            return overlapCount;
+                        
+
         // 사전의 개념 아이템을 클론하여 (아이템 원형을 복제해서) 또 다른 개념 아이템을 생성하기위한 변수입니다
         Item itemClone = null;
 
@@ -241,7 +316,7 @@ public class CreateManager : MonoBehaviour
         List<GameObject> itemObjList;  
                
 
-        if( isWeapName )         // 이름이 무기 종류라면
+        if( itemType == ItemType.Weapon )         // 이름이 무기 종류라면
         {
             // 인벤토리의 무기목록에 해당 아이템 리스트가 없다면 리스트를 새롭게 생성합니다
             if( !inventory.weapDic.ContainsKey( itemName ) )  
@@ -257,7 +332,7 @@ public class CreateManager : MonoBehaviour
             AddCloneItemToInventory( itemObjList, itemClone, findSlotIdx );
 
         }
-        else if( isMiscName )     // 이름이 잡화 종류라면 
+        else if( itemType == ItemType.Misc )     // 이름이 잡화 종류라면 
         {
             // 인벤토리의 잡화목록에 해당 아이템 리스트가 없다면 리스트를 새롭게 생성합니다
             if( !inventory.miscDic.ContainsKey( itemName ) )
@@ -268,7 +343,7 @@ public class CreateManager : MonoBehaviour
 
             if(itemObjList.Count > 0 )      // 들어가있는 오브젝트가 하나라도 있다면 (중복수량을 체크해야 합니다)
             {
-                int remainCount = count;    // 채워야할 나머지 수량을 설정합니다
+                int remainCount = overlapCount;    // 채워야할 나머지 수량을 설정합니다
 
 
                 // 리스트에 들어있는 잡화 게임오브젝트를 읽어들여서 남은수량이 0이될 때까지 최대 수량으로 채워줍니다.
@@ -306,7 +381,7 @@ public class CreateManager : MonoBehaviour
                 //Debug.Log("------새로운 잡화아이템에다가 수량을 채워야하는 경우------");
                 //Debug.Log("인자로 들어온 count : "+ count);
                 itemClone=(ItemMisc)worldMiscDic[itemName].Clone();    // 개념아이템을 클론하고,
-                ( (ItemMisc)itemClone ).SetOverlapCount( count );   // 클론의 중첩 갯수를 받은 인자로 지정합니다.
+                ( (ItemMisc)itemClone ).SetOverlapCount( overlapCount );   // 클론의 중첩 갯수를 받은 인자로 지정합니다.
 
                 //Debug.Log("Item에 등록된 Count : " + ((ItemMisc)itemClone).OverlapCount);
 
@@ -315,15 +390,16 @@ public class CreateManager : MonoBehaviour
             }
 
         }
-        else // 어떤 이름도 일치하지 않는다면 예외를 발생 시킵니다
-        {
-            throw new Exception("생성 할 아이템 명이 정확하게 일치하지 않습니다. 확인하여 주세요.");
-        }
 
         
         // 아이템 생성이 성공한 경우 0을 반환합니다
         return 0;
     }
+
+
+
+
+
 
 
 
@@ -404,27 +480,6 @@ public class CreateManager : MonoBehaviour
 
 
 
-    /// <summary>
-    /// 남아있는 슬롯 중에서 가장 작은 인덱스를 반환합니다. 슬롯이 꽉 찬경우 -1을 반환합니다.
-    /// </summary>
-    public int FindNearstRemainSlotIdx() 
-    {
-        int findIdx = -1;
-
-        for( int i = 0; i<slotListTr.childCount; i++ )
-        {
-            if( slotListTr.GetChild(i).childCount!=0 )  // 해당 슬롯리스트에 자식이 있다면 다음 슬롯리스트로 넘어간다.
-                continue;
-
-            findIdx = i;
-            break;
-        }
-
-        return findIdx;     // findIdx가 수정되지 않았다면 -1을 반환한다. 수정되었다면 0이상의 인덱스값을 반환한다.
-    }
-
-
-
 
 
 
@@ -434,12 +489,12 @@ public class CreateManager : MonoBehaviour
     /// </summary>
     private void LoadAllItemDictionary()
     {
-        // 플레이어와 상관없이 게임 시스템 자체가 들고 있어야할 집합이며,
-        // 플레이어는 아이템이 생성될 때 이 집합에서 복제해서 들고있게 될 것이다.
+        // 플레이어와 상관없이 게임 시스템 자체가 들고 있어야할 데이터 집합이며,
+        // 플레이어는 아이템이 생성될 때 이 집합에서 복제해서 들고있게 될 것입니다
 
-        WorldItem worldItemData = new WorldItem();
+        worldItemData = new WorldItem();
         worldMiscDic = worldItemData.miscDic;
-        worldWeapDic = worldItemData.weaponDic;
+        worldWeapDic = worldItemData.weapDic;
     }
 
 

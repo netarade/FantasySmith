@@ -58,14 +58,14 @@ namespace DataManagement
         /// </summary>
         public SInventory()
         {
-            Serialize(new Inventory());
+            Serialize( new InventoryManagement.Inventory());
         }
 
 
         /// <summary>
         /// 기존의 인벤토리 클래스의 인스턴스를 인자로 받아서 직렬화 가능한 인벤토리 인스턴스를 생성해 줍니다.
         /// </summary>
-        public SInventory( Inventory inventory )
+        public SInventory( InventoryManagement.Inventory inventory )
         {
             Serialize(inventory);
         }
@@ -74,9 +74,9 @@ namespace DataManagement
         /// 저장 되어있는 인벤토리를 역직렬화하여 로드하는 메서드입니다.<br/>
         /// 로드되어있는 내부변수를 자동으로 변환하여 Inventory 인스턴스를 반환받습니다.
         /// </summary>
-        public Inventory Deserialize()
+        public InventoryManagement.Inventory Deserialize()
         {
-            Inventory inventory = new Inventory();
+            InventoryManagement.Inventory inventory = new InventoryManagement.Inventory();
                       
             inventory.DeserializeItemListToDic<ItemWeapon>( this.weapList );
             inventory.DeserializeItemListToDic<ItemMisc>( this.miscList );
@@ -89,7 +89,7 @@ namespace DataManagement
         /// <summary>
         /// 인벤토리를 직렬화하여 저장하는 메서드입니다. 인자로 저장할 인벤토리를 전달하여야 합니다.
         /// </summary>
-        public void Serialize(Inventory inventory)
+        public void Serialize( InventoryManagement.Inventory inventory)
         {
             this.weapList=inventory.SerializeDicToItemList<ItemWeapon>();
             this.miscList=inventory.SerializeDicToItemList<ItemMisc>();

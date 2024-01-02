@@ -127,6 +127,19 @@ using UnityEngine;
  * 
  * 4- GetCurItemCount메서드 내부 딕셔너리 count==0인지 확인하는 코드 삽입
  * 
+ * 
+ * <v8.2 - 2024_0102_최원준>
+ * 1- 딕셔너리의 길이를 반환하는 프로퍼티 추가
+ * 2- CurItemCount, CurItemWeapCout, CurItemMiscCount를 CurItemObjCount로 이름변경
+ * 
+ * 
+ * 
+ * 
+ * [이슈_0102]
+ * 1- 딕셔너리 변수명을 일반화 시킬 수 있어야함.
+ * 2- curDicLen 프로퍼티는 현재 딕셔너리가 몇개인지 여부를 반환해야 하는데 이를 위해 enum변수를 따로 가지고 있어야 한다.
+ * 
+ * 
  */
 
 
@@ -172,12 +185,12 @@ namespace InventoryManagement
         /// <summary>
         /// 현재 인벤토리에 들어있는 무기 아이템 오브젝트의 갯수를 반환받거나 설정합니다.
         /// </summary>
-        public int CurWeapItemCount {get; set;} = 0;  // 새로운 인벤토리 생성 시 0으로 초기화
+        public int CurWeapItemObjCount {get; set;} = 0;  // 새로운 인벤토리 생성 시 0으로 초기화
         
         /// <summary>
         /// 현재 인벤토리에 들어있는 잡화 아이템 오브젝트의 갯수를 반환받거나 설정합니다.
         /// </summary>
-        public int CurMiscItemCount {get; set;} = 0;  // 새로운 인벤토리 생성 시 0으로 초기화
+        public int CurMiscItemObjCount {get; set;} = 0;  // 새로운 인벤토리 생성 시 0으로 초기화
                         
 
 
@@ -197,7 +210,13 @@ namespace InventoryManagement
         /// <summary>
         /// 플레이어 인벤토리에 종류와 상관없이 모든 아이템이 차지하고 있는 현재 칸 수입니다.
         /// </summary>
-        public int TotalCurItemCount { get{ return CurWeapItemCount + CurMiscItemCount; } }
+        public int TotalCurItemCount { get{ return CurWeapItemObjCount + CurMiscItemObjCount; } }
+        
+        /// <summary>
+        /// 현재 인벤토리의 딕셔너리 길이를 반환합니다.
+        /// </summary>
+        public int CurDicLen { get { return (int)ItemType.None-1;} } //전체 길이이므로 개별 종류를 가지는 인벤토리에서는 적용되지 않으므로 수정필요
+
         
         /**** 내부적으로만 사용하는 속성 ****/
         List<int> indexList = new List<int>();
@@ -239,16 +258,16 @@ namespace InventoryManagement
         /// 
         /// *** 인자로 해당 인벤토리에 해당하지 않는 ItemType을 전달한 경우 예외를 발생시킵니다. ***
         /// </summary>
-        public void SetCurItemCount(ItemType itemType, int inCount)
+        public void SetCurItemObjCount(ItemType itemType, int inCount)
         {
             switch(itemType)
             {
                 case ItemType.Weapon:
-                    CurWeapItemCount += inCount;
+                    CurWeapItemObjCount += inCount;
                     break;
 
                 case ItemType.Misc:
-                    CurMiscItemCount += inCount;
+                    CurMiscItemObjCount += inCount;
                     break;
 
                 default:
@@ -259,7 +278,7 @@ namespace InventoryManagement
         /// <summary>
         /// 아이템 종류에 따른 슬롯의 제한 수를 반환합니다. <br/>
         /// ItemType을 인자로 전달받습니다.<br/>
-        /// *** 인자를 미 전달 시 전체 슬롯 인덱스를 기준으로 반환합니다.*** <br/>
+        /// *** 인자를 미 전달 또는 ItemType.None 전달 시 전체 슬롯 인덱스를 기준으로 반환합니다.(기본 값) *** <br/>
         /// </summary>
         /// <returns>인자로 전달 된 슬롯의 최대 제한 수를 반환합니다</returns>
         public int GetItemSlotCountLimit(ItemType itemType=ItemType.None)

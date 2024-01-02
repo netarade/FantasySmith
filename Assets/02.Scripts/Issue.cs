@@ -644,5 +644,20 @@
  * InventoryInfo - FindNearstSlotIdx, isSlotEnough메서드 등 추가
  * InventoryInteractive - 활성화탭 기준 변수 및 프로퍼티 추가
  * 
+ * <2024_0102_최원준>
+ * 1- interactive스크립트에서 활성화탭변동이 일어날 때 inventory의 모든 아이템에게 활성화탭 정보를 전달하면서 업데이트시키기(완료)
+ * 
+ * 
+ * (수정내용)
+ * ItemInfo - 계층변경을 위한 메서드 구현완료, 일부 미수정코드 남은상태
+ * InventoryInteractive.cs - 코드 최적화 완료
+ * Inventory_2.cs - 코드 정리, 예외처리추가
+ * 
+ * (다음 수정예정)
+ * Inventory_3.cs - 아이템 수량 검색, 수량조절및제거 기능 작성
+ * InventoryInfo.cs - 수량조절을 통한 오브젝트 텍스트 업데이트 및 아이템 파괴
+ * CreateManager.cs - CreateItem 관련 메서드 수정
+ * 
+ * 
  * 
  */

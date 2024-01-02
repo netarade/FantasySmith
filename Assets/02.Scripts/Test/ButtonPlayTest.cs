@@ -19,10 +19,10 @@ using InventoryManagement;
 /// </summary>
 public class ButtonPlayTest : MonoBehaviour
 {
-    Inventory inventory;
+    InventoryManagement.Inventory inventory;
     private void Start()
     {
-        inventory=GameObject.FindWithTag( "Player" ).GetComponent<InventoryInfo>().inventory;
+        inventory=GameObject.FindWithTag( "Player" ).GetComponent<Inventory>().inventory;
     }
 
 

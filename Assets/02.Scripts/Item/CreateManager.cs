@@ -460,7 +460,7 @@ public class CreateManager : MonoBehaviour
 
         itemObjList.Add( itemObject );    // 인벤토리는 GameObject 인스턴스를 보관함으로서 transform정보와 개념 아이템을 정보를 포함하게 된다.            
         
-        itemObject.GetComponentInChildren<ItemInfo>().OnItemChanged();    //아이템 수정사항을 반영해줍니다.
+        itemObject.GetComponentInChildren<ItemInfo>().OnItemCreated();    //아이템 수정사항을 반영해줍니다.
     }
 
 

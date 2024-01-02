@@ -49,6 +49,22 @@ using WorldItemData;
  * GetItemObjectList - 딕셔너리에서 오브젝트 리스트를 반환
  * 
  * 
+ * <v3.1 - 2023_0102_최원준>
+ * 1- AddItem메서드 string, Item클래스 기반 오버로딩 메서드 삭제
+ * 이유는 미리 생성되어있는 오브젝트가 아닌 경우 포지션 정보 업데이트 메서드 호출이 곤란하기 때문에
+ * 결국 InventoryInfo메서드에서 완성해야 할 기능이므로 이미 생성되어있는 오브젝트나 스크립트를 넣는 메서드만 있는것이 낫다고 판단.
+ * 
+ * (Remove메서드의 오버로딩을 놔두는 이유는 string기반으로 검색이 메인이기 때문에, 나머지 오버로딩은 Info클래스에서 그대로 재사용 가능)
+ * 
+ * 2- AddItem GameObject인자를 받는 메서드 예외처리 작성
+ * 
+ * 3- SetOverlapCount메서드 삭제 및 관련 기능 Inventory_3.cs로 구현
+ * 
+ * 4- AddItem 및 RemoveItem에 예외처리 문장 추가
+ * 5- RemoveItem GameObject와 ItemInfo 인자 메서드를 Item인자 메서드 호출에서 바로 string 메서드로 호출되도록 변경 
+ * 
+ * 
+ * 
  * [추가 사항]
  * 1- AddItem 메서드로 아이템을 넣지만 포지션 업데이트를 외부 InventoryInfo스크립트에서 해줘야 함.
  * (포지션 업데이트를 현재활성화 탭기준으로 해놔야 한다.)
@@ -61,42 +77,6 @@ namespace InventoryManagement
 {    
     public partial class Inventory
     {
-        public bool AddItem( string itemName )
-        {
-            ItemType itemType = GetItemTypeIgnoreExists(itemName);
-            
-            // 현재 개별 오브젝트의 갯수가 개별 슬롯 칸 제한 수와 같거나 크다면 더 이상 추가할 수 없으므로 false를 반환합니다.
-            if(GetCurItemCount(itemType) >= GetItemSlotCountLimit(itemType) )            
-                return false;        
-            
-            //월드에 아이템을 하나 생성합니다.
-            GameObject itemObject = CreateManager.instance.CreateItemToWorld(null, itemName);
-            ItemInfo itemInfo = itemObject.GetComponent<ItemInfo>();
-            itemInfo.SetSlot
-        }
-
-        /// <summary>
-        /// Item 인스턴스를 인자로 전달받아 오브젝트를 새롭게 생성하고, 해당하는 사전을 찾아서 넣어주는 메서드입니다. <br/><br/>
-        /// *** Item 클래스의 인스턴스를 인자로 전달한 경우 오브젝트가 새롭게 생성됩니다. *** 
-        /// </summary>
-        /// <returns>아이템 추가 성공시 true를, 현재 인벤토리에 들어갈 공간이 부족하다면 false를 반환합니다</returns>
-        public bool AddItem( Item item )
-        {
-            // 현재 개별 오브젝트의 갯수가 개별 슬롯 칸 제한 수와 같거나 크다면 더 이상 추가할 수 없으므로 false를 반환합니다.
-            if(GetCurItemCount(item.Type) >= GetItemSlotCountLimit(item.Type) )            
-                return false;        
-
-            GameObject itemObject = CreateManager.instance.CreateItemByInfo( item );    //슬롯넘버를 정해줘야한다.
-            ItemInfo itemInfo = itemObject.GetComponent<ItemInfo>();
-
-            itemInfo.SlotIndexAll = itemInfo.FindNearstRemainActiveSlotIdx()
-
-
-            return AddItem( itemObject );
-        }
-
-
-
         /// <summary>
         /// 아이템 오브젝트를 인자로 전달받아 해당하는 사전을 찾아서 넣어주는 메서드입니다.<br/><br/>
         /// *** 아이템 오브젝트를 인자로 전달한 경우 이 오브젝트를 인벤토리에 넣어줍니다. *** 
@@ -104,7 +84,14 @@ namespace InventoryManagement
         /// <returns>아이템 추가 성공시 true를, 현재 인벤토리에 들어갈 공간이 부족하다면 false를 반환합니다</returns>
         public bool AddItem(GameObject itemObj)
         {
+            if(itemObj == null)
+                throw new Exception("존재하지 않는 참조값입니다. 확인하여 주세요.");
+
             ItemInfo itemInfo = itemObj.GetComponent<ItemInfo>();
+
+            if(itemInfo==null)
+                throw new Exception("아이템 스크립트가 존재하지 않는 오브젝트입니다. 확인하여 주세요.");
+
             return AddItem(itemInfo); 
         }
 
@@ -116,6 +103,9 @@ namespace InventoryManagement
         /// <returns>아이템 추가 성공시 true를, 현재 인벤토리에 들어갈 공간이 부족하다면 false를 반환합니다</returns>
         public bool AddItem(ItemInfo itemInfo)
         {   
+            if(itemInfo==null)
+                throw new Exception("아이템 스크립트가 존재하지 않는 오브젝트입니다. 확인하여 주세요.");
+
             //아이템 타입을 확인합니다.
             ItemType itemType = itemInfo.Item.Type;
 
@@ -128,7 +118,7 @@ namespace InventoryManagement
             Dictionary<string, List<GameObject>> itemDic = GetItemDicIgnoreExsists(itemType);
 
             AddItemToDic(itemDic, itemInfo);    // 찾은 딕셔너리에 itemInfo 컴포넌트 참조값을 전달하여 오브젝트를 추가합니다.
-            SetCurItemCount(itemType, 1);       // 해당 아이템 종류의 현재 오브젝트의 갯수를 증가시킵니다.
+            SetCurItemObjCount(itemType, 1);       // 해당 아이템 종류의 현재 오브젝트의 갯수를 증가시킵니다.
             return true;                        // 성공을 반환합니다.
         }
         
@@ -164,8 +154,15 @@ namespace InventoryManagement
         /// <returns>딕셔너리 목록의 제거에 성공한 경우 true를, 실패한 경우 false를 반환합니다.</returns>
         public bool RemoveItem(GameObject itemObj, bool isLatest=true)
         {
-            Item item = itemObj.GetComponent<ItemInfo>().Item;            
-            return RemoveItem(item);
+            if(itemObj == null)
+                throw new Exception("존재하지 않는 참조값입니다. 확인하여 주세요.");
+
+            ItemInfo itemInfo = itemObj.GetComponent<ItemInfo>();   
+                                   
+            if(itemInfo==null)
+                throw new Exception("아이템 스크립트가 존재하지 않는 오브젝트입니다. 확인하여 주세요.");
+
+            return RemoveItem(itemInfo.Item.Name, isLatest);
         }
         
         /// <summary>
@@ -175,15 +172,18 @@ namespace InventoryManagement
         /// <returns>딕셔너리 목록의 제거에 성공한 경우 true를, 실패한 경우 false를 반환합니다.</returns>
         public bool RemoveItem(ItemInfo itemInfo, bool isLatest=true)
         {
-            Item item = itemInfo.Item;            
-            return RemoveItem(itemInfo.Item, isLatest);
+            if(itemInfo==null)
+                throw new Exception("아이템 스크립트가 존재하지 않는 오브젝트입니다. 확인하여 주세요.");
+
+            Item item = itemInfo.Item;          
+            return RemoveItem(itemInfo.Item.Name, isLatest);
         }
         
         /// <summary>
         /// Item 인스턴스를 인자로 받아서 인벤토리의 딕셔너리 목록에서 제거해주는 메서드 입니다.<br/>
         /// 인자를 통해 최신순으로 제거 할 것인지, 오래된 순으로 제거할 것인지를 결정할 수 있습니다. 기본은 최신순입니다. 
         /// </summary>
-        /// <returns>딕셔너리 목록의 제거에 성공한 경우 true를, 실패한 경우 false를 반환합니다.</returns>
+        /// <returns>딕셔너리 목록의 제거에 성공한 경우 true를, 목록에 없는 아이템인 경우 false를 반환합니다.</returns>
         public bool RemoveItem(Item item, bool isLatest=true)
         {
             string itemName = item.Name;
@@ -194,7 +194,7 @@ namespace InventoryManagement
         /// 아이템의 이름을 인자로 받아서 인벤토리의 딕셔너리 목록에서 제거해주는 메서드 입니다.<br/>
         /// 인자를 통해 최신순으로 제거 할 것인지, 오래된 순으로 제거할 것인지를 결정할 수 있습니다. 기본은 최신순입니다. 
         /// </summary>
-        /// <returns>딕셔너리 목록의 제거에 성공한 경우 true를, 실패한 경우 false를 반환합니다.</returns>
+        /// <returns>딕셔너리 목록의 제거에 성공한 경우 true를, 목록에 없는 아이템인 경우 false를 반환합니다.</returns>
         public bool RemoveItem(string itemName, bool isLatest=true)
         {
             // 이름을 통해 현재 아이템이 담긴 딕셔너리가 있는지 조사합니다
@@ -216,39 +216,11 @@ namespace InventoryManagement
                 itemObjList.RemoveAt(0);                    // 오래된순으로 제거합니다
             
             // 해당 아이템 종류의 현재 오브젝트의 갯수를 감소시킵니다.
-            SetCurItemCount(itemType, -1);       
+            SetCurItemObjCount(itemType, -1);       
 
             // 성공을 반환합니다
             return true;            
         }
-
-
-
-        public int SetOverlapCount(GameObject itemObj)
-        {
-            ItemInfo itemInfo = itemObj.GetComponent<ItemInfo>();
-            return SetOverlapCount(itemInfo);
-        }
-
-        public int SetOverlapCount(ItemInfo itemInfo)
-        {
-            Item item = itemInfo.Item;
-            return SetOverlapCount(item);
-        }
-
-        public int SetOverlapCount(Item item)
-        {
-            ItemInfo itemInfo = itemObj.GetComponent<ItemInfo>();
-            return SetOverlapCount(itemInfo);
-        }
-
-        public string SetOverlapCount(string itemName)
-        {
-
-        }
-
-
-
 
 
 
@@ -394,13 +366,13 @@ namespace InventoryManagement
             foreach( List<GameObject> objList in weapDic.Values )                   // 무기사전에서 게임오브젝트 리스트를 하나씩 꺼내어
             {
                 for(int i=0; i<objList.Count; i++)                                  // 리스트의 게임오브젝트를 모두 가져옵니다.
-                    objList[i].GetComponentInChildren<ItemInfo>().OnItemChanged();  // item 스크립트를 하나씩 꺼내어 OnItemChnaged메서드를 호출합니다.
+                    objList[i].GetComponentInChildren<ItemInfo>().OnItemCreated();  // item 스크립트를 하나씩 꺼내어 OnItemChnaged메서드를 호출합니다.
             }
 
             foreach( List<GameObject> objList in miscDic.Values )                   // 잡화사전에서 게임오브젝트 리스트를 하나씩 꺼내어
             {
                 for(int i=0; i<objList.Count; i++)                                  // 리스트의 게임오브젝트를 모두 가져옵니다.
-                    objList[i].GetComponentInChildren<ItemInfo>().OnItemChanged();  // item 스크립트를 하나씩 꺼내어 OnItemChnaged메서드를 호출합니다.
+                    objList[i].GetComponentInChildren<ItemInfo>().OnItemCreated();  // item 스크립트를 하나씩 꺼내어 OnItemChnaged메서드를 호출합니다.
             }      
         }
 

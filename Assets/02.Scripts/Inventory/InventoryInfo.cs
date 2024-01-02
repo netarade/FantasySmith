@@ -3,6 +3,7 @@ using InventoryManagement;
 using DataManagement;
 using ItemData;
 using System;
+using System.Collections.Generic;
 
 /*
  * [작업 사항]  
@@ -204,8 +205,10 @@ public class InventoryInfo : MonoBehaviour
     
 
 
+
+
     /// <summary>
-    /// 인벤토리의 목록에서 아이템을 제거합니다.
+    /// 인벤토리의 목록에서 기존의 아이템을 제거합니다.
     /// </summary>
     public bool RemoveItem(ItemInfo item)
     {
@@ -213,12 +216,28 @@ public class InventoryInfo : MonoBehaviour
     }
 
     /// <summary>
-    /// 인벤토리의 목록에서 아이템을 추가합니다.
+    /// 인벤토리의 목록에서 기존의 아이템을 추가합니다.<br/>
+    /// <br/>외부의 아이템을 보유하고 있을 때 사용해야 합니다.<br/>
     /// </summary>
     public bool AddItem(ItemInfo item)
     {
         return true;
     }
+
+
+
+    /// <summary>
+    /// 인벤토리의 목록에 없는 아이템을 새롭게 생성을 요청합니다.
+    /// </summary>
+    public bool CreateItemToNearstSlot()
+    {
+        return true;
+    }
+
+
+
+
+
 
 
 
@@ -347,6 +366,29 @@ public class InventoryInfo : MonoBehaviour
         // 성공을 반환합니다.
         return true;
     }
+
+    /// <summary>
+    /// 특정 종류의 딕셔너리에 존재하는 아이템의 슬롯 정보를 업데이트해주는 메서드입니다.<br/>
+    /// 아이템의 종류에 따른 딕셔너리를 참조하여 
+    /// 해당 딕셔너리 내부의 모든 아이템을 대상으로 UpdatePositionInSlotList메서드를 호출합니다.<br/><br/>
+    /// 현재는 interactive클래스에서 이 메서드를 활용하고 있습니다.<br/>
+    /// </summary>
+    /// <param name="itemType"></param>
+    public void UpdateDicItemPosition(ItemType itemType)
+    {            
+        //인벤토리의 현재 활성화 탭종류와 일치하는 딕셔너리를 참조합니다.
+        Dictionary<string, List<GameObject>> itemDic = inventory.GetItemDicIgnoreExsists(itemType);
+
+        foreach( List<GameObject> itemObjList in itemDic.Values )  // 해당 딕셔너리의 오브젝트리스트를 가져옵니다.
+        {
+            foreach( GameObject itemObj in itemObjList )           // 오브젝트리스트에서 오브젝트를 하나씩 가져옵니다.
+            {
+                ItemInfo itemInfo = itemObj.GetComponent<ItemInfo>();  // 아이템 정보를 읽어들입니다.
+                itemInfo.UpdatePositionInSlotList();                   // 활성화 탭 기반으로 해당 종류의 위치정보를 업데이트합니다.
+            }
+        }
+    }
+
 
 
 }

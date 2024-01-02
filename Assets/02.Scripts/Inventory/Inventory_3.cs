@@ -7,6 +7,12 @@ using UnityEngine;
 /*
  * <v1.0 - 2023_1231_최원준>
  * 1- FindNearstSlotIdx itemName과 itemType을 인자로 받는 오버로등 메서드 구현
+ * 
+ * <v1.1 - 2024_0102_최원준>
+ * 1- 아이템 수량 검색기능
+ * 
+ * 2- 아이템 수량 조절 및 목록에서 제거 기능
+ * 
  */
 
 
@@ -124,6 +130,33 @@ namespace InventoryManagement
         }
         
 
+        public bool isEnough(string itemName, int overlapCount)
+        {
+            return true;
+        }
+
+                
+        public int SetOverlapCount(GameObject itemObj)
+        {
+            ItemInfo itemInfo = itemObj.GetComponent<ItemInfo>();
+            return SetOverlapCount(itemInfo);
+        }
+
+        public int SetOverlapCount(ItemInfo itemInfo)
+        {
+            Item item = itemInfo.Item;
+            return SetOverlapCount(item);
+        }
+
+        public int SetOverlapCount(Item item)
+        {
+            ((ItemMisc)item).SetOverlapCount()
+        }
+
+        public string SetOverlapCount(string itemName)
+        {
+
+        }
 
 
 

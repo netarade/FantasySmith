@@ -133,21 +133,52 @@ using System;
  *4- OnEnable에서 슬롯리스트 설정 시 canvsTr을 find 메서드로 찾아서 처리하던 점 삭제하고,
  *UpdateInventoryInfo메서드 호출로 변경
  *
- *<2024_0102_최원준>
+ *<v10.4 - 2024_0102_최원준>
  *1- OnItemDrop메서드 구현완료
  *어떤 아이템의 드롭 이벤트 발생시 외부 스크립트에서 호출하도록 설정
  *2- UpdateActiveTabInfo 메서드 정의하고 OnItemChanged 내부에 추가.
  *
  *
+ * <v11.0 - 2023_0102_2_최원준>
+ * 1- OnItemWorldDrop메서드의 매개변수를 dropEventCallerTr에서 worldPlaceTr로 변경
+ * 
+ * 2- Transfer2DToWorld메서드 수정
+ * 
+ * a. prevDropEventCallerTr참조가 최신화 안하고 null로 잡혀있던 점 수정
+ * b. inventoryInfo.RemoveItem(this);가 null값 전달 시 없던 점 수정.
+ * c. 예외처리 상황 isWorldPositioned기반으로 변경
+ * 
+ * 3- OnItemWorldDrop, Transfer2DToWorld메서드 Vector3, Quaternion인자 전달 기반 오버로딩, 반환값 void로 수정
+ * 
+ * 4- UpdateInventoryInfo메서드에서 prevDropEventCaller 정보를 최신화하는 코드 추가
+ * 
+ * 5- OnItemChanged메서드를 OnItemCreated로 변경 및 주석 수정, 인자로 InventoryInfo 스크립트를 받도록 설정.
+ * 아이템이 인벤토리에 생성되는 상황에서 호출하는 것이 더욱 명확한 의미기이 때문
+ * 
+ * 6- OnEnable메서드 주석보완, canvasTr의 계층참조로 처리하던 코드 삭제
+ * 
+ * 7- UpdateActiveTabInfo 메서드 주석 보완 및
+ * 인자를 제한적으로 받아 어떤 상황에서 호출해야 하는 지 명확하게 설정
+ * 
+ * 8- OnItemSlotDrop 주석 수정
+ * 
+ * 9- ChangeHierarchy메서드 선택인자 null값 추가
+ * 3D->Slot에서 호출 시 인덱스를 입력하고 인덱스에 따른 Position Update를 따로 해주어야 하기 때문에 부모 설정이 필요하지 않음.
+ * 
+ * 10- Locate3DToSlot, SlotList, InventoryInfo등의 오버로딩 메서드 삭제 후 
+ * Locate3DToInventory메서드 하나로 통일.
+ * 
+ * 11- 사용자가 호출 할 OnItemGain메서드 추가
  *
  *
- *[추후 수정해야할 점] 
- * 1- UpdateInventoryPosition이 현재 자신 인벤토리 기준으로 수정하고 있으나,
- * 나중에 UpdatePosition을 할 때 아이템이 보관함 슬롯의 인덱스 뿐만 아니라 어느 보관함에 담겨있는지도 정보가 있어야 한다.
  *
- *2- 슬롯드롭이벤트가 발생할 때 인벤토리 정보가 다르다면 이전 인벤토리에서 이 아이템 목록을 제거해야한다.
- * 계층변경이 일어날 때 인벤토리에서 이 아이템을 목록에 추가하거나 제거해야 한다.
- * Drag에서 인벤토리 밖으로 빼냈을 때 인벤토리 목록에서 이 아이템을 제거해야 한다.
+ * [추후 수정해야할 점] 
+ *  1- UpdateInventoryPosition이 현재 자신 인벤토리 기준으로 수정하고 있으나,
+ *  나중에 UpdatePosition을 할 때 아이템이 보관함 슬롯의 인덱스 뿐만 아니라 어느 보관함에 담겨있는지도 정보가 있어야 한다.
+ * 
+ * 2- 슬롯드롭이벤트가 발생할 때 인벤토리 정보가 다르다면 이전 인벤토리에서 이 아이템 목록을 제거해야한다.
+ *  계층변경이 일어날 때 인벤토리에서 이 아이템을 목록에 추가하거나 제거해야 한다.
+ *  Drag에서 인벤토리 밖으로 빼냈을 때 인벤토리 목록에서 이 아이템을 제거해야 한다.
  *
  *
  *
@@ -164,6 +195,18 @@ using System;
  * 이유는 한번 받은 상태에서 다른 탭변경을 시도하면 위치 정보가 안맞기 때문
  *
  *
+ * [이슈_0102]
+ * 1- UpdateImage에서 iicArr에 인덱스를 대입하여 참조값을 찾아가는 부분이 있는데, 
+ * 모든 아이템이 이 메서드를 가지고 있을 필요가 없기때문에 특정 인스턴스에 요청해서 정보를 받아오면 된다고 생각되는데,
+ * CreateManager에 요청하는 것이 적합하지만, 이미지 우선순위로 싱글톤에서 참조를 받아오면 시점이 늦기때문에 다른방안을 생각 중.
+ * => 아이템 생성 전 미리 오브젝트를 만들어놓고 해당 메서드를 호출하도록 하는 방식으로 접근하면 어떨까 생각.
+ * 
+ * 2- OnEnable에서 OnItemCreate메서드를넣고 UpdateInventoryInfo를 따로 호출할지 생각 중.
+ * => 이미지 우선순위로 OnItemCreate를 수동으로 호출로 결정, UpdateInventoryInfo메서드를 내부에 포함.
+ * 
+ * [나중에 수정할 것_0102]
+ * 1- SetOverlap메서드 수정
+ * 2- OnEnable에 있는 iic참조 관련 메서드 렌더링 관리 클래스쪽에서 호출 할 예정
  *
  */
 
@@ -183,22 +226,27 @@ using System;
 /// </summary>
 public class ItemInfo : MonoBehaviour
 {
+    /**** 아이템 고유 정보 ****/
     private Item item;             // 아이템의 실제 정보가 담긴 변수
 
     private Image itemImage;       // 아이템이 인벤토리에서 2D상에서 보여질 이미지 컴포넌트 참조  
     public Sprite innerSprite;     // 아이템이 인벤토리에서 보여질 이미지 스프라이트
     public Sprite statusSprite;    // 아이템이 상태창에서 보여질 이미지 스프라이트 (상태창 스크립트에서 참조를 하게 됩니다.)
     private Text countTxt;         // 잡화 아이템의 수량을 반영할 텍스트
-        
+            
+    private RectTransform itemRectTr;       // 자기자신 2D 트랜스폼 참조(초기 계층 - 상위 부모)
+    private Transform itemTr;               // 자기자신 3D 트랜스폼 참조(초기 계층 - 하위 마지막 자식)
+    private CanvasGroup itemCG;             // 아이템의 캔버스 그룹 컴포넌트 (아이템이 월드로 나갔을 때 2D이벤트를 막기위한 용도) 
+    
+
+    /*** 아이템 외부 참조 정보 ***/
     public ItemImageCollection[] iicArr;                             // 인스펙터 뷰 상에서 등록할 아이템 이미지 집합 배열
     public enum eIIC { MiscBase,MiscAdd,MiscOther,Sword,Bow,Axe }    // 이미지 집합 배열의 인덱스 구분
     private readonly int iicNum = 6;                                 // 이미지 집합 배열의 갯수
 
 
-    private RectTransform itemRectTr;       // 자기자신 2D 트랜스폼 참조(초기 계층 - 상위 부모)
-    private Transform itemTr;               // 자기자신 3D 트랜스폼 참조(초기 계층 - 하위 마지막 자식)
-    private CanvasGroup itemCG;             // 아이템의 캔버스 그룹 컴포넌트 (아이템이 월드로 나갔을 때 2D이벤트를 막기위한 용도) 
 
+    /*** 아이템 변동 정보 ***/
 
     /*** Locate2DToWorld 또는 Locate3DToWorld 메서드 호출 시 변동***/
     private bool isWorldPositioned;         // 아이템이 월드에 나와있는지 여부
@@ -216,7 +264,7 @@ public class ItemInfo : MonoBehaviour
     /**** inveractive에서 변동일어 날 때마다 변동*****/
     private bool isActiveTabAll;                // 현재 아이템이 담겨있는 인벤토리의 활성화 탭의 기준이 전체인지, 개별인지 여부
 
-    /**** OnItemDrop메서드 호출 시 변경 ****/
+    /**** OnItemDrop, OnItemSlotDrop 이벤트 호출 시 변동 ****/
     private Transform prevDropEventCallerTr;    // 드랍이벤트가 발생할 때 이전의 드랍이벤트 호출자를 기억하기 위한 참조 변수 
 
 
@@ -273,7 +321,8 @@ public class ItemInfo : MonoBehaviour
 
 
     /// <summary>
-    /// 이미지 컴포넌트를 잡는 우선순위를 높이기 위해 OnEnable 사용
+    /// 이미지 컴포넌트를 잡는 우선순위를 높이기 위해 OnEnable 사용<br/>
+    /// 자기자신의 컴포넌트 참조와 변동이 절대로 없는 외부 컴포넌트의 참조를 잡는데 사용합니다.<br/>
     /// </summary>
     private void OnEnable()
     {
@@ -282,10 +331,7 @@ public class ItemInfo : MonoBehaviour
 
         itemImage = GetComponent<Image>();
         countTxt = GetComponentInChildren<Text>();
-
-        Transform canvasTr = GameObject.FindWithTag("CANVAS_CHARACTER").transform;
-        //slotListTr = canvasTr.GetChild(0).GetChild(0).GetChild(0).GetChild(0);
-        
+                
         // 인스펙터뷰 상에서 달아놓은 스프라이트 이미지 집합을 참조합니다.
         Transform imageCollectionsTr = GameObject.FindAnyObjectByType<CreateManager>().transform.GetChild(0);
 
@@ -298,25 +344,36 @@ public class ItemInfo : MonoBehaviour
         
         isWorldPositioned = false;
         itemCG = GetComponent<CanvasGroup>();
-
-        // 아이템의 인벤토리 정보를 계층구조를 기반으로 초기화해줍니다.
-        UpdateInventoryInfo(itemRectTr.parent.parent.parent.parent);
     }
     
 
     /// <summary>
-    /// 아이템의 연관된 모든 정보를 최신화합니다.(아이템의 내부정보를 오브젝트에 반영합니다.)<br/>
-    /// 오브젝트에 item의 참조가 이루어졌다면 item이 가지고 있는 이미지를 반영하고 잡화아이템의 경우 중첩 횟수까지 최신화 합니다.<br/>
-    /// **** 외부 스크립트에서 이 스크립트의 메서드를 통하지 않고 프로퍼티를 받아 아이템 내부 정보를 직접 수정했을 때 최신 정보 반영을 위하여 따로 호출해야 합니다. ****<br/>
+    /// 아이템이 새롭게 생성되는경우에 호출해야 할 메서드입니다.<br/>
+    /// 로드하여 기존 아이템 정보를 바탕으로 오브젝트를 생성하거나, 신규 아이템을 씬에 생성시킬 때 사용합니다.<br/><br/>
+    /// 현재 Inventory의 Load메서드, Inventory의 CreateItem메서드, CreateManager의 CreateItemToWorld메서드에서 사용예정<br/>
+    /// **** 인자로 전달받은 inventoryInfo의 slotIndex를 기반으로 오브젝트를 보여주기 때문에<br/>
+    /// 신규 아이템을 생성 시에는 반드시 인덱스 정보를 입력 후 호출해야 합니다. ****<br/>
     /// </summary>
-    /// <param name="SlotListTr">아이템이 담긴 슬롯 리스트의 트랜스폼</param>
-    public void OnItemChanged()
+    public void OnItemCreated(InventoryInfo inventoryInfo)
     {
-        UpdateImage();                  // 이미지 최신화
-        UpdateCountTxt();               // 중첩 수량 최신화
-        UpdateActiveTabInfo();          // 활성화 탭 최신화
-        UpdatePositionInSlotList();     // 슬롯 위치 최신화
+        /*** 인자 미 전달 시 예외처리 ***/
+        if(inventoryInfo==null)
+            throw new Exception("이 메서드는 인벤토리 정보가 반드시 필요합니다. 확인하여 주세요");
+
+        /*** 인벤토리 오브젝트의 계층 정보 설정 ***/
+        Transform IntenvoryTr = inventoryInfo.transform;
+
+        /*** 아이템 오브젝트의 고유 정보를 읽어 들여 오브젝트에 반영 ***/
+        UpdateImage();                      // 이미지 최신화
+        UpdateCountTxt();                   // 중첩 수량 정보 최신화
+
+        /*** 인벤토리 정보를 읽어들여 오브젝트에 반영 ***/
+        UpdateInventoryInfo(IntenvoryTr);   // 인벤토리 정보를 최신화
+        UpdateActiveTabInfo(interactive);   // 활성화 탭 최신화
+        UpdatePositionInSlotList();         // 슬롯 위치 최신화
     }
+
+
 
     /// <summary>
     /// 아이템의 이미지 정보를 받아와서 오브젝트에 반영합니다.<br/>
@@ -396,8 +453,9 @@ public class ItemInfo : MonoBehaviour
     /// 현재 아이템이 슬롯 리스트에 속해있다면 위치를 슬롯 인덱스에 맞게 최신화시켜줍니다.<br/>
     /// 슬롯 인덱스가 잘못되어 있다면 다른 위치로 이동 할 수 있습니다.<br/><br/>
     /// ** 아이템이 월드 상에 있거나 슬롯 참조가 안 잡힌 경우 예외를 던집니다. **<br/>
+    /// ** 만약 슬롯 인덱스 정보가 다른 아이템과 동일하다면 같은 슬롯으로 중첩될 것입니다.(현재 중첩 허용상태) **
     /// </summary>
-    public void UpdatePositionInSlotList()
+    public void UpdatePositionInSlotList(bool overlapMode=false)
     {
         // 아이템이 월드상에 나와있거나 참조가 잡히지 않았다면, 예외를 던집니다.
         if( isWorldPositioned && slotListTr == null )   
@@ -409,6 +467,10 @@ public class ItemInfo : MonoBehaviour
             Debug.Log( "현재 슬롯이 생성되지 않은 상태입니다." );
             return;
         }
+        else if( !overlapMode && slotListTr.childCount>1 )
+        {
+            throw new Exception("아이템 인덱스 정보가 일치하여 중복되는 아이템이 있습니다. 확인하여 주세요");
+        }
                  
         // 현재 활성화 중인 탭을 기반으로 어떤 인덱스를 참조할지 설정합니다.
         int activeIndex = isActiveTabAll? item.SlotIndexAll : item.SlotIndex;
@@ -416,14 +478,72 @@ public class ItemInfo : MonoBehaviour
         itemRectTr.localPosition = Vector3.zero;                      // 로컬위치를 슬롯에 맞춥니다.
     }
 
-    public void UpdateActiveTabInfo()
+
+    /// <summary>
+    /// 아이템의 인벤토리 정보가 변경될 때 인자로 받은 Transform 정보를 기준으로 다시 설정해주는 메서드입니다.<br/>
+    /// 이전 인벤토리 목록에서 해당 아이템을 제거하고, 새로운 인벤토리에 해당 아이템의 목록을 추가하여 줍니다.<br/><br/>
+    /// 아이템이 기존 인벤토리에서 움직이고 있는 경우는 호출될 필요가 없습니다.<br/>
+    /// 아이템이 새로운 인벤토리로 들어오거나, 기존 인벤토리에서 나갈 때 호출해줘야 합니다.<br/>
+    /// </summary>
+    public void UpdateInventoryInfo(Transform newInventoryTr)
+    {        
+        // null값이 전달된 경우는 월드로 나갔다고 판단합니다.
+        if(newInventoryTr == null)  
+        {
+            inventoryTr = null;
+            inventoryInfo = null;
+            interactive = null;
+
+            slotListTr = null;
+            playerTr = null;
+            playerDropTr = null;
+
+            prevDropEventCallerTr = null;
+        }
+        else // 다른 인벤토리로 전달된 경우
+        {
+            // 인벤토리 참조 정보를 업데이트 합니다.
+            inventoryTr = newInventoryTr;
+            inventoryInfo = inventoryTr.GetComponent<InventoryInfo>();
+            interactive = inventoryTr.GetComponent<InventoryInteractive>();
+
+            if(inventoryInfo == null || interactive == null )
+                throw new Exception("인벤토리 정보 참조가 잘못되었습니다. 확인하여 주세요.");
+
+            
+            slotListTr = inventoryTr.GetChild(0).GetChild(0).GetChild(0);
+            playerTr = inventoryTr.parent.parent;
+            playerDropTr = playerTr;                        // 플레이어 드롭정보로 나중에 따로 지정
+
+            prevDropEventCallerTr = itemTr.parent;          // 이전 드롭이벤트 호출자를 현재 들어있는 슬롯으로 최신화
+        }      
+    }
+
+    /// <summary>
+    /// 활성화 탭 변경 시 interactive 스크립트에서 호출해주기 위한 메서드입니다.<br/>
+    /// 호출자가 반드시 해당 인벤토리의 InventoryInteractive 스크립트여야 합니다.<br/>
+    /// 따라서 이 스크립트에서 내부 호출 시에도 인벤토리 정보가 업데이트된 상태에서 사용해야 합니다.<br/><br/>
+    /// **** 인벤토리 정보가 새롭게 업데이트 된 상태이거나, 활성화 탭이 변경되었을 때 반드시 호출해야 합니다. ****<br/>
+    /// </summary>
+    public void UpdateActiveTabInfo(InventoryInteractive caller)
     {
-        isActiveTabAll = interactive.IsActiveTabAll;
+        if(caller == null)
+            throw new Exception("탭 변경을 시도할 수 없는 호출자입니다. 확인하여 주세요.");
+        
+        isActiveTabAll = caller.IsActiveTabAll;     
     }
 
 
-
-
+    /// <summary>
+    /// 아이템 외부 스크립트인 인벤토리의 interactive스크립트에서 활성화 탭의 변경이 시도되었을 때<br/>
+    /// 해당 인자로 아이템의 활성화 탭을 설정해주기 위한 메서드입니다.<br/><br/>
+    /// UpdateActiveTabInfo는 아이템이 수동으로 필요한 순간에 정보를 받아야할 때 사용하는 반면,<br/>
+    /// SetActiveTabInfo는 인벤토리의 전체 아이템에 정보를 반영해야 할 때 자동으로 정보를 전달 받는다는 점입니다.
+    /// </summary>
+    public void SetActiveTabInfo(bool isActiveTabAll)
+    {
+        this.isActiveTabAll = isActiveTabAll; 
+    }
 
 
 
@@ -431,55 +551,121 @@ public class ItemInfo : MonoBehaviour
 
 
     /// <summary>
-    /// 아이템이 인벤토리에서 월드로 드롭이 발생할 때 해당 아이템을 이동시키기 위하여 호출해줘야 하는 메서드입니다.<br/>
-    /// 지정 좌표를 입력 해 준다면 해당 지정 좌표 상에 아이템을 떨어트리며, 기본 값인 null로 준다면 플레이어 고정 좌표에 드랍합니다.<br/>
-    /// isSetParent옵션을 지정하면 해당 지정좌표 오브젝트의 하위 자식으로 만들어줍니다.<br/>
-    /// *** 이전 인벤토리 정보가 있지 않으면 예외를 발생시킵니다. *** <br/>
+    /// 아이템이 인벤토리(2D)에서 월드(3D)로 드롭이 발생할 때 해당 아이템을 이동시키기 위하여 호출해줘야 하는 메서드입니다.<br/><br/>
+    /// 지정 좌표를 입력 해 준다면 해당 지정 좌표 상에 아이템을 떨어트리며,<br/>
+    /// 기본 값인 null로 준다면 플레이어 고정 좌표에 드랍합니다.<br/><br/>
+    /// isSetParent옵션을 지정하면 해당 지정좌표 오브젝트의 하위 자식으로 만들어줍니다.<br/><br/>
+    /// *** 이전 인벤토리 정보가 있지 않으면 예외를 발생시킵니다. (월드->월드로의 드랍은 허용하지 않습니다.) *** <br/>
     /// </summary>
-    public void OnItemWorldDrop( Transform callerWorldTr=null, bool isSetParent=false )
+    public void OnItemWorldDrop( Transform worldPlaceTr=null, bool isSetParent=false )
     {
-        if(callerWorldTr==prevDropEventCallerTr)
-            throw new Exception("동일 월드 좌표로 드랍이벤트가 중복 발생하였습니다. 확인하여 주세요.");   
+        if(isWorldPositioned)
+            throw new Exception("아이템이 이미 월드에 나와있는 상태입니다. 확인하여 주세요.");   
                       
-        if( callerWorldTr == null ) 
+        if( worldPlaceTr == null )
             Transfer2DToWorld(null, isSetParent);           // 월드 좌표를 지정하지 않은 경우      
         else
-            Transfer2DToWorld(callerWorldTr, isSetParent);  // 월드 좌표를 지정해 준 경우
+            Transfer2DToWorld(worldPlaceTr, isSetParent);   // 월드 좌표를 지정해 준 경우
     }
+
+    /// <summary>
+    /// 아이템이 인벤토리(2D)에서 월드(3D)로 드롭이 발생할 때 해당 아이템을 이동시키기 위하여 호출해줘야 하는 메서드입니다.<br/><br/>
+    /// 지정 좌표를 입력 해 준다면 해당 지정 좌표 상에 아이템을 떨어트리며,<br/>
+    /// 계층 구조는 항상 최상위 계층에 배치 됩니다.<br/><br/>
+    /// *** 이전 인벤토리 정보가 있지 않으면 예외를 발생시킵니다. (월드->월드로의 드랍은 허용하지 않습니다.) *** <br/>
+    /// </summary>
+    public void OnItemWorldDrop( Vector3 worldPos, Quaternion worldRot )
+    {
+        if(isWorldPositioned)
+            throw new Exception("아이템이 이미 월드에 나와있는 상태입니다. 확인하여 주세요.");
+
+        Transfer2DToWorld(worldPos, worldRot);
+    }
+
+
+
+    /// <summary>
+    /// 아이템을 2D에서 3D로 지정좌표를 입력하여 전송하는 메서드입니다.<br/>
+    /// null값 전달 시 플레이어의 드롭좌표에 아이템을 드롭시키고<br/>
+    /// 지정좌표를 준 경우 해당 위치로 아이템을 전송시킵니다.<br/>
+    /// *** 기존의 인벤토리 정보가 없는 경우 예외를 발생시킵니다. ***<br/>
+    /// </summary>
+    private void Transfer2DToWorld(Transform worldPlaceTr, bool isSetParent=false)
+    {
+        if(inventoryInfo==null)
+            throw new Exception("기존의 인벤토리 정보가 없습니다. 2D->World 메서드 호출이 맞는지 확인하여 주세요.");
+        
+        // 이 아이템을 이전 인벤토리에서 제거합니다.
+        inventoryInfo.RemoveItem(this);         
+
+        if(worldPlaceTr==null)   // 지정좌표를 주지 않은 경우
+        {
+            UpdateInventoryInfo(null);                  // 인벤토리 정보를 null값으로 전달하여 최신화 합니다.
+            Locate2DToWorld(playerDropTr, isSetParent); // 플레이어의 드롭위치를 기반으로, 월드로 아이템을 전송합니다.
+        }
+        else                                            // 지정좌표를 준 경우
+        {
+            UpdateInventoryInfo(null);                  // 인벤토리 정보를 null값으로 전달하여 최신화 합니다.
+            Locate2DToWorld(worldPlaceTr, isSetParent); // 지정 좌표로 월드로 아이템을 전송합니다.
+        }
+      
+        prevDropEventCallerTr = worldPlaceTr;           // 성공이므로, 이전 드랍이벤트 호출자를 최신화 합니다.
+    }
+
+    /// <summary>
+    /// 아이템을 2D에서 3D로 지정좌표를 입력하여 전송하는 메서드입니다.<br/>
+    /// 지정좌표를 준 경우 해당 위치로 아이템을 전송시킵니다.<br/>
+    /// *** 기존의 인벤토리 정보가 없는 경우 예외를 발생시킵니다. ***<br/>
+    /// </summary>
+    private void Transfer2DToWorld( Vector3 worldPos, Quaternion worldRot )
+    {
+        if(inventoryInfo==null)
+            throw new Exception("기존의 인벤토리 정보가 없습니다. 2D->World 메서드 호출이 맞는지 확인하여 주세요.");
+                
+        inventoryInfo.RemoveItem(this);        // 이 아이템을 이전 인벤토리에서 제거합니다.
+        UpdateInventoryInfo(null);             // 인벤토리 정보를 null값으로 전달하여 최신화 합니다.
+        Locate2DToWorld(worldPos, worldRot);   // 지정 좌표로 월드로 아이템을 전송합니다.        
+        
+        prevDropEventCallerTr = null;          // 성공이므로, 이전 드랍이벤트 호출자를 최신화 합니다.
+    }
+
+
+
+
+
 
 
     
     /// <summary>
-    /// 아이템의 드롭이 발생할 때 아이템을 이동시키기 위하여 호출해줘야 하는 메서드입니다.<br/>
-    /// 인벤토리의 슬롯 간 이동이나, 인벤토리->월드, 월드->월드로의 드랍 발생시 사용합니다.<br/><br/>
-    /// 슬롯->같은 인벤토리 슬롯 : 기존 아이템이 있다면 위치를 교환합니다.<br/>
+    /// 아이템의 슬롯 드롭이 발생할 때 아이템을 이동시키고 정보를 이전하기 위하여 호출해줘야 하는 메서드입니다.<br/>
+    /// 동일 혹은 타 인벤토리의 슬롯 간 드랍 발생시 사용합니다.<br/><br/>
+    /// 슬롯->같은 인벤토리 슬롯 : 실패하지 않습니다. 기존 아이템이 있다면 위치를 교환합니다.<br/>
     /// 슬롯->다른 인벤토리 슬롯 : 빈자리가 없다면 실패합니다. 기존 아이템이 있다면 실패합니다.<br/>
-    /// 월드->월드 : 드랍위치를 수정하고 싶을때 사용합니다. 같은 좌표로의 드랍은 중복허용되지 않습니다. <br/>
-    /// 인벤토리->월드 :지정 좌표로 준다면 해당 지정 좌표상에 아이템을 떨어트리며, null로 준다면 플레이어 근처에 드랍합니다.<br/>
     /// </summary>
     /// <returns>슬롯 드롭에 성공 시 true를 실패 시 false를 반환합니다.</returns>
     public bool OnItemSlotDrop( Transform callerSlotTr )
     {
         
-        // 호출자가 슬롯인지 검사
+        // 호출 인자가 전달되지 않았는지 검사
         if( callerSlotTr==null)
-            throw new Exception("슬롯의 참조가 없습니다. 올바른 슬롯 드랍이벤트 호출인지 확인하여 주세요.");
+            throw new Exception("슬롯의 참조가 전달되지 않았습니다. 올바른 슬롯 드랍이벤트 호출인지 확인하여 주세요.");
 
-        // 호출자가 슬롯인지 검사
         bool isCallerSlot = callerSlotTr.GetComponent<SlotDrop>() != null;
         bool isPrevCallerSlot = prevDropEventCallerTr.GetComponent<SlotDrop>() != null;
-
+        
+        // 호출자가 슬롯인지 검사
         if( !isCallerSlot )
-            throw new Exception("슬롯이 아닙니다. 올바른 슬롯 드랍이벤트 호출인지 확인하여 주세요.");
+            throw new Exception("전달인자가 슬롯이 아닙니다. 올바른 슬롯 드랍이벤트 호출인지 확인하여 주세요.");
+        // 이전 호출자 정보가 슬롯인지 검사
         else if( !isPrevCallerSlot )
             throw new Exception("월드->슬롯의 드랍이벤트가 발생하였습니다. 올바른 슬롯 드랍이벤트 호출인지 확인하여 주세요.");
 
 
 
-        // 동일한 인벤토리의 동일한 슬롯->슬롯으로 이동한 경우
+        // 현재 슬롯 호출자와 이전 드랍이벤트 호출자가 같다면,
         if(callerSlotTr==prevDropEventCallerTr)        
         {   
-            return MoveSlotInSameListSlot(callerSlotTr);     
+            return MoveSlotInSameListSlot(callerSlotTr);            // 동일한 인벤토리의 동일한 슬롯->슬롯으로의 이동
         }
         else
         {
@@ -494,67 +680,8 @@ public class ItemInfo : MonoBehaviour
 
 
 
-    /// <summary>
-    /// 아이템을 2D에서 3D로 지정좌표를 입력하여 전송하는 메서드입니다.<br/>
-    /// null값 전달 시 플레이어의 드롭좌표에 아이템을 드롭시키고<br/>
-    /// 지정좌표를 준 경우 해당 위치로 아이템을 전송시킵니다.<br/>
-    /// *** 기존의 인벤토리 정보가 없는 경우 예외를 발생시킵니다. ***<br/>
-    /// </summary>
-    /// <returns>현재는 실패 조건이 없이 true를 반환합니다.</returns>
-    private bool Transfer2DToWorld(Transform worldTr, bool isSetParent=false)
-    {
-        if(inventoryInfo==null)
-            throw new Exception("기존의 인벤토리 정보가 없습니다. 2D->World 메서드 호출이 맞는지 확인하여 주세요.");
-
-        if(worldTr==null)   // 지정좌표를 주지 않은 경우
-        {
-            Locate2DToWorld(playerDropTr, isSetParent); // 플레이어의 드롭위치를 기반으로, 월드로 아이템을 전송합니다.
-            UpdateInventoryInfo(null);                  // 인벤토리 정보를 null값으로 전달하여 최신화 합니다.
-        }
-        else                // 지정좌표를 준 경우
-        {
-            inventoryInfo.RemoveItem(this);         // 이 아이템을 이전 인벤토리에서 제거합니다.
-            UpdateInventoryInfo(null);              // 인벤토리 정보를 null값으로 전달하여 최신화 합니다.
-            Locate2DToWorld(worldTr, isSetParent);  // 지정 좌표로 월드로 아이템을 전송합니다.
-        }
-        
-        prevDropEventCallerTr = null;           // 성공이므로, 이전 드랍이벤트 호출자를 null로 만듭니다.
-        return true;
-    }
 
 
-
-
-
-
-
-    /// <summary>
-    /// 아이템의 인벤토리 정보가 변경될 때 인자로 받은 Transform 정보를 기준으로 다시 설정해주는 메서드입니다.<br/>
-    /// 이전 인벤토리 목록에서 해당 아이템을 제거하고, 새로운 인벤토리에 해당 아이템의 목록을 추가하여 줍니다.<br/>
-    /// </summary>
-    private void UpdateInventoryInfo(Transform newInventoryTr)
-    {        
-        // null값이 전달된 경우는 월드로 나갔다고 판단합니다.
-        if(newInventoryTr == null)  
-        {
-            inventoryTr = null;
-            slotListTr = null;
-            inventoryInfo = null;
-            interactive = null;
-            playerTr = null;
-            playerDropTr = null;
-        }
-        else // 다른 인벤토리로 전달된 경우
-        {
-            // 인벤토리 참조 정보를 업데이트 합니다.
-            inventoryTr = newInventoryTr;
-            slotListTr = inventoryTr.GetChild(0).GetChild(0).GetChild(0);
-            inventoryInfo = inventoryTr.GetComponent<InventoryInfo>();
-            interactive = inventoryTr.GetComponent<InventoryInteractive>();
-            playerTr = inventoryTr.parent.parent;
-            playerDropTr = playerTr;    // *****플레이어 드롭정보 나중에 수정*****            
-        }      
-    }
 
 
 
@@ -629,6 +756,7 @@ public class ItemInfo : MonoBehaviour
             return false;
         }
 
+        // 인자로 전달한 슬롯의 계층정보를 기반으로 인벤토리 참조를 설정합니다
         Transform nextInventoryTr = nextSlotTr.parent.parent.parent.parent;
         InventoryInfo nextInventoryInfo = GetComponent<InventoryInfo>();
 
@@ -636,10 +764,11 @@ public class ItemInfo : MonoBehaviour
         if( nextInventoryInfo.isSlotEnough(this) )
         {
             inventoryInfo.RemoveItem(this);                     // 이전 인벤토리에서 아이템을 제거해야 합니다.
-            UpdateInventoryInfo(nextInventoryTr);               // 인벤토리 참조 정보를 호출자의 인벤토리로 업데이트 합니다.
 
+            UpdateInventoryInfo(nextInventoryTr);               // 인벤토리 참조 정보를 호출자의 인벤토리로 업데이트 합니다.
             inventoryInfo.AddItem(this);                        // 업데이트 된 인벤토라에 아이템을 추가합니다. 
-            inventoryInfo.SetItemSlotIdxBothToNearstSlot(this); // 슬롯 인덱스 정보를 업데이트합니다.    
+            inventoryInfo.SetItemSlotIdxBothToNearstSlot(this); // 슬롯 인덱스 정보를 가장 가까운 슬롯으로 업데이트합니다. 
+
             UpdatePositionInSlotList();                         // 업데이트 된 인덱스를 바탕으로 새로운 슬롯 위치로 이동시킵니다.
                                                                         
             prevDropEventCallerTr = nextSlotTr;                 // 성공했다면 이전 드랍이벤트 호출자를 최신화합니다. 
@@ -660,7 +789,7 @@ public class ItemInfo : MonoBehaviour
 
     /// <summary>
     /// 아이템의 2D 모습을 중단하거나 다시 활성화시키는 메서드입니다.<br/>
-    /// isWorldPositioned를 기반으로 최신화합니다.<br/><br/>
+    /// isWorldPositioned를 기반으로 최신화합니다. (2D로의 모습을 끄거나 킵니다)<br/><br/>
     /// ** isWorldPositioned가 변경되었을 경우 반드시 호출해야 합니다. **<br/>
     /// </summary>
     private void SwitchAppearAs2D(bool isWorldPositioned)
@@ -672,10 +801,11 @@ public class ItemInfo : MonoBehaviour
            
     /// <summary>
     /// 2D와 3D 오브젝트의 부모와 자식관계를 변경하는 메서드입니다. 내부적으로 사용됩니다. <br/>
-    /// 전달인자로 월드의 Transform 정보나 해당 슬롯의 Transform 정보를 전달해야 합니다. <br/>
+    /// isWorldPositioned를 기반으로 자동으로 최신화합니다. (2D 오브젝트로 변경하거나 3D오브젝트로 변경합니다.)<br/><br/>
+    /// 전달인자로 부모로 삼을 오브젝트의 Transform을 전달해야 합니다. (2D는 슬롯정보, 3D는 월드의 위치정보를 전달합니다.) <br/>
+    /// null인자 전달 시 부모가 없는 상태 즉, 계층 최상위에 배정됩니다.<br/>
     /// </summary>
-    /// <param name="parentTr"></param>
-    private void ChangeHierarchy( Transform parentTr )
+    private void ChangeHierarchy( Transform parentTr=null )
     {
         if(isWorldPositioned)
         {
@@ -743,70 +873,67 @@ public class ItemInfo : MonoBehaviour
 
 
 
+    
+
     /// <summary>
-    /// 아이템을 3D 월드에서 슬롯으로 계층구조를 변경하여 이동을 해주는 메서드입니다. 
+    /// 월드의 아이템을 습득하는 경우<br/>
+    /// 즉, 월드의 아이템이 특정 인벤토리에 들어가야 하는 경우 호출해야 할 메서드입니다.<br/><br/>
+    /// *** 인벤토리 정보를 전달하지 않으면 예외가 발생합니다. ***
+    /// </summary>
+    /// <param name="newInventoryInfo"></param>
+    /// <returns>해당 인벤토리의 슬롯에 빈 자리가 없다면 false를 반환, 성공 시 true를 반환</returns>
+    public bool OnItemGain(InventoryInfo newInventoryInfo)
+    {        
+        // 인자 미전달 시 예외처리
+        if(newInventoryInfo == null)
+            throw new Exception("인벤토리 정보가 전달되지 않았습니다. 확인하여 주세요.");
+                
+        return Locate3DToInventory(newInventoryInfo);  
+    }
+
+
+    /// <summary>
+    /// 아이템을 3D 월드에서 슬롯으로 계층구조를 변경하여 이동을 해주는 메서드입니다.
     /// </summary>
     /// <returns>이동에 성공한 경우는 true를 슬롯이 꽉차 이동할 수 없다면 false를 반환합니다.</returns>
-    public bool Locate3DToSlot(Transform slotTr)
+    public bool Locate3DToInventory(InventoryInfo inventoryInfo)
     {
+        // 해당 종류의 아이템이 들어갈 슬롯이 없다면 실패를 반환합니다.
+        if( !inventoryInfo.isSlotEnough(item.Type) )
+            return false;
+
         isWorldPositioned = false;              // 월드위치 상태여부를 비활성화 합니다.
         
         // 아이템의 2D모습을 활성화 합니다.
         SwitchAppearAs2D( isWorldPositioned );
                 
         // 계층구조 전환
-        ChangeHierarchy(slotTr);
+        ChangeHierarchy(null); 
 
-        // 아이템의 인덱스를 전달받은 슬롯을 기반으로 설정해줍니다.
-        item.SlotIndex = slotTr.GetSiblingIndex();  
 
-        // 아이템의 위치정보를 업데이트 해줍니다.
-        //UpdatePositionInSlotList(slotTr);   
 
+        // 인벤토리 정보를 인자로 전달받은 새로운 인벤토리로 업데이트 합니다.
+        UpdateInventoryInfo(inventoryInfo.transform);
+
+        // 해당 인벤토리의 활성화 탭 정보를 최신화 합니다.
+        UpdateActiveTabInfo(interactive);
+
+
+
+        // 아이템의 슬롯 인덱스 정보를 가장 가까운 슬롯으로 입력합니다.        
+        inventoryInfo.SetItemSlotIdxBothToNearstSlot(this);
+        
+        // 아이템을 새로운 인벤토리에 집어넣습니다.
+        inventoryInfo.AddItem(this);
+
+
+
+        // 아이템의 위치정보를 반영합니다.
+        UpdatePositionInSlotList();
+        
         return true;
     }
 
-    /// <summary>
-    /// 아이템을 3D 월드에서 슬롯리스트로 계층구조를 변경하여 이동을 해주는 메서드입니다.<br/>
-    /// 인자로 슬롯리스트의 트랜스폼과 슬롯인덱스를 전달해야합니다.<br/>
-    /// 인자를 전달하지 않은 경우 슬롯의 가장 가까운 곳에 아이템을 위치시켜줍니다.
-    /// </summary>
-    /// <returns>이동에 성공한 경우는 true를 슬롯이 꽉차 이동할 수 없다면 false를 반환합니다.</returns>
-    public bool Locate3DToSlotList(Transform slotListTr, int slotIndex=-1)
-    {
-        // 인자로 전달받은 인덱스가 -1이하라면, 가장 가까운 슬롯을 찾습니다.
-        if(slotIndex<=-1)                                       
-            slotIndex = FindNearstRemainActiveSlotIdx(slotListTr);
-
-        // 찾거나 전달받은 슬롯 인덱스를 기반으로 아이템을 넣어줄 슬롯을 설정합니다.
-        Transform targetSlot = slotListTr.GetChild(slotIndex);
-
-        // 슬롯정보를 전달하여 계층정보를 변경하는 메서드를 호출합니다.
-        Locate3DToSlot(targetSlot); 
-    }
-
-    /// <summary>
-    /// 아이템을 3D 월드에서 인벤토리의 슬롯으로 계층구조를 변경하여 이동을 해주는 메서드입니다.<br/>
-    /// 전달된 인벤토리를 기반으로 가장 가까운 슬롯을 찾아서 아이템을 넣어줍니다. <br/>
-    /// </summary>
-    /// <param name="inventoryInfo">인벤토리 스크립트</param>
-    /// <returns>이동에 성공한 경우는 true를 슬롯이 꽉차 이동할 수 없다면 false를 반환합니다.</returns>
-    public bool Locate3DToInventory(InventoryInfo inventoryInfo)
-    {
-        return Locate3DToInventory( inventoryInfo.inventory );
-    }
-
-    
-    /// <summary>
-    /// 아이템을 3D 월드에서 인벤토리의 슬롯으로 계층구조를 변경하여 이동을 해주는 메서드입니다.<br/>
-    /// 전달된 인벤토리를 기반으로 가장 가까운 슬롯을 찾아서 아이템을 넣어줍니다. <br/>
-    /// </summary>
-    /// <param name="inventory">인벤토리 정보</param>
-    /// <returns>이동에 성공한 경우는 true를 슬롯이 꽉차 이동할 수 없다면 false를 반환합니다.</returns>
-    public bool Locate3DToInventory( Inventory inventory )
-    {
-        return true;
-    }
 
 
 

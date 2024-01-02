@@ -2,6 +2,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using InventoryManagement;
+using ItemData;
+using System.Runtime.CompilerServices;
 
 /*
 * [작업 사항]  
@@ -98,10 +100,17 @@ using InventoryManagement;
 * 1- 내부변수 isActiveTabAll 변수를 두고 IsActiveTabAll 프로퍼티를 선언해서 전체탭 기준인지, 개별탭 기준인지 
 * 아이템 쪽에서 Update Position할 인덱스를 알 수 있도록 하였음.
 * 
-* <v5.4 -2024_0102_최원준
+* <v6.0 -2024_0102_최원준
 * 1- curActiveTab private변수로 설정하여 변경을 막음.
-* 
-* 
+* 2- InventoryOnOffSwitch 변수명 -> SwitchInventoryAppear로 변경
+* 3- InventoryCvGroup 변수명 -> InventoryCG로 변경
+* 4- isInventoryOn static키워드 삭제
+* 5- eTapType 열거형 삭제 -> 탭의 종류를 ItemType으로 통일, 전체탭을 ItemType.None으로 설정
+* inventory의 메서드 호출에 인자로 넣기 편하게 하기 위하여.
+* 6- AdjustSlotListNum 메서드명 AdjustSlotCount로 변경
+* 7- LocateDicItemToSlotList 메서드명 MoveActiveItemToSlotList로 변경
+* 8- MoveActiveItemToSlot메서드 추가
+* 9- 모든 메서드 활성화탭 기준으로 간소화, BtnTapClick 공통로직 최적화 작성
 * 
 * [수정예정]
 * 1- LocateDicItemToSlotList의 필요성
@@ -113,6 +122,10 @@ using InventoryManagement;
 * [수정예정_0102]
 * 1- ActiveTab변동 정보를 슬롯에 존재하는(x)->인벤토리에 존재하는 모든 하위 아이템에게 전달하고 위치정보를 업데이트 시켜야함.
 * (OnItemChanged메서드 호출)
+* 
+* 
+* 
+* 
 * 
 * 
 * 
@@ -130,15 +143,22 @@ public class InventoryInteractive : MonoBehaviour
     Transform inventoryTr;                      // 인벤토리 판넬을 참조하여 껐다 켰다 하기 위함.   
     public Transform slotListTr;                // 인벤토리 전체탭 슬롯리스트의 트랜스폼 참조
     public Transform emptyListTr;               // 아이템을 보이지 않는 곳에 잠시 옮겨둘 오브젝트(뷰포트의 1번째 자식)
-    Inventory inventory;                        // 플레이어의 인벤토리 정보
+
+    InventoryInfo inventoryInfo;                // 플레이어의 인벤토리 정보
+    Inventory inventory;                        // 인벤토리 스크립트 내부 인벤토리 데이터
+
     Button[] btnTap;                            // 버튼 탭을 눌렀을 때 각 탭에 맞는 아이템이 표시되도록 하기 위한 참조
 
-    public static bool isInventoryOn;           // On상태 기록하기 위한 변수
-    CanvasGroup inventoryCvGroup;               // 인벤토리의 캔버스 그룹
+    bool isInventoryOn;                         // On상태 기록하기 위한 변수
+    CanvasGroup inventoryCG;                    // 인벤토리의 캔버스 그룹
 
     public enum eTapType { All, Weap, Misc }    // 어떤 종류의 탭인지를 보여주는 열거형
-    private eTapType curActiveTab;               // 현재 활성화 중인 탭을 저장 (버튼 클릭 시 중복 실행을 방지하기 위해)
-    private bool isActiveTabAll;                 // 현재 활성화 중인 탭이 전체 기준인지, 개별 기준인지 여부를 반환
+    ItemType curActiveTab;                      // 현재 활성화 중인 탭을 저장 (버튼 클릭 시 중복 실행을 방지하기 위해)
+    bool isActiveTabAll;                        // 현재 활성화 중인 탭이 전체 기준인지, 개별 기준인지 여부를 반환
+
+    
+
+
 
     /// <summary>
     /// 현재 활성화탭이 전체 기준인지, 개별 기준인지 여부를 반환합니다.
@@ -146,13 +166,22 @@ public class InventoryInteractive : MonoBehaviour
     public bool IsActiveTabAll { get{return isActiveTabAll; } }
 
 
+    /// <summary>
+    /// 현재 인벤토리 오브젝트가 켜져 있는지 여부를 반환합니다.
+    /// </summary>
+    public bool IsInventoryOn { get { return isInventoryOn;} } 
+
+
 
     void Awake()
     {
         inventoryTr = transform;                                       // 인벤토리 판넬 참조
         slotListTr = inventoryTr.GetChild(0).GetChild(0).GetChild(0);  // 뷰포트-컨텐트-전체 슬롯리스트
-        emptyListTr = inventoryTr.GetChild(0).GetChild(1);             // 뷰포트-EmptyList       
-        inventory = inventoryTr.gameObject.GetComponent<InventoryInfo>().inventory;  // 인벤토리 정보를 받아옵니다
+        emptyListTr = inventoryTr.GetChild(0).GetChild(1);             // 뷰포트-EmptyList
+                                                                       
+        inventoryInfo = inventoryTr.GetComponent<InventoryInfo>();     // 인벤토리 정보를 참조합니다
+        inventory = inventoryInfo.GetComponent<Inventory>();             
+
 
         btnTap = new Button[3]; //버튼 배열의 갯수 설정
 
@@ -163,21 +192,17 @@ public class InventoryInteractive : MonoBehaviour
             btnTap[i].onClick.AddListener( () => BtnTapClick( i ) );
         }
 
-        btnTap[0].Select();         // 첫 시작 시 항상 전체탭을 Select로 표시해줍니다.
-        curActiveTab = eTapType.All;   // 활성화중인 탭을 전체탭으로 설정
-        isActiveTabAll = true;         // 전체탭 기준 활성화
+        btnTap[0].Select();            // 첫 시작 시 항상 전체탭을 Select로 표시해줍니다.
+        curActiveTab = ItemType.None;  // 활성화중인 탭을 전체탭으로 설정
+        isActiveTabAll = true;         // 전체탭 기준 상태변수 설정
         
         // 인벤토리의 모든 이미지와 텍스트 참조, 캔버스그룹 참조
-        inventoryCvGroup = inventoryTr.GetComponent<CanvasGroup>();
+        inventoryCG = inventoryTr.GetComponent<CanvasGroup>();
 
         // 게임 시작 시 인벤토리 판넬을 꺼둔다.
-        InventoryOnOffSwitch(false);
+        SwitchInventoryAppear(false);
         isInventoryOn = false;          //초기에 인벤토리는 꺼진 상태
-
-
-
     }
-
 
 
     /// <summary>
@@ -185,8 +210,8 @@ public class InventoryInteractive : MonoBehaviour
     /// </summary>
     public void InventoryQuit()
     {
-        InventoryOnOffSwitch( !isInventoryOn );     // 반대 상태로 넣어준다.
-        isInventoryOn = !isInventoryOn;             // 상태 변화를 기록한다.
+        SwitchInventoryAppear( !isInventoryOn );    // 호출 시 마다 반대 상태로 넣어줍니다
+        isInventoryOn = !isInventoryOn;             // 상태 변화를 반대로 기록합니다
     }
 
 
@@ -197,8 +222,8 @@ public class InventoryInteractive : MonoBehaviour
     {
         if(Input.GetKeyDown(KeyCode.I))
         {
-            InventoryOnOffSwitch( !isInventoryOn );     // 반대 상태로 넣어준다.
-            isInventoryOn = !isInventoryOn;             // 상태 변화를 기록한다.
+            SwitchInventoryAppear( !isInventoryOn );    // 호출 시 마다 반대 상태로 넣어줍니다
+            isInventoryOn = !isInventoryOn;             // 상태 변화를 반대로 기록합니다
         }        
     }
 
@@ -206,10 +231,10 @@ public class InventoryInteractive : MonoBehaviour
     /// <summary>
     /// 인벤토리의 모든 이미지와 텍스트를 꺼줍니다.
     /// </summary>
-    private void InventoryOnOffSwitch(bool onOffState )
+    private void SwitchInventoryAppear(bool onOffState )
     {
-        inventoryCvGroup.blocksRaycasts = onOffState;   // 그룹의 블록 레이캐스트를 조절해줍니다
-        inventoryCvGroup.alpha = onOffState ? 1f : 0f;  // 그룹의 투명도를 조절해줍니다
+        inventoryCG.blocksRaycasts = onOffState;   // 그룹의 블록 레이캐스트를 조절해줍니다
+        inventoryCG.alpha = onOffState ? 1f : 0f;  // 그룹의 투명도를 조절해줍니다
     }
 
 
@@ -223,73 +248,75 @@ public class InventoryInteractive : MonoBehaviour
         
         if(btnIdx==0)       // All 탭
         {   
-            if(curActiveTab==eTapType.All)                         // 현재 활성화 중인 탭이 전체 탭이라면 재실행하지 않는다.
+            if(curActiveTab==ItemType.None)     // 현재 활성화 중인 탭이 전체 탭이라면 재실행하지 않는다.
                 return;
-            
-            curActiveTab = eTapType.All;                        // 활성화 중인 탭 변경 
-            isActiveTabAll = true;                              // 활성화 기준 전체로 변경
 
-            MoveSlotItemToEmptyList();                          // 빈리스트로 모든 아이템 이동
-            AdjustSlotListNum(eTapType.All);                    // 전체 탭의 갯수만큼 슬롯을 늘리거나 줄임
-            LocateDicItemToSlotList(inventory.weapDic, true);   // 전체탭 인덱스를 기준으로 모든 아이템 배치
-            LocateDicItemToSlotList(inventory.miscDic, true);   
+            curActiveTab = ItemType.None;       // 활성화 중인 탭 변경 
+            isActiveTabAll = true;              // 활성화 기준 전체로 변경
         }
         else if(btnIdx==1)  // 무기 탭버튼 클릭
         {
-            if(curActiveTab==eTapType.Weap)                        // 현재 활성화 중인 탭이 무기 탭이라면 재실행하지 않는다.
+            if(curActiveTab==ItemType.Weapon)   // 현재 활성화 중인 탭이 무기 탭이라면 재실행하지 않는다.
                 return;
-            
-            curActiveTab = eTapType.Weap;                          // 활성화 중인 탭 변경
-            isActiveTabAll = false;                              // 활성화 기준 전체로 변경
 
-            MoveSlotItemToEmptyList();                          // 빈리스트로 모든 아이템 이동
-            AdjustSlotListNum(eTapType.Weap);                   // 무기 탭의 갯수만큼 슬롯을 늘리거나 줄임
-            LocateDicItemToSlotList(inventory.weapDic, false);  // 개별 탭 인덱스를 기준으로 모든 아이템 배치
+            curActiveTab = ItemType.Weapon;     // 활성화 중인 탭 변경
+            isActiveTabAll = false;             // 활성화 기준 전체로 변경
         }
         else if(btnIdx==2)  // 잡화 탭버튼 클릭
         {
-            if(curActiveTab==eTapType.Misc)                         // 현재 활성화 중인 탭이 잡화 탭이라면 재실행하지 않는다.
+            if(curActiveTab==ItemType.Misc)     // 현재 활성화 중인 탭이 잡화 탭이라면 재실행하지 않는다.
                 return;
-            
-            curActiveTab = eTapType.Misc;                       // 활성화 중인 탭 변경
-            isActiveTabAll = false;                             // 활성화 기준 전체로 변경
 
-            MoveSlotItemToEmptyList();                          // 빈리스트로 모든 아이템 이동
-            AdjustSlotListNum(eTapType.Misc);                   // 잡화 탭의 갯수만큼 슬롯을 늘리거나 줄임
-            LocateDicItemToSlotList(inventory.miscDic, false);  // 개별탭 인덱스를 기준으로 모든 아이템 배치
+            curActiveTab = ItemType.Misc;       // 활성화 중인 탭 변경
+            isActiveTabAll = false;             // 활성화 기준 전체로 변경
         }
-        
+
+        UpdateAllItemActiveTabInfo();           // 인벤토리의 모든 아이템에 활성화 탭 정보를 반영합니다
+        MoveSlotItemToEmptyList();              // 현재 슬롯에 있는 모든 아이템을 빈리스트로 이동합니다
+        AdjustSlotCount();                      // 활성화 탭의 갯수만큼 슬롯을 늘리거나 줄입니다
+        MoveActiveItemToSlot();                 // 활성화 탭 종류와 동일한 딕셔너리의 모든 아이템을 슬롯에 배치합니다       
     }
 
+
+
+    /// <summary>
+    /// 모든 아이템에 활성화탭 정보를 반영합니다.<br/>
+    /// </summary>
+    private void UpdateAllItemActiveTabInfo()
+    {
+        //// 하나씩 가져와서 참조 할 딕셔너리 변수 선언
+        Dictionary<string, List<GameObject>> itemDic;
+
+        for( int i = 0; i<inventory.CurDicLen; i++ )
+        {
+            itemDic=inventory.GetItemDicIgnoreExsists( (ItemType)i );   // CurDicLen 갯수만큼 딕셔너리를 하나씩 변경합니다.
+
+            foreach( List<GameObject> itemObjList in itemDic.Values )   // 해당 딕셔너리의 오브젝트리스트를 가져옵니다.
+            {
+                foreach( GameObject itemObj in itemObjList )            // 오브젝트리스트에서 오브젝트를 하나씩 가져옵니다.
+                {
+                    ItemInfo itemInfo = itemObj.GetComponent<ItemInfo>();  // 아이템 정보를 읽어들입니다.
+
+                    itemInfo.SetActiveTabInfo( isActiveTabAll );           // 활성화 탭 정보를 현재 활성화탭 기준으로 변경합니다.
+                }
+
+            }
+        }
+    }
 
     /// <summary>
     /// 각 탭을 클릭했을 때 해당 탭의 칸 수만큼 슬롯의 갯수를 줄이거나 늘려줍니다
     /// </summary>
-    private void AdjustSlotListNum( eTapType tapType )
+    private void AdjustSlotCount()
     {
-        switch(tapType)
-        {
-            case eTapType.All:
-                for(int i=0; i<inventory.SlotCountLimitAll; i++)
-                    slotListTr.GetChild(i).gameObject.SetActive(true);   // 전체 탭의 갯수만큼 켜줍니다
-                break;
-
-            case eTapType.Weap:
-                for(int i=0; i<inventory.SlotCountLimitWeap; i++)                   
-                    slotListTr.GetChild(i).gameObject.SetActive(true);   // 무기 탭의 갯수만큼 켜줍니다
-
-                for(int i=inventory.SlotCountLimitWeap; i<inventory.SlotCountLimitAll; i++)
-                    slotListTr.GetChild(i).gameObject.SetActive(false);  // 나머지는 꺼줍니다    
-                break;
-
-            case eTapType.Misc:
-                for(int i=0; i<inventory.SlotCountLimitMisc; i++)
-                    slotListTr.GetChild(i).gameObject.SetActive(true);   // 잡화 탭의 갯수만큼 켜줍니다       
+        int curSlotCount = inventory.GetItemSlotCountLimit(curActiveTab);
+        int allSlotCount = inventory.GetItemSlotCountLimit(ItemType.None);
                 
-                for(int i=inventory.SlotCountLimitMisc; i<inventory.SlotCountLimitAll; i++)
-                    slotListTr.GetChild(i).gameObject.SetActive(false);  // 나머지는 꺼줍니다
-                break;
-        }        
+        for(int i=0; i<curSlotCount; i++)                   
+            slotListTr.GetChild(i).gameObject.SetActive(true);   // 현재 탭의 갯수만큼 켜줍니다
+
+        for(int i=curSlotCount; i<allSlotCount; i++)
+            slotListTr.GetChild(i).gameObject.SetActive(false);  // 나머지는 꺼줍니다 
     }
 
 
@@ -298,39 +325,39 @@ public class InventoryInteractive : MonoBehaviour
     /// </summary>
     private void MoveSlotItemToEmptyList()
     {
-        for( int i = 0; i<inventory.SlotCountLimitAll; i++ )        // 전체 슬롯리스트의 모든 슬롯 순회
+        for( int i = 0; i<inventory.SlotCountLimitAll; i++ )    // 전체 슬롯리스트의 모든 슬롯 순회
         {
-            if( slotListTr.GetChild(i).childCount!=0 )       // i번째 슬롯에 아이템이 들어있다면
+            if( slotListTr.GetChild(i).childCount!=0 )          // i번째 슬롯에 아이템이 들어있다면
             {
-                // 슬롯에 들어있는 아이템 오브젝트를 모두 잠시 오브젝트 emptyList로 이동하고, 위치를 수정
+                // 슬롯에 들어있는 아이템 오브젝트를 모두 잠시 오브젝트 emptyList로 이동하고, 위치를 수정합니다
                 slotListTr.GetChild(i).GetChild(0).SetParent( emptyListTr, false );
-                slotListTr.GetChild(i).GetChild(0).localPosition = Vector3.zero;
             }
         }
     }
+
 
     /// <summary>
-    /// 딕셔너리에 담긴 아이템의 인덱스 정보를 바탕으로 슬롯리스트로 배치해주는 메서드입니다.
-    /// 전달인자로 해당 아이템 종류의 딕셔너리와, 전체 인덱스 기준인지 개별 인덱스 기준인지를 전달하여야 합니다.
+    /// 현재 활성화 중인 탭 종류와 동일한 딕셔너리의 모든 아이템을 슬롯에 배치합니다<br/>
+    /// 내부적으로 InventoryInfo 클래스의 개별 딕셔너리에 존재하는 모든 아이템의 위치 정보를 업데이트하는 메서드를 활용합니다
     /// </summary>
-    private void LocateDicItemToSlotList(Dictionary<string, List<GameObject>> itemDic, bool isIndexAll)
+    private void MoveActiveItemToSlot()
     {        
-        int targetIdx;  // 타겟 인덱스 설정
-
-        foreach( List<GameObject> list in itemDic.Values )  // 딕셔너리에서 게임오브젝트 리스트를 하나씩 가져옴
+        // 현재 활성화 탭이 전체 탭인 경우 모든 딕셔너리를 대상으로 호출
+        if( isActiveTabAll )   
         {
-            for( int i = 0; i<list.Count; i++ )             // 리스트에 들어있는 중복 오브젝트의 수만큼 하나씩 i를 증가
-            {                
-                if(isIndexAll)                                                      // 전체탭 기준이라면
-                    targetIdx = list[i].GetComponent<ItemInfo>().Item.SlotIndexAll; // 전체 인덱스 정보를 읽어들임
-                else                                                                
-                    targetIdx = list[i].GetComponent<ItemInfo>().Item.SlotIndex;    // 개별 탭 인덱스 정보를 읽어들임             
-                                
-                list[i].transform.SetParent( slotListTr.GetChild( targetIdx ), false ); // 해당 인덱스 정보에 맞게 배치한다.
-                list[i].transform.localPosition = Vector3.zero;                            // 로컬위치를 칸에 맞게 수정
-            }
+            for(int i=0; i<inventory.CurDicLen; i++)
+                inventoryInfo.UpdateDicItemPosition( (ItemType)i );  
         }
+        // 현재 활성화 탭이 개별 탭인 경우 개별 딕셔너리를 대상으로 호출
+        else
+            inventoryInfo.UpdateDicItemPosition(curActiveTab);
     }
+
+    
+
+
+
+
 
 
 

@@ -171,6 +171,16 @@ using System;
  * 11- 사용자가 호출 할 OnItemGain메서드 추가
  *
  *
+ * <v11.1 - 2024_0102_최원준>
+ * 1- ItemInfo 클래스 partial클래스로 정의
+ * 2- 아이템 수량관련 기본 메서드를 ItemInfo_2.cs로 옮김
+ * 3- emptyListTr 변수 추가
+ * 아이템을 삭제하기 전 임시로 빈 공간으로 옮길 슬롯리스트
+ * 
+ * 
+ * 
+ *
+ *
  *
  * [추후 수정해야할 점] 
  *  1- UpdateInventoryPosition이 현재 자신 인벤토리 기준으로 수정하고 있으나,
@@ -224,7 +234,7 @@ using System;
 /// 주의) 아이템의 내부 정보가 바뀔 때 마다 최신 정보를 오브젝트에 반영해야 합니다.<br/>
 /// 1,2,3의 경우 각 메서드를 따로 호출 할 수 있으며 모든 것을 한번에 호출하는  OnItemChanged메서드가 있습니다.<br/>
 /// </summary>
-public class ItemInfo : MonoBehaviour
+public partial class ItemInfo : MonoBehaviour
 {
     /**** 아이템 고유 정보 ****/
     private Item item;             // 아이템의 실제 정보가 담긴 변수
@@ -254,6 +264,8 @@ public class ItemInfo : MonoBehaviour
     /**** InventoryInfoChange 메서드 호출 시 변동 ****/
     private Transform inventoryTr;              // 현재 아이템이 들어있는 인벤토리의 계층정보를 참조합니다.
     private Transform slotListTr;               // 현재 아이템이 담겨있는 슬롯리스트 트랜스폼 정보
+    private Transform emptyListTr;              // 아이템을 임시로 이동 시킬 빈공간 리스트
+
     private InventoryInfo inventoryInfo;        // 현재 아이템이 참조 할 인벤토리정보 스크립트
     private InventoryInteractive interactive;   // 현재 아이템이 참조 할 인터렉티브 스크립트
     private Transform playerTr;                 // 현재 아이템을 소유하고 있는 플레이어 캐릭터 정보 참조
@@ -495,6 +507,8 @@ public class ItemInfo : MonoBehaviour
             interactive = null;
 
             slotListTr = null;
+            emptyListTr = null;
+
             playerTr = null;
             playerDropTr = null;
 
@@ -509,9 +523,10 @@ public class ItemInfo : MonoBehaviour
 
             if(inventoryInfo == null || interactive == null )
                 throw new Exception("인벤토리 정보 참조가 잘못되었습니다. 확인하여 주세요.");
-
-            
+                        
             slotListTr = inventoryTr.GetChild(0).GetChild(0).GetChild(0);
+            emptyListTr = inventoryTr.GetChild(0).GetChild(1);
+
             playerTr = inventoryTr.parent.parent;
             playerDropTr = playerTr;                        // 플레이어 드롭정보로 나중에 따로 지정
 
@@ -937,35 +952,6 @@ public class ItemInfo : MonoBehaviour
 
 
 
-
-    
-    /// <summary>
-    /// 해당 잡화 아이템의 중첩수량을 조절하여 줍니다.<br/><br/>
-    /// 양의 인자를 전달 했을 때, 해당 아이템의 최대 중첩수량을 초과하는 경우 나머지 초과수량을 반환합니다.<br/><br/>
-    /// 음의 인자를 전달 했을 때, 해당 아이템의 최소 중첩수량(0)을 초과하는 경우 
-    /// 아이템을 파괴 및 인벤토리 목록에서 제거하고, 나머지 수량을 반환합니다.<br/><br/>
-    /// ***** 해당 아이템이 잡화아이템이 아니라면 예외를 던집니다. *****<br/>
-    /// </summary>
-    /// <param name="inCount"></param>
-    /// <returns></returns>
-    public int SetOverlapCount(int inCount)
-    {
-        if( item.Type!=ItemType.Misc )
-            throw new Exception( "잡화아이템이 아닙니다. 확인하여주세요." );
-
-        int remainCount=0;
-        //ItemMisc itemMisc = (ItemMisc)item;
-
-        //remainCount = itemMisc.SetOverlapCount(inCount);
-
-        //if(remainCount<=0)  // 아이템 파괴 및 인벤토리 목록에서 제거
-        //{
-        //    Destroy(this.gameObject, 0.0001f);       // return문 호출을 위하여 약간 늦게 파괴합니다.
-        //    inventoryInfo.Remove
-        //}
-
-        return remainCount;
-    }
 
 
 }

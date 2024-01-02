@@ -208,12 +208,22 @@ public class InventoryInfo : MonoBehaviour
 
 
     /// <summary>
-    /// 인벤토리의 목록에서 기존의 아이템을 제거합니다.
+    /// 인벤토리의 목록에서 기존의 아이템을 제거합니다. (배포사용자 검색용)
+    /// </summary>
+    public bool RemoveItem(string item)
+    {
+        return true;
+    }
+
+    /// <summary>
+    /// 인벤토리의 목록에서 기존의 아이템을 제거합니다. (아이템쪽에서 호출하기 위해)
+    /// 목록에서만 제거하고, 삭제나 방출은 다른 메서드를 통해 해야함.
     /// </summary>
     public bool RemoveItem(ItemInfo item)
     {
         return true;
     }
+
 
     /// <summary>
     /// 인벤토리의 목록에서 기존의 아이템을 추가합니다.<br/>

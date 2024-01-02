@@ -659,5 +659,20 @@
  * CreateManager.cs - CreateItem 관련 메서드 수정
  * 
  * 
+ * <2023_0102_2_최원준>
+ * Inventory_2.cs ItemType enum을 int형으로 반환받는 메서드 추가
+ * Inventory_3.cs - 수량검색 및 조절 메서드 추가
+ * ItemInfo_2.cs - 수량 조절 및 아이템제거 메서드 추가
+ * 
+ * (추후 수정예정)
+ * 1- 인벤토리마다 탭종류를 다르게 두면서 일반화 시키려면 딕셔너리 변수명을 사전이름으로 두는 것이 아니라 배열로 만들어서 enum접근하는 방식으로 변경해야 한다.
+ * 문제는 초기화 방식인데, 직렬화해서 초기값을 준 다음 저장, 로드로 딕셔너리 갯수를 관리하는 방법등을 살펴봐야한다. 
+ * 
+ * 2- SetOverlapCount 반환조건 한번더 확인. (ItemInfo, Inventory, ItemMisc) 및 구조체 인자 오버로딩 
+ * 3- IsExists 및  remove모드 (장비류)
+ * 4- IsExists 및  add모드 (잡화류)
+ * 5- IsOverlapCountEnough에서 잡화류 이외의 아이템 검사 및 removeMode 구현
+ * 6- InventoryInfo의 AddItem구현 ( OnItemGain은 아이템 오브젝트 쪽 스크립트가 주최가 될 때 필요), 플레이어 쪽에서는 인벤토리의 AddItem(ItemInfo)가 필요
+ * 7- InventoryInfo의 RemoveItem(string 인자), CreateItem(sring 인자, count)메서드 구현 
  * 
  */

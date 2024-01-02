@@ -63,6 +63,10 @@ using WorldItemData;
  * 4- AddItem 및 RemoveItem에 예외처리 문장 추가
  * 5- RemoveItem GameObject와 ItemInfo 인자 메서드를 Item인자 메서드 호출에서 바로 string 메서드로 호출되도록 변경 
  * 
+ * <v3.2 - 2023_0102_최원준>
+ * 1- ItemType enum을 int형으로 반환받는 메서드인 GetItemTypeIndexIgnoreExists 메서드를 추가
+ * 
+ * 
  * 
  * 
  * [추가 사항]
@@ -247,7 +251,7 @@ namespace InventoryManagement
 
         /// <summary>
         /// 아이템 이름을 기반으로 해당 아이템의 ItemType을 반환합니다<br/>
-        /// 아이템이 딕셔너리 내부에 존재하여야 합니다.
+        /// 아이템 이름이 이 인벤토리의 딕셔너리 내부에 존재하여야 합니다.
         /// </summary>
         /// <returns>해당하는 이름의 아이템이 현재 인벤토리 목록에 존재하지 않는 경우 ItemType.None을 반환합니다</returns>
         public ItemType GetItemTypeInExists(string itemName)
@@ -260,11 +264,12 @@ namespace InventoryManagement
                 return ItemType.None;
         }
 
+
         /// <summary>
         /// 아이템 이름을 기반으로 해당 아이템의 ItemType 값을 반환합니다<br/>
         /// 아이템이 현재 인벤토리의 목록에 존재하지 않아도 ItemType 값을 얻을 수 있습니다.<br/>
         /// </summary>
-        /// <returns>*** 해당하는 이름의 아이템이 인벤토리 목록에 존재하지 않는 경우 예외를 던집니다. ***</returns>
+        /// <returns>*** 해당하는 이름의 아이템이 월드 아이템 목록에 존재하지 않는 경우 예외를 던집니다. ***</returns>
         public ItemType GetItemTypeIgnoreExists(string itemName)
         {
             WorldItem worldItem = new WorldItem();       // 추후 GetComponent기반으로 변경예정
@@ -335,7 +340,7 @@ namespace InventoryManagement
         /// <summary>
         /// 아이템 이름을 기반으로 해당 아이템의 오브젝트 리스트 참조값을 반환합니다
         /// </summary>
-        /// <returns>해당하는 이름의 아이템이 인벤토리 목록에 존재하지 않는 경우 null을 반환합니다</returns>
+        /// <returns>해당하는 이름의 아이템이 인벤토리 목록에 존재하는 경우 GameObject형식의 리스트를, 존재하지 않는 경우 null을 반환합니다</returns>
         public List<GameObject> GetItemObjectList(string itemName)
         {
             if(weapDic.ContainsKey(itemName))
@@ -347,7 +352,15 @@ namespace InventoryManagement
         }
 
 
-
+        /// <summary>
+        /// 아이템 이름을 입력하여 해당 아이템의 종류 enum을 int형으로 반환받습니다. (인벤토리에 존재하지 않아도 됩니다.) <br/>
+        /// *** 아이템이 월드 사전에 존재하지 않는다면 예외를 던집니다. ***
+        /// </summary>
+        /// <returns>해당 아이템의 ItemType의 int형 반환 값</returns>
+        public int GetItemTypeIndexIgnoreExists(string itemName)
+        {           
+            return (int)GetItemTypeIgnoreExists(itemName);
+        }
 
 
 

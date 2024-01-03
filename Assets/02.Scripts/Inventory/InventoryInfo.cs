@@ -112,9 +112,13 @@ using System.Collections.Generic;
  * <v7.0 - 2024_0103_최원준>
  * 1- AddItem, RemoveItem, CreateItem메서드 Info2클래스로 분할처리
  * 
- * 2- 
+ * 2- DataManager 인스턴스 생성방식에서 컴포넌트 참조 방식으로 변경
+ * (멀티에서 스크립트마다 인스턴스 생성을 방지)
  * 
+ * 3- 오버로딩메서드 isLatestReduce 변수명을 isLatestModify로 변경 (Inventory클래스와 통일)
  * 
+ * 4- UpdateAllItemInfo메서드 새롭게 구현
+ * 로드 시 모든 아이템의 오브젝트 정보를 최신화하기 위해 호출
  * 
  */
 
@@ -138,8 +142,12 @@ public partial class InventoryInfo : MonoBehaviour
     /// </summary>
     public Transform slotListTr;
         
-    private GameObject slotPrefab;              // 슬롯을 동적으로 생성하기 위한 프리팹 참조
-    private InventoryInteractive interactive;   // 자신의 인터렉티브 스크립트를 참조하여 활성화 탭정보를 받아오기 위한 변수 선언
+    GameObject slotPrefab;              // 슬롯을 동적으로 생성하기 위한 프리팹 참조
+    InventoryInteractive interactive;   // 자신의 인터렉티브 스크립트를 참조하여 활성화 탭정보를 받아오기 위한 변수 선언
+    DataManager dataManager;            // 저장과 로드 관련 메서드를 호출 할 스크립트 참조
+
+
+
 
     void Awake()
     {        
@@ -150,7 +158,9 @@ public partial class InventoryInfo : MonoBehaviour
         for( int i = 0; i<inventory.SlotCountLimitAll-1; i++ )
             Instantiate( slotPrefab, slotListTr );
 
-        interactive = gameObject.GetComponent<InventoryInteractive>();  // 자신의 인터렉티브 스크립트를 참조합니다.
+        interactive = gameObject.GetComponent<InventoryInteractive>();                          // 자신의 인터렉티브 스크립트를 참조합니다.
+        dataManager = GameObject.FindWithTag("GameController").GetComponent<DataManager>();     // 게임컨트롤러 태그가 있는 오브젝트의 컴포넌트 참조
+        dataManager.FileSettings("Inventory", 0); //세이브 파일명, 슬롯번호
     }
 
     /// <summary>
@@ -185,11 +195,9 @@ public partial class InventoryInfo : MonoBehaviour
     /// </summary>
     void LoadPlayerData()
     {
-        DataManager dataManager = new DataManager("Inventory",0); //세이브 파일명, 슬롯번호
-        InventorySaveData loadData = dataManager.LoadData<InventorySaveData>();
-                
+        InventorySaveData loadData = dataManager.LoadData<InventorySaveData>();                
         inventory=loadData.savedInventory.Deserialize();
-        inventory.UpdateAllItemInfo();
+        UpdateAllItemInfo();
     }
 
 
@@ -197,16 +205,37 @@ public partial class InventoryInfo : MonoBehaviour
     /// 인벤토리 관련 플레이어 데이터를 저장합니다 
     /// </summary>
     void SavePlayerData()
-    {
-        DataManager dataManager = new DataManager("Inventory",0); //세이브 파일명, 슬롯번호
-        
+    {        
         // 메서드 호출 시점에 다른 스크립트에서 save했을 수도 있으므로 새롭게 생성하지 않고 기존 데이터 최신화합니다
         InventorySaveData saveData = dataManager.LoadData<InventorySaveData>();
-
         saveData.savedInventory.Serialize(inventory);
-
         dataManager.SaveData<InventorySaveData>(saveData);
     }
+
+
+
+    /// <summary>
+    /// 인벤토리를 로드하였을 때, 해당 인벤토리 내부의 모든 아이템에 인벤토리 정보를 전달하여 이미지나 위치 정보 등을 최신화하기 위한 메서드입니다.<br/>
+    /// 내부적으로 모든 아이템에 OnItemCreated 메서드를 호출하여 새롭게 생성되었을 때의 정보를 입력합니다.<br/>
+    /// </summary>
+    private void UpdateAllItemInfo()
+    {   
+        Dictionary<string, List<GameObject>> itemDic;                       // 참조할 아이템 사전을 선언합니다.
+
+        for(int i=0; i<(int)ItemType.None; i++)                             // 아이템 종류의 숫자만큼 (인벤토리 사전의 갯수만큼) 반복합니다.
+        {
+            itemDic = inventory.GetItemDicIgnoreExsists((ItemType)i);       // 아이템 종류에 따른 인벤토리의 사전을 할당받습니다.
+
+            foreach( List<GameObject> objList in itemDic.Values )           // 인벤토리 사전에서 게임오브젝트 리스트를 하나씩 꺼내어
+            {
+                foreach(GameObject itemObj in objList)                      // 리스트의 게임오브젝트를 모두 가져옵니다.
+                    itemObj.GetComponent<ItemInfo>().OnItemCreated(this);   // OnItemChnaged메서드를 호출하며 현재 인벤토리 참조값을 전달합니다.
+            }
+
+        }
+    }
+
+
 
 
 
@@ -222,9 +251,9 @@ public partial class InventoryInfo : MonoBehaviour
     /// ** 아이템 이름이 해당 인벤토리에 존재하지 않거나, 잡화아이템이 아닌 경우 예외를 발생시킵니다. **
     /// </summary>
     /// <returns></returns>
-    public int SetItemOverlapCount( string itemName, int inCount, bool isLatestReduce = true )
+    public int SetItemOverlapCount( string itemName, int inCount, bool isLatestModify = true )
     {
-        return inventory.SetOverlapCount(itemName, inCount, isLatestReduce);
+        return inventory.SetOverlapCount(itemName, inCount, isLatestModify);
     }
 
 
@@ -237,9 +266,9 @@ public partial class InventoryInfo : MonoBehaviour
     /// ** 해당 이름의 아이템이 존재하지 않거나, 잡화 아이템이 아니거나, 수량을 잘못 전달했다면 예외를 발생시킵니다. **
     /// </summary>
     /// <returns>아이템 중첩수량이 충분하면 true를, 충분하지 않으면 false를 반환</returns>
-    public bool IsItemEnoughOverlapCount( string itemName, int overlapCount = 1, bool isReduce = false, bool isLatestReduce = true )
+    public bool IsItemEnoughOverlapCount( string itemName, int overlapCount = 1, bool isReduce = false, bool isLatestModify = true )
     {
-        return inventory.IsEnoughOverlapCount(itemName, overlapCount, isReduce, isLatestReduce);
+        return inventory.IsEnoughOverlapCount(itemName, overlapCount, isReduce, isLatestModify);
     }
 
     /// <summary>
@@ -248,9 +277,9 @@ public partial class InventoryInfo : MonoBehaviour
     /// *** 아이템의 종류나 수량과 상관없이 오브젝트 단위로 존재하는지 여부만 반환합니다. ***<br/>
     /// </summary>
     /// <returns>아이템이 존재하지 않는 경우 false를, 아이템이 존재하거나 삭제에 성공한 경우 true를 반환</returns>
-    public bool IsItemExist( string itemName, bool isRemove = false, bool isLatestRemove = true )
+    public bool IsItemExist( string itemName, bool isRemove = false, bool isLatestModify = true )
     {
-        return inventory.IsExist(itemName, isRemove, isLatestRemove);
+        return inventory.IsExist(itemName, isRemove, isLatestModify);
     }
 
 
@@ -261,9 +290,9 @@ public partial class InventoryInfo : MonoBehaviour
     /// *** 비잡화 아이템의 경우 수량 값을 무시합니다. 잡화아이템의 경우 수량이 1이상이 아니면 예외를 발생시킵니다. ***
     /// </summary>
     /// <returns>전달 한 인자의 모든 조건을 충족하는 경우 true를, 조건을 충족하지 않는 경우 false를 반환, 조건이 충족한 경우 감소를 수행</returns>
-    public bool IsItemEnough( ItemPair pair, bool isReduce = false, bool isLatestReduce = true )
+    public bool IsItemEnough( ItemPair pair, bool isReduce = false, bool isLatestModify = true )
     {
-        return inventory.IsEnough(pair, isReduce, isLatestReduce);
+        return inventory.IsEnough(pair, isReduce, isLatestModify);
     }
 
     /// <summary>
@@ -273,9 +302,9 @@ public partial class InventoryInfo : MonoBehaviour
     /// *** 비잡화 아이템의 경우 수량 값을 무시합니다. 잡화아이템의 경우 수량이 1이상이 아니면 예외를 발생시킵니다. ***
     /// </summary>
     /// <returns>전달 한 인자의 모든 조건을 충족하는 경우 true를, 조건을 충족하지 않는 경우 false를 반환, 조건이 충족한 경우 감소를 수행</returns>
-    public bool IsItemsEnough( ItemPair[] pairs, bool isReduce = false, bool isLatestReduce = true )
+    public bool IsItemsEnough( ItemPair[] pairs, bool isReduce = false, bool isLatestModify = true )
     {
-        return inventory.IsEnough(pairs, isReduce, isLatestReduce);
+        return inventory.IsEnough(pairs, isReduce, isLatestModify);
     }
 
 

@@ -27,7 +27,17 @@ using System.Collections.Generic;
 
 public partial class InventoryInfo : MonoBehaviour
 {
-    
+    /// <summary>
+    /// Inventory클래스에서 필요 시 아이템 정보를 전송받기 위해 사용하는 ItemInfo를 임시적으로 담는 리스트입니다.<br/>
+    /// AddItem메서드에서 
+    /// </summary>
+    List<ItemInfo> tempInfoList = new List<ItemInfo>();
+
+
+
+
+
+
     /// <summary>
     /// 해당 이름의 아이템을 인벤토리의 목록에서 제거후에 목록에서 제거한 아이템의 ItemInfo 참조값을 반환합니다.<br/>
     /// 제거 후 바로 파괴하려면 두번 째 인자를 true로 만들어야 합니다. (기본적으로 목록에서 제거만 될 뿐 파괴되지 않습니다.)<br/><br/>
@@ -60,20 +70,19 @@ public partial class InventoryInfo : MonoBehaviour
         if( itemInfo==null )
             throw new Exception( "전달 받은 아이템 정보의 참조 값이 존재하지 않습니다." );  
 
-        ItemType inItemType = itemInfo.Item.Type;
-        string inItemName = itemInfo.Item.Name;
+        ItemType itemType = itemInfo.Item.Type;
+        string itemName = itemInfo.Item.Name;
 
         // 잡화 아이템 여부와 내부 인벤토리에 해당 잡화아이템과 동일한 잡화아이템이 있는지 검사
-        if( inItemType == ItemType.Misc && inventory.IsExist(inItemName) )
+        if( itemType == ItemType.Misc && inventory.IsExist(itemName) )
         {            
-            ItemMisc inItemMisc = (ItemMisc)itemInfo.Item;
-            int inCount = inItemMisc.OverlapCount; 
+            ItemMisc itemMisc = (ItemMisc)itemInfo.Item;
+            int inCount = itemMisc.OverlapCount; 
             
-            List<GameObject> existItemObjList = inventory.GetItemObjectList(inItemName);
+            List<GameObject> itemObjList = inventory.GetItemObjectList(itemName);
             
-
-
-            inventory.SetOverlapCount(inItemName, inCount);
+            // 아이템의 남은 수량을 반환받습니다.
+            int remainCount = inventory.SetOverlapCount(itemName, inCount);
 
 
         }

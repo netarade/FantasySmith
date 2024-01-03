@@ -133,13 +133,41 @@ using System;
  *4- OnEnable에서 슬롯리스트 설정 시 canvsTr을 find 메서드로 찾아서 처리하던 점 삭제하고,
  *UpdateInventoryInfo메서드 호출로 변경
  *
+ * 
+ *
+ *
+ *
+ * [추후 수정해야할 점] 
+ *  1- UpdateInventoryPosition이 현재 자신 인벤토리 기준으로 수정하고 있으나,
+ *  나중에 UpdatePosition을 할 때 아이템이 보관함 슬롯의 인덱스 뿐만 아니라 어느 보관함에 담겨있는지도 정보가 있어야 한다.
+ * 
+ * 2- 슬롯드롭이벤트가 발생할 때 인벤토리 정보가 다르다면 이전 인벤토리에서 이 아이템 목록을 제거해야한다.
+ *  계층변경이 일어날 때 인벤토리에서 이 아이템을 목록에 추가하거나 제거해야 한다.
+ *  Drag에서 인벤토리 밖으로 빼냈을 때 인벤토리 목록에서 이 아이템을 제거해야 한다.
+ *
+ *
+ *
+ *
+ * [이슈_0101] 
+ * 1- 슬롯의 정보(인벤토리 정보) 업데이트 시점
+ * a- Slot To Slot에서 SlotDrop이 일어날 때 Slot을 통해 받아야 한다.
+ * b- ItemDrag해서 인벤토리 외부로 Drop할때 ItemDrag를 통해 받아야 한다.
+ * c- ItemInfo에서 2D to World(월드정보인자), 3D to Slot(인벤토리정보인자) 할때 자체적으로 확인해야 한다.
+ * => 외부에서 업데이트 메서드를 호출할 수 있게 해줘야한다.
+ *
+ * 2- 타 인벤토리로 업데이트가 이뤄질 때는 
+ * slotIndexAll과 slotIndex 모두를 받야야 한다.
+ * 이유는 한번 받은 상태에서 다른 탭변경을 시도하면 위치 정보가 안맞기 때문
+ *
+ *
+ *
  *<v10.4 - 2024_0102_최원준>
  *1- OnItemDrop메서드 구현완료
  *어떤 아이템의 드롭 이벤트 발생시 외부 스크립트에서 호출하도록 설정
  *2- UpdateActiveTabInfo 메서드 정의하고 OnItemChanged 내부에 추가.
  *
  *
- * <v11.0 - 2023_0102_2_최원준>
+ * <v11.0 - 2024_0102_2_최원준>
  * 1- OnItemWorldDrop메서드의 매개변수를 dropEventCallerTr에서 worldPlaceTr로 변경
  * 
  * 2- Transfer2DToWorld메서드 수정
@@ -178,32 +206,6 @@ using System;
  * 아이템을 삭제하기 전 임시로 빈 공간으로 옮길 슬롯리스트
  * 
  * 
- * 
- *
- *
- *
- * [추후 수정해야할 점] 
- *  1- UpdateInventoryPosition이 현재 자신 인벤토리 기준으로 수정하고 있으나,
- *  나중에 UpdatePosition을 할 때 아이템이 보관함 슬롯의 인덱스 뿐만 아니라 어느 보관함에 담겨있는지도 정보가 있어야 한다.
- * 
- * 2- 슬롯드롭이벤트가 발생할 때 인벤토리 정보가 다르다면 이전 인벤토리에서 이 아이템 목록을 제거해야한다.
- *  계층변경이 일어날 때 인벤토리에서 이 아이템을 목록에 추가하거나 제거해야 한다.
- *  Drag에서 인벤토리 밖으로 빼냈을 때 인벤토리 목록에서 이 아이템을 제거해야 한다.
- *
- *
- *
- *
- * [이슈_0101] 
- * 1- 슬롯의 정보(인벤토리 정보) 업데이트 시점
- * a- Slot To Slot에서 SlotDrop이 일어날 때 Slot을 통해 받아야 한다.
- * b- ItemDrag해서 인벤토리 외부로 Drop할때 ItemDrag를 통해 받아야 한다.
- * c- ItemInfo에서 2D to World(월드정보인자), 3D to Slot(인벤토리정보인자) 할때 자체적으로 확인해야 한다.
- * => 외부에서 업데이트 메서드를 호출할 수 있게 해줘야한다.
- *
- * 2- 타 인벤토리로 업데이트가 이뤄질 때는 
- * slotIndexAll과 slotIndex 모두를 받야야 한다.
- * 이유는 한번 받은 상태에서 다른 탭변경을 시도하면 위치 정보가 안맞기 때문
- *
  *
  * [이슈_0102]
  * 1- UpdateImage에서 iicArr에 인덱스를 대입하여 참조값을 찾아가는 부분이 있는데, 
@@ -217,6 +219,12 @@ using System;
  * [나중에 수정할 것_0102]
  * 1- SetOverlap메서드 수정
  * 2- OnEnable에 있는 iic참조 관련 메서드 렌더링 관리 클래스쪽에서 호출 할 예정
+ *
+ * <2024_0104_최원준>
+ * 1- RemoveItem(this) 를 RemoveItem(item.Name)으로 변경
+ * InventoryInfo클래스의 ItemInfo 오버로딩을 삭제하였으므로
+ *
+ *
  *
  */
 
@@ -611,7 +619,7 @@ public partial class ItemInfo : MonoBehaviour
             throw new Exception("기존의 인벤토리 정보가 없습니다. 2D->World 메서드 호출이 맞는지 확인하여 주세요.");
         
         // 이 아이템을 이전 인벤토리에서 제거합니다.
-        inventoryInfo.RemoveItem(this);         
+        inventoryInfo.RemoveItem(item.Name);         
 
         if(worldPlaceTr==null)   // 지정좌표를 주지 않은 경우
         {
@@ -637,7 +645,7 @@ public partial class ItemInfo : MonoBehaviour
         if(inventoryInfo==null)
             throw new Exception("기존의 인벤토리 정보가 없습니다. 2D->World 메서드 호출이 맞는지 확인하여 주세요.");
                 
-        inventoryInfo.RemoveItem(this);        // 이 아이템을 이전 인벤토리에서 제거합니다.
+        inventoryInfo.RemoveItem(item.Name);    // 이 아이템을 이전 인벤토리에서 제거합니다.
         UpdateInventoryInfo(null);             // 인벤토리 정보를 null값으로 전달하여 최신화 합니다.
         Locate2DToWorld(worldPos, worldRot);   // 지정 좌표로 월드로 아이템을 전송합니다.        
         
@@ -778,7 +786,7 @@ public partial class ItemInfo : MonoBehaviour
         // 새로운 인벤토리 슬롯에 남는 자리가 있는 경우
         if( nextInventoryInfo.IsSlotEnough(this) )
         {
-            inventoryInfo.RemoveItem(this);                     // 이전 인벤토리에서 아이템을 제거해야 합니다.
+            inventoryInfo.RemoveItem(item.Name);                // 이전 인벤토리에서 아이템을 제거해야 합니다.
 
             UpdateInventoryInfo(nextInventoryTr);               // 인벤토리 참조 정보를 호출자의 인벤토리로 업데이트 합니다.
             inventoryInfo.AddItem(this);                        // 업데이트 된 인벤토라에 아이템을 추가합니다. 

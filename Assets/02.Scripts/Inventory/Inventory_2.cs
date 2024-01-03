@@ -90,6 +90,17 @@ using WorldItemData;
  * 1- RemoveItem에서 ItemInfo를 받는 메서드, isLatest를 받는 인자를 삭제하고, 검색 삭제 방식이 아닌 참조삭제 방식으로 구현
  * 이유는 동일 아이템을 아무것이나 삭제하는 것이 아니라 수량등의 정보를 조절을 한 특정아이템을 정확히 목록에서 삭제해야 하는 경우가 생기기 때문 
  * 
+ * 2- GetItemObjectList메서드 내부에 isNewIfNotExist 인자 옵션 추가
+ * 아이템 오브젝트리스트가 인벤토리 내부 사전에 존재하지 않아도 새롭게 생성 및 추가하여 반환이 가능하도록 구현 
+ * 
+ * 3- UpdateAllItemInfo 메서드를 InventoryInfo클래스로 옮김.
+ * InventoryInfo 클래스에서 인벤토리 로드시 사용하였으나, 내부처리보다 외부처리에 가깝고
+ * 인벤토리에 존재하는 모든 아이템을 대상으로 OnItemCreated메서드를 호출하여야 하나 전달인자로 InventoryInfo 참조를 전달해야 하기 때문
+ * 
+ * 4- GetItemMaxOverlapCount메서드 구현
+ * 월드 아이템으로부터 정보를 받아서 아이템 별 동일한 최대 충첩허용 갯수를 반환하는 용도 
+ * (신규 아이템 추가 시 어느정도의 오브젝트를 추가해야하는 지 알기 위해 오브젝트가 아예 없는 경우에 참조를 못하게 되므로 필요)
+ * 
  * 
  */
 
@@ -292,7 +303,7 @@ namespace InventoryManagement
         /// 아이템 이름을 기반으로 해당 아이템의 딕셔너리 참조값을 반환합니다<br/>
         /// 아이템이 현재 인벤토리의 목록에 존재하지 않아도 사전 참조값을 얻을 수 있습니다.<br/>
         /// </summary>
-        /// <returns>*** 해당하는 이름의 아이템이 인벤토리 목록에 존재하지 않는 경우 예외를 던집니다. ***</returns>
+        /// <returns>*** 해당하는 이름이 월드 아이템 목록에 존재하지 않는 경우 예외를 던집니다. ***</returns>
         public Dictionary<string, List<GameObject>> GetItemDicIgnoreExsists(string itemName)
         {
             WorldItem worldItem = new WorldItem();       // 추후 GetComponent기반으로 변경예정
@@ -326,17 +337,29 @@ namespace InventoryManagement
         
 
         /// <summary>
-        /// 아이템 이름을 기반으로 해당 아이템의 오브젝트 리스트 참조값을 반환합니다
+        /// 아이템 이름을 기반으로 해당 아이템의 오브젝트 리스트 참조값을 반환합니다<br/>
+        /// 해당 오브젝트 리스트가 존재하지 않는 경우 null을 반환하지만,<br/>
+        /// isNewIfNotExist 옵션을 통해 인벤토리 내부에 새롭게 생성하여 반환하기 여부를 결정할 수 있습니다.
         /// </summary>
         /// <returns>해당하는 이름의 아이템이 인벤토리 목록에 존재하는 경우 GameObject형식의 리스트를, 존재하지 않는 경우 null을 반환합니다</returns>
-        public List<GameObject> GetItemObjectList(string itemName)
+        public List<GameObject> GetItemObjectList(string itemName, bool isNewIfNotExist=false)
         {
             if(weapDic.ContainsKey(itemName))
                 return weapDic[itemName];
             else if(miscDic.ContainsKey(itemName))
                 return miscDic[itemName];
-            else
-                return null;
+            // 해당 리스트가 인벤토리 내부에 없는 경우
+            else 
+            {                                   
+                if(isNewIfNotExist)     // 새로 생성하기 옵션이 설정된 경우 
+                {
+                    List<GameObject> itemObjList = new List<GameObject>();          // 오브젝트 리스트를 새로 만듭니다.
+                    GetItemDicIgnoreExsists(itemName).Add(itemName, itemObjList);   // 인벤토리 사전에 오브젝트 리스트를 집어넣습니다.
+                    return itemObjList;                                             // 생성된 오브젝트 리스트 참조를 반환합니다.
+                }
+                else                    
+                    return null;
+            }
         }
 
 
@@ -352,22 +375,25 @@ namespace InventoryManagement
 
 
 
-
-
-        public void UpdateAllItemInfo()
+        /// <summary>
+        /// 해당 아이템의 이름을 인자로 넣어 아이템의 중첩 최대 갯수를 반환 받습니다.<br/>
+        /// 아이템 별로 동일한 최대 중첩 가능 갯수를 알기 위한 메서드입니다.<br/><br/>
+        /// 현재 IsAbleToAddMisc메서드에서 내부적으로 사용됩니다.<br/><br/>
+        /// *** 해당하는 이름의 아이템이 없는 경우 예외가 발생합니다.<br/>
+        /// </summary>
+        /// <param name="itemName"></param>
+        /// <returns>아이템의 최대 갯수를 반환합니다.</returns>
+        public int GetItemMaxOverlapCount(string itemName)
         {
-            foreach( List<GameObject> objList in weapDic.Values )                   // 무기사전에서 게임오브젝트 리스트를 하나씩 꺼내어
-            {
-                for(int i=0; i<objList.Count; i++)                                  // 리스트의 게임오브젝트를 모두 가져옵니다.
-                    objList[i].GetComponentInChildren<ItemInfo>().OnItemCreated();  // item 스크립트를 하나씩 꺼내어 OnItemChnaged메서드를 호출합니다.
-            }
+            WorldItem worldItem = new WorldItem();      // 추후 GetComponent 기반으로 변경 예정
 
-            foreach( List<GameObject> objList in miscDic.Values )                   // 잡화사전에서 게임오브젝트 리스트를 하나씩 꺼내어
-            {
-                for(int i=0; i<objList.Count; i++)                                  // 리스트의 게임오브젝트를 모두 가져옵니다.
-                    objList[i].GetComponentInChildren<ItemInfo>().OnItemCreated();  // item 스크립트를 하나씩 꺼내어 OnItemChnaged메서드를 호출합니다.
-            }      
+            Dictionary<string, Item> worldDic = worldItem.GetWorldDic(itemName);
+
+            return ((ItemMisc)worldDic[itemName]).MaxOverlapCount;
         }
+
+
+        
 
 
     }

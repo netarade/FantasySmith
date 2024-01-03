@@ -739,6 +739,25 @@
  * 제거할 목록을 모아서 한번에 제거해야 하기 때문에 결국 배열을 정의해야 하는 경우가 생기게 되어 Info클래스로 반환하기로 결정.
  * 
  * 
+ * <2024_0104_최원준>
+ * 
+ * (이슈)
+ * 1- itemMisc.MaxOverlapCount에 대해 생각 
+ * 클래스변수 쓰지 못하는 이유 - 잡화아이템 별 최대수량지정. (종류가 동일한 아이템끼리는 동일하게 공유하고 싶다면)
+ * 
+ * (수정)
+ * Inventory_2.cs 잡화 아이템 별 최대수량제한 반환메서드 추가, 기타 주석추가
+ * Inventory_3.cs 잡화 아이템 수량을 지정했을 때 아이템이 추가될 공간이 생기는 지 여부 반환 메서드 추가
+ * DataManager.cs 싱글톤 삭제, 컴포넌트 참조방식 구현
+ * InventoryInfo.cs 로드시 업데이트 메서드 수정 
+ * ItemInfo - Remove메서드 인자 약간 변경
+ * ItemInfo_2.cs 기존 메서드 모두 삭제 (아이템이 자체적인 정보를 수정하는 기능은 실수를 유발하므로, 인벤토리 내부에서 수정하도록 해야함.)
+ * 
+ * (수정 예정)
+ * InventoryInfo_2의 AddItem, RemoveItem 한번 더 확인
+ * Inventory_3.cs에 IsAbleToAddMisc을 구현하였고,
+ * InventoryInfo의 FindNearstSlotIdx삭제 및 IsSlotEnough 다시 확인 (아이템종류별 상관없이 슬롯이 충분한지 여부를 반환하도록)
+ * CreateManager.cs
  * 
  * 
  */

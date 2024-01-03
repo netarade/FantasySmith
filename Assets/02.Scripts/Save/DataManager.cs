@@ -37,6 +37,10 @@ using Newtonsoft.Json;
  * <v4.1 - 2023_1229_최원준>
  * 1- 매개변수 생성자에서 Path를 초기화안해주던 점 수정
  * 
+ * <v4.2 - 2024_0104_최원준>
+ * 1- 인스턴스 생성 방식에서 스크립트 컴포넌트 방식으로 변경
+ * (멀티에서 스크립트마다 인스턴스 생성을 방지)
+ * 
  */
 
 namespace DataManagement
@@ -60,7 +64,7 @@ namespace DataManagement
     /// 기본 0번 슬롯으로 되어있으며, 오버로딩하여 두번 째 인자에 슬롯 번호를 지정하여 다른 슬롯으로 저장이 가능합니다.<br/>
     /// 
     /// </summary>
-    public class DataManager
+    public class DataManager : MonoBehaviour
     {
         /// <summary>
         /// 현재 저장과 로드를 하고있는 폴더 경로를 설정하고 볼 수 있습니다. 설정하지 않았다면 기본 경로를 반환합니다.<br/>
@@ -85,17 +89,15 @@ namespace DataManagement
         public int SlotNum {get; set; }
 
 
-        /// <summary>
-        /// 디폴트 생성자에서 기본 경로와 기본확장자를 초기화합니다.
-        /// </summary>
-        public DataManager()
+
+        private void Awake()
         {
             Path = Application.persistentDataPath + "/";
             FileName = "NoName";
             Extension = ".json";
             SlotNum = 0;
         }
-
+                
 
         /// <summary>
         /// 사용자가 원하는 파일이름, 슬롯과, 확장자명을 지정할 수 있습니다.<br/>
@@ -103,9 +105,8 @@ namespace DataManagement
         /// <param name="fileName">저장할 파일 이름</param>
         /// <param name="slotNum">저장할 슬롯 번호</param>
         /// <param name="extension">확장자명(기본값 .json)</param>
-        public DataManager(string fileName, int slotNum=0, string extension=".json")
+        public void FileSettings(string fileName, int slotNum=0, string extension=".json")
         {
-            Path = Application.persistentDataPath + "/";
             FileName = fileName;
             SlotNum = slotNum;
             Extension = extension;

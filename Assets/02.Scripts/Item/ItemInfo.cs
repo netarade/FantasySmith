@@ -776,7 +776,7 @@ public partial class ItemInfo : MonoBehaviour
         InventoryInfo nextInventoryInfo = GetComponent<InventoryInfo>();
 
         // 새로운 인벤토리 슬롯에 남는 자리가 있는 경우
-        if( nextInventoryInfo.isSlotEnough(this) )
+        if( nextInventoryInfo.IsSlotEnough(this) )
         {
             inventoryInfo.RemoveItem(this);                     // 이전 인벤토리에서 아이템을 제거해야 합니다.
 
@@ -914,7 +914,7 @@ public partial class ItemInfo : MonoBehaviour
     public bool Locate3DToInventory(InventoryInfo inventoryInfo)
     {
         // 해당 종류의 아이템이 들어갈 슬롯이 없다면 실패를 반환합니다.
-        if( !inventoryInfo.isSlotEnough(item.Type) )
+        if( !inventoryInfo.IsSlotEnough(item.Type) )
             return false;
 
         isWorldPositioned = false;              // 월드위치 상태여부를 비활성화 합니다.

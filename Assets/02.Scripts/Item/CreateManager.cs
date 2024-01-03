@@ -161,6 +161,10 @@ using WorldItemData;
 * <v11.3 - 2023_1231_최원준>
 * 1- 메서드 CreateItemToInventorySlot를 CreateItemToInventory로 이름변경
 * 
+* <v12.0 - 2024_0103_최원준>
+* 1- CreateManager 싱글턴 삭제, OnSceneLoad, Destroy문 삭제, CreateItemToWorld 메서드 삭제
+* Awake에 모든 참조 설정으로 변경
+* 
 * 
 * 
 */
@@ -171,54 +175,17 @@ using WorldItemData;
 /// 아이템 생성을 원하는 시점에 싱글톤 인스턴스를 참조하여 관련 메서드를 호출하면 됩니다.
 /// </summary>
 public class CreateManager : MonoBehaviour
-{
-    public static CreateManager instance;       // 매니저 싱글톤 인스턴스 생성
-           
+{       
     public WorldItem worldItemData;                 // 게임 시작 시 넣어 둘 월드 사전의 참조값입니다.
-    public Dictionary<string, Item> worldMiscDic;   // 게임 시작 시 넣어 둘 월드 잡화아이템 사전 
-    public Dictionary<string, Item> worldWeapDic;   // 게임 시작 시 넣어 둘 월드 무기아이템 사전
-
-    [SerializeField] Transform slotListTr;      // 인벤토리의 슬롯 오브젝트의 트랜스폼 참조
-    [SerializeField] GameObject itemPrefab;     // 리소스 폴더 또는 직접 드래그해서 복제할 오브젝트를 등록해야 한다.        
+    GameObject itemPrefab;                          // 리소스 폴더 또는 에디터에서 복제할 프리팹을 참조합니다
     
-
     public void Awake()
     {        
-        if( instance==null )
-        {
-            instance=this;
-            DontDestroyOnLoad( instance );
-        }
-        else if( instance!=null )
-            Destroy( this.gameObject );           // 싱글톤 이외 인스턴스는 삭제
-
-        SceneManager.sceneLoaded += OnSceneLoaded; // 씬이로드될때 새롭게 참조를 잡아준다.
-                
-    }
-
-
-    /// <summary>
-    /// 씬이 전환되었을 때 이벤트 호출로 다시 참조를 잡기 위한 로직
-    /// </summary>
-    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
-    {
         // 리소스 폴더에서 원본 프리팹 가져오기
-        itemPrefab=Resources.Load<GameObject>( "Item2D" );  
-
-        // 슬롯리스트를 인식 시켜 남아있는 슬롯을 확인하기 위해
-        Transform canvasTr = GameObject.FindWithTag("CANVAS_CHARACTER").transform;
-        slotListTr=canvasTr.GetChild(0).GetChild(0).GetChild(0).GetChild(0);       
-        
-        // 모든 월드 아이템 등록
-        LoadAllItemDictionary();     
-    }
-
-    /// <summary>
-    /// 오브젝트 삭제 시 이벤트 연결 해제
-    /// </summary>
-    public void OnDestroy()
-    {        
-        SceneManager.sceneLoaded -= OnSceneLoaded;
+        itemPrefab=Resources.Load<GameObject>( "Item2D" );
+                
+        // 월드 아이템 데이터의 인스턴스를 하나 만듭니다.
+        worldItemData = new WorldItem();
     }
 
 
@@ -284,12 +251,12 @@ public class CreateManager : MonoBehaviour
     /// <param name="inventory">플레이어의 인벤토리 변수가 필요합니다. 해당 인벤토리에 아이템 오브젝트를 추가하여 줍니다.</param>
     /// <param name="itemName">아이템 테이블을 참고하여 한글명을 기입해주세요. 띄어쓰기에 유의해야 합니다. ex)철, 철 검, 미스릴, 미스릴 검</param>
     /// <param name="overlapCount">생성을 원하는 갯수입니다. 하나의 슬롯에 중첩하여 생성될 것입니다. 기본 값은 1이며, 장비류는 반드시 1개만 생성됩니다.</param>
-    /// <returns>생성이 완료되었다면 0을, 슬롯에 빈자리가 더 이상 없어 생성하지 못하는 경우 생성하고 남은 나머지 수량을 반환합니다.</returns>
-    public int CreateItemToInventory( Inventory inventory, string itemName, int overlapCount = 1 )
+    /// <returns>인벤토리의 슬롯에 생성이 완료되었다면 true를, 슬롯에 빈자리가 더 이상 없어 생성하지 못하는 경우 false를 반환</returns>
+    public bool CreateItemToInventory( InventoryInfo inventoryInfo, string itemName, int overlapCount = 1 )
     {
-        //수량이 0이하로 들어왔다면 무조건 성공했다고 판단합니다
+        //수량이 0이하로 들어왔다면 무조건 실패를 반환합니다.
         if( overlapCount <=0 ) 
-            return 0;
+            return false;
 
         // 인자로 들어온 이름이 어떤 종류의 아이템인지를 설정합니다
         ItemType itemType = worldItemData.GetItemType(itemName);
@@ -297,24 +264,26 @@ public class CreateManager : MonoBehaviour
         // 아이템이 어떤 종류도 아니라면 예외를 발생시킵니다
         if( itemType == ItemType.None )
             throw new Exception("생성 할 아이템 명이 정확하게 일치하지 않습니다. 확인하여 주세요.");
-                      
+        
+        Inventory inventory = inventoryInfo.inventory;
 
         // 아이템이 속할 개별 슬롯 인덱스와 전체 슬롯 인덱스를 구합니다.
         int findSlotIdx = inventory.FindNearstSlotIdx(itemType);  
         int findSlotIdxAll = inventory.FindNearstSlotIdx(ItemType.None);
 
-
-        // 개별 인벤토리 슬롯의 남아있는 칸이 없다면 생성하지 못하므로 남은 수량을 반환합니다.
+        // 개별 인벤토리 슬롯의 남아있는 칸이 없다면 생성하지 못하므로 실패를 반환합니다.
         if( findSlotIdx == -1 ) 
-            return overlapCount;
+            return false;
                         
 
         // 사전의 개념 아이템을 클론하여 (아이템 원형을 복제해서) 또 다른 개념 아이템을 생성하기위한 변수입니다
         Item itemClone = null;
 
-        // 개념아이템을 실제 오브젝트로 만들어 넣어야하는, 유저의 인벤토리 딕셔너리에 존재하는 아이템 오브젝트 리스트입니다
+        // 개념아이템을 실제 오브젝트로 만들어 넣어야하는, 인벤토리 딕셔너리 내부에 존재하는 아이템 오브젝트 리스트입니다
         List<GameObject> itemObjList;  
                
+        // 인자로 들어온 이름을 기반으로, Item인스턴스를 클론하기 위해 참조할 사전을 설정합니다.
+        Dictionary<string, Item> worldDic = worldItemData.GetWorldDic(itemName);
 
         if( itemType == ItemType.Weapon )         // 이름이 무기 종류라면
         {
@@ -326,10 +295,31 @@ public class CreateManager : MonoBehaviour
             itemObjList = inventory.weapDic[itemName];  
 
             // 무기라면 무조건 복제합니다 (중첩될 일이 없으므로)
-            itemClone=(ItemWeapon)worldWeapDic[itemName].Clone();   
+            itemClone=(ItemWeapon)worldDic[itemName].Clone();   
                         
             // 인벤토리 리스트에 개념아이템을 장착한 오브젝트를 추가합니다
             AddCloneItemToInventory( itemObjList, itemClone, findSlotIdx );
+
+            // 개념 아이템의 슬롯의 인덱스 정보를 찾은 위치로 수정한다.
+        itemClone.SlotIndex=findSlotIdx;
+        itemClone.SlotIndexAll
+
+        // 슬롯리스트의 해당 슬롯에 게임 상에서 보여 질 오브젝트를 생성하여 배치한다.
+        GameObject itemObject = Instantiate(itemPrefab);
+
+        // 스크립트 상의 item에 사전에서 클론한 아이템을 참조하게 한다. (내부적으로 OnItemChanged()메서드가 호출되어 자동으로 오브젝트에 정보를 동기화)       
+        itemObject.GetComponentInChildren<ItemInfo>().Item=itemClone;
+
+        itemObjList.Add( itemObject );    // 인벤토리는 GameObject 인스턴스를 보관함으로서 transform정보와 개념 아이템을 정보를 포함하게 된다.            
+        
+        itemObject.GetComponentInChildren<ItemInfo>().OnItemCreated();    //아이템 수정사항을 반영해줍니다.
+
+
+
+
+
+
+
 
         }
         else if( itemType == ItemType.Misc )     // 이름이 잡화 종류라면 
@@ -451,9 +441,10 @@ public class CreateManager : MonoBehaviour
     {
         // 개념 아이템의 슬롯의 인덱스 정보를 찾은 위치로 수정한다.
         itemClone.SlotIndex=findSlotIdx;
+        itemClone.SlotIndexAll
 
         // 슬롯리스트의 해당 슬롯에 게임 상에서 보여 질 오브젝트를 생성하여 배치한다.
-        GameObject itemObject = Instantiate( itemPrefab, slotListTr.GetChild( findSlotIdx ) );
+        GameObject itemObject = Instantiate(itemPrefab);
 
         // 스크립트 상의 item에 사전에서 클론한 아이템을 참조하게 한다. (내부적으로 OnItemChanged()메서드가 호출되어 자동으로 오브젝트에 정보를 동기화)       
         itemObject.GetComponentInChildren<ItemInfo>().Item=itemClone;
@@ -481,21 +472,6 @@ public class CreateManager : MonoBehaviour
 
 
 
-
-
-
-    /// <summary>
-    /// 월드의 모든 개념 아이템을 담아두는 딕셔너리를 초기화합니다.
-    /// </summary>
-    private void LoadAllItemDictionary()
-    {
-        // 플레이어와 상관없이 게임 시스템 자체가 들고 있어야할 데이터 집합이며,
-        // 플레이어는 아이템이 생성될 때 이 집합에서 복제해서 들고있게 될 것입니다
-
-        worldItemData = new WorldItem();
-        worldMiscDic = worldItemData.miscDic;
-        worldWeapDic = worldItemData.weapDic;
-    }
 
 
 

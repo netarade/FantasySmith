@@ -102,9 +102,19 @@ using System.Collections.Generic;
  * ItemInfo에서 인벤토리 정보를 업데이트 하기 이전에 먼저 들어갈 공간이 있는지를 확인하고 변경하는 과정이 필요
  * 
  * 
- * [수정 예정]
+ * (수정 예정)
  * 1- 인벤토리의 정보가 수정되었음을 반영하는 이벤트 생성 및 호출
  * 인벤토리 정보를 참조하는 Interactive스크립트에서 사용할 수 있도록 하기 위하여
+ * 
+ * 
+ * 
+ * 
+ * <v7.0 - 2024_0103_최원준>
+ * 1- AddItem, RemoveItem, CreateItem메서드 Info2클래스로 분할처리
+ * 
+ * 2- 
+ * 
+ * 
  * 
  */
 
@@ -114,7 +124,7 @@ using System.Collections.Generic;
 /// 게임 실행 중 제작 관련 실시간 플레이어 정보 들을 보유하고 있는 전용 정보 클래스입니다.<br/>
 /// 인스턴스를 생성하여 정보를 확인하시기 바랍니다.
 /// </summary>
-public class InventoryInfo : MonoBehaviour
+public partial class InventoryInfo : MonoBehaviour
 {
     /// <summary>
     /// 플레이어가 보유하고 있는 아이템을 보관하는 인벤토리와 관련된 정보를 가지고 있는 클래스입니다.<br/>
@@ -127,10 +137,8 @@ public class InventoryInfo : MonoBehaviour
     /// 현재 인벤토리가 관리하는 슬롯 리스트의 Transform 정보입니다.
     /// </summary>
     public Transform slotListTr;
-
-    
+        
     private GameObject slotPrefab;              // 슬롯을 동적으로 생성하기 위한 프리팹 참조
-
     private InventoryInteractive interactive;   // 자신의 인터렉티브 스크립트를 참조하여 활성화 탭정보를 받아오기 위한 변수 선언
 
     void Awake()
@@ -202,49 +210,77 @@ public class InventoryInfo : MonoBehaviour
 
 
 
+
+    /// <summary>
+    /// 인벤토리에 존재하는 해당 이름의 아이템 수량을 증가시키거나 감소시킵니다.<br/>
+    /// 인자로 해당 아이템 이름과 수량을 지정해야 합니다.<br/><br/>
+    /// 아이템 수량을 감소시키려면 수량 인자로 음수를 전달하여야 하며,<br/>
+    /// 기존 수량이 감소로 인해 0이되면 아이템이 인벤토리 목록에서 제거되며, 파괴됩니다.<br/><br/>
+    /// 아이템 수량을 증가시키려면 수량 인자로 양수를 전달하여야 하며,<br/>
+    /// 아이템 최대 수량 제한으로 인해 더 이상 수량을 증가시키기 못하는 경우는 나머지 초과 수량을 반환합니다.<br/><br/>
+    /// 최신 순, 오래된 순으로 감소여부를 결정할 수있습니다. (기본값: 최신순)<br/><br/>
+    /// ** 아이템 이름이 해당 인벤토리에 존재하지 않거나, 잡화아이템이 아닌 경우 예외를 발생시킵니다. **
+    /// </summary>
+    /// <returns></returns>
+    public int SetItemOverlapCount( string itemName, int inCount, bool isLatestReduce = true )
+    {
+        return inventory.SetOverlapCount(itemName, inCount, isLatestReduce);
+    }
+
+
+    /// <summary>
+    /// 인벤토리에 해당 이름의 아이템의 중첩수량이 충분한지를 확인하는 메서드입니다.<br/>
+    /// 인자로 아이템 이름과 수량이 필요합니다. (수량 미전달 시 기본 수량은 1개입니다.)<br/><br/>
+    /// 세번 째 인자로 수량 감소모드를 선택하면 아이템의 중첩수량이 충분하다면 인자로 들어온 수량만큼 감소시키며, <br/>
+    /// 0에 도달한 경우 아이템을 인벤토리에서 제거하고 파괴 시킵니다.<br/>
+    /// 최신 순, 오래된 순으로 감소여부를 결정할 수있습니다. (기본값: 최신순)<br/><br/>
+    /// ** 해당 이름의 아이템이 존재하지 않거나, 잡화 아이템이 아니거나, 수량을 잘못 전달했다면 예외를 발생시킵니다. **
+    /// </summary>
+    /// <returns>아이템 중첩수량이 충분하면 true를, 충분하지 않으면 false를 반환</returns>
+    public bool IsItemEnoughOverlapCount( string itemName, int overlapCount = 1, bool isReduce = false, bool isLatestReduce = true )
+    {
+        return inventory.IsEnoughOverlapCount(itemName, overlapCount, isReduce, isLatestReduce);
+    }
+
+    /// <summary>
+    /// 아이템이 인벤토리에 존재하는지 여부를 반환합니다.<br/>
+    /// 최신 순, 오래된 순으로 삭제여부를 결정할 수있습니다. (기본값: 삭제안함, 최신순)<br/><br/>
+    /// *** 아이템의 종류나 수량과 상관없이 오브젝트 단위로 존재하는지 여부만 반환합니다. ***<br/>
+    /// </summary>
+    /// <returns>아이템이 존재하지 않는 경우 false를, 아이템이 존재하거나 삭제에 성공한 경우 true를 반환</returns>
+    public bool IsItemExist( string itemName, bool isRemove = false, bool isLatestRemove = true )
+    {
+        return inventory.IsExist(itemName, isRemove, isLatestRemove);
+    }
+
+
+    /// <summary>
+    /// 아이템의 종류와 상관없이 아이템이 인벤토리에 존재하는지, 잡화아이템이라면 수량까지도 충분한지 여부를 반환합니다.<br/>
+    /// 또한 아이템이 존재하거나, 잡화아이템인 경우 수량까지 충분하다면 제거 또는 감소를 결정할 수 있습니다.<br/>
+    /// (기본값: 감소모드 안함, 최신순 감소)<br/><br/>
+    /// *** 비잡화 아이템의 경우 수량 값을 무시합니다. 잡화아이템의 경우 수량이 1이상이 아니면 예외를 발생시킵니다. ***
+    /// </summary>
+    /// <returns>전달 한 인자의 모든 조건을 충족하는 경우 true를, 조건을 충족하지 않는 경우 false를 반환, 조건이 충족한 경우 감소를 수행</returns>
+    public bool IsItemEnough( ItemPair pair, bool isReduce = false, bool isLatestReduce = true )
+    {
+        return inventory.IsEnough(pair, isReduce, isLatestReduce);
+    }
+
+    /// <summary>
+    /// 아이템의 종류와 상관없이 아이템이 인벤토리에 존재하는지, 잡화아이템이라면 수량까지도 충분한지 여부를 반환합니다.<br/>
+    /// 또한 아이템이 존재하거나, 잡화아이템인 경우 수량까지 충분하다면 제거 또는 감소를 결정할 수 있습니다.<br/>
+    /// (기본값: 감소모드 안함, 최신순 감소)<br/><br/>
+    /// *** 비잡화 아이템의 경우 수량 값을 무시합니다. 잡화아이템의 경우 수량이 1이상이 아니면 예외를 발생시킵니다. ***
+    /// </summary>
+    /// <returns>전달 한 인자의 모든 조건을 충족하는 경우 true를, 조건을 충족하지 않는 경우 false를 반환, 조건이 충족한 경우 감소를 수행</returns>
+    public bool IsItemsEnough( ItemPair[] pairs, bool isReduce = false, bool isLatestReduce = true )
+    {
+        return inventory.IsEnough(pairs, isReduce, isLatestReduce);
+    }
+
+
+
     
-
-
-
-
-    /// <summary>
-    /// 인벤토리의 목록에서 기존의 아이템을 제거합니다. (배포사용자 검색용)
-    /// </summary>
-    public bool RemoveItem(string item)
-    {
-        return true;
-    }
-
-    /// <summary>
-    /// 인벤토리의 목록에서 기존의 아이템을 제거합니다. (아이템쪽에서 호출하기 위해)
-    /// 목록에서만 제거하고, 삭제나 방출은 다른 메서드를 통해 해야함.
-    /// </summary>
-    public bool RemoveItem(ItemInfo item)
-    {
-        return true;
-    }
-
-
-    /// <summary>
-    /// 인벤토리의 목록에서 기존의 아이템을 추가합니다.<br/>
-    /// <br/>외부의 아이템을 보유하고 있을 때 사용해야 합니다.<br/>
-    /// </summary>
-    public bool AddItem(ItemInfo item)
-    {
-        return true;
-    }
-
-
-
-    /// <summary>
-    /// 인벤토리의 목록에 없는 아이템을 새롭게 생성을 요청합니다.
-    /// </summary>
-    public bool CreateItemToNearstSlot()
-    {
-        return true;
-    }
-
-
 
 
 
@@ -307,7 +343,7 @@ public class InventoryInfo : MonoBehaviour
     /// 인자로 아이템 종류를 전달하여야 합니다.
     /// </summary>
     /// <returns>슬롯이 자리가 남는다면 true를, 슬롯에 자리가 없다면 false를 반환합니다.</returns>
-    public bool isSlotEnough(ItemType itemType)
+    public bool IsSlotEnough(ItemType itemType)
     {
         if(FindNearstSlotIdx(itemType) == -1)
             return false;
@@ -320,7 +356,7 @@ public class InventoryInfo : MonoBehaviour
     /// 인자로 아이템 이름을 전달하여야 합니다.
     /// </summary>
     /// <returns>슬롯이 자리가 남는다면 true를, 슬롯에 자리가 없다면 false를 반환합니다.</returns>
-    public bool isSlotEnough(string itemName)
+    public bool IsSlotEnough(string itemName)
     {
         if(FindNearstSlotIdx(itemName, false)==-1)
             return false;
@@ -333,9 +369,12 @@ public class InventoryInfo : MonoBehaviour
     /// 인자로 아이템정보 스크립트를 전달하여야 합니다.
     /// </summary>
     /// <returns>슬롯이 자리가 남는다면 true를, 슬롯에 자리가 없다면 false를 반환합니다.</returns>
-    public bool isSlotEnough(ItemInfo itemInfo)
+    public bool IsSlotEnough(ItemInfo itemInfo)
     {
-        return isSlotEnough(itemInfo.Item.Type);
+        if(FindNearstSlotIdx(itemInfo.Item.Type) == -1)
+            return false;
+        else
+            return true;  
     }
 
 

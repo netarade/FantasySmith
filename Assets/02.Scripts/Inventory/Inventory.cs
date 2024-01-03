@@ -2,6 +2,7 @@ using ItemData;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Linq.Expressions;
 using UnityEngine;
 
 /*
@@ -133,11 +134,17 @@ using UnityEngine;
  * 2- CurItemCount, CurItemWeapCout, CurItemMiscCount를 CurItemObjCount로 이름변경
  * 
  * 
- * 
- * 
  * [이슈_0102]
  * 1- 딕셔너리 변수명을 일반화 시킬 수 있어야함.
  * 2- curDicLen 프로퍼티는 현재 딕셔너리가 몇개인지 여부를 반환해야 하는데 이를 위해 enum변수를 따로 가지고 있어야 한다.
+ * 
+ * 
+ * 
+ * 
+ * 
+ * <v8.3 - 2024_0103_최원준>
+ * 1- GetCurItem메서드 예외처리문 추가
+ * 
  * 
  * 
  */
@@ -230,7 +237,8 @@ namespace InventoryManagement
         /// <summary>
         /// 현재 인벤토리에 들어있는 아이템 오브젝트의 갯수를 연산하여 반환합니다.<br/>
         /// 초기 로드 시 인벤토리에 로드 한 오브젝트를 넣은 후 CurItemCount를 연산하기 위해 필요합니다.<br/><br/>
-        /// 인자로 ItemType을 전달하여 해당 ItemType의 딕셔너리에서 오브젝트 갯수를 카운팅합니다.
+        /// 인자로 ItemType을 전달하여 해당 ItemType의 딕셔너리에서 오브젝트 갯수를 카운팅합니다.<br/><br/>
+        /// *** 해당 종류의 아이템 사전이 없으면 예외를 발생시킵니다. ***
         /// </summary>
         /// <returns>아이템 타입과 일치하는 인벤토리에 저장 되어있는 오브젝트의 갯수를 반환합니다.</returns>
         public int GetCurItemCount(ItemType itemType) 
@@ -239,6 +247,9 @@ namespace InventoryManagement
 
             // 아이템 타입을 기반으로 딕셔너리를 구합니다.
             Dictionary<string, List<GameObject>> itemDic = GetItemDicIgnoreExsists(itemType);
+
+            if(itemDic==null)
+                throw new Exception("해당 종류의 아이템 사전이 존재하지 않습니다.");
 
             // 해당 인벤토리 딕셔너리에 들어있는 리스트가 하나도 없다면, 바로 0을 반환합니다.
             if(itemDic.Count==0)        

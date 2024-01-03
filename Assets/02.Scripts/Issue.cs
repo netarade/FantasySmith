@@ -659,7 +659,7 @@
  * CreateManager.cs - CreateItem 관련 메서드 수정
  * 
  * 
- * <2023_0102_2_최원준>
+ * <2024_0102_2_최원준>
  * Inventory_2.cs ItemType enum을 int형으로 반환받는 메서드 추가
  * Inventory_3.cs - 수량검색 및 조절 메서드 추가
  * ItemInfo_2.cs - 수량 조절 및 아이템제거 메서드 추가
@@ -674,5 +674,48 @@
  * 5- IsOverlapCountEnough에서 잡화류 이외의 아이템 검사 및 removeMode 구현
  * 6- InventoryInfo의 AddItem구현 ( OnItemGain은 아이템 오브젝트 쪽 스크립트가 주최가 될 때 필요), 플레이어 쪽에서는 인벤토리의 AddItem(ItemInfo)가 필요
  * 7- InventoryInfo의 RemoveItem(string 인자), CreateItem(sring 인자, count)메서드 구현 
+ * 
+ * 
+ * <2024_0103_최원준>
+ * (수정)
+ * 1- Inventory_3.cs
+ * a. 잡화아이템 존재검사 및 수량검사, 수량감소 메서드 추가
+ * b. 비잡화아이템 존재검사 및 제거 메서드 추가
+ * c. 잡화,비잡화아이템 모두에 대해 존재와 수량까지 검사하여 제거 또는 감소해주는 메서드 추가
+ * 
+ * 2- InventoryInfo.cs
+ * a. Inventory_3의 검사 및 수량관련 메서드 연동하여 오버로딩 진행 중
+ * 
+ * 3- InventoryInfo_2.cs
+ * RemoveItem, AddItem구현 진행 중
+ * 
+ * 4- CreateManager.cs
+ * 싱글톤 삭제 및 메서드 대폭 수정 진행 중
+ * 
+ * 
+ * (추후 수정예정)
+ * 1- DataManager,CreateManager 인스턴스 생성방식이나, 싱글톤참조가 아니라 컴포넌트 참조방식으로 변경
+ * (게임매니저 오브젝트 만들고 하위에 CreateManager, DataManager 인스턴스를 가지는 스크립트 부착하기)
+ * => MonoBehaviour 스크립트는 생성불가능하기 때문에 각 오브젝트에 스크립트로 부착되어있어야하고, 컴포넌트참조를 해야한다
+ * 따라서 CreateManager, DataManager는 Awake문에 자기 참조값을 넣어두고, 
+ * GameController 오브젝트 하나에 스크립트를 밑에 하나씩 부착해서 관리하도록 할 것
+ * 
+ * (이슈)
+ * 1- 드랍로직이 일어날 때 외부의 인벤토리에서 온것인지 검사가 필요하다.
+ * 그래야 단순히 슬롯인덱스를 변경하는 것이 아니라 내부 인벤토리에 추가해줄 수 있기 때문
+ * 
+ * 2- InventoryInfo 클래스와 Inventory 클래스의 메서드 호출 연관관계 설정이 필요
+ * InventoryInfo 클래스에서 Inventory 클래스의 메서드를 내부적으로 이용하는 것은 되지만,
+ * Inventory클래스에서 InventoryInfo의 메서드호출을 요구해서는 안된다.
+ * 
+ * 현재 Inventory클래스의 SetOverlapCount에서 아이템 오브젝트를 가져와서
+ * ItemInfo컴포넌트의 SetOverlapCount 메서드를 내부적으로 사용하였는데,
+ * ItemInfo 클래스의 SetOverlapCount 메서드는 배포사용자가 메서드를 이용할 때 정보 손실의 위험성을 내포하고 있어서 삭제하였다.
+ * 
+ * => Inventory클래스에서는 ItemInfo가 아니라 Item 클래스의 정보를 직접 수정해야 하고,
+ * 수량이 0이 되었을 때 인벤토리 목록에서는 제거하지만, 오브젝트 삭제 권한은 Info클래스에 넘겨야 한다.
+ * 즉, 메서드가 ItemInfo 참조값을 반환하도록 해야한다.
+ * 
+ * 
  * 
  */

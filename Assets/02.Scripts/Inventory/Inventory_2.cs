@@ -49,7 +49,7 @@ using WorldItemData;
  * GetItemObjectList - 딕셔너리에서 오브젝트 리스트를 반환
  * 
  * 
- * <v3.1 - 2023_0102_최원준>
+ * <v3.1 - 2024_0102_최원준>
  * 1- AddItem메서드 string, Item클래스 기반 오버로딩 메서드 삭제
  * 이유는 미리 생성되어있는 오브젝트가 아닌 경우 포지션 정보 업데이트 메서드 호출이 곤란하기 때문에
  * 결국 InventoryInfo메서드에서 완성해야 할 기능이므로 이미 생성되어있는 오브젝트나 스크립트를 넣는 메서드만 있는것이 낫다고 판단.
@@ -63,7 +63,7 @@ using WorldItemData;
  * 4- AddItem 및 RemoveItem에 예외처리 문장 추가
  * 5- RemoveItem GameObject와 ItemInfo 인자 메서드를 Item인자 메서드 호출에서 바로 string 메서드로 호출되도록 변경 
  * 
- * <v3.2 - 2023_0102_최원준>
+ * <v3.2 - 2024_0102_최원준>
  * 1- ItemType enum을 int형으로 반환받는 메서드인 GetItemTypeIndexIgnoreExists 메서드를 추가
  * 
  * 
@@ -75,34 +75,28 @@ using WorldItemData;
  * 
  * 2- AddItem 메서드로 인벤토리에 넣을 때, 개별 슬롯 인덱스와 전체 슬롯 인덱스를 둘다 찾아서 넣어줘야 한다.
  * (CreateManager도 수정필요)
+ * 
+ * 
+ * <v4.0 - 2024_0103_최원준>
+ * 1- RemoveItem메서드의 반환값을 bool이 아니라 GameObject로 변경
+ * 이유는 Inventory클래스에서는 오브젝트의 파괴 처리를 못하기 때문에 Info클래스로 참조값을 넘겨야 하기 때문
+ * 
+ * 2- GameObject, Item 클래스를 인자로 받는 오버로딩 메서드 제거
+ * 코드가 쓸데없이 길어지기 때문에 필요 시 추가할 예정
+ * 
+ * 3- AddItem메서드 주석 수정
+ * 
  */
 
 namespace InventoryManagement
 {    
     public partial class Inventory
     {
-        /// <summary>
-        /// 아이템 오브젝트를 인자로 전달받아 해당하는 사전을 찾아서 넣어주는 메서드입니다.<br/><br/>
-        /// *** 아이템 오브젝트를 인자로 전달한 경우 이 오브젝트를 인벤토리에 넣어줍니다. *** 
-        /// </summary>
-        /// <returns>아이템 추가 성공시 true를, 현재 인벤토리에 들어갈 공간이 부족하다면 false를 반환합니다</returns>
-        public bool AddItem(GameObject itemObj)
-        {
-            if(itemObj == null)
-                throw new Exception("존재하지 않는 참조값입니다. 확인하여 주세요.");
-
-            ItemInfo itemInfo = itemObj.GetComponent<ItemInfo>();
-
-            if(itemInfo==null)
-                throw new Exception("아이템 스크립트가 존재하지 않는 오브젝트입니다. 확인하여 주세요.");
-
-            return AddItem(itemInfo); 
-        }
-
+        
 
         /// <summary>
-        /// ItemInfo 컴포넌트를 인자로 전달받아 해당 아이템 오브젝트에 해당하는 사전을 찾아서 넣어주는 메서드입니다.<br/><br/>
-        /// *** ItemInfo 컴포넌트를 인자로 전달한 경우 해당 컴포넌트가 부착되어있는 실제 오브젝트를 인벤토리에 넣어줍니다. *** 
+        /// ItemInfo 컴포넌트를 인자로 전달받아 해당 아이템 오브젝트에 해당하는 사전을 찾아서 아이템을 넣어주는 메서드입니다.<br/><br/>
+        /// *** 인자로 들어온 컴포넌트 참조값이 없다면 예외를 발생시킵니다. ***<br/>
         /// </summary>
         /// <returns>아이템 추가 성공시 true를, 현재 인벤토리에 들어갈 공간이 부족하다면 false를 반환합니다</returns>
         public bool AddItem(ItemInfo itemInfo)
@@ -151,30 +145,14 @@ namespace InventoryManagement
 
 
 
-        /// <summary>
-        /// 아이템 오브젝트를 인자로 받아서 인벤토리의 딕셔너리 목록에서 제거해주는 메서드 입니다. <br/>
-        /// 인자를 통해 최신순으로 제거 할 것인지, 오래된 순으로 제거할 것인지를 결정할 수 있습니다. 기본은 최신순입니다.
-        /// </summary>
-        /// <returns>딕셔너리 목록의 제거에 성공한 경우 true를, 실패한 경우 false를 반환합니다.</returns>
-        public bool RemoveItem(GameObject itemObj, bool isLatest=true)
-        {
-            if(itemObj == null)
-                throw new Exception("존재하지 않는 참조값입니다. 확인하여 주세요.");
-
-            ItemInfo itemInfo = itemObj.GetComponent<ItemInfo>();   
-                                   
-            if(itemInfo==null)
-                throw new Exception("아이템 스크립트가 존재하지 않는 오브젝트입니다. 확인하여 주세요.");
-
-            return RemoveItem(itemInfo.Item.Name, isLatest);
-        }
+        
         
         /// <summary>
         /// ItemInfo 컴포넌트를 인자로 받아서 인벤토리의 딕셔너리 목록에서 제거해주는 메서드 입니다.<br/>
         /// 인자를 통해 최신순으로 제거 할 것인지, 오래된 순으로 제거할 것인지를 결정할 수 있습니다. 기본은 최신순입니다. 
         /// </summary>
-        /// <returns>딕셔너리 목록의 제거에 성공한 경우 true를, 실패한 경우 false를 반환합니다.</returns>
-        public bool RemoveItem(ItemInfo itemInfo, bool isLatest=true)
+        /// <returns>딕셔너리 목록의 제거에 성공한 경우 해당 아이템의 ItemInfo 참조값을, 목록에 없는 아이템인 경우 null을 반환합니다.</returns>
+        public ItemInfo RemoveItem(ItemInfo itemInfo, bool isLatest=true)
         {
             if(itemInfo==null)
                 throw new Exception("아이템 스크립트가 존재하지 않는 오브젝트입니다. 확인하여 주세요.");
@@ -184,46 +162,39 @@ namespace InventoryManagement
         }
         
         /// <summary>
-        /// Item 인스턴스를 인자로 받아서 인벤토리의 딕셔너리 목록에서 제거해주는 메서드 입니다.<br/>
-        /// 인자를 통해 최신순으로 제거 할 것인지, 오래된 순으로 제거할 것인지를 결정할 수 있습니다. 기본은 최신순입니다. 
-        /// </summary>
-        /// <returns>딕셔너리 목록의 제거에 성공한 경우 true를, 목록에 없는 아이템인 경우 false를 반환합니다.</returns>
-        public bool RemoveItem(Item item, bool isLatest=true)
-        {
-            string itemName = item.Name;
-            return RemoveItem(itemName, isLatest);
-        }
-
-        /// <summary>
         /// 아이템의 이름을 인자로 받아서 인벤토리의 딕셔너리 목록에서 제거해주는 메서드 입니다.<br/>
         /// 인자를 통해 최신순으로 제거 할 것인지, 오래된 순으로 제거할 것인지를 결정할 수 있습니다. 기본은 최신순입니다. 
         /// </summary>
-        /// <returns>딕셔너리 목록의 제거에 성공한 경우 true를, 목록에 없는 아이템인 경우 false를 반환합니다.</returns>
-        public bool RemoveItem(string itemName, bool isLatest=true)
+        /// <returns>딕셔너리 목록의 제거에 성공한 경우 해당 아이템의 ItemInfo 참조값을, 목록에 없는 아이템인 경우 null을 반환합니다.</returns>
+        public ItemInfo RemoveItem(string itemName, bool isLatest=true)
         {
             // 이름을 통해 현재 아이템이 담긴 딕셔너리가 있는지 조사합니다
             Dictionary<string, List<GameObject>> itemDic = GetItemDicInExists(itemName);    
-
+               
             // 딕셔너리가 존재하지 않는다면, 실패를 반환합니다
             if(itemDic==null)       
-                return false;       
-
+                return null;       
+            
             // 딕셔너리에서 오브젝트 리스트를 받습니다
-            List<GameObject> itemObjList = itemDic[itemName];
+            List<GameObject> itemObjList = itemDic[itemName]; 
 
             // 해당 오브젝트 리스트를 참고하여 아이템의 타입을 미리 얻습니다
-            ItemType itemType = itemObjList[0].GetComponent<ItemInfo>().Item.Type;
-
-            if(isLatest)     
-                itemObjList.RemoveAt(itemObjList.Count-1);  // 최신순으로 제거합니다  
-            else
-                itemObjList.RemoveAt(0);                    // 오래된순으로 제거합니다
+            ItemType itemType = itemObjList[0].GetComponent<ItemInfo>().Item.Type;            
             
-            // 해당 아이템 종류의 현재 오브젝트의 갯수를 감소시킵니다.
-            SetCurItemObjCount(itemType, -1);       
+            ItemInfo targetItemInfo = null;  // 반환할 아이템과 참조할 인덱스를 설정합니다.
+            int targetIdx;
 
-            // 성공을 반환합니다
-            return true;            
+            if( isLatest )
+                targetIdx = itemObjList.Count-1;  // 최신 순
+            else
+                targetIdx = 0;                    //오래된 순
+
+            targetItemInfo =itemObjList[targetIdx].GetComponent<ItemInfo>();  // 반환 할 아이템 참조값을 얻습니다.
+            itemObjList.RemoveAt(targetIdx);        // 해당 인덱스의 아이템을 제거합니다            
+        
+            SetCurItemObjCount(itemType, -1);       // 해당 아이템 종류의 현재 오브젝트의 갯수를 감소시킵니다.      
+                        
+            return targetItemInfo;            // 목록에서 제거한 아이템을 반환합니다.     
         }
 
 
@@ -361,14 +332,6 @@ namespace InventoryManagement
         {           
             return (int)GetItemTypeIgnoreExists(itemName);
         }
-
-
-
-
-
-
-
-
 
 
 

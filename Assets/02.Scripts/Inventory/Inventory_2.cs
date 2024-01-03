@@ -86,6 +86,11 @@ using WorldItemData;
  * 
  * 3- AddItem메서드 주석 수정
  * 
+ * <v4.1 - 2024_0103_최원준>
+ * 1- RemoveItem에서 ItemInfo를 받는 메서드, isLatest를 받는 인자를 삭제하고, 검색 삭제 방식이 아닌 참조삭제 방식으로 구현
+ * 이유는 동일 아이템을 아무것이나 삭제하는 것이 아니라 수량등의 정보를 조절을 한 특정아이템을 정확히 목록에서 삭제해야 하는 경우가 생기기 때문 
+ * 
+ * 
  */
 
 namespace InventoryManagement
@@ -148,22 +153,34 @@ namespace InventoryManagement
         
         
         /// <summary>
-        /// ItemInfo 컴포넌트를 인자로 받아서 인벤토리의 딕셔너리 목록에서 제거해주는 메서드 입니다.<br/>
-        /// 인자를 통해 최신순으로 제거 할 것인지, 오래된 순으로 제거할 것인지를 결정할 수 있습니다. 기본은 최신순입니다. 
+        /// 특정 아이템의 ItemInfo 컴포넌트를 인자로 받아서 인벤토리의 딕셔너리 목록에서 제거해주는 메서드 입니다.<br/>
+        /// 검색 방식이 아니라 직접 참조하여 목록에서 제거하므로, 특정 아이템을 직접 제거하는 용도로 사용합니다.<br/>
+        /// *** 참조 값이 존재하지 않으면 예외를 반환합니다. ***
         /// </summary>
         /// <returns>딕셔너리 목록의 제거에 성공한 경우 해당 아이템의 ItemInfo 참조값을, 목록에 없는 아이템인 경우 null을 반환합니다.</returns>
-        public ItemInfo RemoveItem(ItemInfo itemInfo, bool isLatest=true)
+        public ItemInfo RemoveItem(ItemInfo itemInfo)
         {
+            // 전달인자의 예외처리
             if(itemInfo==null)
                 throw new Exception("아이템 스크립트가 존재하지 않는 오브젝트입니다. 확인하여 주세요.");
+            
+            // 이름을 기반으로 해당 딕셔너리 참조를 받습니다.
+            Dictionary<string, List<GameObject>> itemDic = GetItemDicInExists(itemInfo.Item.Name);            
 
-            Item item = itemInfo.Item;          
-            return RemoveItem(itemInfo.Item.Name, isLatest);
+            // 인벤토리 목록에서 없는 아이템 예외처리
+            if(itemDic==null)
+                throw new Exception("해당 아이템이 인벤토리 내부에 존재하지 않습니다. 확인하여 주세요.");
+
+            // List<GameObject>에 직접 GameObject 인스턴스를 전달하여 목록에서 제거합니다.
+            itemDic[itemInfo.Item.Name].Remove(itemInfo.gameObject);
+
+            // 목록에서 제거한 참조값을 다시 반환합니다. 
+            return itemInfo;
         }
         
         /// <summary>
-        /// 아이템의 이름을 인자로 받아서 인벤토리의 딕셔너리 목록에서 제거해주는 메서드 입니다.<br/>
-        /// 인자를 통해 최신순으로 제거 할 것인지, 오래된 순으로 제거할 것인지를 결정할 수 있습니다. 기본은 최신순입니다. 
+        /// 아이템의 이름을 인자로 받아서 해당 아이템을 검색하여 인벤토리의 딕셔너리 목록에서 제거해주는 메서드 입니다.<br/>
+        /// 인자를 통해 최신순으로 제거 할 것인지, 오래된 순으로 제거할 것인지를 결정할 수 있습니다. 기본은 최신순입니다.<br/>
         /// </summary>
         /// <returns>딕셔너리 목록의 제거에 성공한 경우 해당 아이템의 ItemInfo 참조값을, 목록에 없는 아이템인 경우 null을 반환합니다.</returns>
         public ItemInfo RemoveItem(string itemName, bool isLatest=true)

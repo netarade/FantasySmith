@@ -3,6 +3,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using Unity.VisualScripting;
 using UnityEngine;
 
 /*
@@ -36,6 +37,12 @@ using UnityEngine;
  * 1- IsEnough, IsEnoughOverlapCount, IsExist 메서드의 반환값을 ItemInfo로 변경해야한다
  * 이유는 수량이 0이된 아이템 오브젝트를 Info클래스에서 삭제처리해야 하기 때문
  * 
+ * <v2.1 - 2024_0103_최원준>
+ * (이슈) 
+ * 1- SetOverlapCount메서드에서
+ * 오브젝트리스트에서 하나씩 아이템을 읽어와서 수량 정보를 변경시키고 있는데,
+ * 인벤토리 제거 시 오브젝트 리스트 변동이 일어나는 문제가 있다.
+ * => 삭제할 아이템을 모아서 한번에 리스트에서 제거하는 형태로 구현해야
  * 
  * 
  */
@@ -211,7 +218,8 @@ namespace InventoryManagement
             else if(itemType != ItemType.Misc)
                 throw new Exception("잡화 아이템이 아닙니다.");
 
-            ItemInfo itemInfo;            // 아이템 정보 참조
+            ItemInfo itemInfo;            // 아이템 컴포넌트 참조
+            ItemMisc itemMisc;            // 내부적으로 수정할 정보 클래스 참조
             int remainCount = inCount;    // 가산 또는 감산하고 남은 수량 (초기값 : 수량 전달인자)
                                     
 
@@ -220,11 +228,27 @@ namespace InventoryManagement
             {
                 for( int i = itemObjList.Count-1; i>=0; i-- )   // 오브젝트 리스트의 마지막 인덱스부터 오브젝트를 하나씩 꺼내어 옵니다.
                 {
-                    itemInfo=itemObjList[i].GetComponent<ItemInfo>();
-                    remainCount=itemInfo.SetOverlapCount( remainCount );    // 남은수량을 넣어서 새로운 남은 수량을 반환받습니다.
+                    itemInfo = itemObjList[i].GetComponent<ItemInfo>();
+                    itemMisc = (ItemMisc)itemInfo.Item;
+
+                    // 남은수량을 넣어서 새로운 남은 수량을 반환받습니다.
+                    remainCount = itemMisc.SetOverlapCount( remainCount );
+
+
+
+                    // 변경한 아이템의 수량이 0이 된경우에는 인벤토리 목록에서 제거 및 아이템 삭제
+                    if( itemMisc.OverlapCount==0 )
+                    {
+                        RemoveItem(itemInfo);
+                        GameObject.Destroy( itemInfo.gameObject );
+                    }
+
 
                     if( remainCount==0 )        // for문이 끝나기 전에 reaminCount가 0이 된 경우, 남은 수량이 0이 되었음을 반환
+                    {
+
                         return 0;
+                    }
                 }
             }
             // 오래된순 감소 

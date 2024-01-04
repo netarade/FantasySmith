@@ -1,4 +1,5 @@
 using ItemData;
+using JetBrains.Annotations;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -63,6 +64,13 @@ using UnityEngine;
  * 3- IsAbleToAddMisc메서드 추가
  * IsEnough, IsExist 등은 감소나 제거를 목적으로 하지만 
  * 이 메서드는 추가 하기위해 기존 수량에 들어가기 충분한지, 그리고 새로운 아이템을 생성하기 위한 슬롯공간이 있는지 여부를 반환받기 위함.
+ * 
+ * 
+ * <v3.1 - 2024_0104_최원준>
+ * 1- IsAbleToAddMisc메서드에서 가능여부만 반환해야하는데 오브젝트리스트를 새로 생성하고있었던 점 수정
+ * 2- 정렬기준 메서드 변수명 CompareByIndex를 CompareBySlotIndexEach로 변경
+ * 3- SetOverlapCount메서드 while문을 통해 오름차순, 내림차순을 수행하던 로직을 내부 메서드를 통한 for문 호출로 변경
+ * 4- SetOverlapCount 메서드의 매개변수 passList를 removeList로 변경하고 마지막 인자로 변경
  * 
  */
 
@@ -219,12 +227,13 @@ namespace InventoryManagement
         /// 리스트의 Sort메서드에 인덱스 정렬기준을 전달하기 위한 기준 메서드<br/>
         /// 잡화아이템의 개별 슬롯 인덱스를 기준으로 해서 오름차순으로 정렬됩니다.<br/>
         /// </summary>
-        public static int CompareByIndex(GameObject itemObj1, GameObject itemObj2)
+        public static int CompareBySlotIndexEach(GameObject itemObj1, GameObject itemObj2)
         {
             ItemMisc itemMisc1 = (ItemMisc)itemObj1.GetComponent<ItemInfo>().Item;
             ItemMisc itemMisc2 = (ItemMisc)itemObj2.GetComponent<ItemInfo>().Item;
             return itemMisc1.SlotIndex.CompareTo(itemMisc2.SlotIndex);
         }
+
 
         /// <summary>
         /// 인벤토리에 존재하는 해당 이름의 아이템 수량을 증가시키거나 감소시킵니다.<br/>
@@ -234,7 +243,7 @@ namespace InventoryManagement
         /// 각 아이템의 최소, 최대 수량에 도달하면 다음 아이템의 나머지 수량을 조절합니다.<br/><br/>
         /// 
         /// 기존 아이템이 수량이 감소로 인해 0 이되면 아이템이 인벤토리 목록에서 제거하고 전송 리스트에 아이템을 추가합니다.<br/>
-        /// 만약 전송리스트에 참조값을 전달하지 않는다면, 아이템을 전송하지 않고 오브젝트를 즉시 삭제합니다.(기본값)<br/>
+        /// 만약 전송리스트에 null을 전달하면, 아이템을 전송하지 않고 오브젝트를 즉시 삭제합니다.(기본값:null)<br/>
         /// 수량 증가의 경우는 인벤토리 목록에서 제거하거나, 전송리스트에 추가하지 않습니다.<br/><br/>
         /// 
         /// 모든 기존 아이템이 더 이상 수량을 조절하지 못하는 경우는 나머지 초과 수량을 반환합니다.<br/>
@@ -243,7 +252,7 @@ namespace InventoryManagement
         /// ** 아이템 이름이 해당 인벤토리에 존재하지 않거나, 잡화아이템이 아닌 경우 예외를 발생시킵니다. **
         /// </summary>
         /// <returns>기존의 오브젝트에 감소 혹은 추가하고 남은 초과 수량, 모든 기존 아이템에 해당 수량이 들어갔다면 0을 반환</returns>
-        public int SetOverlapCount(string itemName, int inCount, List<ItemInfo> passList=null ,bool isLatestModify=true)
+        public int SetOverlapCount(string itemName, int inCount, bool isLatestModify=true, List<ItemInfo> removeList=null)
         {
             List<GameObject> itemObjList = GetItemObjectList(itemName);     // 인벤토리의 아이템 오브젝트 리스트 참조
             ItemType itemType = GetItemTypeInExists(itemName);              // 아이템 종류 참조
@@ -258,60 +267,30 @@ namespace InventoryManagement
             bool isInstantRemove = false;       // 즉시 삭제여부 판단 변수
 
             // 인자로 전달받은 전송 리스트가 null이라면 즉시 삭제 활성화
-            if(passList==null)
+            if(removeList==null)
             {
                 isInstantRemove = true;       
-                passList = this.tempInfoList;   // 임시리스트로 설정
+                removeList = this.tempInfoList;   // 임시리스트로 설정
             }
 
-
-
-            ItemInfo itemInfo;                  // 아이템 컴포넌트 참조
-            ItemMisc itemMisc;                  // 내부적으로 수정할 정보 클래스 참조
             int remainCount = inCount;          // 가산 또는 감산하고 남은 수량 (초기값 : 수량 전달인자)
             
+            // 개별 슬롯 인덱스를 기준으로하여 오름차순으로 정렬합니다.
+            itemObjList.Sort(CompareBySlotIndexEach);
 
-            // 개별 슬롯 인덱스를 기준으로하여 오름차순 정렬
-            itemObjList.Sort(CompareByIndex);
 
-            // isLatestReduce에 따라 반복문을 돌릴 조건을 설정합니다.
-            int idx;
-            int end;
-            int change;
-            
-            if(isLatestModify)  // 최신 순 수정
+            // 최신순으로 수정할 지 오래된 순으로 수정할 지를 판단하여 내부 메서드를 반복호출합니다.            
+            if(isLatestModify)  
             {
-                idx = itemObjList.Count-1;
-                end = 0;
-                change = -1;
+                for(int i=itemObjList.Count-1; i>=0; i--)
+                    if( SetCountInLoopByOrder(i) ) { break; }   // 호출 금지가 활성화되면 반복문을 종료합니다.
             }
-            else                // 오래된 순 수정
+            else                
             {
-                idx = 0;
-                end = itemObjList.Count-1;
-                change = 1;
+                for(int i=0; i<=itemObjList.Count-1; i++)
+                    if( SetCountInLoopByOrder(i) ) { break; }   // 호출 금지가 활성화되면 반복문을 종료합니다.
             }
 
-            // 인자로 들어온 수량이 0이 되거나 마지막 인덱스에 도달한 경우 종료합니다.
-            while( remainCount!=0 || idx != end+change )
-            {
-                itemInfo = itemObjList[idx].GetComponent<ItemInfo>();
-                itemMisc = (ItemMisc)itemInfo.Item;
-
-                // 남은수량을 넣어서 새로운 남은 수량을 반환받습니다.
-                remainCount = itemMisc.SetOverlapCount( remainCount );
-
-                // 수정이 끝난 오브젝트의 중첩 텍스트를 수정합니다.
-                itemInfo.UpdateCountTxt();
-
-                // 변경한 아이템의 수량이 0이 된 경우에는 삭제 리스트에 담습니다.
-                // 바로 제거하지 않고 따로 담는 이유는 중간에 리스트의 Count 변동이 생기기 때문입니다.
-                if( itemMisc.OverlapCount==0 )
-                    tempInfoList.Add(itemInfo);          
-                
-                // 증감 연산을 합니다.
-                idx += change;      
-            }
 
             // 삭제 리스트에 있는 아이템을 역순으로 순회합니다. 
             for( int i=tempInfoList.Count-1; i>=0; i--)
@@ -329,7 +308,37 @@ namespace InventoryManagement
                 tempInfoList.Clear();   
 
             // 호출하고 남은 수량을 반환합니다.
-            return remainCount;     
+            return remainCount; 
+            
+
+
+
+            // 아이템을 조회 순서에 따라서 하나씩 꺼내어 수량 정보를 조절하고,
+            // 수량이 0이된 아이템을 tempInfoList에 담아주는 내부 메서드입니다.
+            bool SetCountInLoopByOrder(int idx)
+            {
+                // 반복문을 돌 때마다 아이템 정보 참조를 위한 설정
+                ItemInfo itemInfo=itemObjList[idx].GetComponent<ItemInfo>();
+                ItemMisc itemMisc=(ItemMisc)itemInfo.Item;
+
+                // 남은수량을 넣어서 새로운 남은 수량을 반환받습니다.
+                remainCount=itemMisc.SetOverlapCount( remainCount );
+
+                // 수정이 끝난 오브젝트의 중첩 텍스트를 수정합니다.
+                itemInfo.UpdateCountTxt();
+
+                // 변경한 아이템의 수량이 0이 된 경우에는 삭제 리스트에 담습니다.
+                // 바로 제거하지 않고 따로 담는 이유는 중간에 리스트의 Count 변동이 생기기 때문입니다.
+                if( itemMisc.OverlapCount==0 )
+                    tempInfoList.Add( itemInfo );
+
+                // 남은 수량이 0이된 경우 외부 호출 금지를 활성화합니다.
+                if(remainCount==0)  
+                    return true;
+                else
+                    return false;
+            }
+
         }
 
         
@@ -376,7 +385,7 @@ namespace InventoryManagement
             if(isTotalEnough)       // 합계 누적 수량이 인자로 들어온 수량을 초과하는 경우
             {
                 if( isReduce )      // 삭제 모드라면, 충분 여부를 반환하기 전에 해당 수량만큼 감소시킵니다.
-                    SetOverlapCount(itemName, -overlapCount, null ,isLatestModify);
+                    SetOverlapCount(itemName, -overlapCount, isLatestModify, null);
 
                     return true;
             }
@@ -471,46 +480,54 @@ namespace InventoryManagement
 
         }
 
+        
 
 
         /// <summary>
-        /// 잡화 아이템이 인벤토리에 들어가기 충분한지를 반환해주는 메서드입니다.<br/>
+        /// 잡화 아이템을 해당 수량 만큼 생성한다고 가정할 때, 인벤토리에 들어가기 충분한지를 반환해주는 메서드입니다.<br/>
         /// 아이템 이름과 생성할 수량을 넣어야 합니다.<br/><br/>
+        /// 실제 아이템 오브젝트가 있는 경우는 GetCurRemainSlotCount를 호출하는 것이 성능적으로 빠릅니다.<br/><br/>
         /// *** 잡화 아이템이 아니거나, 수량전달인자가 0이하면 예외를 던집니다. ***
         /// </summary>
         /// <returns>아이템을 생성하기 위한 슬롯이 충분하다면 true를, 부족하다면 false를 반환</returns>
-        public bool IsAbleToAddMisc(string itemName, int overlapCount)
+        public bool IsAbleToAddMisc( string itemName, int overlapCount )
         {
-            // 기존 인벤토리 내부에 아이템이 없어도 새롭게 할당하기 위해 참조를 설정합니다.
-            ItemType itemType = GetItemTypeIgnoreExists(itemName);              // 이름을 통한 아이템의 종류 구분
-            List<GameObject> itemObjList = GetItemObjectList(itemName, true);   // 이름을 통한 아이템 오브젝트 리스트 참조
+            ItemType itemType = GetItemTypeIgnoreExists( itemName );
 
             // 해당 아이템의 종류가 잡화아이템이 아닌 경우와 수량이 잘못 전달 된 경우 예외처리
-            if( itemType != ItemType.Misc)
-                throw new Exception("해당 아이템이 잡화아이템이 아닙니다.");
-            else if( overlapCount<=0 )
-                throw new Exception("수량 전달인자는 1이상이어야 합니다.");
-                
+            if( itemType!=ItemType.Misc )
+                throw new Exception( "해당 이름 아이템의 종류가 잡화 아이템이 아닙니다." );
+            if( overlapCount<=0 )
+                throw new Exception( "수량 전달인자는 1이상이어야 합니다." );
 
             // 남은 수량을 최초에 들어온 수량으로 설정
-            int remainCount = overlapCount; 
-            
+            int remainCount = overlapCount;
+
             // 아이템 별 최대수량 참조
-            int maxOverlapCount = GetItemMaxOverlapCount(itemName);
-            
+            int maxOverlapCount = GetItemMaxOverlapCount( itemName );
+
             // 현재 아이템 생성가능 한 최대 슬롯 갯수
-            int curRemainSlotCnt = GetItemSlotCountLimit(ItemType.Misc) - GetCurItemCount(ItemType.Misc);
+            int curRemainSlotCnt = GetCurRemainSlotCount( itemType );
 
-            // 기존 오브젝트 리스트가 있는 경우는 아이템을 하나씩 꺼내어 remainCount를 감산합니다.
-            foreach(GameObject itemObj in itemObjList)
-            {
-                ItemMisc itemMisc = (ItemMisc)itemObj.GetComponent<ItemInfo>().Item;
 
-                // 해당 아이템을 최대수량으로 만들기 위한 수량이 얼마 남았는 지를 계산합니다.
-                remainCount -= (maxOverlapCount - itemMisc.OverlapCount);                  
+            // 오브젝트 리스트 참조를 설정합니다.
+            List<GameObject> itemObjList = GetItemObjectList( itemName );
+
+            // 기존 오브젝트 리스트가 있는 경우는
+            if( itemObjList!=null )
+            { 
+                // 아이템을 하나씩 꺼내어 remainCount를 감산합니다.
+                foreach( GameObject itemObj in itemObjList )
+                {
+                    ItemMisc itemMisc = (ItemMisc)itemObj.GetComponent<ItemInfo>().Item;
+
+                    // 해당 아이템을 최대수량으로 만들기 위한 수량이 얼마 남았는 지를 계산합니다.
+                    remainCount-=( maxOverlapCount-itemMisc.OverlapCount );
+                }
             }
-
             
+
+
             // 생성 할 오브젝트 갯수 설정 : 최종적으로 남은 수량에서 오브젝트 1개별 최대수량으로 나눈 몫 (나누어 떨어지는 경우)
             int createCnt = remainCount / maxOverlapCount;
             int remainder = remainCount % maxOverlapCount;

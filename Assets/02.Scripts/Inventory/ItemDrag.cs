@@ -92,7 +92,7 @@ public class ItemDrag : MonoBehaviour, IDragHandler, IBeginDragHandler, IEndDrag
             // 계층변경 이벤트 호출 
             
             // 마우스 포인터를 기반으로 계산된 월드포지션정보 전달
-            itemInfo.Locate2DToWorld( eventData.pointerCurrentRaycast.worldPosition, Quaternion.identity );
+            itemInfo.OnItemWorldDrop( eventData.pointerCurrentRaycast.worldPosition, Quaternion.identity );
         }       
         else if( itemRectTr.parent == prevSlotListTr )  // 슬롯의 드랍에 실패했을 때
         {

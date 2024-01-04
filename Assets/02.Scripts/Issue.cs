@@ -760,4 +760,24 @@
  * CreateManager.cs
  * 
  * 
+ * <2024_0104_2_최원준>
+ * (수정 내용)
+ * ItemInfo.cs  
+ * 1- Transfer2DToWorld메서드에서 인벤토리 목록제거 코드 삭제, UpdateInventoryInfo 중복호출 삭제
+ * => 아이템을 방출하게 되는 상황이 인벤토리에서 ItemInfo를 반환받아서 Transfer기능을 실행해야하기 때문
+ * 
+ * 2- 변수명 prevDropEventCallerTr를 prevDropSlotTr로 변경
+ * 
+ * 3- SetActiveTabInfo 메서드를 삭제. UpdaeteActiveTabInfo로 통일.
+ * UpdateInventoryInfo메서드 내부에 활성화탭 업데이트 포함 
+ * 호출인자를 따로 주는 것이 아니라 호출자를 현재 아이템이 속한 interactive로 고정시킴으로서 외부호출의 위험성을 줄임.
+ * 
+ * 4- Locate메서드를 Transfer메서드로 통일
+ * 
+ * 5- OnItemGain, OnItemWorldDrop 아이템 정보 클래스 자체 메서드 
+ * 인벤토리 Add,Remove메서드와는 별개로 인벤토리 제거 후 
+ * 아이템 월드 전송 혹은 2D전송후 인벤토리추가 등으로 진행할 예정
+ * 
+ * (수정 예정)
+ * 1- InventoryInfo 클래스의 RemoveItem에서 단순제거 파괴가 있지만 방출을따로 만들지 고민
  */

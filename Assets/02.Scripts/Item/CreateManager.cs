@@ -265,6 +265,10 @@ public class CreateManager : MonoBehaviour
         if( itemType == ItemType.None )
             throw new Exception("생성 할 아이템 명이 정확하게 일치하지 않습니다. 확인하여 주세요.");
         
+        // 아이템이 들어갈 공간이 부족하다면, 
+        if( !inventoryInfo.IsSlotEnough(itemType) )
+            return false;
+
         Inventory inventory = inventoryInfo.inventory;
 
         // 아이템이 속할 개별 슬롯 인덱스와 전체 슬롯 인덱스를 구합니다.

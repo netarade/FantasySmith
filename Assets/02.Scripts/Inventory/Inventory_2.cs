@@ -1,6 +1,8 @@
 using ItemData;
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using UnityEditor;
 using UnityEngine;
 using WorldItemData;
 
@@ -102,6 +104,10 @@ using WorldItemData;
  * (신규 아이템 추가 시 어느정도의 오브젝트를 추가해야하는 지 알기 위해 오브젝트가 아예 없는 경우에 참조를 못하게 되므로 필요)
  * 
  * 
+ * <v4.2 - 2024_0104_최원준>
+ * 1- AddItemToDic 내부에 SetCurItemObjCount메서드문장 삽입
+ * 
+ * 
  */
 
 namespace InventoryManagement
@@ -120,42 +126,162 @@ namespace InventoryManagement
             if(itemInfo==null)
                 throw new Exception("아이템 스크립트가 존재하지 않는 오브젝트입니다. 확인하여 주세요.");
 
-            //아이템 타입을 확인합니다.
+            // 아이템 타입을 확인합니다.
             ItemType itemType = itemInfo.Item.Type;
 
-            // 현재 오브젝트의 갯수가 슬롯 칸 제한 수와 같거나 크다면 더 이상 추가할 수 없으므로 false를 반환합니다.
-            if(GetCurItemCount(itemType) >= GetItemSlotCountLimit(itemType) )            
-                return false;        
+            // 잡화 아이템과 비잡화 아이템으로 구분하여 메서드를 호출합니다.
+            switch(itemType)
+            {
+                // 타입이 불분명한 경우 예외처리
+                case ItemType.None:
+                    throw new Exception("해당 아이템의 종류가 명확하지 않습니다. 확인하여 주세요.");
 
+                case ItemType.Misc:
+                    return AddItemMisc(itemInfo);   // 별도의 추가 메서드를 호출합니다.
 
+                default:
+                    return AddItemToDic(itemInfo);  // 바로 딕셔너리에 추가합니다.
+            }            
+        }
+                
+  
+        /// <summary>
+        /// 추가 할 ItemInfo 컴포넌트를 인자로 전달받아 해당 사전에 아이템 오브젝트를 넣어주는 메서드입니다.<br/>
+        /// 해당 종류의 아이템 1개가 들어갈 빈 슬롯이 있어야 합니다.
+        /// </summary>
+        /// <returns>해당 아이템 종류의 아이템이 들어갈 빈 슬롯이 없다면 false, 아이템 추가에 성공 시 true를 반환합니다.</returns>
+        public bool AddItemToDic(ItemInfo itemInfo)
+        {          
+            // 아이템 이름과 종류를 참조합니다.
+            string itemName = itemInfo.Item.Name;
+            ItemType itemType = itemInfo.Item.Type;
+
+            // 남은 슬롯이 없다면 실패를 반환합니다.
+            if( GetCurRemainSlotCount(itemType) == 0 )            
+                return false;   
+
+            
             // 아이템 타입을 기반으로 딕셔너리를 결정합니다.
             Dictionary<string, List<GameObject>> itemDic = GetItemDicIgnoreExsists(itemType);
 
-            AddItemToDic(itemDic, itemInfo);    // 찾은 딕셔너리에 itemInfo 컴포넌트 참조값을 전달하여 오브젝트를 추가합니다.
-            SetCurItemObjCount(itemType, 1);       // 해당 아이템 종류의 현재 오브젝트의 갯수를 증가시킵니다.
-            return true;                        // 성공을 반환합니다.
-        }
-        
-        
-        /// <summary>
-        /// 아이템 넣기를 원하는 사전과 ItemInfo 컴포넌트를 인자로 전달받아 해당 사전에 아이템 오브젝트를 넣어주는 메서드입니다.
-        /// </summary>
-        private void AddItemToDic(Dictionary<string, List<GameObject>> itemDic, ItemInfo itemInfo)
-        {
-            string itemName = itemInfo.Item.Name;
-
-            if( !itemDic.ContainsKey(itemName) )        // 해당 사전에 오브젝트 리스트가 존재하지 않는 경우
+            if( !itemDic.ContainsKey(itemName) )            // 해당 사전에 오브젝트 리스트가 존재하지 않는 경우
             {
-                List<GameObject> itemObjList = new List<GameObject>();  // 오브젝트 리스트를 새로 만듭니다
-                itemObjList.Add(itemInfo.gameObject);                   // 오브젝트 리스트에 아이템 오브젝트를 추가합니다
-                itemDic.Add(itemName, itemObjList);                     // 사전에 오브젝트 리스트를 집어넣습니다.
+                List<GameObject> itemObjList = new List<GameObject>();  // 신규 오브젝트 리스트를 만듭니다
+                itemObjList.Add(itemInfo.gameObject);                   // 신규 오브젝트 리스트에 아이템 오브젝트를 추가합니다
+                itemDic.Add(itemName, itemObjList);                     // 사전에 신규 오브젝트 리스트를 추가합니다.
             }
             else                                            // 해당 사전에 오브젝트 리스트가 존재하는 경우 
             {
-                itemDic[itemName].Add(itemInfo.gameObject); // 오브젝트 리스트에 접근하여 게임오브젝트를 넣습니다.
+                itemDic[itemName].Add(itemInfo.gameObject); // 기존 오브젝트 리스트에 접근하여 게임오브젝트를 넣습니다.
             }            
+            
+            SetCurItemObjCount(itemType, 1);                // 해당 아이템 종류의 현재 오브젝트의 갯수를 증가시킵니다.
+            return true;                                    // 성공을 반환합니다.
         }
 
+        
+
+        /// <summary>
+        /// 잡화 아이템 오브젝트를 기존의 인벤토리에 추가하여 줍니다.<br/>
+        /// 기존의 동일한 잡화아이템이 최대 수량이 채워지지 않았다면, 들어온 아이템의 수량을 감소시켜 기존 아이템의 수량을 채웁니다.
+        /// <br/><br/>
+        /// 들어온 아이템의 수량이 0이 되었다면 오브젝트를 파괴하고,<br/> 
+        /// 0이되지 않았다면 해당 아이템을 새롭게 인벤토리 슬롯에 추가합니다.<br/><br/>
+        /// 기본적으로 슬롯에서 앞선 순서로 채워지며 이를 변경할 수 있습니다. (기본값: 오래된순)<br/>
+        /// </summary>
+        /// <returns>잡화 아이템이 들어갈 공간이 없다면 false를, 아이템 추가에 성공한 경우 true를 반환합니다.</returns>
+        private bool AddItemMisc(ItemInfo itemInfo, bool isLatestModify=false)
+        {
+            // 아이템이 들어갈 공간이 없는 경우 실패를 반환합니다.
+            if( GetCurRemainSlotCount(itemInfo.Item.Type) == 0 )
+                return false;
+
+            // 아이템 정보를 전달하여 기존아이템에 채우기를 실행하고, 남은 수량을 반환받습니다.
+            int afterCount = FillExistItemOverlapCount(itemInfo, isLatestModify);
+
+            // 수량채우기가 종료된 후 
+            if( afterCount==0 )
+                GameObject.Destroy( itemInfo.gameObject );  // 남은 수량이 0이 되었다면, 인자로 전달받은 오브젝트 삭제
+            else
+                AddItemToDic(itemInfo);                     // 남은 수량이 존재한다면, 해당 아이템을 사전에 추가
+
+            return true;
+        }
+
+
+        /// <summary>
+        /// 잡화 아이템을 인벤토리에 추가하기 전에,<br/>
+        /// 동일한 이름의 기존 잡화 아이템에 수량을 채워주고, 남은 수량을 반환합니다.<br/>
+        /// 기존 잡화아이템이 없다면 채우지 못하고 남은 수량을 그대로 반환합니다.<br/><br/>
+        /// 인자로 전달한 ItemInfo의 수량은 채운만큼 감소되어 있으며,<br/>
+        /// 수량이 0이 될때 까지 채우지만 삭제는 별도로 하지 않습니다.<br/><br/>
+        /// 슬롯 순서 상 앞선 아이템부터 채우며, 변경할 수 있습니다.(기본값: 오래된순)<br/><br/>
+        /// *** 전달한 아이템이 잡화아이템이 아닌 경우 예외를 발생시킵니다. ***<br/>
+        /// </summary>
+        /// <returns>기존 아이템에 모든 수량을 다 채운 경우 0을 반환, 다 채우지 못한 경우 남은 수량을 반환</returns>
+        public int FillExistItemOverlapCount(ItemInfo itemInfo, bool isLatestModify=false)
+        {            
+            if(itemInfo.Item.Type != ItemType.Misc)
+                throw new Exception("전달 받은 아이템이 잡화 아이템이 아닙니다. 확인하여 주세요.");
+
+            ItemMisc newItemMisc = (ItemMisc)itemInfo.Item;
+
+            // 오브젝트 리스트 참조를 설정합니다.
+            List<GameObject> itemObjList = GetItemObjectList( newItemMisc.Name );                       
+
+            // 기존 아이템에 수량채우기 실행 전 후를 비교할 수량을 현재 아이템의 수량으로 설정합니다.
+            int beforeCount = newItemMisc.OverlapCount; 
+            int afterCount = newItemMisc.OverlapCount;
+
+            // 기존 오브젝트 리스트가 있는 경우는
+            if( itemObjList!=null )
+            { 
+                // 오름차순 정렬을 시행합니다.
+                itemObjList.Sort(CompareBySlotIndexEach);
+
+                // 슬롯 순서로 정렬 된 아이템을 접근 기준에 따라 하나씩 꺼내어 기존 아이템에 수량채우기를 실행합니다.
+                if( isLatestModify )
+                {
+                    for( int i = itemObjList.Count-1; i>=0; i-- )
+                        if( FillCountInLoopByOrder(i) ) { break; } // 내부적으로 true를 반환하면 빠져나갑니다.                                     
+                }
+                else
+                {
+                    for( int i = 0; i<=itemObjList.Count-1; i++ )   
+                        if( FillCountInLoopByOrder(i) ) { break; } // 내부적으로 true를 반환하면 빠져나갑니다.  
+                }
+            }
+
+            // 채워주고 남은 수량을 반환합니다.
+            return afterCount;
+
+            
+
+
+
+            // 기존 아이템에 접근 순서를 다르게 하여 채우기 위한 반복문용 내부 메서드입니다.
+            bool FillCountInLoopByOrder(int idx)
+            {
+                // 기존 아이템에 인덱스를 통한 접근을 하여 정보를 불러옵니다.
+                ItemMisc oldItemMisc = (ItemMisc)itemObjList[idx].GetComponent<ItemInfo>().Item;
+                    
+                // 기존 아이템에 현재 남은수량을 최대 허용치까지 채우고 남은 수량을 반환받습니다.
+                afterCount = oldItemMisc.SetOverlapCount(beforeCount);
+
+                // 줄어든 수량만큼 신규아이템의 수량을 감소시켜 줍니다.
+                newItemMisc.SetOverlapCount(beforeCount-afterCount);
+                    
+                // 다음 반복문에 사용하기 위하여 현재수량과 일치시켜 줍니다. 
+                beforeCount = afterCount;
+
+
+                // 남은 수량이 0이되면 외부 호출 금지를 활성화합니다.
+                if(afterCount==0)
+                    return true;
+                else
+                    return false;
+            }
+        }
 
 
 

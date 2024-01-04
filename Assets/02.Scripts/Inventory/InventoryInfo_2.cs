@@ -42,7 +42,7 @@ public partial class InventoryInfo : MonoBehaviour
     /// 해당 이름의 아이템을 인벤토리의 목록에서 제거후에 목록에서 제거한 아이템의 ItemInfo 참조값을 반환합니다.<br/>
     /// 제거 후 바로 파괴하려면 두번 째 인자를 true로 만들어야 합니다. (기본적으로 목록에서 제거만 될 뿐 파괴되지 않습니다.)<br/><br/>
     /// 반환 받은 아이템을 월드에 내보내기 위해서는 해당 ItemInfo참조의 OnItemWroldDrop메서드를 사용해야 하며,<br/>
-    /// 다른 인벤토리로 주기 위해서는 다른 InventoryInfo참조의 AddItem메서드를 사용해 ItemInfo를 전달해야 합니다.<br/><br/>
+    /// 월드로 나간 아이템을 다른 인벤토리로 주기 위해서는 다른 InventoryInfo참조의 AddItem메서드를 사용해 ItemInfo를 전달해야 합니다.<br/><br/>
     /// *** 인벤토리에 해당 이름의 아이템이 없으면 예외를 발생시킵니다. ***<br/>
     /// </summary>
     public ItemInfo RemoveItem(string itemName, bool isDestroy=false)
@@ -61,43 +61,53 @@ public partial class InventoryInfo : MonoBehaviour
     }
 
     /// <summary>
-    /// 인벤토리의 목록에 월드에 존재하는 아이템을 추가하거나<br/>
-    /// 다른 인벤토리에 존재하는 아이템을 추가합니다.<br/>
-    /// *** 인자로 들어온 컴포넌트 참조값이 없으면 예외를 발생시킵니다. ***<br/>
+    /// 인벤토리의 목록에 *월드*에 존재하는 기존의 아이템을 추가합니다.<br/>
+    /// 다른 인벤토리에 존재하는 아이템은 OnItemSlotDrop메서드 호출을 통해 다른 인벤토리로 전이되어야 합니다.<br/><br/>
+    /// *** 인자로 들어온 컴포넌트 참조값이 null이라면 예외를 발생시킵니다. ***<br/>
     /// </summary>
+    /// <returns>오브젝트가 생성 될 빈 공간이 부족하다면 false를, 아이템 생성 성공 시 true를 반환</returns>
     public bool AddItem(ItemInfo itemInfo)
     {        
         if( itemInfo==null )
             throw new Exception( "전달 받은 아이템 정보의 참조 값이 존재하지 않습니다." );  
+                        
+        inventory.AddItem( itemInfo );
 
-        ItemType itemType = itemInfo.Item.Type;
-        string itemName = itemInfo.Item.Name;
+        // 인벤토리 정보를 인자로 전달받은 새로운 인벤토리로 업데이트 합니다.
+        itemInfo.UpdateInventoryInfo(this);
 
-        // 잡화 아이템 여부와 내부 인벤토리에 해당 잡화아이템과 동일한 잡화아이템이 있는지 검사
-        if( itemType == ItemType.Misc && inventory.IsExist(itemName) )
-        {            
-            ItemMisc itemMisc = (ItemMisc)itemInfo.Item;
-            int inCount = itemMisc.OverlapCount; 
-            
-            List<GameObject> itemObjList = inventory.GetItemObjectList(itemName);
-            
-            // 아이템의 남은 수량을 반환받습니다.
-            int remainCount = inventory.SetOverlapCount(itemName, inCount);
+        // 아이템의 슬롯 인덱스 정보를 가장 가까운 슬롯으로 입력합니다.        
+        SetItemSlotIdxBothToNearstSlot(itemInfo);
+                
+        // 아이템의 위치정보를 반영합니다.
+        itemInfo.UpdatePositionInSlotList();
 
 
-        }
-
-
-        // 비잡화 아이템이거나, 동일한 이름의 잡화아이템이 없는 경우
-        return inventory.AddItem( itemInfo );
+        
     }
 
+    
 
 
     /// <summary>
-    /// 인벤토리의 목록에 없는 아이템을 새롭게 생성을 요청합니다.
+    /// 인벤토리의 목록에 없는 아이템을 새롭게 생성하고 인벤토리 목록에 추가합니다.<br/>
+    /// 오브젝트 1개만 생성하므로, 여러 아이템을 생성시키고 싶을 때 중복하여 호출해야 합니다.<br/>
+    /// 잡화아이템의 경우 중첩수량을 설정할 수 있습니다. 비잡화 아이템의 경우는 무시합니다.(기본값:1)<br/>
     /// </summary>
-    public bool CreateItemToNearstSlot()
+    /// <returns>인벤토리의 슬롯에 아이템 1개를 생성할 공간이 충분하지 않다면 false를 반환, 성공한 경우 true를 반환</returns>
+    public bool CreateItem(string itemName, int miscOverlapCount=1)
+    {
+        return true;
+    }
+
+    /// <summary>
+    /// 인벤토리의 목록에 없는 아이템을 새롭게 생성하고 인벤토리 목록에 추가합니다.<br/>
+    /// 인자로 아이템 이름과 중첩 수량 묶음 구조체를 전달받습니다.<br/><br/>
+    /// 오브젝트 단위로 여러 아이템을 생성할 수 있습니다.<br/>
+    /// 비잡화아이템의 경우 ItemPair의 overlapcount는 무시됩니다.<br/>
+    /// </summary>
+    /// <returns>인벤토리의 슬롯에 아이템 여러 개를 생성할 공간이 충분하지 않다면 false를 반환, 성공한 경우 true를 반환</returns>
+    public bool CreateItem(ItemPair[] itemPairs)
     {
         return true;
     }

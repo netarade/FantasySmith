@@ -146,6 +146,10 @@ using UnityEngine;
  * 1- GetCurItem메서드 예외처리문 추가
  * 
  * 
+ * <v8.4 - 2024_0104_최원준>
+ * 1- 현재 남아있는 슬롯의 갯수를 반환하는 GetCurRemainSlotCount 메서드 추가
+ * AddItem과 IsAbleToAddMisc메서드 등에서 아이템을 추가할 공간이 있나 살펴보기 위해 사용
+ * 
  * 
  */
 
@@ -250,7 +254,7 @@ namespace InventoryManagement
 
             if(itemDic==null)
                 throw new Exception("해당 종류의 아이템 사전이 존재하지 않습니다.");
-
+            
             // 해당 인벤토리 딕셔너리에 들어있는 리스트가 하나도 없다면, 바로 0을 반환합니다.
             if(itemDic.Count==0)        
                 return 0;
@@ -319,7 +323,7 @@ namespace InventoryManagement
         /// 현재 인벤토리에 들어있는 아이템 오브젝트의 전체 갯수를 연산하여 반환합니다
         /// </summary>
         /// <returns>현재 인벤토리에 존재하는 모든 아이템의 총 갯수입니다.</returns>
-        public int GetCurItemCountAll()
+        private int GetCurItemCountAll()
         {
             int count = 0;
             int dicLen = (int)ItemType.None;
@@ -330,7 +334,16 @@ namespace InventoryManagement
             return count;
         }
 
-
+        /// <summary>
+        /// 현재 인벤토리의 남아있는 슬롯 갯수를 반환합니다.<br/>
+        /// 아이템 종류를 전달해야 합니다.<br/>
+        /// *** 아이템의 종류에 해당하는 사전이 없다면 예외를 발생시킵니다. ***
+        /// </summary>
+        /// <returns>남아있는 슬롯이 없으면 0, 남아있는 슬롯이 있다면 해당 슬롯의 갯수</returns>
+        public int GetCurRemainSlotCount(ItemType itemType)
+        {
+            return GetItemSlotCountLimit(itemType) - GetCurItemCount(itemType);
+        }
 
 
 

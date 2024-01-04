@@ -124,6 +124,9 @@ using System.Runtime.CompilerServices;
 * (OnItemChanged메서드 호출)
 * 
 * 
+* <v6.1 - 2024_0104_최원준>
+* 1- UpdateAllActiveTabInfo 메서드 내부의 SetActiveTabInfo코드를 UpdaeteActiveTabInfo로 변경
+* 호출인자를 따로 주는 것이 아니라 호출자를 현재 아이템이 속한 interactive로 고정시킴으로서 외부호출의 위험성을 줄임.
 * 
 * 
 * 
@@ -297,7 +300,7 @@ public class InventoryInteractive : MonoBehaviour
                 {
                     ItemInfo itemInfo = itemObj.GetComponent<ItemInfo>();  // 아이템 정보를 읽어들입니다.
 
-                    itemInfo.SetActiveTabInfo( isActiveTabAll );           // 활성화 탭 정보를 현재 활성화탭 기준으로 변경합니다.
+                    itemInfo.UpdateActiveTabInfo();                     // 활성화 탭 정보를 현재 활성화탭 기준으로 변경합니다.
                 }
 
             }

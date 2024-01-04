@@ -120,6 +120,11 @@ using System.Collections.Generic;
  * 4- UpdateAllItemInfo메서드 새롭게 구현
  * 로드 시 모든 아이템의 오브젝트 정보를 최신화하기 위해 호출
  * 
+ * <7.1 - 2024_0104_최원준>
+ * 1- IsItemEnough에서 ItemPair 구조체하나만 받는 오버로딩 메서드 삭제
+ * (오브젝트 1개의 이름과 수량을 전달하는 메서드가 따로 있기 때문이고, 
+ * AddItem메서드에서 ItemPiar배열과 ItemPair를 받는 구조체를 추가하다보면 코드가 길어지기 때문)
+ * 
  */
 
 
@@ -145,6 +150,9 @@ public partial class InventoryInfo : MonoBehaviour
     GameObject slotPrefab;              // 슬롯을 동적으로 생성하기 위한 프리팹 참조
     InventoryInteractive interactive;   // 자신의 인터렉티브 스크립트를 참조하여 활성화 탭정보를 받아오기 위한 변수 선언
     DataManager dataManager;            // 저장과 로드 관련 메서드를 호출 할 스크립트 참조
+    
+
+
 
 
 
@@ -213,9 +221,21 @@ public partial class InventoryInfo : MonoBehaviour
     }
 
 
+    
+    /// <summary>
+    /// 이
+    /// </summary>
+    /// <param name="itemInfo"></param>
+    private void UpdateItemInfo(ItemInfo itemInfo)
+    {
+
+    }
+
+
 
     /// <summary>
-    /// 인벤토리를 로드하였을 때, 해당 인벤토리 내부의 모든 아이템에 인벤토리 정보를 전달하여 이미지나 위치 정보 등을 최신화하기 위한 메서드입니다.<br/>
+    /// 이 인벤토리를 아이템을 로드하였을 때, 해당 인벤토리 내부의 모든 아이템에 인벤토리 정보를 전달하여 
+    /// 이미지나 위치 정보 등을 최신화하기 위한 메서드입니다.<br/>
     /// 내부적으로 모든 아이템에 OnItemCreated 메서드를 호출하여 새롭게 생성되었을 때의 정보를 입력합니다.<br/>
     /// </summary>
     private void UpdateAllItemInfo()
@@ -241,7 +261,7 @@ public partial class InventoryInfo : MonoBehaviour
 
 
     /// <summary>
-    /// 인벤토리에 존재하는 해당 이름의 아이템 수량을 증가시키거나 감소시킵니다.<br/>
+    /// 인벤토리에 존재하는 해당 이름의 *기존* 잡화 아이템 수량을 증가시키거나 감소시킵니다.<br/>
     /// 인자로 해당 아이템 이름과 수량을 지정해야 합니다.<br/><br/>
     /// 아이템 수량을 감소시키려면 수량 인자로 음수를 전달하여야 하며,<br/>
     /// 기존 수량이 감소로 인해 0이되면 아이템이 인벤토리 목록에서 제거되며, 파괴됩니다.<br/><br/>
@@ -253,20 +273,20 @@ public partial class InventoryInfo : MonoBehaviour
     /// <returns></returns>
     public int SetItemOverlapCount( string itemName, int inCount, bool isLatestModify = true )
     {
-        return inventory.SetOverlapCount(itemName, inCount, isLatestModify);
+        return inventory.SetOverlapCount(itemName, inCount, isLatestModify, null);
     }
 
 
     /// <summary>
     /// 인벤토리에 해당 이름의 아이템의 중첩수량이 충분한지를 확인하는 메서드입니다.<br/>
-    /// 인자로 아이템 이름과 수량이 필요합니다. (수량 미전달 시 기본 수량은 1개입니다.)<br/><br/>
+    /// 인자로 아이템 이름과 수량이 필요합니다.<br/><br/>
     /// 세번 째 인자로 수량 감소모드를 선택하면 아이템의 중첩수량이 충분하다면 인자로 들어온 수량만큼 감소시키며, <br/>
     /// 0에 도달한 경우 아이템을 인벤토리에서 제거하고 파괴 시킵니다.<br/>
     /// 최신 순, 오래된 순으로 감소여부를 결정할 수있습니다. (기본값: 최신순)<br/><br/>
     /// ** 해당 이름의 아이템이 존재하지 않거나, 잡화 아이템이 아니거나, 수량을 잘못 전달했다면 예외를 발생시킵니다. **
     /// </summary>
     /// <returns>아이템 중첩수량이 충분하면 true를, 충분하지 않으면 false를 반환</returns>
-    public bool IsItemEnoughOverlapCount( string itemName, int overlapCount = 1, bool isReduce = false, bool isLatestModify = true )
+    public bool IsItemEnoughMisc( string itemName, int overlapCount, bool isReduce = false, bool isLatestModify = true )
     {
         return inventory.IsEnoughOverlapCount(itemName, overlapCount, isReduce, isLatestModify);
     }
@@ -282,18 +302,6 @@ public partial class InventoryInfo : MonoBehaviour
         return inventory.IsExist(itemName, isRemove, isLatestModify);
     }
 
-
-    /// <summary>
-    /// 아이템의 종류와 상관없이 아이템이 인벤토리에 존재하는지, 잡화아이템이라면 수량까지도 충분한지 여부를 반환합니다.<br/>
-    /// 또한 아이템이 존재하거나, 잡화아이템인 경우 수량까지 충분하다면 제거 또는 감소를 결정할 수 있습니다.<br/>
-    /// (기본값: 감소모드 안함, 최신순 감소)<br/><br/>
-    /// *** 비잡화 아이템의 경우 수량 값을 무시합니다. 잡화아이템의 경우 수량이 1이상이 아니면 예외를 발생시킵니다. ***
-    /// </summary>
-    /// <returns>전달 한 인자의 모든 조건을 충족하는 경우 true를, 조건을 충족하지 않는 경우 false를 반환, 조건이 충족한 경우 감소를 수행</returns>
-    public bool IsItemEnough( ItemPair pair, bool isReduce = false, bool isLatestModify = true )
-    {
-        return inventory.IsEnough(pair, isReduce, isLatestModify);
-    }
 
     /// <summary>
     /// 아이템의 종류와 상관없이 아이템이 인벤토리에 존재하는지, 잡화아이템이라면 수량까지도 충분한지 여부를 반환합니다.<br/>
@@ -340,110 +348,71 @@ public partial class InventoryInfo : MonoBehaviour
         return findIdx;
     }
 
-    /// <summary>
-    /// 가장 가까운 슬롯의 인덱스를 구합니다. 어떤 종류의 아이템을 넣을 것인지 인자로 전달하여야 합니다.<br/>
-    /// ItemType인자에 해당하는 개별탭 슬롯 인덱스를 반환합니다. ItemType.None을 전달할 경우 전체탭의 슬롯 인덱스를 반환합니다. (기본값: 전체탭)
-    /// </summary>
-    /// <returns>ItemType.None을 전달할 경우 전체탭 슬롯 인덱스를 반환하며, 이외의 인자는 개별탭 슬롯 인덱스를 반환합니다. 
-    /// 슬롯에 자리가 없다면 -1을 반환합니다.</returns>
-    public int FindNearstSlotIdx( ItemType itemType = ItemType.None )
-    {
-        return inventory.FindNearstSlotIdx(itemType);
-    }
-    
-    /// <summary>
-    /// 가장 가까운 슬롯의 인덱스를 구합니다. 어떤 이름의 아이템을 넣을 것인지와 <br/>
-    /// 개별탭 혹은 전체탭의 인덱스를 반환받고자 하는지 여부를 전달하여야 합니다. (기본값: 전체탭)<br/>
-    /// </summary>
-    /// <returns>true을 전달할 경우 전체탭 슬롯 인덱스를 반환하며, false는 개별탭 슬롯 인덱스를 반환합니다. 
-    /// 슬롯에 자리가 없다면 -1을 반환합니다.</returns>
-    public int FindNearstSlotIdx( string itemName, bool isIndexAll=true)
-    {
-        return inventory.FindNearstSlotIdx(itemName, isIndexAll);
-    }
-
-
-
-
-
 
     /// <summary>
     /// 이 인벤토리의 슬롯에 아이템이 들어갈 자리가 있는지 여부를 반환하는 메서드입니다.<br/>
-    /// 인자로 아이템 종류를 전달하여야 합니다.
+    /// 인자로 아이템 종류를 전달하여야 하며,<br/><br/>
+    /// 추가 인자로 몇개의 아이템을 넣고 싶은지를 설정할 수 있습니다. (기본값: 1개)<br/>
+    /// 이는 생성할 수 있는 오브젝트의 갯수를 의미하는 것으로<br/>
+    /// 무기류 3개와 잡화중첩수량 99개의 아이템 3개와 의미가 동일합니다.<br/><br/>
+    /// 잡화아이템을 원하는 수량 만큼 생성할 수 있는 지 판단하려면 IsSlotEnoughMisc메서드를 호출하십시오.<br/>
     /// </summary>
     /// <returns>슬롯이 자리가 남는다면 true를, 슬롯에 자리가 없다면 false를 반환합니다.</returns>
-    public bool IsSlotEnough(ItemType itemType)
+    public bool IsSlotEnough(ItemType itemType, int itemObjectCount=1)
     {
-        if(FindNearstSlotIdx(itemType) == -1)
-            return false;
-        else
-            return true;        
-    }
-
-    /// <summary>
-    /// 이 인벤토리의 슬롯에 아이템이 들어갈 자리가 있는지 여부를 반환하는 메서드입니다.<br/>
-    /// 인자로 아이템 이름을 전달하여야 합니다.
-    /// </summary>
-    /// <returns>슬롯이 자리가 남는다면 true를, 슬롯에 자리가 없다면 false를 반환합니다.</returns>
-    public bool IsSlotEnough(string itemName)
-    {
-        if(FindNearstSlotIdx(itemName, false)==-1)
-            return false;
-        else
+        if(inventory.GetCurRemainSlotCount(itemType) >= itemObjectCount)
             return true;
+        else
+            return false;        
     }
 
     /// <summary>
-    /// 이 인벤토리의 슬롯에 아이템이 들어갈 자리가 있는지 여부를 반환하는 메서드입니다.<br/>
-    /// 인자로 아이템정보 스크립트를 전달하여야 합니다.
+    /// 이 인벤토리의 슬롯에 잡화 아이템을 원하는 수량만큼 생성했을 때,<br/>
+    /// 들어갈 자리가 있는지 여부를 반환하는 메서드입니다.<br/>
+    /// 인자로 아이템 이름과 중첩수량을 전달해야 합니다.<br/>
     /// </summary>
-    /// <returns>슬롯이 자리가 남는다면 true를, 슬롯에 자리가 없다면 false를 반환합니다.</returns>
-    public bool IsSlotEnough(ItemInfo itemInfo)
+    /// <returns>아이템을 생성하기 위한 슬롯 자리가 있다면 true를, 없다면 false를 반환합니다.</returns>
+    public bool IsSlotEnoughMisc(string itemName, int overlapCount)
     {
-        if(FindNearstSlotIdx(itemInfo.Item.Type) == -1)
-            return false;
+        if( inventory.IsAbleToAddMisc(itemName, overlapCount) )
+            return true;
         else
-            return true;  
+            return false;
     }
-
-
-
-
 
 
 
     /// <summary>
     /// 아이템 Info 컴포넌트를 인자로 받아서 어떤 슬롯에 들어갈지 최신화 해주는 메서드입니다. <br/>
     /// 내부적으로 FindNearstSlotIdx메서드를 호출하여 슬롯 정보를 입력해줍니다.<br/>
+    /// *** 슬롯에 빈자리가 없거나, 아이템 정보가 없다면 예외를 발생시킵니다. ***
     /// </summary>
-    /// <returns>슬롯에 빈자리가 없다면 false를 반환합니다. 아이템이 들어갈 공간이 없다는 뜻입니다.</returns>
-    public bool SetItemSlotIdxBothToNearstSlot( ItemInfo itemInfo )
+    public void SetItemSlotIdxBothToNearstSlot( ItemInfo itemInfo )
     {        
-        // 호출 예외 항목 처리
-        if( itemInfo==null )
-            throw new Exception("ItemInfo 스크립트가 존재하지 않는 아이템입니다.");
-
         // 아이템 정보와 종류를 저장합니다.
         Item item = itemInfo.Item;
         ItemType itemType = item.Type;
 
+        // 호출 예외 항목 처리
+        if( itemInfo==null )
+            throw new Exception("ItemInfo 스크립트가 존재하지 않는 아이템입니다.");
+        else if( !IsSlotEnough(itemType) )     
+            throw new Exception("아이템이 들어갈 자리가 충분하지 않습니다. 확인하여 주세요.");    
+                
+  
         // 종류를 인자로 넣어서 개별 슬롯 인덱스를 반환 받습니다.
-        int slotIdxEach = FindNearstSlotIdx(itemType);
-        
-        // 개별 슬롯 인덱스가 -1이라면 빈자리가 없는 것으로 판단하여 실패를 반환합니다.
-        if(slotIdxEach==-1)     
-            return false;        
+        int slotIdxEach = inventory.FindNearstSlotIdx(itemType);  
         
         // 전체 슬롯 인덱스를 구합니다.
-        int slotIdxAll = FindNearstSlotIdx(ItemType.None);;
+        int slotIdxAll = inventory.FindNearstSlotIdx(ItemType.None);;
 
         // 구한 슬롯 인덱스를 아이템 정보에 입력합니다.
         item.SlotIndex = slotIdxEach;
         item.SlotIndexAll = slotIdxAll;
 
-        // 성공을 반환합니다.
-        return true;
     }
+
+
 
     /// <summary>
     /// 특정 종류의 딕셔너리에 존재하는 아이템의 슬롯 정보를 업데이트해주는 메서드입니다.<br/>

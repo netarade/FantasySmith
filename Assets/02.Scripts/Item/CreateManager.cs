@@ -176,9 +176,14 @@ using WorldItemData;
 /// </summary>
 public class CreateManager : MonoBehaviour
 {       
-    public WorldItem worldItemData;                 // 게임 시작 시 넣어 둘 월드 사전의 참조값입니다.
-    GameObject itemPrefab;                          // 리소스 폴더 또는 에디터에서 복제할 프리팹을 참조합니다
-    
+    public WorldItem worldItemData;         // 게임 시작 시 넣어 둘 월드 사전의 참조값입니다.
+    GameObject itemPrefab;                  // 리소스 폴더 또는 에디터에서 복제할 프리팹을 참조합니다    
+
+    Dictionary<string, Item>[] worldDic;    // 사전 배열 참조변수
+    ItemType[] dicType;                     // 각 사전 별 보관하는 아이템 종류
+
+    int dicLen;
+
     public void Awake()
     {        
         // 리소스 폴더에서 원본 프리팹 가져오기
@@ -186,7 +191,71 @@ public class CreateManager : MonoBehaviour
                 
         // 월드 아이템 데이터의 인스턴스를 하나 만듭니다.
         worldItemData = new WorldItem();
+
+        // 사전배열의 참조변수 설정
+        worldDic = worldItemData.worldDic;
+        dicLen = worldDic.Length;
     }
+
+    /// <summary>
+    /// 아이템 이름을 기반으로 해당 아이템의 ItemType을 반환합니다<br/><br/>
+    /// </summary>
+    /// <returns>해당 이름의 아이템이 존재하지 않는 경우 ItemType.None, 존재하는 경우 해당 ItemType을 반환</returns>
+    public ItemType GetWorldItemType(string itemName)
+    {
+        for(int i=0; i<dicLen; i++)
+            if( worldDic[i].ContainsKey(itemName) )     // 해당 이름의 키가 사전에 존재하는지 찾습니다.
+                return dicType[i];                      // 존재하는 경우 해당 사전의 아이템 타입을 반환합니다.
+
+        return ItemType.None;                           // 해당 이름이 존재하지 않는 경우 None을 반환합니다.
+    }
+        
+    /// <summary>
+    /// 아이템 이름을 기반으로 해당 아이템의 월드 딕셔너리 참조값을 반환합니다.<br/><br/>
+    /// </summary>
+    /// <returns>아이템이 존재하지 않는 경우 null, 존재하는 경우 해당 월드 사전의 참조 값 반환</returns>
+    public Dictionary<string, Item> GetWorldDic(string itemName)
+    {
+        for(int i=0; i<dicLen; i++)
+            if( worldDic[i].ContainsKey(itemName) )
+                return worldDic[i];                 
+
+        return null;
+    }
+        
+    /// <summary>
+    /// 이름을 검색하여 클론할 월드 아이템 하나를 가져옵니다.
+    /// </summary>
+    /// <returns>아이템이 존재하지 않는 경우 null, 존재하는 경우 클론할 아이템 참조 값을 반환</returns>
+    public Item GetWorldItem(string itemName)
+    {
+        for(int i=0; i<dicLen; i++)
+            if( worldDic[i].ContainsKey(itemName) )
+                return worldDic[i][itemName];               
+        
+        return null;
+    }
+
+
+    /// <summary>
+    /// 해당 아이템이름을 기반으로 아이템이 월드 딕셔너리 목록에서 존재하는지 여부를 반환합니다<br/><br/>
+    /// </summary>
+    /// <returns>해당 이름의 아이템이 존재하지 않는 경우 false, 존재하는 경우 true를 반환</returns>
+    public bool IsContainsWorldItemName(string itemName)
+    {        
+        for(int i=0; i<dicLen; i++)
+            if( worldDic[i].ContainsKey(itemName) )
+                return true;
+
+        return false;
+    }
+
+        
+
+
+
+
+
 
 
 
@@ -194,26 +263,18 @@ public class CreateManager : MonoBehaviour
     /// <summary>
     /// 3D 월드 상에 아이템 오브젝트 1개를 생성합니다.<br/>
     /// 잡화아이템의 중첩수량을 인자로 전달할 수 있습니다. 중첩 최대 수량을 넘어가는 경우 최대 수량까지만 생성하여 줍니다.<br/>
-    /// Transform인자를 전달한 경우 해당 인자의 position과 rotation값을 가지게 되며,
-    /// 기본적으로 전달 인자의 자식으로서 종속되지 않습니다. 옵션을 통해 자식 속성을 변경가능합니다.<br/>
     /// </summary>
     /// <returns>해당 아이템의 게임오브젝트의 참조 값을 반환합니다.</returns>
-    public GameObject CreateItemToWorld(Transform worldTr, string itemName, int overlapCount=1, bool isSetParent=false)
+    public GameObject CreateWorldItem(string itemName, int overlapCount=1)
     {
+
         return gameObject;
     }
-
-    /// <summary>
-    /// 3D 월드 상에 아이템 오브젝트 1개를 생성합니다.<br/>
-    /// 잡화아이템의 중첩수량을 인자로 전달할 수 있습니다. 중첩 최대 수량을 넘어가는 경우 최대 수량까지만 생성하여 줍니다.<br/>
-    /// 아이템 오브젝트에 지정 좌표와 회전 값을 넣어 생성합니다.
-    /// </summary>
-    /// <returns>해당 아이템의 게임오브젝트의 참조 값을 반환합니다.</returns>
-    public GameObject CreateItemToWorld(Vector3 worldPos, Quaternion worldRot, string itemName, int overlapCount=1)
+    
+    public ItemInfo CreateWorldItem(string itemName, int overlapCount=1)
     {
-        return gameObject;
+        
     }
-
 
 
 
@@ -237,243 +298,6 @@ public class CreateManager : MonoBehaviour
         Inventory inventory = inventoryInfo.inventory;                      
         return CreateItemToInventory(inventory, itemName, overlapCount);        
     }
-
-
-    /// <summary>
-    /// 인벤토리의 해당 슬롯에 원하는 아이템 오브젝트를 생성합니다.<br/>
-    /// 슬롯인덱스를 따로 지정하지 않은 경우 비어있는 가장 앞의 슬롯에 아이템이 생성됩니다.<br/><br/>
-    /// 인자로 갯수를 넣으면 여러 오브젝트가 생성될 수 있습니다. 기본 값은 1입니다.<br/>
-    /// 잡화 아이템의 경우 기존 아이템에 해당 수량이 들어간다면 새롭게 오브젝트를 생성하지 않습니다.<br/>
-    /// 새롭게 아이템 오브젝트를 인벤토리에 생성하지 못하는 경우 나머지 수량을 반환합니다.<br/><br/>
-    /// * 이름이 일치하지 않을 경우 예외를 발생시킵니다. *
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="inventory">플레이어의 인벤토리 변수가 필요합니다. 해당 인벤토리에 아이템 오브젝트를 추가하여 줍니다.</param>
-    /// <param name="itemName">아이템 테이블을 참고하여 한글명을 기입해주세요. 띄어쓰기에 유의해야 합니다. ex)철, 철 검, 미스릴, 미스릴 검</param>
-    /// <param name="overlapCount">생성을 원하는 갯수입니다. 하나의 슬롯에 중첩하여 생성될 것입니다. 기본 값은 1이며, 장비류는 반드시 1개만 생성됩니다.</param>
-    /// <returns>인벤토리의 슬롯에 생성이 완료되었다면 true를, 슬롯에 빈자리가 더 이상 없어 생성하지 못하는 경우 false를 반환</returns>
-    public bool CreateItemToInventory( InventoryInfo inventoryInfo, string itemName, int overlapCount = 1 )
-    {
-        //수량이 0이하로 들어왔다면 무조건 실패를 반환합니다.
-        if( overlapCount <=0 ) 
-            return false;
-
-        // 인자로 들어온 이름이 어떤 종류의 아이템인지를 설정합니다
-        ItemType itemType = worldItemData.GetItemType(itemName);
-
-        // 아이템이 어떤 종류도 아니라면 예외를 발생시킵니다
-        if( itemType == ItemType.None )
-            throw new Exception("생성 할 아이템 명이 정확하게 일치하지 않습니다. 확인하여 주세요.");
-        
-        // 아이템이 들어갈 공간이 부족하다면, 
-        if( !inventoryInfo.IsSlotEnough(itemType) )
-            return false;
-
-        Inventory inventory = inventoryInfo.inventory;
-
-        // 아이템이 속할 개별 슬롯 인덱스와 전체 슬롯 인덱스를 구합니다.
-        int findSlotIdx = inventory.FindNearstSlotIdx(itemType);  
-        int findSlotIdxAll = inventory.FindNearstSlotIdx(ItemType.None);
-
-        // 개별 인벤토리 슬롯의 남아있는 칸이 없다면 생성하지 못하므로 실패를 반환합니다.
-        if( findSlotIdx == -1 ) 
-            return false;
-                        
-
-        // 사전의 개념 아이템을 클론하여 (아이템 원형을 복제해서) 또 다른 개념 아이템을 생성하기위한 변수입니다
-        Item itemClone = null;
-
-        // 개념아이템을 실제 오브젝트로 만들어 넣어야하는, 인벤토리 딕셔너리 내부에 존재하는 아이템 오브젝트 리스트입니다
-        List<GameObject> itemObjList;  
-               
-        // 인자로 들어온 이름을 기반으로, Item인스턴스를 클론하기 위해 참조할 사전을 설정합니다.
-        Dictionary<string, Item> worldDic = worldItemData.GetWorldDic(itemName);
-
-        if( itemType == ItemType.Weapon )         // 이름이 무기 종류라면
-        {
-            // 인벤토리의 무기목록에 해당 아이템 리스트가 없다면 리스트를 새롭게 생성합니다
-            if( !inventory.weapDic.ContainsKey( itemName ) )  
-                inventory.weapDic[itemName] = new List<GameObject>();
-            
-            // 인벤토리의 해당 딕셔너리에 접근하여 아이템 오브젝트 리스트 참조를 설정합니다
-            itemObjList = inventory.weapDic[itemName];  
-
-            // 무기라면 무조건 복제합니다 (중첩될 일이 없으므로)
-            itemClone=(ItemWeapon)worldDic[itemName].Clone();   
-                        
-            // 인벤토리 리스트에 개념아이템을 장착한 오브젝트를 추가합니다
-            AddCloneItemToInventory( itemObjList, itemClone, findSlotIdx );
-
-            // 개념 아이템의 슬롯의 인덱스 정보를 찾은 위치로 수정한다.
-        itemClone.SlotIndex=findSlotIdx;
-        itemClone.SlotIndexAll
-
-        // 슬롯리스트의 해당 슬롯에 게임 상에서 보여 질 오브젝트를 생성하여 배치한다.
-        GameObject itemObject = Instantiate(itemPrefab);
-
-        // 스크립트 상의 item에 사전에서 클론한 아이템을 참조하게 한다. (내부적으로 OnItemChanged()메서드가 호출되어 자동으로 오브젝트에 정보를 동기화)       
-        itemObject.GetComponentInChildren<ItemInfo>().Item=itemClone;
-
-        itemObjList.Add( itemObject );    // 인벤토리는 GameObject 인스턴스를 보관함으로서 transform정보와 개념 아이템을 정보를 포함하게 된다.            
-        
-        itemObject.GetComponentInChildren<ItemInfo>().OnItemCreated();    //아이템 수정사항을 반영해줍니다.
-
-
-
-
-
-
-
-
-        }
-        else if( itemType == ItemType.Misc )     // 이름이 잡화 종류라면 
-        {
-            // 인벤토리의 잡화목록에 해당 아이템 리스트가 없다면 리스트를 새롭게 생성합니다
-            if( !inventory.miscDic.ContainsKey( itemName ) )
-                inventory.miscDic[itemName]=new List<GameObject>(); 
-            
-            // 인벤토리의 해당 딕셔너리에 접근하여 아이템 오브젝트 리스트 참조를 설정합니다
-            itemObjList = inventory.miscDic[itemName];
-
-            if(itemObjList.Count > 0 )      // 들어가있는 오브젝트가 하나라도 있다면 (중복수량을 체크해야 합니다)
-            {
-                int remainCount = overlapCount;    // 채워야할 나머지 수량을 설정합니다
-
-
-                // 리스트에 들어있는 잡화 게임오브젝트를 읽어들여서 남은수량이 0이될 때까지 최대 수량으로 채워줍니다.
-                for(int i=0; i<itemObjList.Count; i++) 
-                {
-                    //Debug.Log("------기존 잡화아이템이 있는경우------");
-
-                    // 해당 오브젝트의 개념아이템 정보를 뽑아옵니다
-                    ItemMisc itemMisc = (ItemMisc) itemObjList[i].GetComponentInChildren<ItemInfo>().Item; 
-
-                    // SetOVerlapCount메서드를호출하여 최대수량까지 채우고 나머지를 새롭게 반환받습니다.
-                    remainCount = itemMisc.SetOverlapCount(remainCount);    
-                    
-                    // 최대수량이 변동되었으므로 이를 오브젝트 상에 반영합니다.
-                    itemObjList[i].GetComponentInChildren<ItemInfo>().UpdateCountTxt();
-
-
-                    //반환값이 더이상 없다면 for문을 빠져나갑니다. (i순서로 오브젝트의 수량을 채웁니다.)
-                    if( remainCount==0 )
-                        break;
-                } // End of For Statement
-
-
-                if( remainCount>0 )   // 반환값이 남아있다면,
-                {            
-                    //Debug.Log("------기존 잡화아이템에다가 들어온 수량을 다 못채운 경우------");
-                    // 남은 수량을 인자로 넣어서 다시 아이템을 생성하는 재귀호출에 들어갑니다
-                    return CreateMiscItemRepeatly(inventory, itemName, remainCount);
-                }
-
-
-            }
-            else if(itemObjList.Count == 0)     //들어가있는 오브젝트가 하나도 없다면 (바로위의 for문이 한번도 돌아가지 않았다면)
-            {                
-                //Debug.Log("------새로운 잡화아이템에다가 수량을 채워야하는 경우------");
-                //Debug.Log("인자로 들어온 count : "+ count);
-                itemClone=(ItemMisc)worldMiscDic[itemName].Clone();    // 개념아이템을 클론하고,
-                ( (ItemMisc)itemClone ).SetOverlapCount( overlapCount );   // 클론의 중첩 갯수를 받은 인자로 지정합니다.
-
-                //Debug.Log("Item에 등록된 Count : " + ((ItemMisc)itemClone).OverlapCount);
-
-                // 인벤토리 리스트에 개념아이템을 장착한 오브젝트를 추가합니다
-                AddCloneItemToInventory( itemObjList, itemClone, findSlotIdx );
-            }
-
-        }
-
-        
-        // 아이템 생성이 성공한 경우 0을 반환합니다
-        return 0;
-    }
-
-
-
-
-
-
-
-
-
-    /// <summary>
-    /// 잡화 아이템의 수량을 인자로 넣어서 계속해서 인벤토리에 생성해주는 메서드입니다.<br/>
-    /// 남은 수량이 0이될 때까지 재귀호출을 반복합니다.
-    /// </summary>
-    /// <param name="inventory">생성할 인벤토리</param>
-    /// <param name="itemName">잡화아이템 이름</param>
-    /// <param name="remainCount">남은 수량</param>
-    /// <returns></returns>
-    private int CreateMiscItemRepeatly(Inventory inventory, string itemName, int remainCount)
-    {        
-        if(remainCount==0)  // 인자로 호출 된 수량이 0이라면 더이상 재귀호출을 진행하지 않고 0을 반환합니다. 
-            return 0;
-
-        int findSlotIdx = FindNearstRemainSlotIdx();
-        int remCount;
-
-
-        // 새롭게 개념아이템을 클론합니다.
-        Item itemClone=(ItemMisc)worldMiscDic[itemName].Clone();
-
-        // 오브젝트리스트 설정
-        List<GameObject> itemObjList = inventory.miscDic[itemName];
-
-
-        // SetOVerlapCount메서드를호출하여 최대수량까지 채우고 나머지를 새롭게 반환받습니다.
-        remCount = ((ItemMisc)itemClone).SetOverlapCount( remainCount );                                               
-                                                                       
-        // 인벤토리 리스트에 개념아이템을 장착한 오브젝트를 추가합니다
-        AddCloneItemToInventory( itemObjList, itemClone, findSlotIdx );
-        
-
-        // 남은 수량을 새로운 인자로 넣어서 재귀호출을 진행합니다.
-        return CreateMiscItemRepeatly(inventory, itemName, remCount);
-    }
-
-
-
-    /// <summary>
-    /// 인자로 전달한 게임오브젝트 리스트에 게임오브젝트를 생성하여 아이템 정보를 추가한 상태로 넣어줍니다.
-    /// </summary>
-    /// <param name="itemObjList">인벤토리의 게임오브젝트가 담긴 리스트</param>
-    /// <param name="itemClone">추가 할 아이템 인스턴스</param>
-    /// <param name="findSlotIdx">추가 할 슬롯 인덱스</param>
-    private void AddCloneItemToInventory( List<GameObject> itemObjList, Item itemClone, int findSlotIdx )
-    {
-        // 개념 아이템의 슬롯의 인덱스 정보를 찾은 위치로 수정한다.
-        itemClone.SlotIndex=findSlotIdx;
-        itemClone.SlotIndexAll
-
-        // 슬롯리스트의 해당 슬롯에 게임 상에서 보여 질 오브젝트를 생성하여 배치한다.
-        GameObject itemObject = Instantiate(itemPrefab);
-
-        // 스크립트 상의 item에 사전에서 클론한 아이템을 참조하게 한다. (내부적으로 OnItemChanged()메서드가 호출되어 자동으로 오브젝트에 정보를 동기화)       
-        itemObject.GetComponentInChildren<ItemInfo>().Item=itemClone;
-
-        itemObjList.Add( itemObject );    // 인벤토리는 GameObject 인스턴스를 보관함으로서 transform정보와 개념 아이템을 정보를 포함하게 된다.            
-        
-        itemObject.GetComponentInChildren<ItemInfo>().OnItemCreated();    //아이템 수정사항을 반영해줍니다.
-    }
-
-
-    
-    /// <summary>
-    /// 개념 아이템 정보가 이미 있다면 이를 가지고 그에 맞는 아이템 오브젝트를 만들어 줍니다.
-    /// </summary>
-    /// <param name="item"></param>
-    public GameObject CreateItemByInfo(Item item)
-    {
-        GameObject itemObject = Instantiate(itemPrefab);    // 프리팹하나를 복제해 옵니다.
-
-        itemObject.GetComponentInChildren<ItemInfo>().Item = item;    // 아이템 정보 할당이 이루어질 때 자동으로 이미지,수량,위치가 동기화 됩니다.
-
-        return itemObject;
-    }    
-
-
 
 
 

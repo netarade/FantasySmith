@@ -399,6 +399,7 @@ namespace InventoryManagement
         {
             WorldItem worldItem = new WorldItem();       // 추후 GetComponent기반으로 변경예정
 
+            
             if(worldItem.weapDic.ContainsKey(itemName))
                 return ItemType.Weapon;
             else if(worldItem.miscDic.ContainsKey(itemName))
@@ -432,7 +433,9 @@ namespace InventoryManagement
         /// <returns>*** 해당하는 이름이 월드 아이템 목록에 존재하지 않는 경우 예외를 던집니다. ***</returns>
         public Dictionary<string, List<GameObject>> GetItemDicIgnoreExsists(string itemName)
         {
-            WorldItem worldItem = new WorldItem();       // 추후 GetComponent기반으로 변경예정
+            CreateManager createManager = GameObject.FindWithTag("GameController").GetComponent<CreateManager>();
+            
+            if( createManager.GetWorldItemType(itemName) == GetItemTypeIgnoreExists
 
             if(worldItem.weapDic.ContainsKey(itemName))
                 return weapDic;
@@ -511,9 +514,9 @@ namespace InventoryManagement
         /// <returns>아이템의 최대 갯수를 반환합니다.</returns>
         public int GetItemMaxOverlapCount(string itemName)
         {
-            WorldItem worldItem = new WorldItem();      // 추후 GetComponent 기반으로 변경 예정
+            CreateManager createManager = GameObject.FindWithTag("GameController").GetComponent<CreateManager>();
 
-            Dictionary<string, Item> worldDic = worldItem.GetWorldDic(itemName);
+            Dictionary<string, Item> worldDic = createManager.GetWorldDic(itemName);
 
             return ((ItemMisc)worldDic[itemName]).MaxOverlapCount;
         }

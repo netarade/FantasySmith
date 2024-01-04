@@ -23,9 +23,11 @@ using ItemData;
 
 namespace WorldItemData
 {
-    public partial class WorldItem
-    {
-        public readonly Dictionary<string, Item> weapDic = new Dictionary<string, Item>()
+public partial class WorldItem
+{
+    private Dictionary<string, Item> InitDic_Weapon()
+    {        
+        return new Dictionary<string, Item>()
         {
             /*** °Ë ***/
             { "Ã¶ °Ë", new ItemCraftWeapon( ItemType.Weapon, WeaponType.Sword, "0001000", "Ã¶ °Ë", 10.0f, new ImageReferenceIndex(0)
@@ -230,4 +232,5 @@ namespace WorldItemData
 
         };    
     }
+}
 }

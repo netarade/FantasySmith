@@ -780,4 +780,31 @@
  * 
  * (수정 예정)
  * 1- InventoryInfo 클래스의 RemoveItem에서 단순제거 파괴가 있지만 방출을따로 만들지 고민
+ * 
+ * 
+ * <2024_0104_3_최원준>
+ * 1- UpdateInventoryInfo에 prevDropSlotTr 의 참조를 itemTr.parent에서 itemRectTr.parent로 변경
+ * 2- Inventory_2.cs - AddItem(itemInfo)를 호출하면 월드에 나와있는 상태를 확인하고 Transfer2DToWorld를 호출해서 계층구조를 바꿔주도록 수정
+ * 그리고 내부 인벤토리 AddItem이 성공하면 인벤토리정보를 업데이트 및 오브젝트 위치를 업데이트해주도록 하였음.
+ * 
+ * 3- ItemInfo의 OnItemGain메서드는 인벤토리쪽에서 AddItem하는 것이 아니라 아이템쪽에서 직접 인벤토리 주소를 참조하여 Add하도록 요청하는 것으로
+ * 내부적으로 Transfer2DToWorld를 호출하여 계층변경을 먼저한 후, AddItem메서드를 호출하는 형태로 구성.
+ * 
+ * 4- OnItemSlotDrop메서드를 ItemInfo_2.cs로 옮김
+ * 기존의 SlotDrop.cs에서 간단히 해당아이템에 자기슬롯주소만 넣어서 호출하면 
+ * 아이템이 알아서 인벤토리에 요청해서 인덱스를 부여받고 포지셔닝을 하는 구조
+ * => (기존의 슬롯이 인벤토리에 요청해서 인덱스를 아이템에넣어주고, 아이템의 포지셔닝 메서드를 호출하는 것보다 빠르고 코드가 간단해지기 때문)
+ * 
+ * 5- CreateManager의 메서드가 인벤토리에 대부분 구현이 되어있는 관계로 대폭삭제하였으며, 월드딕셔너리 기반으로 구현.
+ * 인벤토리에 AddItem하기 위해 컴포넌트 인스턴스를 하나만 받으면 되는 관계로 월드 딕셔너리를 기반으로 인스턴스만 생성하여 주면된다.
+ * 따라서 CreateManager의 역할은 월드 딕셔너리를 빠르게 접근할 수있도록 다양한 기능을 제공하는 것에 기반을 두어야 한다.
+ * 
+ * (수정예정)
+ * CreateManager.cs - worldItem 관련 메서드 구현
+ * InventoryInfo_2.cs
+ * Inventory_2.cs - worldItem참조를 CreateManager참조로 변경하기
+ * Inventory_3.cs
+ *  
+ * 
+ * 
  */

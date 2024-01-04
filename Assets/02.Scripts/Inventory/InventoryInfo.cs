@@ -150,6 +150,7 @@ public partial class InventoryInfo : MonoBehaviour
     GameObject slotPrefab;              // 슬롯을 동적으로 생성하기 위한 프리팹 참조
     InventoryInteractive interactive;   // 자신의 인터렉티브 스크립트를 참조하여 활성화 탭정보를 받아오기 위한 변수 선언
     DataManager dataManager;            // 저장과 로드 관련 메서드를 호출 할 스크립트 참조
+    CreateManager createManager;        // 아이템 생성을 요청하고 반환받을 스크립트 참조
     
 
 
@@ -168,7 +169,8 @@ public partial class InventoryInfo : MonoBehaviour
 
         interactive = gameObject.GetComponent<InventoryInteractive>();                          // 자신의 인터렉티브 스크립트를 참조합니다.
         dataManager = GameObject.FindWithTag("GameController").GetComponent<DataManager>();     // 게임컨트롤러 태그가 있는 오브젝트의 컴포넌트 참조
-        dataManager.FileSettings("Inventory", 0); //세이브 파일명, 슬롯번호
+        dataManager.FileSettings("Inventory", 0);                                               // 세이브 파일명, 슬롯번호
+        createManager = dataManager.gameObject.GetComponent<CreateManager>();                   // 데이터 매니저와 동일한 오브젝트의 컴포넌트 참조
     }
 
     /// <summary>
@@ -223,7 +225,7 @@ public partial class InventoryInfo : MonoBehaviour
 
     
     /// <summary>
-    /// 이
+    /// CreateManager에서 itemInfo를 만들어서 제공해주는 경우에 바로 이 아이템의 오브젝트 정보를 동기화시켜주기 위한 메서드
     /// </summary>
     /// <param name="itemInfo"></param>
     private void UpdateItemInfo(ItemInfo itemInfo)

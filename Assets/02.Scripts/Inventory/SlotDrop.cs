@@ -51,7 +51,14 @@ using UnityEngine.EventSystems;
  * 1- 수량감산부분을 OverlapCount를 직접 수정하던 부분에서 SetOverlapCount메서드로 대체
  * 2- playerInvenInfo -> invenInfo로 변수명 변경, Find로 참조하던 부분을 계층구조 참조로 변경
  * 
- * 
+ * <v6.0 -2024_0104_최원준>
+ * 1- 드랍 이벤트가 일어날 때 아이템의 위치를 옮겨주던 기존 로직을 주석처리하고, 
+ * 아이템쪽에서 인벤토리에 요청해서 인덱스를 부여받는 형태로 구현해 보았음. 
+ * 이유는 슬롯쪽에서는 활성화 탭에 관한 인덱스만 부여할 수 있기 때문인데, 
+ * 이는 같은 인벤토리 내에서라면 상관없지만 다른 인벤토리의 슬롯에서 옮겨올 때는 반드시 한번은 전체탭인덱스를 부여받아야 한다.
+ * 이는 인벤토리쪽에서 그 정보를 요청해야 하므로, 슬롯이 인벤토리에서 아이템에 넣어주는 것보다 아이템이 바로 슬롯의 부모인 인벤토리에 요청해서 바로 전달받고
+ * 자신의 포지션업데이트를 하는 것이 조금더 빠르지 않을까 생각.
+ * => 슬롯 드롭이 일어날 때 해당 아이템의 OnItemSlotDrop에 자신의 슬롯 계층구조 인자만 전달하면 되도록 간단하게 되었음.
  * 
  * 
  * [추후 수정해야할 이슈정리]
@@ -94,93 +101,119 @@ public class SlotDrop : MonoBehaviour, IDropHandler
         if(dropItemObj == null)                       // 드래그 중인 오브젝트가 없는 경우 하위 로직을 실행하지 않음 
             return;
 
-
         ItemInfo dropItemInfo = dropItemObj.GetComponent<ItemInfo>();    // 드롭 된 아이템 정보 스크립트
         Item droItem = dropItemObj.GetComponent<ItemInfo>().Item;       // 드롭 된 아이템 정보
 
 
-        // 드래그 중인 아이템이 속성석이나 강화석, 각인석이라면, 수행하는 로직들.
-        if( droItem.Type==ItemType.Misc )
-        {
-            ItemMisc dropItemMisc = ( (ItemMisc)droItem );      // 현재 드래그 중인 잡화 아이템의 정보
 
-            if( dropItemMisc.MiscType==MiscType.Engraving||
-                dropItemMisc.MiscType==MiscType.Enhancement||
-                dropItemMisc.MiscType==MiscType.Attribute )
-            {
-                applyItem = slotTr.GetChild(0).gameObject.GetComponent<ItemInfo>().Item;   //강화를 적용할 아이템의 정보를 봅니다.
+
+        dropItemInfo.OnItemSlotDrop(slotTr);
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        //// 드래그 중인 아이템이 속성석이나 강화석, 각인석이라면, 수행하는 로직들.
+        //if( droItem.Type==ItemType.Misc )
+        //{
+        //    ItemMisc dropItemMisc = ( (ItemMisc)droItem );      // 현재 드래그 중인 잡화 아이템의 정보
+
+        //    if( dropItemMisc.MiscType==MiscType.Engraving||
+        //        dropItemMisc.MiscType==MiscType.Enhancement||
+        //        dropItemMisc.MiscType==MiscType.Attribute )
+        //    {
+        //        applyItem = slotTr.GetChild(0).gameObject.GetComponent<ItemInfo>().Item;   //강화를 적용할 아이템의 정보를 봅니다.
                 
-                if( applyItem.Type==ItemType.Weapon )                 // 적용 대상이 무기라면 강화 로직을 수행하고 아니라면 스위칭 로직을 수행합니다.
-                {
-                    switch( droItem.Name )
-                    {
-                        case "강화석":
-                            break;
-                        case "속성석-수":
-                            ( (ItemWeapon)applyItem ).AttributeUnlock( AttributeType.Water ); // 수 속성을 개방합니다. 
-                            break;
-                        case "속성석-금":
-                            ( (ItemWeapon)applyItem ).AttributeUnlock( AttributeType.Gold );  // 굼 속성을 개방합니다. 
-                            break;
-                        case "속성석-지":
-                            ( (ItemWeapon)applyItem ).AttributeUnlock( AttributeType.Earth ); // 지 속성을 개방합니다. 
-                            break;
-                        case "속성석-화":
-                            ( (ItemWeapon)applyItem ).AttributeUnlock( AttributeType.Fire );  // 화 속성을 개방합니다. 
-                            break;
-                        case "속성석-풍":
-                            ( (ItemWeapon)applyItem ).AttributeUnlock( AttributeType.Wind );  // 풍 속성을 개방합니다. 
-                            break;
-                        // 속성석은 개방여부와 상관없이 소모되어야 합니다
-                        case "각인석":
-                            ( (ItemWeapon)applyItem ).Engrave( droItem.Name ); // 드래깅아이템을 각인하여 각인정보를 반영합니다.
-                            break;
-                    }
+        //        if( applyItem.Type==ItemType.Weapon )                 // 적용 대상이 무기라면 강화 로직을 수행하고 아니라면 스위칭 로직을 수행합니다.
+        //        {
+        //            switch( droItem.Name )
+        //            {
+        //                case "강화석":
+        //                    break;
+        //                case "속성석-수":
+        //                    ( (ItemWeapon)applyItem ).AttributeUnlock( AttributeType.Water ); // 수 속성을 개방합니다. 
+        //                    break;
+        //                case "속성석-금":
+        //                    ( (ItemWeapon)applyItem ).AttributeUnlock( AttributeType.Gold );  // 굼 속성을 개방합니다. 
+        //                    break;
+        //                case "속성석-지":
+        //                    ( (ItemWeapon)applyItem ).AttributeUnlock( AttributeType.Earth ); // 지 속성을 개방합니다. 
+        //                    break;
+        //                case "속성석-화":
+        //                    ( (ItemWeapon)applyItem ).AttributeUnlock( AttributeType.Fire );  // 화 속성을 개방합니다. 
+        //                    break;
+        //                case "속성석-풍":
+        //                    ( (ItemWeapon)applyItem ).AttributeUnlock( AttributeType.Wind );  // 풍 속성을 개방합니다. 
+        //                    break;
+        //                // 속성석은 개방여부와 상관없이 소모되어야 합니다
+        //                case "각인석":
+        //                    ( (ItemWeapon)applyItem ).Engrave( droItem.Name ); // 드래깅아이템을 각인하여 각인정보를 반영합니다.
+        //                    break;
+        //            }
 
 
-                    if( dropItemMisc.OverlapCount==1 )    // 아이템 갯수가 1개라면,
-                    {
-                        miscDic[droItem.Name].Remove( dropItemObj );   // 아이템을 플레이어 인벤토리의 잡화목록에서 제거합니다.
-                        Destroy( dropItemObj, 0.5f );                       // 0.5초후 삭제 시킵니다.
-                        dropItemObj.SetActive( false );                     // 아이템을 바로 disable 시킵니다.
-                    }
-                    else //2개 이상이라면,
-                    {
-                        dropItemMisc.SetOverlapCount(-1);       // 실제 수량을 뺀다.
-                        dropItemObj.GetComponent<ItemInfo>().UpdateCountTxt();  // 중첩 텍스트를 수정한다.
-                    }
+        //            if( dropItemMisc.OverlapCount==1 )    // 아이템 갯수가 1개라면,
+        //            {
+        //                miscDic[droItem.Name].Remove( dropItemObj );   // 아이템을 플레이어 인벤토리의 잡화목록에서 제거합니다.
+        //                Destroy( dropItemObj, 0.5f );                       // 0.5초후 삭제 시킵니다.
+        //                dropItemObj.SetActive( false );                     // 아이템을 바로 disable 시킵니다.
+        //            }
+        //            else //2개 이상이라면,
+        //            {
+        //                dropItemMisc.SetOverlapCount(-1);       // 실제 수량을 뺀다.
+        //                dropItemObj.GetComponent<ItemInfo>().UpdateCountTxt();  // 중첩 텍스트를 수정한다.
+        //            }
 
 
-                    return;     // 적용되고 스위칭은 하지 않는다.
-                }
-            }
-        }
+        //            return;     // 적용되고 스위칭은 하지 않는다.
+        //        }
+        //    }
+        //}
 
 
 
 
-        if( slotTr.childCount==0 )   // 슬롯이 비어있다면, 부모를 변경하고
-        {
-            dropItemObj.transform.SetParent( slotTr );                    // 해당슬롯으로 부모 변경
-            dropItemObj.transform.localPosition = Vector3.zero;           // 정중앙 위치
-            droItem.SlotIndex = slotTr.GetSiblingIndex();          // 바뀐 슬롯의 위치를 저장한다.
-        }
-        else if( slotTr.childCount==1 ) // 슬롯에 아이템이 이미 있다면, 각 아이템의 위치를 교환한다.
-        {
-            int prevIdx = dropItemObj.GetComponent<ItemDrag>().prevSlotTr.GetSiblingIndex(); // 드래깅 중인 아이템이 속한 부모(슬롯)의 인덱스를 저장
+        //if( slotTr.childCount==0 )   // 슬롯이 비어있다면, 부모를 변경하고
+        //{
+        //    dropItemObj.transform.SetParent( slotTr );                    // 해당슬롯으로 부모 변경
+        //    dropItemObj.transform.localPosition = Vector3.zero;           // 정중앙 위치
+        //    droItem.SlotIndex = slotTr.GetSiblingIndex();          // 바뀐 슬롯의 위치를 저장한다.
+        //}
+        //else if( slotTr.childCount==1 ) // 슬롯에 아이템이 이미 있다면, 각 아이템의 위치를 교환한다.
+        //{
+        //    int prevIdx = dropItemObj.GetComponent<ItemDrag>().prevSlotTr.GetSiblingIndex(); // 드래깅 중인 아이템이 속한 부모(슬롯)의 인덱스를 저장
 
-            droItem.SlotIndex = slotTr.GetSiblingIndex();      // 드래그중인 아이템은 바뀐 슬롯 위치로 저장한다.
-            dropItemObj.transform.SetParent( slotTr );                // 드래그 중인 아이템은 해당 슬롯으로 위치
-            dropItemObj.transform.localPosition = Vector3.zero;       // 정중앙 위치
+        //    droItem.SlotIndex = slotTr.GetSiblingIndex();      // 드래그중인 아이템은 바뀐 슬롯 위치로 저장한다.
+        //    dropItemObj.transform.SetParent( slotTr );                // 드래그 중인 아이템은 해당 슬롯으로 위치
+        //    dropItemObj.transform.localPosition = Vector3.zero;       // 정중앙 위치
 
 
-            // 바꿀 아이템 설정               
-            switchingItemRectTr = slotTr.GetChild(0).GetComponent<RectTransform>();
+        //    // 바꿀 아이템 설정               
+        //    switchingItemRectTr = slotTr.GetChild(0).GetComponent<RectTransform>();
 
-            switchingItemRectTr.GetComponent<ItemInfo>().Item.SlotIndex=prevIdx;  // 스위칭할 아이템의 슬롯 번호를 기록해둔 위치로 저장 
-            switchingItemRectTr.SetParent( ItemDrag.prevSlotTr );             // 이미지 우선순위 문제로 부모를 일시적으로 바꾸므로, 이전 부모를 받아온다.            
-            switchingItemRectTr.localPosition=Vector3.zero;                       // 정중앙 위치
-        }
+        //    switchingItemRectTr.GetComponent<ItemInfo>().Item.SlotIndex=prevIdx;  // 스위칭할 아이템의 슬롯 번호를 기록해둔 위치로 저장 
+        //    switchingItemRectTr.SetParent( ItemDrag.prevSlotTr );             // 이미지 우선순위 문제로 부모를 일시적으로 바꾸므로, 이전 부모를 받아온다.            
+        //    switchingItemRectTr.localPosition=Vector3.zero;                       // 정중앙 위치
+        //}
 
     }
 

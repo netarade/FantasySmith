@@ -15,12 +15,11 @@ using ItemData;
 
 namespace WorldItemData
 {
-    /// <summary>
-    /// 모든 월드 아이템 목록을 보유하고 있는 딕셔너리 집합입니다. Monobehaviour를 상속하지 않으므로 생성해서 정보를 받아야 합니다.
-    /// </summary>
-    public partial class WorldItem
-    {
-        public readonly Dictionary<string, Item> miscDic = new Dictionary<string, Item>()
+public partial class WorldItem
+{
+    private Dictionary<string, Item> InitDic_Misc()
+    {        
+        return new Dictionary<string, Item>()
         {           //0x1000
             { "철", new ItemMisc( ItemType.Misc, MiscType.Basic, "0000000", "철", 3.0f, new ImageReferenceIndex(0) ) },
             { "강철", new ItemMisc( ItemType.Misc, MiscType.Basic, "0000001", "강철", 5.0f, new ImageReferenceIndex(1) ) },
@@ -82,4 +81,5 @@ namespace WorldItemData
             { "속성석-풍", new ItemMisc( ItemType.Misc, MiscType.Attribute,"0000615", "속성석-풍", 500.0f, new ImageReferenceIndex(8) ) }, 
         };        
     }
+}
 }

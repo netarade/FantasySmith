@@ -67,23 +67,32 @@ public partial class InventoryInfo : MonoBehaviour
     /// </summary>
     /// <returns>오브젝트가 생성 될 빈 공간이 부족하다면 false를, 아이템 생성 성공 시 true를 반환</returns>
     public bool AddItem(ItemInfo itemInfo)
-    {        
+    {     
+        // ItemInfo를 전달받지 못한 경우
         if( itemInfo==null )
-            throw new Exception( "전달 받은 아이템 정보의 참조 값이 존재하지 않습니다." );  
-                        
-        inventory.AddItem( itemInfo );
+            throw new Exception( "전달 받은 아이템 정보의 참조 값이 존재하지 않습니다." ); 
+        // 아이템이 월드상에 존재하는 상태라면, 2D로 계층구조를 변경합니다.
+        else if( itemInfo.IsWorldPositioned )
+            itemInfo.TransferWorldTo2D();
 
-        // 인벤토리 정보를 인자로 전달받은 새로운 인벤토리로 업데이트 합니다.
-        itemInfo.UpdateInventoryInfo(this);
+        // 내부 인벤토리에 아이템이 성공적으로 추가되었다면,
+        if( inventory.AddItem(itemInfo) )
+        {
+            // 인벤토리 정보를 인자로 전달받은 새로운 인벤토리로 업데이트 합니다.
+            itemInfo.UpdateInventoryInfo(this);
 
-        // 아이템의 슬롯 인덱스 정보를 가장 가까운 슬롯으로 입력합니다.        
-        SetItemSlotIdxBothToNearstSlot(itemInfo);
-                
-        // 아이템의 위치정보를 반영합니다.
-        itemInfo.UpdatePositionInSlotList();
+            // 아이템의 슬롯 인덱스 정보를 가장 가까운 슬롯으로 입력합니다.        
+            SetItemSlotIdxBothToNearstSlot(itemInfo);  
+            
+            // 아이템의 위치정보를 반영합니다.
+            itemInfo.UpdatePositionInSlotList();
 
-
-        
+            // 아이템 추가 성공을 반환합니다.
+            return true;
+        }
+        // 추가되지 않았다면 실패를 반환합니다.
+        else
+            return false;        
     }
 
     

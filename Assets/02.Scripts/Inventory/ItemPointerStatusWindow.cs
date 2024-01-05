@@ -52,6 +52,11 @@ using System;
  * <v4.3 - 2023_1229_최원준>
  * 1- 상태창 계층구조 변경 (인벤토리 하위 마지막 자식인덱스)으로 인한 참조 수정
  * 
+ * <v4.4 - 2024_0105_최원준>
+ * 1- iicMiscOther의 참조를 CreateManager의 싱글톤참조에서 FindWithTag참조로 임시 변경 (향후 수정가능성 있음)
+ * 
+ * 
+ * 
  */
 
 
@@ -126,7 +131,8 @@ public class ItemPointerStatusWindow : MonoBehaviour, IPointerEnterHandler, IPoi
         statusWindowTr.gameObject.SetActive(false);        
 
         // 싱글톤 참조이므로 Start로직에서만 사용!
-        iicMiscOther=CreateManager.instance.transform.GetChild(0).GetChild(2).gameObject.GetComponent<ItemImageCollection>();
+        Transform controllerTr = GameObject.FindWithTag("GameController").transform;
+        iicMiscOther = controllerTr.GetChild(0).GetChild(2).gameObject.GetComponent<ItemImageCollection>();
         if(iicMiscOther == null)
             throw new Exception("iicMiscOther의 참조를 확인하여 주세요.");
 

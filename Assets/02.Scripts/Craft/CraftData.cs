@@ -52,6 +52,10 @@ using Newtonsoft.Json;
  * <v6.0 - 2023_1222_최원준>
  * 1- private변수를 직렬화하기 위해 [JsonProperty] 어트리뷰트를 추가하였음
  * 
+ * <V6.1 - 2024_0105_최원준>
+ * 1- 생성자 호출 시 weapDic 초기화를 위해 WorldItem데이터를 직접참조하던 구문에서
+ * CreateManager의 참조를 통한 메서드 호출방식으로 변경
+ * 
  */
 
 
@@ -81,8 +85,9 @@ namespace CraftData
         {
             swordDic = new Dictionary<string, CraftProficiency> ();
             bowDic = new Dictionary<string, CraftProficiency> ();           
-
-            Dictionary<string, Item> weaponDic = new WorldItem().weapDic;         // 월드 무기사전을 참조합니다.
+                        
+            CreateManager createManager = GameObject.FindWithTag("GameController").GetComponent<CreateManager>();
+            Dictionary<string, Item> weaponDic = createManager.GetWorldDic(ItemType.Weapon);         // 월드 무기사전을 참조합니다.
 
             foreach( Item item in weaponDic.Values )                                // 모든 무기사전에서 하나씩 꺼냅니다.
             {

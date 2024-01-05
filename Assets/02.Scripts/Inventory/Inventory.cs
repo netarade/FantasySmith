@@ -150,6 +150,13 @@ using UnityEngine;
  * 1- 현재 남아있는 슬롯의 갯수를 반환하는 GetCurRemainSlotCount 메서드 추가
  * AddItem과 IsAbleToAddMisc메서드 등에서 아이템을 추가할 공간이 있나 살펴보기 위해 사용
  * 
+ * <v8.5 - 2024_0105_최원준>
+ * 1- 내부 참조변수로 createManager를 두고, 생성자 호출 시 해당 참조값을 초기화하도록 하였음.
+ * 
+ * 2- DeserializeItemListToDic내부에 코드 수정 
+ * (Item클래스를 직접 Add하는 메서드를 제거한 관계로 createManager에서 호출하여 참조값을 받도록 수정)
+ * 
+ * 
  * 
  */
 
@@ -231,6 +238,10 @@ namespace InventoryManagement
         
         /**** 내부적으로만 사용하는 속성 ****/
         List<int> indexList = new List<int>();
+
+
+        CreateManager createManager;
+
 
 
 
@@ -384,11 +395,14 @@ namespace InventoryManagement
         /// 로드 할때나 씬을 전환했을 때 아이템 리스트를 역직렬화 하여 다시 인벤토리 목록으로 변환해야하는 용도로 사용합니다.
         /// </summary>
         public void DeserializeItemListToDic<T>( List<T> itemList ) where T : Item
-        {
+        {   
             foreach(Item item in itemList) // 아이템 리스트에서 개념 아이템 정보를 하나씩 꺼내옵니다.
-            {                        
-                // item정보를 기반으로 아이템을 새롭게 생성하여 인벤토리에 넣어줍니다. (Invnetory_p2에 정의되어 있습니다.)
-                AddItem(item);
+            { 
+                // 월드에 오브젝트를 만들고 ItemInfo 참조값을 받습니다.
+                ItemInfo itemInfo = createManager.CreateWorldItem(item);
+                
+                // 인벤토리 내부에 추가합니다.
+                AddItem(itemInfo);
             }
         }
 
@@ -404,6 +418,15 @@ namespace InventoryManagement
             SlotCountLimitWeap=InitialCountLimit;
             SlotCountLimitMisc=InitialCountLimit;
         }
+
+        /// <summary>
+        /// CreateManager 참조값을 받아 초기화를 진행합니다. 기존의 게임을 시작할 때 사용해야 합니다.  
+        /// </summary>
+        public Inventory(CreateManager createManager) : this() //디폴트 생성자 호출
+        {
+            this.createManager = createManager;
+        }
+
                
     }
 

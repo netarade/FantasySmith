@@ -805,6 +805,44 @@
  * Inventory_2.cs - worldItem참조를 CreateManager참조로 변경하기
  * Inventory_3.cs
  *  
+ * <v2024_0105_최원준>
+ * 
+ * 
+ * (추후 수정예정)
+ * 1- 현재 잡화아이템의 경우 들어올 때 겹칠수 있으므로 동일 오브젝트가 들어왔을 때
+ * 중첩이된다면 파괴시켜줘야한다. 인덱스를 구할 때도 겹칠 수 있으면 아이템자체를 파괴해야 한다.
+ * 
+ * 2- 중첩가능한 아이템이 들어오느냐에 따라 코드를 달리 해야 한다.
+ * 그에 따라 인벤토리의 AddItem, ItemInfo의 OnItemGain등의 코드가 수정이 필요.
+ * IsSlotEnough가 아니라 이름 기반의 IsSlotEnoughOverlap메서드로 작성해야
+ * 
+ * (이슈)
+ * 1- AddItem메서드에서 먼저 인벤토리에 추가하고 인덱스를 입력하는 것에서
+ * 인덱스를 먼저 입력하고 인벤토리에 추가하는 구조로 변경하였음.
+ * 이유는 미리 추가한 아이템의 인덱스 정보를 인덱스를 구하는 과정에서 읽어들이기 때문.
+ *
+ * (작업내용)
+ * 1- Inventory.cs - CreateManager를 태그 참조형식에서 생성 시 인자 전달 방식으로 구현,
+ * DeserializeItemListToDic내부에서 createManager에 Item 참조를 전달하여 아이템을 생성요청하도록 변경
+ * (직렬화 시 오류가 발생하기 때문)
+ * 
+ * 2- SaveData_Inventory.cs - Load시 CreateManager를 생성자를 통해 전달하도록 변경
+ * 
+ * 3- Inventory_3.cs - FindNearstSlotIdx코드 로직 수정
+ * 
+ * 4- ItemInfo.cs - 메서드 불필요 메서드 제거 및 간소화 (계층변경 메서드 통합)
+ *  
+ * 5- InventoryInfo.cs - AddItem에서 인덱스를 잡기전 아이템 추가하던 부분 삭제, IsEnough 메서드 간소화
+ * IsEnough메서드를 ItemInfo를 받아서 처리하는 오버로딩메서드 추가
+ * 
+ * 6- CreateManager.cs - 예외처리문 추가, CreateItem에서 Item에 대한 오버로딩 메서드, 
+ * 아이템을 생성하면서 월드 상태로 미리 변경해놓도록 변경.
+ * (itemInfo.DimensionShift(true); 호출 추가)
+ * 
+ * (수정예정)
+ * 현재 첫 아이템의 이미지 등이 잡히지 않는 점이있음.
+ * CreateManager와 Inventory Add를 살펴볼 예정
+ * 
  * 
  * 
  */

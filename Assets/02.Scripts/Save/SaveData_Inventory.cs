@@ -9,6 +9,11 @@ using System.Collections.Generic;
  * WeapSlotCountLimit -> SlotCountLimitWeap
  * MiscSlotCountLimit -> SlotCountLimitMisc
  * 
+ * <V1.2 - 2024_0105_최원준>
+ * 1- Deserialize메서드에서 InventoryInfo를 받도록 하여 
+ * 인벤토리를 새롭게 생성할 때 InventoryInfo를 인자로 넣어주도록 수정
+ * 이는 CreateManager의 참조값을 얻기 위함
+ * 
  */
 
 
@@ -74,9 +79,9 @@ namespace DataManagement
         /// 저장 되어있는 인벤토리를 역직렬화하여 로드하는 메서드입니다.<br/>
         /// 로드되어있는 내부변수를 자동으로 변환하여 Inventory 인스턴스를 반환받습니다.
         /// </summary>
-        public Inventory Deserialize()
+        public Inventory Deserialize(CreateManager createManager)
         {
-            Inventory inventory = new Inventory();
+            Inventory inventory = new Inventory(createManager);
                       
             inventory.DeserializeItemListToDic<ItemWeapon>( this.weapList );
             inventory.DeserializeItemListToDic<ItemMisc>( this.miscList );

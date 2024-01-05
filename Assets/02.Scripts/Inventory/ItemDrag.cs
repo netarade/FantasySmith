@@ -85,16 +85,11 @@ public class ItemDrag : MonoBehaviour, IDragHandler, IBeginDragHandler, IEndDrag
         // 마지막 레이케스트가 UI 영역에 닿지 않았다면, (인벤토리 밖으로 빼냈다면,)
         if( eventData.pointerCurrentRaycast.gameObject == null ) 
         {
-            // itemRectTr.SetParent(null);   // 계층 최상위로 변경한다. (월드로 내보낸다.)
-            // 인벤토리에서 제거.
-            // 2D, 3D 전환
-            // isWorldPositioned true
-            // 계층변경 이벤트 호출 
-            
-            // 마우스 포인터를 기반으로 계산된 월드포지션정보 전달
-            itemInfo.OnItemWorldDrop( eventData.pointerCurrentRaycast.worldPosition, Quaternion.identity );
-        }       
-        else if( itemRectTr.parent == prevSlotListTr )  // 슬롯의 드랍에 실패했을 때
+            Debug.Log("아이템을 밖으로 빼내시겠습니까?");
+            //itemInfo.InventoryInfo.RemoveItem(itemInfo.name);
+        }    
+        
+        if( itemRectTr.parent == prevSlotListTr )  // 슬롯의 드랍에 실패했을 때
         {
             itemRectTr.SetParent( prevSlotTr );         // 원래의 부모 슬롯으로 돌린다.
             itemRectTr.localPosition = Vector3.zero;    // 슬롯의 정중앙에 와야한다.

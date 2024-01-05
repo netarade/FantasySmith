@@ -165,7 +165,16 @@ using WorldItemData;
 * 1- CreateManager 싱글턴 삭제, OnSceneLoad, Destroy문 삭제, CreateItemToWorld 메서드 삭제
 * Awake에 모든 참조 설정으로 변경
 * 
+* <v12.1 - 2024_0105_최원준>
+* 1- 월드 딕셔너리 정보를 빠르게 접근가능하게 해주고, 
+* CreateManager에서는 아이템을 만들어서 ItemInfo의 참조값만 반환하는 형태로 구현
 * 
+* 2- 메서드들이 이름이 제대로 입력되지 않았을 때, null값 반환이 아니라 예외처리하도록 변경
+* 3- dicType을 초기화 안하던점 수정
+* 
+* 4- CreateItem메서드에서 클론생성시 슬롯인덱스를 -1로 초기화하는 구문추가
+* 인벤토리쪽에서 아이템을 집어넣고 슬롯인덱스를 기존의 아이템을 읽어들여서 인덱스를 보게되는데
+* 큰값으로 초기화되거나 하면 안되므로 지정값 초기화
 * 
 */
 
@@ -181,8 +190,7 @@ public class CreateManager : MonoBehaviour
 
     Dictionary<string, Item>[] worldDic;    // 사전 배열 참조변수
     ItemType[] dicType;                     // 각 사전 별 보관하는 아이템 종류
-
-    int dicLen;
+    int dicLen;                             // 사전 배열의 길이
 
     public void Awake()
     {        
@@ -194,46 +202,71 @@ public class CreateManager : MonoBehaviour
 
         // 사전배열의 참조변수 설정
         worldDic = worldItemData.worldDic;
+        dicType = worldItemData.dicType;
         dicLen = worldDic.Length;
     }
 
     /// <summary>
     /// 아이템 이름을 기반으로 해당 아이템의 ItemType을 반환합니다<br/><br/>
+    /// ** 해당 이름의 아이템이 존재하지 않는 경우 예외 발생 **
     /// </summary>
-    /// <returns>해당 이름의 아이템이 존재하지 않는 경우 ItemType.None, 존재하는 경우 해당 ItemType을 반환</returns>
+    /// <returns>해당 이름 아이템의 ItemType을 반환</returns>
     public ItemType GetWorldItemType(string itemName)
     {
         for(int i=0; i<dicLen; i++)
             if( worldDic[i].ContainsKey(itemName) )     // 해당 이름의 키가 사전에 존재하는지 찾습니다.
                 return dicType[i];                      // 존재하는 경우 해당 사전의 아이템 타입을 반환합니다.
 
-        return ItemType.None;                           // 해당 이름이 존재하지 않는 경우 None을 반환합니다.
+        // 해당 이름이 존재하지 않는 경우 예외처리
+        throw new Exception("해당 아이템이 존재하지 않습니다."); 
     }
         
     /// <summary>
     /// 아이템 이름을 기반으로 해당 아이템의 월드 딕셔너리 참조값을 반환합니다.<br/><br/>
+    /// ** 해당 이름의 아이템이 존재하지 않는 경우 예외 발생 **
     /// </summary>
-    /// <returns>아이템이 존재하지 않는 경우 null, 존재하는 경우 해당 월드 사전의 참조 값 반환</returns>
+    /// <returns>해당 아이템의 월드 사전 참조 값 반환</returns>
     public Dictionary<string, Item> GetWorldDic(string itemName)
     {
         for(int i=0; i<dicLen; i++)
             if( worldDic[i].ContainsKey(itemName) )
                 return worldDic[i];                 
-
-        return null;
+        
+        // 해당 이름이 존재하지 않는 경우 예외처리
+        throw new Exception("해당 아이템이 존재하지 않습니다."); 
     }
         
+
+
     /// <summary>
-    /// 이름을 검색하여 클론할 월드 아이템 하나를 가져옵니다.
+    /// 아이템 종류를 기반으로 해당 아이템의 월드 딕셔너리 참조값을 반환합니다.<br/><br/>
+    /// ** 해당 종류의 사전이 존재하지 않는 경우 예외 발생 **
     /// </summary>
-    /// <returns>아이템이 존재하지 않는 경우 null, 존재하는 경우 클론할 아이템 참조 값을 반환</returns>
-    public Item GetWorldItem(string itemName)
+    /// <returns>해당 아이템의 월드 사전 참조 값 반환</returns>
+    public Dictionary<string, Item> GetWorldDic(ItemType itemType)
+    {
+        if(itemType==ItemType.None)
+            throw new Exception("정확한 종류의 사전을 선택해주세요.");
+
+        return worldItemData.worldDic[(int)itemType];
+    }
+        
+
+
+
+    /// <summary>
+    /// 이름을 검색하여 클론할 월드 아이템 하나를 가져옵니다.<br/><br/>
+    /// ** 해당 이름의 아이템이 존재하지 않는 경우 예외 발생 **
+    /// </summary>
+    /// <returns>클론할 아이템의 참조 값을 반환</returns>
+    private Item GetWorldItem(string itemName)
     {
         for(int i=0; i<dicLen; i++)
             if( worldDic[i].ContainsKey(itemName) )
-                return worldDic[i][itemName];               
+                return (Item)worldDic[i][itemName].Clone();               
         
-        return null;
+        // 해당 이름이 존재하지 않는 경우 예외처리
+        throw new Exception("해당 아이템이 존재하지 않습니다.");
     }
 
 
@@ -252,64 +285,59 @@ public class CreateManager : MonoBehaviour
 
         
 
-
-
-
-
-
-
-
-
-    /// <summary>
-    /// 3D 월드 상에 아이템 오브젝트 1개를 생성합니다.<br/>
-    /// 잡화아이템의 중첩수량을 인자로 전달할 수 있습니다. 중첩 최대 수량을 넘어가는 경우 최대 수량까지만 생성하여 줍니다.<br/>
-    /// </summary>
-    /// <returns>해당 아이템의 게임오브젝트의 참조 값을 반환합니다.</returns>
-    public GameObject CreateWorldItem(string itemName, int overlapCount=1)
-    {
-
-        return gameObject;
-    }
     
+    /// <summary>
+    /// 3D 월드 상에 아이템 오브젝트 1개를 생성하여 ItemInfo 참조값을 반환합니다.<br/>
+    /// 잡화아이템의 경우 중첩수량을 인자로 전달할 수 있습니다.(비잡화 아이템의 경우 무시합니다.)<br/>
+    /// 중첩 최대 수량을 넘어가는 경우 최대 수량까지만 생성하여 줍니다.(오브젝트 1개만 생성합니다.)<br/><br/>
+    /// ** 해당 이름의 아이템이 존재하지 않는 경우와 수량이 0이하인 경우 예외 발생 **
+    /// </summary>
+    /// <returns>해당 아이템 오브젝트의 ItemInfo 컴포넌트 참조 값을 반환합니다.</returns>
     public ItemInfo CreateWorldItem(string itemName, int overlapCount=1)
-    {
+    {        
+        Item itemClone = GetWorldItem(itemName);
+        ItemType itemType = GetWorldItemType(itemName);   
+
+        if(overlapCount<=0)
+            throw new Exception("수량이 0이하 입니다. 정확하게 입력해주세요.");
+                
+        // 잡화 아이템인 경우 수량 정보 입력
+        if( itemType==ItemType.Misc )
+            ((ItemMisc)itemClone).SetOverlapCount(overlapCount);
+
+        // 오브젝트 월드에 생성
+        GameObject itemObj = Instantiate( itemPrefab );
         
+        // 아이템 정보를 등록
+        ItemInfo itemInfo = itemObj.GetComponent<ItemInfo>();
+        itemInfo.Item = itemClone;
+        
+        // 아이템을 월드 상태 구조로 전환합니다.
+        itemInfo.DimensionShift(true);
+
+        // 컴포넌트 참조값 반환
+        return itemInfo;
     }
-
-
-
 
     /// <summary>
-    /// 인벤토리의 해당 슬롯에 원하는 아이템 오브젝트를 생성합니다.<br/>
-    /// 슬롯인덱스를 따로 지정하지 않은 경우 비어있는 가장 앞의 슬롯에 아이템이 생성됩니다.<br/><br/>
-    /// 인자로 갯수를 넣으면 여러 오브젝트가 생성될 수 있습니다. 기본 값은 1입니다.<br/>
-    /// 잡화 아이템의 경우 기존 아이템에 해당 수량이 들어간다면 새롭게 오브젝트를 생성하지 않습니다.<br/>
-    /// 새롭게 아이템 오브젝트를 인벤토리에 생성하지 못하는 경우 나머지 수량을 반환합니다.<br/><br/>
-    /// * 이름이 일치하지 않을 경우 예외를 발생시킵니다. *
+    /// Item 인스턴스가 이미 존재하는 경우에<br/>
+    /// 해당 아이템의 정보로 월드 상에 아이템 오브젝트를 생성하여 참조값을 반환하여 줍니다.
     /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="inventory">플레이어의 인벤토리 변수가 필요합니다. 해당 인벤토리에 아이템 오브젝트를 추가하여 줍니다.</param>
-    /// <param name="itemName">아이템 테이블을 참고하여 한글명을 기입해주세요. 띄어쓰기에 유의해야 합니다. ex)철, 철 검, 미스릴, 미스릴 검</param>
-    /// <param name="overlapCount">생성을 원하는 갯수입니다. 하나의 슬롯에 중첩하여 생성될 것입니다. 기본 값은 1이며, 장비류는 반드시 1개만 생성됩니다.</param>
-    /// <returns>생성이 완료되었다면 0을, 슬롯에 빈자리가 더 이상 없어 생성하지 못하는 경우 생성하고 남은 나머지 수량을 반환합니다.</returns>
-    public int CreateItemToInventory( InventoryInfo inventoryInfo, string itemName, int overlapCount = 1 )
+    /// <returns>해당 아이템 오브젝트의 ItemInfo 컴포넌트 참조 값을 반환합니다.</returns>
+    public ItemInfo CreateWorldItem(Item item)
     {
-        // 인벤토리 오브젝트의 info컴포넌트에서 inventory를 읽어와서 재전달하여 호출합니다.
-        Inventory inventory = inventoryInfo.inventory;                      
-        return CreateItemToInventory(inventory, itemName, overlapCount);        
+        // 오브젝트 월드에 생성
+        GameObject itemObj = Instantiate( itemPrefab );
+        
+        // 아이템 정보를 등록
+        ItemInfo itemInfo = itemObj.GetComponent<ItemInfo>();
+        itemInfo.Item = item;
+                
+        // 아이템을 월드 상태 구조로 전환합니다.
+        itemInfo.DimensionShift(true);
+
+        return itemInfo;
     }
-
-
-
-
-
-
-
-
-
-
-    
-
     
 
 }

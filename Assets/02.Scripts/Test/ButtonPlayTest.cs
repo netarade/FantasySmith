@@ -11,6 +11,9 @@ using InventoryManagement;
  * 1- playerInven의 변수명을 inventory로 수정
  * 2- GetComponent<Inventory>()이던 점을 GetComponent<PlayerInven>().inventory로 수정
  * 
+ * <v1.2 - 2024_0105_최원준>
+ * 1- 컴파일에러 수정을 위해 Inventory를 InventoryInfo로 수정
+ * 2- inventoryInfo의 참조를 GetComponent에서 GetComponentInChildren으로 수정
  */
 
 
@@ -19,18 +22,18 @@ using InventoryManagement;
 /// </summary>
 public class ButtonPlayTest : MonoBehaviour
 {
-    InventoryManagement.Inventory inventory;
+    InventoryInfo inventoryInfo;
     private void Start()
     {
-        inventory=GameObject.FindWithTag( "Player" ).GetComponent<Inventory>().inventory;
+        inventoryInfo=GameObject.FindWithTag("Player").GetComponentInChildren<InventoryInfo>();
     }
 
 
     public void btnCreateItem()
     {
-        inventory.CreateItem( "철", 1 );
-        inventory.CreateItem( "강철", 3 );
-        inventory.CreateItem( "미스릴", 10 );
+        inventoryInfo.AddItem( "철", 1 );
+        inventoryInfo.AddItem( "강철", 3 );
+        inventoryInfo.AddItem( "미스릴", 10 );
     }
 
     public void btnNext()

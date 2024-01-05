@@ -22,6 +22,12 @@ using System.Collections.Generic;
  * 외부드랍을 통한 Split시에는 인벤토리 목록에서 제거하면 안된다.
  * 
  * 
+ * <v1.1 - 2024_0105_최원준>
+ * 1- AddItem메서드에서 먼저 인벤토리에 추가하고 인덱스를 입력하는 것에서
+ * 인덱스를 먼저 입력하고 인벤토리에 추가하는 구조로 변경하였음.
+ * 이유는 미리 추가한 아이템의 인덱스 정보를 인덱스를 구하는 과정에서 읽어들이기 때문.
+ * 
+ * 
  */
 
 
@@ -34,28 +40,30 @@ public partial class InventoryInfo : MonoBehaviour
     List<ItemInfo> tempInfoList = new List<ItemInfo>();
 
 
-
-
-
-
     /// <summary>
     /// 해당 이름의 아이템을 인벤토리의 목록에서 제거후에 목록에서 제거한 아이템의 ItemInfo 참조값을 반환합니다.<br/>
-    /// 제거 후 바로 파괴하려면 두번 째 인자를 true로 만들어야 합니다. (기본적으로 목록에서 제거만 될 뿐 파괴되지 않습니다.)<br/><br/>
-    /// 반환 받은 아이템을 월드에 내보내기 위해서는 해당 ItemInfo참조의 OnItemWroldDrop메서드를 사용해야 하며,<br/>
-    /// 월드로 나간 아이템을 다른 인벤토리로 주기 위해서는 다른 InventoryInfo참조의 AddItem메서드를 사용해 ItemInfo를 전달해야 합니다.<br/><br/>
+    /// 제거 후 바로 파괴하려면 두번 째 인자를 true로 설정합니다. (기본적으로 파괴되지 않습니다.)<br/><br/>
+    /// 제거 한 아이템은 자동으로 World의 InventoryInfo클래스의 playerDropTr로 지정해둔 곳에 떨어트려줍니다.<br/><br/>
+    /// 월드로 나간 아이템을 다른 인벤토리로 주기 위해서는 다른 InventoryInfo참조의 AddItem메서드를 사용해 다시 ItemInfo를 전달해야 합니다.<br/><br/>
     /// *** 인벤토리에 해당 이름의 아이템이 없으면 예외를 발생시킵니다. ***<br/>
     /// </summary>
     public ItemInfo RemoveItem(string itemName, bool isDestroy=false)
     {
-        ItemInfo targetItemInfo = inventory.RemoveItem(itemName);   // 인벤토리 목록에서 제거
+        // 인벤토리 목록에서 제거하고 반환 할 참조값을 저장합니다.
+        ItemInfo targetItemInfo = inventory.RemoveItem(itemName);   
         
         if( targetItemInfo==null )
-            throw new Exception( "해당 이름의 아이템이 존재하지 않습니다." );        
+            throw new Exception( "해당 이름의 아이템이 존재하지 않습니다." );       
+        
+        // 파괴 옵션이 걸려있다면, 아이템을 파괴하고 null을 반환합니다.
         else if( isDestroy )
         {
-            Destroy( targetItemInfo.gameObject );  // 파괴 옵션이 걸려있다면, 아이템을 파괴하고 null을 반환합니다.     
+            Destroy( targetItemInfo.gameObject );       
             return null;
         }
+        
+        // 아이템을 3D상태로 전환합니다.
+        targetItemInfo.DimensionShift(true);
 
         return targetItemInfo;
     }
@@ -70,56 +78,72 @@ public partial class InventoryInfo : MonoBehaviour
     {     
         // ItemInfo를 전달받지 못한 경우
         if( itemInfo==null )
-            throw new Exception( "전달 받은 아이템 정보의 참조 값이 존재하지 않습니다." ); 
+            throw new Exception( "전달 받은 아이템 정보의 참조 값이 존재하지 않습니다." );
+
+        // 슬롯에 빈자리가 없으면 실행하지 않습니다.
+        if( !IsSlotEnough( itemInfo ) )
+            return false;
+
         // 아이템이 월드상에 존재하는 상태라면, 2D로 계층구조를 변경합니다.
-        else if( itemInfo.IsWorldPositioned )
-            itemInfo.TransferWorldTo2D();
+        if( itemInfo.IsWorldPositioned )
+            itemInfo.DimensionShift( false );
+                
+        // 인벤토리 정보를 새로운 인벤토리로 업데이트 합니다.
+        itemInfo.UpdateInventoryInfo(this);
+        
+        // 아이템정보를 현재 인벤토리의 가까운 슬롯으로 입력합니다.        
+        SetItemSlotIdxBothToNearstSlot(itemInfo);  
 
-        // 내부 인벤토리에 아이템이 성공적으로 추가되었다면,
-        if( inventory.AddItem(itemInfo) )
-        {
-            // 인벤토리 정보를 인자로 전달받은 새로운 인벤토리로 업데이트 합니다.
-            itemInfo.UpdateInventoryInfo(this);
+        // 내부 인벤토리에 아이템을 추가합니다.
+        inventory.AddItem(itemInfo);  
 
-            // 아이템의 슬롯 인덱스 정보를 가장 가까운 슬롯으로 입력합니다.        
-            SetItemSlotIdxBothToNearstSlot(itemInfo);  
+        // 아이템의 위치정보를 반영합니다.
+        itemInfo.UpdatePositionInSlotList();
+
+        // 아이템 추가 성공을 반환합니다.
+        return true;
+        
             
-            // 아이템의 위치정보를 반영합니다.
-            itemInfo.UpdatePositionInSlotList();
-
-            // 아이템 추가 성공을 반환합니다.
-            return true;
-        }
-        // 추가되지 않았다면 실패를 반환합니다.
-        else
-            return false;        
     }
 
     
 
 
     /// <summary>
-    /// 인벤토리의 목록에 없는 아이템을 새롭게 생성하고 인벤토리 목록에 추가합니다.<br/>
+    /// 인벤토리의 목록에 *없는* 아이템을 새롭게 생성하고 인벤토리 목록에 추가합니다.<br/>
     /// 오브젝트 1개만 생성하므로, 여러 아이템을 생성시키고 싶을 때 중복하여 호출해야 합니다.<br/>
     /// 잡화아이템의 경우 중첩수량을 설정할 수 있습니다. 비잡화 아이템의 경우는 무시합니다.(기본값:1)<br/>
     /// </summary>
     /// <returns>인벤토리의 슬롯에 아이템 1개를 생성할 공간이 충분하지 않다면 false를 반환, 성공한 경우 true를 반환</returns>
-    public bool CreateItem(string itemName, int miscOverlapCount=1)
+    public bool AddItem(string itemName, int overlapCount=1)
     {
+        if( !IsSlotEnough(itemName, overlapCount) )
+            return false;
+                
+        // createManager에게 생성요청을하여 오브젝트 하나를 만듭니다.
+        ItemInfo itemInfo = createManager.CreateWorldItem(itemName, overlapCount);
+
+        // 해당 아이템을 인벤토리에 넣습니다.
+        AddItem(itemInfo);
+
         return true;
     }
 
     /// <summary>
-    /// 인벤토리의 목록에 없는 아이템을 새롭게 생성하고 인벤토리 목록에 추가합니다.<br/>
+    /// 인벤토리의 목록에 *없는* 아이템을 새롭게 생성하고 인벤토리 목록에 추가합니다.<br/>
     /// 인자로 아이템 이름과 중첩 수량 묶음 구조체를 전달받습니다.<br/><br/>
     /// 오브젝트 단위로 여러 아이템을 생성할 수 있습니다.<br/>
     /// 비잡화아이템의 경우 ItemPair의 overlapcount는 무시됩니다.<br/>
     /// </summary>
     /// <returns>인벤토리의 슬롯에 아이템 여러 개를 생성할 공간이 충분하지 않다면 false를 반환, 성공한 경우 true를 반환</returns>
-    public bool CreateItem(ItemPair[] itemPairs)
+    public bool AddItem(ItemPair[] itemPairs)
     {
         return true;
     }
+
+
+
+
 
 
 

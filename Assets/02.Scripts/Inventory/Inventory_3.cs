@@ -1,10 +1,6 @@
 using ItemData;
-using JetBrains.Annotations;
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
-using Unity.VisualScripting;
 using UnityEngine;
 
 /*
@@ -72,6 +68,13 @@ using UnityEngine;
  * 3- SetOverlapCount메서드 while문을 통해 오름차순, 내림차순을 수행하던 로직을 내부 메서드를 통한 for문 호출로 변경
  * 4- SetOverlapCount 메서드의 매개변수 passList를 removeList로 변경하고 마지막 인자로 변경
  * 
+ * 
+ * <v3.2 - 2024_0105_최원준>
+ * 1- FindNearstSlotIdx코드 로직 수정
+ * a. 아이템이 아무것도 들어있지 않을때 초기값을 0으로 주게하였음.
+ * b. for문 내부 break문 추가 (타겟인덱스를 찾으면 더이상 수정없도록 해야함)
+ * c. 인덱스 리스트의 마지막에 도달했으면서 슬롯은 아직 남아있는 경우, 다음 인덱스를 타겟으로 설정하는 조건 추가
+ * 
  */
 
 
@@ -109,7 +112,8 @@ namespace InventoryManagement
 
         /// <summary>
         /// 가장 가까운 슬롯의 인덱스를 구합니다. 어떤 이름의 아이템을 넣을 것인지와 <br/>
-        /// 개별탭 혹은 전체탭의 인덱스를 반환받고자 하는지 여부를 전달하여야 합니다. (기본값: 전체탭)<br/>
+        /// 개별탭 혹은 전체탭의 인덱스를 반환받고자 하는지 여부를 전달하여야 합니다. (기본값: 전체탭)<br/><br/>
+        /// *** 이름에 해당하는 아이템이 월드 사전에 존재하지 않는 경우 예외가 발생합니다.<br/>
         /// </summary>
         /// <returns>true을 전달할 경우 전체탭 슬롯 인덱스를 반환하며, false는 개별탭 슬롯 인덱스를 반환합니다. 
         /// 슬롯에 자리가 없다면 -1을 반환합니다.</returns>
@@ -173,17 +177,33 @@ namespace InventoryManagement
             }
 
             indexList.Sort();   // 인덱스 리스트를 오름차순으로 정렬합니다.
-            
+                             
+            // 인덱스 리스트에 아이템이 아무것도 없는 경우 0을 반환
+            if(indexList.Count==0)
+                return 0;
+
             // 아이템의 종류에 해당하는 슬롯의 칸 제한 수를 구합니다. (인자로 전달한 itemType이 None이라면 전체 슬롯 제한 수를 구합니다.)
             int slotCountLimit = GetItemSlotCountLimit(itemType); 
 
+            // 정렬 인덱스 예시 
+            // 0, 1, 2, 3, 4
+            // 0, 1, 4, 6, 9
+
             // 인덱스 숫자까지 i를 0부터 증가시키면서 빈 슬롯을 찾습니다 
             for(int i=0; i<slotCountLimit; i++)
-            {                
-                if(i > indexList.Count-1)      // i가 마지막 인덱스보다 크다면, 더 이상 슬롯을 찾지 않고 i를 반환합니다.
-                    findSlotIdx = i;
-                else if(indexList[i] != i)     // i번째 인덱스리스트에 저장된 인덱스와 i가 일치하지 않는다면 슬롯이 빈 것으로 판단   
-                    findSlotIdx = i;                 
+            {
+                // i번째 인덱스리스트에 저장된 인덱스와 i가 일치하지 않는다면 슬롯이 빈 것으로 판단
+                if( indexList[i]!=i )
+                {
+                    findSlotIdx=i;
+                    break;
+                }
+                //인덱스 리스트의 마지막에 도달했으면서 슬롯은 아직 남아있는 경우
+                else if( i==indexList.Count-1 && i!=slotCountLimit-1 ) 
+                {
+                    findSlotIdx = i+1; // 다음 인덱스를 타겟으로 설정
+                    break;
+                }
             }
 
             //찾은 슬롯 인덱스를 반환합니다.

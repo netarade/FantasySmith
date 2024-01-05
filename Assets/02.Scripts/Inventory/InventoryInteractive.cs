@@ -183,7 +183,7 @@ public class InventoryInteractive : MonoBehaviour
         emptyListTr = inventoryTr.GetChild(0).GetChild(1);             // 뷰포트-EmptyList
                                                                        
         inventoryInfo = inventoryTr.GetComponent<InventoryInfo>();     // 인벤토리 정보를 참조합니다
-        inventory = inventoryInfo.GetComponent<Inventory>();             
+        inventory = inventoryInfo.inventory;            
 
 
         btnTap = new Button[3]; //버튼 배열의 갯수 설정

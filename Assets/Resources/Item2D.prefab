@@ -14,6 +14,7 @@ GameObject:
   - component: {fileID: 7865745505739145968}
   - component: {fileID: 7865745505739145983}
   - component: {fileID: 3380860837962846871}
+  - component: {fileID: -5773664026045604030}
   m_Layer: 5
   m_Name: Item2D
   m_TagString: ITEM
@@ -95,8 +96,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   innerSprite: {fileID: 0}
   statusSprite: {fileID: 0}
-  countTxt: {fileID: 0}
-  slotListTr: {fileID: 0}
   iicArr: []
 --- !u!114 &7865745505739145983
 MonoBehaviour:
@@ -110,6 +109,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2a0d4a14864806547805a54e6142b3f5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  prevSlotListTr: {fileID: 0}
+  prevSlotTr: {fileID: 0}
 --- !u!114 &3380860837962846871
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -127,6 +128,18 @@ MonoBehaviour:
   imageEngraveArr: []
   txtNameArr: []
   txtDescArr: []
+--- !u!225 &-5773664026045604030
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 708449285016055491}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
 --- !u!1 &2011924278310246695
 GameObject:
   m_ObjectHideFlags: 0

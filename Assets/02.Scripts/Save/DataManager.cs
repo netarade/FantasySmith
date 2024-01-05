@@ -147,10 +147,10 @@ namespace DataManagement
         /// <param name="saveSlot">세이브할 슬롯</param>
         public void SaveData<T>(T gameData) where T : SaveData
         {
-            Debug.Log("저장진행 중");
+            //Debug.Log("저장진행 중");
             string data = JsonConvert.SerializeObject(gameData, Formatting.Indented);
             File.WriteAllText(Path + FileName + "S" + SlotNum.ToString() + Extension, data);
-            Debug.Log("저장완료 중");
+            //Debug.Log("저장완료");
         }
 
         /// <summary>
@@ -163,7 +163,7 @@ namespace DataManagement
             
             if( IsFileExist() ) // 저장된 파일이 있다면 기존 게임데이터를 만들어 반환
             {
-                Debug.Log("파일이 존재");
+                Debug.Log("파일이 존재 " + Path);
                 string data = File.ReadAllText(Path + FileName + "S" + SlotNum.ToString() + Extension);
                 return JsonConvert.DeserializeObject<T>(data); 
             }

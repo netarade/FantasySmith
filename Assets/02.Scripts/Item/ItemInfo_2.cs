@@ -23,6 +23,10 @@ public partial class ItemInfo : MonoBehaviour
      * <v2.0 - 2024_0104_최원준>
      * 1- SlotDrop에 관한 관련 메서드들을 ItemInfo.cs에서 옮겨옴
      * 
+     * <v2.1 - 2024_0105_최원준>
+     * 1- MoveSlotToAnotherListSlot메서드 내부 IsSlotEnough를 ItemType기반 호출에서 ItemInfo기반 호출로 변경
+     * => 잡화아이템의 경우 슬롯이 필요하지 않은 경우가 있기 때문
+     * 
      * 
      */
 
@@ -146,7 +150,7 @@ public partial class ItemInfo : MonoBehaviour
         InventoryInfo nextInventoryInfo = nextInventoryTr.GetComponent<InventoryInfo>();
 
         // 새로운 인벤토리 슬롯에 남는 자리가 있는 경우
-        if( nextInventoryInfo.IsSlotEnough(item.Type) )
+        if( nextInventoryInfo.IsSlotEnough(this) )
         {
             inventoryInfo.RemoveItem(item.Name);    // 이전 인벤토리에서 아이템을 제거해야 합니다.
             

@@ -2,6 +2,7 @@ using ItemData;
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using Unity.VisualScripting;
 using UnityEditor;
 using UnityEngine;
 using WorldItemData;
@@ -107,7 +108,16 @@ using WorldItemData;
  * <v4.2 - 2024_0104_최원준>
  * 1- AddItemToDic 내부에 SetCurItemObjCount메서드문장 삽입
  * 
+ * <v4.3 - 2024_0105_최원준>
+ * 1- GetItemTypeIndexIgnoreExists메서드 
+ * createManager에서 메서드를 불러오면 ItemType.None으로 반환되어 예외처리 안되고 값이 반환되던 점 수정
  * 
+ * 2- GetItemDicIgnoreExsists 이름 인자를 받는 오버로딩 메서드
+ * 예외를 던지던 부분에서 null 반환으로 수정
+ * 
+ * 3- 기타 string 이름을 인자로 받는 메서드들에게서 이름이 일치하지 않으면 null이나 None반환하였는데, 예외를 던지도록 수정
+ * 
+ * 4- AddItemToDic메서드를 private으로 수정
  */
 
 namespace InventoryManagement
@@ -150,7 +160,7 @@ namespace InventoryManagement
         /// 해당 종류의 아이템 1개가 들어갈 빈 슬롯이 있어야 합니다.
         /// </summary>
         /// <returns>해당 아이템 종류의 아이템이 들어갈 빈 슬롯이 없다면 false, 아이템 추가에 성공 시 true를 반환합니다.</returns>
-        public bool AddItemToDic(ItemInfo itemInfo)
+        private bool AddItemToDic(ItemInfo itemInfo)
         {          
             // 아이템 이름과 종류를 참조합니다.
             string itemName = itemInfo.Item.Name;
@@ -207,6 +217,13 @@ namespace InventoryManagement
 
             return true;
         }
+
+        
+
+
+
+
+
 
 
         /// <summary>
@@ -392,20 +409,13 @@ namespace InventoryManagement
 
         /// <summary>
         /// 아이템 이름을 기반으로 해당 아이템의 ItemType 값을 반환합니다<br/>
-        /// 아이템이 현재 인벤토리의 목록에 존재하지 않아도 ItemType 값을 얻을 수 있습니다.<br/>
+        /// 아이템이 현재 인벤토리의 목록에 존재하지 않아도 ItemType 값을 얻을 수 있습니다.<br/><br/>
+        /// ** 해당하는 이름의 아이템이 월드 아이템 목록에 존재하지 않는 경우 예외 발생 **
         /// </summary>
-        /// <returns>*** 해당하는 이름의 아이템이 월드 아이템 목록에 존재하지 않는 경우 예외를 던집니다. ***</returns>
+        /// <returns>이름에 해당하는 아이템 타입을 반환</returns>
         public ItemType GetItemTypeIgnoreExists(string itemName)
-        {
-            WorldItem worldItem = new WorldItem();       // 추후 GetComponent기반으로 변경예정
-
-            
-            if(worldItem.weapDic.ContainsKey(itemName))
-                return ItemType.Weapon;
-            else if(worldItem.miscDic.ContainsKey(itemName))
-                return ItemType.Misc;
-            else
-                throw new Exception("해당하는 아이템이 월드 사전 목록에 존재하지 않습니다. 아이템의 이름을 확인하여 주세요.");
+        {            
+            return createManager.GetWorldItemType(itemName);
         }
 
 
@@ -428,29 +438,24 @@ namespace InventoryManagement
 
         /// <summary>
         /// 아이템 이름을 기반으로 해당 아이템의 딕셔너리 참조값을 반환합니다<br/>
-        /// 아이템이 현재 인벤토리의 목록에 존재하지 않아도 사전 참조값을 얻을 수 있습니다.<br/>
+        /// 아이템이 현재 인벤토리의 목록에 존재하지 않아도 사전 참조값을 얻을 수 있습니다.<br/><br/>
+        /// ** itemType인자가 ItemType.None으로 전달 된 경우 예외를 던집니다 ** 
         /// </summary>
-        /// <returns>*** 해당하는 이름이 월드 아이템 목록에 존재하지 않는 경우 예외를 던집니다. ***</returns>
+        /// <returns>해당 아이템 종류의 사전을 반환</returns>
         public Dictionary<string, List<GameObject>> GetItemDicIgnoreExsists(string itemName)
-        {
-            CreateManager createManager = GameObject.FindWithTag("GameController").GetComponent<CreateManager>();
-            
-            if( createManager.GetWorldItemType(itemName) == GetItemTypeIgnoreExists
+        {            
+            ItemType itemType = createManager.GetWorldItemType(itemName);
 
-            if(worldItem.weapDic.ContainsKey(itemName))
-                return weapDic;
-            else if(worldItem.miscDic.ContainsKey(itemName))
-                return miscDic;
-            else
-                throw new Exception("해당하는 아이템이 월드 사전 목록에 존재하지 않습니다. 아이템의 이름을 확인하여 주세요.");
+            return GetItemDicIgnoreExsists(itemType);
         }
 
 
         /// <summary>
         /// 아이템의 타입을 기반으로 해당 아이템의 딕셔너리 참조값을 반환합니다<br/>
-        /// 아이템이 현재 인벤토리의 목록에 존재하지 않아도 사전 참조값을 얻을 수 있습니다.<br/>
+        /// 아이템이 현재 인벤토리의 목록에 존재하지 않아도 사전 참조값을 얻을 수 있습니다.<br/><br/>
+        /// ** itemType인자가 ItemType.None으로 전달 된 경우 예외를 던집니다 ** 
         /// </summary>
-        /// <returns>itemType인자가 ItemType.None으로 전달 된 경우 null을 반환합니다</returns>
+        /// <returns>해당 아이템 종류의 사전을 반환</returns>
         public Dictionary<string, List<GameObject>> GetItemDicIgnoreExsists(ItemType itemType)
         {
             switch(itemType)
@@ -460,15 +465,16 @@ namespace InventoryManagement
                 case ItemType.Misc:
                     return miscDic;
                 default :
-                    return null;
+                    throw new Exception("해당 종류의 사전이 존재하지 않습니다. 아이템 명을 확인하여 주세요.");
             }
         }
         
 
         /// <summary>
         /// 아이템 이름을 기반으로 해당 아이템의 오브젝트 리스트 참조값을 반환합니다<br/>
-        /// 해당 오브젝트 리스트가 존재하지 않는 경우 null을 반환하지만,<br/>
-        /// isNewIfNotExist 옵션을 통해 인벤토리 내부에 새롭게 생성하여 반환하기 여부를 결정할 수 있습니다.
+        /// 해당 오브젝트 리스트가 존재하지 않는 경우 null을 반환하지만,<br/><br/>
+        /// 
+        /// isNewIfNotExist 옵션을 통해 인벤토리 내부에 새롭게 생성하여 반환할 수 있습니다. (단, 이름이 월드사전에 매칭되지 않는 경우 예외발생)<br/>
         /// </summary>
         /// <returns>해당하는 이름의 아이템이 인벤토리 목록에 존재하는 경우 GameObject형식의 리스트를, 존재하지 않는 경우 null을 반환합니다</returns>
         public List<GameObject> GetItemObjectList(string itemName, bool isNewIfNotExist=false)
@@ -481,10 +487,10 @@ namespace InventoryManagement
             else 
             {                                   
                 if(isNewIfNotExist)     // 새로 생성하기 옵션이 설정된 경우 
-                {
-                    List<GameObject> itemObjList = new List<GameObject>();          // 오브젝트 리스트를 새로 만듭니다.
-                    GetItemDicIgnoreExsists(itemName).Add(itemName, itemObjList);   // 인벤토리 사전에 오브젝트 리스트를 집어넣습니다.
-                    return itemObjList;                                             // 생성된 오브젝트 리스트 참조를 반환합니다.
+                {                    
+                    List<GameObject> itemObjList = new List<GameObject>();        // 오브젝트 리스트를 새로 만듭니다.
+                    GetItemDicIgnoreExsists(itemName).Add(itemName, itemObjList); // 인벤토리 사전에 오브젝트 리스트를 집어넣습니다.
+                    return itemObjList;                                           // 생성된 오브젝트 리스트 참조를 반환합니다.
                 }
                 else                    
                     return null;
@@ -494,11 +500,11 @@ namespace InventoryManagement
 
         /// <summary>
         /// 아이템 이름을 입력하여 해당 아이템의 종류 enum을 int형으로 반환받습니다. (인벤토리에 존재하지 않아도 됩니다.) <br/>
-        /// *** 아이템이 월드 사전에 존재하지 않는다면 예외를 던집니다. ***
+        /// *** 아이템이 월드 사전에 존재하지 않는다면 예외가 발생***
         /// </summary>
         /// <returns>해당 아이템의 ItemType의 int형 반환 값</returns>
         public int GetItemTypeIndexIgnoreExists(string itemName)
-        {           
+        {   
             return (int)GetItemTypeIgnoreExists(itemName);
         }
 
@@ -514,8 +520,6 @@ namespace InventoryManagement
         /// <returns>아이템의 최대 갯수를 반환합니다.</returns>
         public int GetItemMaxOverlapCount(string itemName)
         {
-            CreateManager createManager = GameObject.FindWithTag("GameController").GetComponent<CreateManager>();
-
             Dictionary<string, Item> worldDic = createManager.GetWorldDic(itemName);
 
             return ((ItemMisc)worldDic[itemName]).MaxOverlapCount;

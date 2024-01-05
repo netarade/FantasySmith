@@ -237,6 +237,22 @@ using System;
  *=> 이유는 inventoryInfo클래스에서 호출할 itemInfo를 받아서 자기참조 주소를 넣어서 호출하는 경우가 많고,
  *모든 호출의 단위를 통일하기 위해서
  *
+ *<12.0-2024_0105_최원준>
+ *1- UpdatePosition에서 슬롯리스트의 하위자식검사를 하던 부분 수정
+ *2- IsSlotEnough에 ItemType을 기반으로 호출하던 부분을 ItemInfo를 인자로 넣어 호출하는 메서드로 변경
+ *(이유는 잡화아이템의 경우 중첩해서 들어갈 경우 슬롯이 필요하지 않은 경우도 있기 때문.)
+ *
+ *3- OnItemWorldDrop 메서드를 삭제
+ *아이템은 인벤토리에서 방출되어야 나갈 수 있기 때문에 인벤토리에서 제거하기 전까지는 허용하지 않음.
+ *Remove메서드를 통해 나가야 함.
+ *
+ *4- Transfer2DtoWorld, TransferWorldTo2D 메서드를 모두 DimensionShift메서드로 통합하였습니다.
+ *위치정보 인자를 주어 이동시키던 것을 일단인벤토리에서 제거하면, 사용자에게 맡기는 쪽으로 구현합니다.
+ *(기본 드랍위치는 playerDropTr로 지정되어있습니다.)
+ *
+ *
+ *
+ *
  */
 
 
@@ -287,6 +303,7 @@ public partial class ItemInfo : MonoBehaviour
 
     private InventoryInfo inventoryInfo;        // 현재 아이템이 참조 할 인벤토리정보 스크립트
     private InventoryInteractive interactive;   // 현재 아이템이 참조 할 인터렉티브 스크립트
+
     private Transform playerTr;                 // 현재 아이템을 소유하고 있는 플레이어 캐릭터 정보 참조
     private Transform playerDropTr;             // 플레이어가 아이템을 드롭시킬 때 아이템이 떨어질 위치
 
@@ -375,7 +392,6 @@ public partial class ItemInfo : MonoBehaviour
         for( int i = 0; i<iicNum; i++)
             iicArr[i] = imageCollectionsTr.GetChild(i).GetComponent<ItemImageCollection>();
         
-        isWorldPositioned = false;
         itemCG = GetComponent<CanvasGroup>();
     }
     
@@ -482,9 +498,8 @@ public partial class ItemInfo : MonoBehaviour
     /// 현재 아이템이 슬롯 리스트에 속해있다면 위치를 슬롯 인덱스에 맞게 최신화시켜줍니다.<br/>
     /// 슬롯 인덱스가 잘못되어 있다면 다른 위치로 이동 할 수 있습니다.<br/><br/>
     /// ** 아이템이 월드 상에 있거나 슬롯 참조가 안 잡힌 경우 예외를 던집니다. **<br/>
-    /// ** 만약 슬롯 인덱스 정보가 다른 아이템과 동일하다면 같은 슬롯으로 중첩될 것입니다.(현재 중첩 허용상태) **
     /// </summary>
-    public void UpdatePositionInSlotList(bool overlapMode=false)
+    public void UpdatePositionInSlotList()
     {
         // 아이템이 월드상에 나와있거나 참조가 잡히지 않았다면, 예외를 던집니다.
         if( isWorldPositioned && slotListTr == null )   
@@ -495,10 +510,6 @@ public partial class ItemInfo : MonoBehaviour
         {
             Debug.Log( "현재 슬롯이 생성되지 않은 상태입니다." );
             return;
-        }
-        else if( !overlapMode && slotListTr.childCount>1 )
-        {
-            throw new Exception("아이템 인덱스 정보가 일치하여 중복되는 아이템이 있습니다. 확인하여 주세요");
         }
                  
         // 현재 활성화 중인 탭을 기반으로 어떤 인덱스를 참조할지 설정합니다.
@@ -566,60 +577,19 @@ public partial class ItemInfo : MonoBehaviour
         isActiveTabAll = interactive.IsActiveTabAll; 
     }
 
-            
+     
 
 
-    /// <summary>
-    /// 아이템을 2D에서 3D로 지정좌표를 입력하여 전송하는 메서드입니다.<br/>
-    /// null값 전달 시 플레이어의 드롭좌표에 아이템을 드롭시키고<br/>
-    /// 지정좌표를 준 경우 해당 위치로 아이템을 전송시킵니다.<br/>
-    /// *** 이미 월드 상에 나와있는 상태에서 호출 시 예외를 발생시킵니다. ***<br/>
-    /// </summary>
-    public void OnItemWorldDrop(Transform worldPlaceTr, bool isSetParent=false)
-    {        
-        if(isWorldPositioned)
-            throw new Exception("아이템이 이미 월드에 나와있는 상태입니다. 확인하여 주세요.");   
-           
-        // 인벤토리 정보가 남아 있는 경우 해당 인벤토리에서 삭제
-        if(inventoryInfo!=null)
-            inventoryInfo.RemoveItem(this.item.Name);
-
-        if(worldPlaceTr==null)   // 지정좌표를 주지 않은 경우
-            Transfer2DToWorld(playerDropTr, isSetParent); // 플레이어의 드롭위치를 기반으로, 월드로 아이템을 전송합니다.
-        else 
-            Transfer2DToWorld(worldPlaceTr, isSetParent); // 지정 좌표로 월드로 아이템을 전송합니다.
-        
-        UpdateInventoryInfo(null);                      // 인벤토리 정보를 null값으로 전달하여 최신화 합니다.
-    }
-
-    /// <summary>
-    /// 아이템을 2D에서 3D로 지정좌표를 입력하여 전송하는 메서드입니다.<br/>
-    /// 지정좌표를 준 경우 해당 위치로 아이템을 전송시킵니다.<br/>
-    /// *** 이미 월드 상에 나와있는 상태에서 호출 시 예외를 발생시킵니다. ***<br/>
-    /// </summary>
-    public void OnItemWorldDrop( Vector3 worldPos, Quaternion worldRot )
-    {      
-        if(isWorldPositioned)
-            throw new Exception("아이템이 이미 월드에 나와있는 상태입니다. 확인하여 주세요.");   
-                   
-        // 인벤토리 정보가 남아 있는 경우 해당 인벤토리에서 삭제
-        if(inventoryInfo!=null)
-            inventoryInfo.RemoveItem(this.item.Name);
 
 
-        Transfer2DToWorld(worldPos, worldRot);   // 지정 좌표로 월드로 아이템을 전송합니다.
-        UpdateInventoryInfo(null);             // 인벤토리 정보를 null값으로 전달하여 최신화 합니다.
-    }
-
-        
 
 
 
 
     /// <summary>
     /// 아이템의 2D 모습을 중단하거나 다시 활성화시키는 메서드입니다.<br/>
-    /// isWorldPositioned를 기반으로 최신화합니다. (2D로의 모습을 끄거나 킵니다)<br/><br/>
-    /// ** isWorldPositioned가 변경되었을 경우 반드시 호출해야 합니다. **<br/>
+    /// isWorldPositioned를 기반으로 최신화합니다.<br/>
+    /// DimensionShift에서 내부 메서드로 사용되고 있습니다.
     /// </summary>
     private void SwitchAppearAs2D(bool isWorldPositioned)
     {        
@@ -629,78 +599,63 @@ public partial class ItemInfo : MonoBehaviour
     }
            
     /// <summary>
-    /// 2D와 3D 오브젝트의 부모와 자식관계를 변경하는 메서드입니다. 내부적으로 사용됩니다. <br/>
-    /// isWorldPositioned를 기반으로 자동으로 최신화합니다. (2D 오브젝트로 변경하거나 3D오브젝트로 변경합니다.)<br/><br/>
-    /// 전달인자로 부모로 삼을 오브젝트의 Transform을 전달해야 합니다. (2D는 슬롯정보, 3D는 월드의 위치정보를 전달합니다.) <br/>
-    /// null인자 전달 시 부모가 없는 상태 즉, 계층 최상위에 배정됩니다.<br/>
+    /// 2D와 3D 오브젝트의 계층관계를 변경하는 메서드입니다.<br/>
+    /// isWorldPositioned를 기반으로 자동으로 최신화합니다.<br/>
+    /// DimensionShift에서 내부 메서드로 사용되고 있습니다.
     /// </summary>
-    private void ChangeHierarchy( Transform parentTr=null )
+    private void ChangeHierarchy(bool isWorldPositioned)
     {
         if(isWorldPositioned)
-        {
-            itemTr.SetParent( parentTr );           // 3D오브젝트의 부모를 인벤토리에서 최상위 씬으로 변경
-            itemRectTr.SetParent(itemTr);           // 2D오브젝트의 부모를 3D오브젝트로 변경   
-            itemTr.gameObject.SetActive(true);      // 3D오브젝트를 활성화            
+        {  
+            itemTr.gameObject.SetActive(true);      // 3D오브젝트를 활성화   
+            itemTr.SetParent( null );               // 3D오브젝트의 부모를 슬롯에서 null으로 변경            
+            itemRectTr.SetParent(itemTr);           // 2D오브젝트의 부모를 3D오브젝트로 변경
         }
         else
-        {
-            itemRectTr.SetParent( parentTr );           // 2D 오브젝트의 부모를 슬롯으로 설정
-            itemTr.SetParent( itemRectTr );             // 3D 오브젝트의 부모를 2D 오브젝트로 설정
-            itemTr.gameObject.SetActive( false );       // 3D 오브젝트 비활성화
+        {            
+            itemRectTr.SetParent( emptyListTr );    // 2D 오브젝트의 부모를 빈공간으로 설정            
+            itemTr.SetParent( itemRectTr );         // 3D 오브젝트의 부모를 2D 오브젝트로 설정
+            itemTr.gameObject.SetActive( false );   // 3D 오브젝트 비활성화
         }
     }
 
-
     /// <summary>
-    /// 아이템을 2D UI에서 3D 월드로 위치정보를 주어서 계층구조를 변경하여 이동을 해주는 메서드입니다.<br/>
-    /// 상위 부모를 설정할 수 있습니다.
+    /// 아이템이 월드 상태로 전환되었을 때 자동으로 dorp위치를 설정해주기 위한 메서드입니다.<br/>
     /// </summary>
-    private void Transfer2DToWorld(Transform worldTr, bool isSetParent=false)
-    {   
-        // 좌표 입력이 들어오지 않은경우, 예외처리 
-        if(worldTr==null)
-            throw new Exception("아이템을 이동 시킬 월드 좌표를 입력해주세요.");
-
-        // World상태 변수 활성화
-        isWorldPositioned = true;  
-                
-        // 아이템의 2D모습을 가립니다.
-        SwitchAppearAs2D(isWorldPositioned);
-                    
-        // 계층구조 전환                 
-        if( isSetParent )              
-            ChangeHierarchy(worldTr);   // 3D오브젝트의 부모를 인벤토리에서 worldTr로 변경   
-        else
-            ChangeHierarchy(null);      // 3D오브젝트의 부모를 최상위 씬으로 설정
-
-        // 3D오브젝트 포지션 설정
-        itemTr.position = worldTr.position;
-        itemTr.rotation = worldTr.rotation;                        
-    }
-
-    /// <summary>
-    /// 아이템을 2D UI에서 3D 월드로 위치정보를 주어서 계층구조를 변경하여 이동을 해주는 메서드입니다.<br/>
-    /// 상위부모를 설정할 수 없습니다.
-    /// </summary>
-    private void Transfer2DToWorld( Vector3 worldPos, Quaternion worldRot )
+    private void SetDropPosition(Transform dropPosTr, bool isSetParent=true)
     {
-        // World상태 변수 활성화
-        isWorldPositioned = true;
-                
-        // 아이템의 2D모습을 가립니다.
-        SwitchAppearAs2D( isWorldPositioned );
-
-        // 계층구조 전환
-        ChangeHierarchy(null);
+        if( !IsWorldPositioned )
+            return;
         
-        // 3D오브젝트 포지션 설정
-        itemTr.position = worldPos;
-        itemTr.rotation = worldRot;
+        // 3D 오브젝트의 부모를 설정
+        if(isSetParent)
+            itemRectTr.SetParent(dropPosTr);
+                
+        // 3D 오브젝트의 위치와 회전값 설정
+        itemTr.position = dropPosTr.position;
+        itemTr.rotation = dropPosTr.rotation;
     }
 
-    
 
-    
+    /// <summary>
+    /// 아이템 정보를 2D UI에서 3D 월드 또는 3D월드에서 2D UI로 전환해주는 메서드입니다. 
+    /// 월드 상태를 활성화 하고 오브젝트 계층구조를 변경하고, 모습 변경을 해주는 메서드입니다.<br/>
+    /// </summary>
+    public void DimensionShift(bool isMoveToWorld)
+    {   
+        // 월드상태 변수 활성화
+        isWorldPositioned = isMoveToWorld;  
+                
+        // 아이템의 모습을 변경합니다
+        SwitchAppearAs2D(isMoveToWorld);
+                    
+        // 계층구조를 변경합니다.
+        ChangeHierarchy(isMoveToWorld);
+    }
+     
+
+
+
 
     /// <summary>
     /// 월드의 아이템을 습득하는 경우에 아이템 쪽에서 특정 인벤토리로 아이템을 추가하기 위해 필요한 메서드입니다.<br/>
@@ -715,36 +670,18 @@ public partial class ItemInfo : MonoBehaviour
         // 인자 미전달 시 예외처리
         if(inventoryInfo == null)
             throw new Exception("인벤토리 정보가 전달되지 않았습니다. 확인하여 주세요.");
-        // 슬롯에 빈자리가 있는지 검사
-        else if( !inventoryInfo.IsSlotEnough(this.item.Type) )           
+        // 슬롯에 빈자리가 없다면 실패처리
+        else if( !inventoryInfo.IsSlotEnough(this) )           
             return false;
 
         // 아이템을 월드에서 2D상태로 전환합니다.
-        TransferWorldTo2D();
+        DimensionShift(false);
 
         // 아이템을 인벤토리에 추가합니다.
         inventoryInfo.AddItem(this);
 
         // 성공을 반환합니다.
         return true;
-    }
-
-
-    /// <summary>
-    /// 아이템을 3D 월드에서 2D이미지로 전송을 해주는 메서드입니다.<br/>
-    /// 3D 상태에서 2D상태로 이전하며, 계층구조를 변경하는 기능을 포함하고 있습니다.<br/><br/>
-    /// ** 내부적으로 활용되는 메서드이기에 사용에 주의가 필요합니다. **
-    /// </summary>
-    /// <returns>이동에 성공한 경우는 true를 슬롯이 꽉차 이동할 수 없다면 false를 반환합니다.</returns>
-    public void TransferWorldTo2D()
-    {
-        isWorldPositioned = false;              // 월드위치 상태여부를 비활성화 합니다.
-        
-        // 아이템의 2D모습을 활성화 합니다.
-        SwitchAppearAs2D( isWorldPositioned );
-                
-        // 계층구조 전환
-        ChangeHierarchy(null); 
     }
 
 

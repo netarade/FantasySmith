@@ -272,7 +272,7 @@ public partial class InventoryInfo : MonoBehaviour
             foreach( List<GameObject> objList in itemDic.Values )           // 인벤토리 사전에서 게임오브젝트 리스트를 하나씩 꺼내어
             {
                 foreach(GameObject itemObj in objList)                      // 리스트의 게임오브젝트를 모두 가져옵니다.
-                    itemObj.GetComponent<ItemInfo>().OnItemCreated(this);   // OnItemChnaged메서드를 호출하며 현재 인벤토리 참조값을 전달합니다.
+                    itemObj.GetComponent<ItemInfo>().OnItemCreatedInInventory(this);   // OnItemChnaged메서드를 호출하며 현재 인벤토리 참조값을 전달합니다.
             }
 
         }
@@ -452,11 +452,9 @@ public partial class InventoryInfo : MonoBehaviour
   
         // 종류를 인자로 넣어서 개별 슬롯 인덱스를 반환 받습니다.
         int slotIdxEach = inventory.FindNearstSlotIdx(itemType);  
-        print("Each " + slotIdxEach);
 
         // 전체 슬롯 인덱스를 구합니다.
         int slotIdxAll = inventory.FindNearstSlotIdx(ItemType.None);
-        print("All : " + slotIdxAll);
                 
 
         // 구한 슬롯 인덱스를 아이템 정보에 입력합니다.

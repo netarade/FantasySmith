@@ -4,8 +4,8 @@
 TagManager:
   serializedVersion: 2
   tags:
-  - ITEM
-  - CANVAS_CHARACTER
+  - Shadow
+  - Collide
   layers:
   - Default
   - TransparentFX
@@ -15,8 +15,8 @@ TagManager:
   - UI
   - 
   - 
-  - 
-  - 
+  - TempCast
+  - Walkable
   - 
   - 
   - 

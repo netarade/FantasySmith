@@ -27,6 +27,9 @@ using System.Collections.Generic;
  * 인덱스를 먼저 입력하고 인벤토리에 추가하는 구조로 변경하였음.
  * 이유는 미리 추가한 아이템의 인덱스 정보를 인덱스를 구하는 과정에서 읽어들이기 때문.
  * 
+ * <v1.2 -2024_0108_최원준>
+ * 1- ItemInfo를 직접 전달하여 인벤토리 목록에서 제거해주는 RemoveItem 오버로딩 메서드 추가
+ * ItemSelect 스크립트에서 인벤토리에서 외부로 아이템을 드랍하였을 때 해당 아이템을 직접 제거해야하기 때문
  * 
  */
 
@@ -67,6 +70,46 @@ public partial class InventoryInfo : MonoBehaviour
 
         return targetItemInfo;
     }
+
+
+    /// <summary>
+    /// 해당 아이템을 인벤토리의 목록에서 직접 제거후에 목록에서 제거한 아이템의 ItemInfo 참조값을 반환합니다.<br/>
+    /// 제거 후 바로 파괴하려면 두번 째 인자를 true로 설정합니다. (기본적으로 파괴되지 않습니다.)<br/><br/>
+    /// 제거 한 아이템은 자동으로 World의 InventoryInfo클래스의 playerDropTr로 지정해둔 곳에 떨어트려줍니다.<br/><br/>
+    /// 월드로 나간 아이템을 다른 인벤토리로 주기 위해서는 다른 InventoryInfo참조의 AddItem메서드를 사용해 다시 ItemInfo를 전달해야 합니다.<br/><br/>
+    /// *** 인벤토리에 해당 이름의 아이템이 없으면 예외를 발생시킵니다. ***<br/>
+    /// </summary>
+    public ItemInfo RemoveItem(ItemInfo itemInfo, bool isDestroy=false)
+    {
+        // 인벤토리 목록에서 제거하고 반환 할 참조값을 저장합니다.
+        ItemInfo targetItemInfo = inventory.RemoveItem(itemInfo);   
+        
+        if( targetItemInfo==null )
+            throw new Exception( "해당 이름의 아이템이 존재하지 않습니다." );       
+        
+        // 파괴 옵션이 걸려있다면, 아이템을 파괴하고 null을 반환합니다.
+        else if( isDestroy )
+        {
+            Destroy( targetItemInfo.gameObject );       
+            return null;
+        }
+        // 아이템을 3D상태로 전환합니다.
+        targetItemInfo.DimensionShift(true);
+
+        return targetItemInfo;
+    }
+
+
+
+
+
+
+
+
+
+
+
+
 
     /// <summary>
     /// 인벤토리의 목록에 *월드*에 존재하는 기존의 아이템을 추가합니다.<br/>

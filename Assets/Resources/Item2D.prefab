@@ -13,8 +13,8 @@ GameObject:
   - component: {fileID: 708449285016055489}
   - component: {fileID: 7865745505739145968}
   - component: {fileID: 7865745505739145983}
-  - component: {fileID: 3380860837962846871}
   - component: {fileID: -5773664026045604030}
+  - component: {fileID: 4077468927842888866}
   m_Layer: 5
   m_Name: Item2D
   m_TagString: ITEM
@@ -109,25 +109,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2a0d4a14864806547805a54e6142b3f5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  prevSlotListTr: {fileID: 0}
-  prevSlotTr: {fileID: 0}
---- !u!114 &3380860837962846871
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 708449285016055491}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0539cfe88b5c3d642ba484145b283e40, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  PanelEngraveArr: []
-  PanelEngraveTrArr: []
-  imageEngraveArr: []
-  txtNameArr: []
-  txtDescArr: []
+  prevParentTr: {fileID: 0}
+  movingParentTr: {fileID: 0}
+  moveVecToCenter: {x: 0, y: 0, z: 0}
 --- !u!225 &-5773664026045604030
 CanvasGroup:
   m_ObjectHideFlags: 0
@@ -140,6 +124,50 @@ CanvasGroup:
   m_Interactable: 1
   m_BlocksRaycasts: 1
   m_IgnoreParentGroups: 0
+--- !u!114 &4077468927842888866
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 708449285016055491}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Navigation:
+    m_Mode: 3
+    m_WrapAround: 0
+    m_SelectOnUp: {fileID: 0}
+    m_SelectOnDown: {fileID: 0}
+    m_SelectOnLeft: {fileID: 0}
+    m_SelectOnRight: {fileID: 0}
+  m_Transition: 1
+  m_Colors:
+    m_NormalColor: {r: 1, g: 1, b: 1, a: 1}
+    m_HighlightedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
+    m_PressedColor: {r: 1, g: 0, b: 0, a: 1}
+    m_SelectedColor: {r: 0.34858865, g: 0.8396226, b: 0.11617411, a: 1}
+    m_DisabledColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 0.5019608}
+    m_ColorMultiplier: 1
+    m_FadeDuration: 0.1
+  m_SpriteState:
+    m_HighlightedSprite: {fileID: 0}
+    m_PressedSprite: {fileID: 0}
+    m_SelectedSprite: {fileID: 0}
+    m_DisabledSprite: {fileID: 0}
+  m_AnimationTriggers:
+    m_NormalTrigger: Normal
+    m_HighlightedTrigger: Highlighted
+    m_PressedTrigger: Pressed
+    m_SelectedTrigger: Selected
+    m_DisabledTrigger: Disabled
+  m_Interactable: 1
+  m_TargetGraphic: {fileID: 708449285016055489}
+  m_OnClick:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1 &2011924278310246695
 GameObject:
   m_ObjectHideFlags: 0
@@ -231,6 +259,7 @@ GameObject:
   - component: {fileID: 2032053358167834228}
   - component: {fileID: 2032053358167834229}
   - component: {fileID: 2032053358167834226}
+  - component: {fileID: 8190144051116346132}
   m_Layer: 0
   m_Name: Item3D
   m_TagString: ITEM
@@ -304,6 +333,19 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!65 &8190144051116346132
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2032053358167834227}
+  m_Material: {fileID: 0}
+  m_IsTrigger: 1
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Size: {x: 0.882795, y: 2.536518, z: 0.228816}
+  m_Center: {x: -0.3183955, y: 0.375698, z: 0}
 --- !u!1 &3019116933158999178
 GameObject:
   m_ObjectHideFlags: 0

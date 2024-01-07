@@ -73,21 +73,17 @@ using UnityEngine.EventSystems;
 public class SlotDrop : MonoBehaviour, IDropHandler
 {
     Transform slotTr;                              // 슬롯 자신의 트랜스폼
-
-    Dictionary<string, List<GameObject>> miscDic;  // 플레이어 인벤토리의 잡화 사전
-
-    Item applyItem;                                // 강화를 적용할 아이템
-    RectTransform switchingItemRectTr;             // 드롭했을 때 위치를 바꿀 아이템의 하위 2D Transform
+    //Dictionary<string, List<GameObject>> miscDic;  // 플레이어 인벤토리의 잡화 사전
+    //Item applyItem;                                // 강화를 적용할 아이템
+    //RectTransform switchingItemRectTr;             // 드롭했을 때 위치를 바꿀 아이템의 하위 2D Transform
 
 
     void Start()
     {
         slotTr = GetComponent<Transform>();
-
-        //플레이어 인벤토리 정보에서 잡화 딕셔너리를 참조합니다
-        InventoryInfo invenInfo = slotTr.parent.parent.parent.parent.GetComponent<InventoryInfo>();
-
-        miscDic = invenInfo.inventory.miscDic;
+        ////플레이어 인벤토리 정보에서 잡화 딕셔너리를 참조합니다
+        //InventoryInfo invenInfo = slotTr.parent.parent.parent.parent.GetComponent<InventoryInfo>();
+        //miscDic = invenInfo.inventory.miscDic;
     }
 
     /// <summary>
@@ -96,18 +92,25 @@ public class SlotDrop : MonoBehaviour, IDropHandler
     /// <param name="eventData"></param>
     public void OnDrop( PointerEventData eventData )
     {
-        GameObject dropItemObj = eventData.pointerCurrentRaycast.gameObject;   // 이벤트로 전달받은 2D 오브젝트 참조
+        //// 현재 드래그 중인 오브젝트를 참조합니다.
+        //GameObject dragObj = eventData.pointerDrag.gameObject;
 
-        if(dropItemObj == null)                       // 드래그 중인 오브젝트가 없는 경우 하위 로직을 실행하지 않음 
-            return;
+        //if ( dragObj == null )
+        //{
+        //    Debug.Log("드래그 중인 오브젝트가 없습니다.");
+        //    return;
+        //}
 
-        ItemInfo dropItemInfo = dropItemObj.GetComponent<ItemInfo>();    // 드롭 된 아이템 정보 스크립트
-        Item droItem = dropItemObj.GetComponent<ItemInfo>().Item;       // 드롭 된 아이템 정보
+        //ItemInfo dropItemInfo = dragObj.GetComponent<ItemInfo>();    // 드롭 된 아이템 정보 스크립트
 
+        //if(dropItemInfo == null )
+        //{
+        //    Debug.Log("아이템 스크립트가 없습니다.");
+            
+        //    return;
+        //}
 
-
-
-        dropItemInfo.OnItemSlotDrop(slotTr);
+        //dropItemInfo.OnItemSlotDrop(slotTr);
         
 
 

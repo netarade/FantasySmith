@@ -250,8 +250,32 @@ using System;
  *위치정보 인자를 주어 이동시키던 것을 일단인벤토리에서 제거하면, 사용자에게 맡기는 쪽으로 구현합니다.
  *(기본 드랍위치는 playerDropTr로 지정되어있습니다.)
  *
+ *<v12.1 - 2024_0105_최원준>
+ *1- 기존의 OnItemCreated를 OnItemCreatedInInventory로 변경, 신규메서드 OnItemCreateInWorld 추가
+ *아이템이 인벤토리 정보를 바탕으로 인벤토리 내부에 생성되는 경우와, 인벤토리 외부에 생성되는 경우를 나누었음.
  *
+ *2- UpdateInventoryInfo메서드 내부의 prevDropSlotTr을 itemRrectTr.parent에서 slotListTr.GetChild(item.SlotIndex)로 수정
+ * (계층이 월드에 나온상태에서 잡아주고 있었기 때문에 null값 참조였음)
  *
+ *<v12.2 - 2024_0106_최원준>
+ *1- 상태창 스크립트를 아이템에서 인벤토리로 옮기면서 statusInteractive변수를 추가하여, 인벤토리가 바뀔때마다 최신 상태창 참조값을 반영하도록 구현
+ *기존에는 아이템이 상태창을 처리하는 로직을 모두 들고 있었지만, 상태창이 로직을 가지게만들고, ItemInfo_2.cs에서 아이템에 포인터를 두면 해당 상태창 메서드를 호출시키도록 변경
+ *
+ *<v12.3 - 2024_0107_최원준>
+ *1- UpdatePositionInInventory메서드에서 아이템의 크기를 슬롯의 크기에 맞게 수동으로 조절하도록 변경 
+ *( 기존 Slot에 붙어있던 VerticalLayoutGroup은 아이템이 슬롯에 담길 때 자동으로 크기를 맞춰주지만, 인벤토리내 모든 오브젝트가 활성화,비활성화 될때마다
+ *자식 아이템의 크기와 위치를 마음대로 되돌리는 기능을 가지고 있기 때문)
+ *
+ *<v12.4 - 2024_0108_최원준>
+ *1- SetDropPosition메서드명을 OnItemWorldDrop으로 변경
+ *RemoveItem후에 itemInfo의 포지션을 설정하기가 번거롭기 때문에 인자 전달로 전송시킬 필요가 있으며 이를 대체하기 위함.
+ *(RemoveItem을 잊어먹고 호출하더라도 예외처리하지 않고 RemoveItem해주도록 변경)
+ *
+ *2- OnItemGain메서드명을 OnItemWorldGain으로 이름 변경
+ *
+ *3- playerDropTr을 플레이어의 맨마지막 자식 위치로 설정
+ *
+ *4- 월드 상태의 아이템을 먹었을 때 2d 회전값이 돌아가있는 점을 UpdatePosition에서 다시 0으로 맞추어주도록 추가
  *
  */
 
@@ -283,6 +307,11 @@ public partial class ItemInfo : MonoBehaviour
     private Transform itemTr;               // 자기자신 3D 트랜스폼 참조(초기 계층 - 하위 마지막 자식)
     private CanvasGroup itemCG;             // 아이템의 캔버스 그룹 컴포넌트 (아이템이 월드로 나갔을 때 2D이벤트를 막기위한 용도) 
     
+    private MeshFilter meshFilter3D;        // 아이템이 월드 상에서 보여 질 메쉬필터 참조
+    private MeshRenderer meshRenderer3D;        // 아이템이 월드 상에서 보여 질 메쉬렌더러 참조
+
+
+
 
     /*** 아이템 외부 참조 정보 ***/
     public ItemImageCollection[] iicArr;                             // 인스펙터 뷰 상에서 등록할 아이템 이미지 집합 배열
@@ -301,8 +330,9 @@ public partial class ItemInfo : MonoBehaviour
     private Transform slotListTr;               // 현재 아이템이 담겨있는 슬롯리스트 트랜스폼 정보
     private Transform emptyListTr;              // 아이템을 임시로 이동 시킬 빈공간 리스트
 
-    private InventoryInfo inventoryInfo;        // 현재 아이템이 참조 할 인벤토리정보 스크립트
-    private InventoryInteractive interactive;   // 현재 아이템이 참조 할 인터렉티브 스크립트
+    private InventoryInfo inventoryInfo;                // 현재 아이템이 참조 할 인벤토리정보 스크립트
+    private InventoryInteractive inventoryInteractive;  // 현재 아이템이 참조 할 인벤토리 인터렉티브 스크립트
+    private StatusWindowInteractive statusInteractive;  // 현재 아이템이 참조 할 상태창 인터렉티브 스크립트
 
     private Transform playerTr;                 // 현재 아이템을 소유하고 있는 플레이어 캐릭터 정보 참조
     private Transform playerDropTr;             // 플레이어가 아이템을 드롭시킬 때 아이템이 떨어질 위치
@@ -316,8 +346,6 @@ public partial class ItemInfo : MonoBehaviour
     /**** InventoryInfoChange 메서드 호출시 변동 ****/
     /**** OnItemSlotDrop 이벤트 호출 시 변동 ****/
     private Transform prevDropSlotTr;    // 드랍이벤트가 발생할 때 이전의 드랍이벤트 호출자를 기억하기 위한 참조 변수 
-
-
 
 
 
@@ -393,21 +421,25 @@ public partial class ItemInfo : MonoBehaviour
             iicArr[i] = imageCollectionsTr.GetChild(i).GetComponent<ItemImageCollection>();
         
         itemCG = GetComponent<CanvasGroup>();
+
+        meshFilter3D = itemTr.GetComponent<MeshFilter>();
+        meshRenderer3D = itemTr.GetComponent<MeshRenderer>();
     }
     
 
     /// <summary>
-    /// 아이템이 새롭게 생성되는경우에 호출해야 할 메서드입니다.<br/>
-    /// 로드하여 기존 아이템 정보를 바탕으로 오브젝트를 생성하거나, 신규 아이템을 씬에 생성시킬 때 사용합니다.<br/><br/>
-    /// 현재 Inventory의 Load메서드, Inventory의 CreateItem메서드, CreateManager의 CreateItemToWorld메서드에서 사용예정<br/>
-    /// **** 인자로 전달받은 inventoryInfo의 slotIndex를 기반으로 오브젝트를 보여주기 때문에<br/>
-    /// 신규 아이템을 생성 시에는 반드시 인덱스 정보를 입력 후 호출해야 합니다. ****<br/>
+    /// 아이템이 인벤토리 내부에 새롭게 생성되는경우에 호출해야 할 메서드입니다.<br/>
+    /// 아이템 정보를 바탕으로 아이템 오브젝트를 구성하는데 필요한 작업을 합니다.<br/><br/>
+    /// 현재 InventoryInfo의 Load메서드에서 사용되고 있습니다.<br/>
     /// </summary>
-    public void OnItemCreated(InventoryInfo inventoryInfo)
+    public void OnItemCreatedInInventory(InventoryInfo inventoryInfo)
     {
         /*** 인자 미 전달 시 예외처리 ***/
         if(inventoryInfo==null)
             throw new Exception("이 메서드는 인벤토리 정보가 반드시 필요합니다. 확인하여 주세요");
+
+        /*** 아이템 구조를 2D에 맞게 변경 ***/
+        DimensionShift(false);
 
         /*** 아이템 오브젝트의 고유 정보를 읽어 들여 오브젝트에 반영 ***/
         UpdateImage();                      // 이미지 최신화
@@ -417,6 +449,28 @@ public partial class ItemInfo : MonoBehaviour
         UpdateInventoryInfo(inventoryInfo); // 인벤토리 정보를 최신화
         UpdatePositionInSlotList();         // 슬롯 위치 최신화
     }
+
+
+    /// <summary>
+    /// 아이템이 월드에 새롭게 생성되는경우에 호출해야 할 메서드입니다.<br/>
+    /// 아이템 정보를 바탕으로 오브젝트를 구성합니다.<br/><br/>
+    /// 현재 CreateManager의 CreateItem메서드에서 사용되고 있습니다.<br/>
+    /// </summary>
+    public void OnItemCreatedInWorld()
+    {        
+        /*** 아이템 구조를 3D에 맞게 변경 ***/
+        DimensionShift(true);
+        
+        /*** 아이템 오브젝트의 고유 정보를 읽어 들여 오브젝트에 반영 ***/
+        UpdateImage();                      // 이미지 최신화
+        UpdateCountTxt();                   // 중첩 수량 정보 최신화
+                
+        /*** 인벤토리 정보를 읽어들여 오브젝트에 반영 ***/
+        UpdateInventoryInfo(null);          // 인벤토리 정보를 초기화
+    }
+
+
+
 
 
 
@@ -474,9 +528,16 @@ public partial class ItemInfo : MonoBehaviour
              
         innerSprite = iicArr[imgIdx].icArrImg[Item.ImageRefIndex.innerImgIdx].innerSprite;
         statusSprite = iicArr[imgIdx].icArrImg[Item.ImageRefIndex.statusImgIdx].statusSprite;
-
+        
         // 참조한 스프라이트 이미지를 기반으로 아이템이 보여질 2D이미지를 장착합니다.
         itemImage.sprite = innerSprite;
+
+        // 아이템이 3D 월드상에서 보여질 컴포넌트를 찾아서 장착합니다. 
+        MeshFilter outerMeshFilter = iicArr[imgIdx].icArrImg[Item.ImageRefIndex.meshFilterIdx].meshFilter;
+        Material outerMaterial = iicArr[imgIdx].icArrImg[Item.ImageRefIndex.materialIdx].material;
+                
+        meshFilter3D.mesh = outerMeshFilter.mesh;
+        meshRenderer3D.material = outerMaterial;
     }
 
 
@@ -511,11 +572,19 @@ public partial class ItemInfo : MonoBehaviour
             Debug.Log( "현재 슬롯이 생성되지 않은 상태입니다." );
             return;
         }
-                 
+        
         // 현재 활성화 중인 탭을 기반으로 어떤 인덱스를 참조할지 설정합니다.
         int activeIndex = isActiveTabAll? item.SlotIndexAll : item.SlotIndex;
-        itemRectTr.SetParent( slotListTr.GetChild(activeIndex) );     // 아이템의 부모를 해당 슬롯으로 설정합니다.
-        itemRectTr.localPosition = Vector3.zero;                      // 로컬위치를 슬롯에 맞춥니다.
+        
+        // 아이템의 크기를 슬롯리스트의 cell크기와 동일하게 맞춥니다.(슬롯의 크기와 동일하게 맞춥니다.)
+        itemRectTr.sizeDelta = slotListTr.GetComponent<GridLayoutGroup>().cellSize;
+
+        // 아이템의 부모를 해당 슬롯으로 설정합니다.
+        itemRectTr.SetParent( slotListTr.GetChild(activeIndex) );  
+
+        // 위치와 회전값을 수정합니다.
+        itemRectTr.localPosition = Vector3.zero;
+        itemRectTr.rotation = Quaternion.identity;
     }
 
 
@@ -532,7 +601,8 @@ public partial class ItemInfo : MonoBehaviour
         {
             inventoryTr = null;
             inventoryInfo = null;
-            interactive = null;
+            inventoryInteractive = null;
+            statusInteractive = null;
 
             slotListTr = null;
             emptyListTr = null;
@@ -547,19 +617,20 @@ public partial class ItemInfo : MonoBehaviour
             // 인벤토리 참조 정보를 업데이트 합니다.
             inventoryInfo = newInventoryInfo;
             inventoryTr = inventoryInfo.transform;
-            interactive = inventoryTr.GetComponent<InventoryInteractive>();
+            inventoryInteractive = inventoryTr.GetComponent<InventoryInteractive>();
+            statusInteractive = inventoryTr.GetComponent<StatusWindowInteractive>();
 
-            if(inventoryInfo == null || interactive == null )
+            if(inventoryInfo == null || inventoryInteractive == null )
                 throw new Exception("인벤토리 정보 참조가 잘못되었습니다. 확인하여 주세요.");
                         
             slotListTr = inventoryTr.GetChild(0).GetChild(0).GetChild(0);
             emptyListTr = inventoryTr.GetChild(0).GetChild(1);
 
             playerTr = inventoryTr.parent.parent;
-            playerDropTr = playerTr;                // 플레이어 드롭정보 최신화(나중에 변경예정)
+            playerDropTr = playerTr.GetChild(playerTr.childCount-1);    // 플레이어 드롭창은 플레이어의 맨 마지막 자식인덱스로 존재
                                                     
-            prevDropSlotTr = itemRectTr.parent;     // 이전 드롭이벤트 호출자를 현재 들어있는 슬롯으로 최신화
-            UpdateActiveTabInfo();                  // 액티브 탭 정보 최신화   
+            UpdateActiveTabInfo();                                  // 액티브 탭 정보 최신화   
+            prevDropSlotTr = slotListTr.GetChild(item.SlotIndex);   // 이전 드롭이벤트 호출자를 현재 들어있는 슬롯으로 최신화
         }      
     }
 
@@ -574,7 +645,7 @@ public partial class ItemInfo : MonoBehaviour
         if(IsWorldPositioned)
             throw new Exception("아이템이 월드에 있을 때는 호출 할 수 없습니다. 확인하여 주세요.");
 
-        isActiveTabAll = interactive.IsActiveTabAll; 
+        isActiveTabAll = inventoryInteractive.IsActiveTabAll; 
     }
 
      
@@ -618,23 +689,7 @@ public partial class ItemInfo : MonoBehaviour
             itemTr.gameObject.SetActive( false );   // 3D 오브젝트 비활성화
         }
     }
-
-    /// <summary>
-    /// 아이템이 월드 상태로 전환되었을 때 자동으로 dorp위치를 설정해주기 위한 메서드입니다.<br/>
-    /// </summary>
-    private void SetDropPosition(Transform dropPosTr, bool isSetParent=true)
-    {
-        if( !IsWorldPositioned )
-            return;
-        
-        // 3D 오브젝트의 부모를 설정
-        if(isSetParent)
-            itemRectTr.SetParent(dropPosTr);
-                
-        // 3D 오브젝트의 위치와 회전값 설정
-        itemTr.position = dropPosTr.position;
-        itemTr.rotation = dropPosTr.rotation;
-    }
+      
 
 
     /// <summary>
@@ -658,6 +713,33 @@ public partial class ItemInfo : MonoBehaviour
 
 
     /// <summary>
+    /// 아이템이 인벤토리에서 빠져나와 월드 상태로 전환되었을 때 드롭 할 위치를 설정해주기 위한 메서드입니다.<br/>
+    /// 인자로 전달받은 Transform의 위치와 회전값을 아이템 오브젝트에 입력합니다.<br/>
+    /// 인자를 미전달하면 지정해둔 드랍위치(플레이어)로 전송됩니다.(기본값: ItemInfo클래스의 playerDropTr)<br/><br/>
+    /// isSetParent를 true로 만들면 Transform 하위에 자식으로서 속하게 됩니다. (기본값: false)<br/><br/>
+    /// </summary>
+    public void OnItemWorldDrop(Transform dropPosTr=null, bool isSetParent=false)
+    {
+        if( !IsWorldPositioned )
+            inventoryInfo.RemoveItem(this);
+        
+        // 드롭 포지션이 직접 전달되지 않았다면,
+        if(dropPosTr==null)
+            dropPosTr = playerDropTr;
+
+
+        // 3D 오브젝트의 부모를 설정
+        if(isSetParent)
+            itemTr.SetParent(dropPosTr);
+                
+        // 3D 오브젝트의 위치와 회전값 설정
+        itemTr.position = dropPosTr.position;
+        itemTr.rotation = dropPosTr.rotation;
+    }
+
+
+
+    /// <summary>
     /// 월드의 아이템을 습득하는 경우에 아이템 쪽에서 특정 인벤토리로 아이템을 추가하기 위해 필요한 메서드입니다.<br/>
     /// 인벤토리에서 AddItem메서드를 호출하는 것과 동일하므로 둘 중 하나만 사용하십시오.<br/>
     /// <br/><br/>
@@ -665,7 +747,7 @@ public partial class ItemInfo : MonoBehaviour
     /// </summary>
     /// <param name="inventoryInfo"></param>
     /// <returns>해당 인벤토리의 슬롯에 빈 자리가 없다면 false를 반환, 성공 시 true를 반환</returns>
-    public bool OnItemGain(InventoryInfo inventoryInfo)
+    public bool OnItemWorldGain(InventoryInfo inventoryInfo)
     {        
         // 인자 미전달 시 예외처리
         if(inventoryInfo == null)

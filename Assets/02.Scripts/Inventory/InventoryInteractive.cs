@@ -159,7 +159,15 @@ public class InventoryInteractive : MonoBehaviour
     ItemType curActiveTab;                      // 현재 활성화 중인 탭을 저장 (버튼 클릭 시 중복 실행을 방지하기 위해)
     bool isActiveTabAll;                        // 현재 활성화 중인 탭이 전체 기준인지, 개별 기준인지 여부를 반환
 
-    
+
+    /// <summary>
+    /// 아이템이 선택중인지 여부를 반환하거나 설정합니다.<br/>
+    /// 아이템이 1개라도 선택중이라면 다른 아이템은 선택할 수 없습니다.<br/>
+    /// ItemDrag에서 정보를 받고 수정합니다.
+    /// </summary>
+    public bool IsItemSelecting {get; set;} = false;
+
+
 
 
 

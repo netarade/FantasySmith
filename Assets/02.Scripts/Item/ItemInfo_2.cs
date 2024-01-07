@@ -1,9 +1,9 @@
 using ItemData;
 using System;
 using UnityEngine;
+using UnityEngine.EventSystems;
 
-
-public partial class ItemInfo : MonoBehaviour
+public partial class ItemInfo : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
 {
     /*
      * [작업 사항]
@@ -27,11 +27,38 @@ public partial class ItemInfo : MonoBehaviour
      * 1- MoveSlotToAnotherListSlot메서드 내부 IsSlotEnough를 ItemType기반 호출에서 ItemInfo기반 호출로 변경
      * => 잡화아이템의 경우 슬롯이 필요하지 않은 경우가 있기 때문
      * 
+     * 2- SlotDrop 이벤트 발생 시 MoveSlotInSameListSlot내에서 isActiveTabAll일 때 slotIndex에 값을 넣던 점을 slotIndexAll로 변경
+     * 
+     * <2.2 - 2024_0106_최원준
+     * 1- ItemPointerStatusWindow에 존재하던 코드를 일부 옮겨옴.
+     * 아이템이 상태창 코드를 들고 있던것을 상태창으로 옮기고 포인터 이벤트 시에만 해당 상태창코드를 호출하는 방식으로 변경
+     * 
+     * 2- Pointer Enter와 PointerExit이벤트 상속 후 아이템의 포인터 접근이 일어날 때마다 상태창의 메서드를 호출
      * 
      */
 
-
+    string strItemDropSpace = "ItemDropSpace";
     
+    /// <summary>
+    /// 아이템에서 커서를 대는 순간 자동으로 아이템 스테이터스 창을 띄워줍니다.
+    /// </summary>
+    public void OnPointerEnter( PointerEventData eventData )
+    {
+        statusInteractive.OnItemPointerEnter(this);
+    }
+
+    /// <summary>
+    /// 아이템에서 커서를 떼는 순간 자동으로 아이템 스테이터스 창이 사라집니다.
+    /// </summary>
+    public void OnPointerExit( PointerEventData eventData )
+    {
+        statusInteractive.OnItemPointerExit();
+    }
+
+
+
+
+
 
     /// <summary>
     /// 아이템의 슬롯 드롭이 발생할 때 아이템을 이동시키고 정보를 이전하기 위하여 호출해줘야 하는 메서드입니다.<br/>
@@ -46,8 +73,8 @@ public partial class ItemInfo : MonoBehaviour
         if( callerSlotTr==null)
             throw new Exception("슬롯의 참조가 전달되지 않았습니다. 올바른 슬롯 드랍이벤트 호출인지 확인하여 주세요.");
 
-        bool isCallerSlot = callerSlotTr.GetComponent<SlotDrop>() != null;
-        bool isPrevCallerSlot = prevDropSlotTr.GetComponent<SlotDrop>() != null;
+        bool isCallerSlot = (callerSlotTr.tag == strItemDropSpace);
+        bool isPrevCallerSlot = (prevDropSlotTr.tag == strItemDropSpace);
         
         // 호출자가 슬롯인지 검사
         if( !isCallerSlot )
@@ -59,18 +86,24 @@ public partial class ItemInfo : MonoBehaviour
         // 현재 슬롯 호출자와 이전 드랍이벤트 호출자가 같다면,
         if(callerSlotTr==prevDropSlotTr)        
         {   
+            print("동일 인벤토리 동일 슬롯 간 드롭 발생");
             return MoveSlotInSameListSlot(callerSlotTr);            // 동일한 인벤토리의 동일한 슬롯->슬롯으로의 이동
         }
         else
         {
             // 이전 드랍이벤트 호출자와 부모가 같다면(동일한 슬롯 리스트에서의 이동이라면)
-            if( callerSlotTr.parent == prevDropSlotTr.parent) 
-                return MoveSlotInSameListSlot(callerSlotTr);       // 동일 슬롯 간 이동
+            if( callerSlotTr.parent == prevDropSlotTr.parent)
+            {
+                print("동일 인벤토리 타 슬롯 간 드롭 발생");
+                return MoveSlotInSameListSlot(callerSlotTr);       // 같은 인벤토리 타 슬롯 간 이동
+            }
             else
-                return MoveSlotToAnotherListSlot(callerSlotTr);    // 타 인벤토리 슬롯으로의 이동            
+            {
+                print("타 인벤토리 타 슬롯 간 드롭 발생");
+                return MoveSlotToAnotherListSlot(callerSlotTr);    // 타 인벤토리 슬롯으로의 이동
+            }
         }   
     }
-    
 
 
 
@@ -92,9 +125,9 @@ public partial class ItemInfo : MonoBehaviour
         {
             // 활성화 중인 탭에 따른 이 아이템의 슬롯 인덱스 정보를 수정합니다.
             if(isActiveTabAll)
-                item.SlotIndex = nextSlotIdx;
-            else
                 item.SlotIndexAll = nextSlotIdx;
+            else
+                item.SlotIndex = nextSlotIdx;
 
             // 해당 정보로 위치정보를 업데이트 합니다.
             UpdatePositionInSlotList();

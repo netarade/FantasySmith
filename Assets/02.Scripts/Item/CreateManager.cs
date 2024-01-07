@@ -176,6 +176,10 @@ using WorldItemData;
 * 인벤토리쪽에서 아이템을 집어넣고 슬롯인덱스를 기존의 아이템을 읽어들여서 인덱스를 보게되는데
 * 큰값으로 초기화되거나 하면 안되므로 지정값 초기화
 * 
+* <v12.2 - 2024_01505_최원준>
+* 1- CreateWorldItem메서드 내부에서 아이템 생성 시 이미지와 수량정보를 반영안해주고 있었던 점 수정
+* OnItemCreatedInWorld 메서드를 호출해는 것으로 코드 변경
+* 
 */
 
 
@@ -312,8 +316,8 @@ public class CreateManager : MonoBehaviour
         ItemInfo itemInfo = itemObj.GetComponent<ItemInfo>();
         itemInfo.Item = itemClone;
         
-        // 아이템을 월드 상태 구조로 전환합니다.
-        itemInfo.DimensionShift(true);
+        // 아이템을 월드 상태의 형태로 초기화합니다.
+        itemInfo.OnItemCreatedInWorld();
 
         // 컴포넌트 참조값 반환
         return itemInfo;
@@ -333,8 +337,8 @@ public class CreateManager : MonoBehaviour
         ItemInfo itemInfo = itemObj.GetComponent<ItemInfo>();
         itemInfo.Item = item;
                 
-        // 아이템을 월드 상태 구조로 전환합니다.
-        itemInfo.DimensionShift(true);
+        // 아이템을 월드 상태의 형태로 초기화합니다.
+        itemInfo.OnItemCreatedInWorld();
 
         return itemInfo;
     }

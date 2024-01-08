@@ -1,8 +1,8 @@
 using UnityEngine;
 using UnityEngine.UI;
 using ItemData;
-using InventoryManagement;
 using System;
+using CreateManagement;
 
 /*
  * [작업 사항]
@@ -281,6 +281,13 @@ using System;
  *1- playerDropTr 변수명을 baseDropTr로 변경하고,
  *기본 드랍정보를 인벤토리가 변경될 때마다 해당 인벤토리로 부터 받아서 초기화하도록 UpdateInventoryInfo에서 참조 설정
  *
+ *2- ItemInfo가 iicMisc을 직접 참조하던 방식을 삭제 및
+ *visualManager 변수를 추가하여 해당 메서드를 통해 참조값을 얻어오는 방식으로 구현 
+ *
+ *innerSprite, statusSprite를 visualManager의 GetItemSprite메서드를 통한 호출로 구현
+ *
+ *
+ *
  *
  */
 
@@ -302,7 +309,8 @@ public partial class ItemInfo : MonoBehaviour
 {
     /**** 아이템 고유 정보 ****/
     private Item item;             // 아이템의 실제 정보가 담긴 변수
-
+    
+    VisualManager visualManager;            // 아이템의 Sprite이미지를 전달받기 위한 아이템 비쥬얼 관리 클래스 참조
     private Image itemImage;       // 아이템이 인벤토리에서 2D상에서 보여질 이미지 컴포넌트 참조  
     public Sprite innerSprite;     // 아이템이 인벤토리에서 보여질 이미지 스프라이트
     public Sprite statusSprite;    // 아이템이 상태창에서 보여질 이미지 스프라이트 (상태창 스크립트에서 참조를 하게 됩니다.)
@@ -312,18 +320,7 @@ public partial class ItemInfo : MonoBehaviour
     private Transform itemTr;               // 자기자신 3D 트랜스폼 참조(초기 계층 - 하위 마지막 자식)
     private CanvasGroup itemCG;             // 아이템의 캔버스 그룹 컴포넌트 (아이템이 월드로 나갔을 때 2D이벤트를 막기위한 용도) 
     
-    private MeshFilter meshFilter3D;        // 아이템이 월드 상에서 보여 질 메쉬필터 참조
-    private MeshRenderer meshRenderer3D;        // 아이템이 월드 상에서 보여 질 메쉬렌더러 참조
-
-
-
-
-    /*** 아이템 외부 참조 정보 ***/
-    public ItemImageCollection[] iicArr;                             // 인스펙터 뷰 상에서 등록할 아이템 이미지 집합 배열
-    public enum eIIC { MiscBase,MiscAdd,MiscOther,Sword,Bow,Axe }    // 이미지 집합 배열의 인덱스 구분
-    private readonly int iicNum = 6;                                 // 이미지 집합 배열의 갯수
-
-
+   
 
     /*** 아이템 변동 정보 ***/
 
@@ -415,21 +412,9 @@ public partial class ItemInfo : MonoBehaviour
 
         itemImage = GetComponent<Image>();
         countTxt = GetComponentInChildren<Text>();
-                
-        // 인스펙터뷰 상에서 달아놓은 스프라이트 이미지 집합을 참조합니다.
-        Transform imageCollectionsTr = GameObject.FindAnyObjectByType<CreateManager>().transform.GetChild(0);
-
-        // 배열을 해당 갯수만큼 생성해줍니다.
-        iicArr = new ItemImageCollection[iicNum];
-
-        // 각 iicArr은 imageCollectionsTr의 하위 자식오브젝트로서 ItemImageCollection 스크립트를 컴포넌트로 가지고 있습니다
-        for( int i = 0; i<iicNum; i++)
-            iicArr[i] = imageCollectionsTr.GetChild(i).GetComponent<ItemImageCollection>();
-        
+                        
         itemCG = GetComponent<CanvasGroup>();
-
-        meshFilter3D = itemTr.GetComponent<MeshFilter>();
-        meshRenderer3D = itemTr.GetComponent<MeshRenderer>();
+        visualManager = GameObject.FindWithTag("GameController").GetComponent<VisualManager>();
     }
     
 
@@ -486,64 +471,13 @@ public partial class ItemInfo : MonoBehaviour
     /// 해당 인덱스를 참고하여 인스펙터뷰에 등록된 이미지를 참조합니다.
     /// </summary>
     public void UpdateImage()
-    {
-        if(iicArr.Length == 0 )     // 아이템 생성 시점에 iicArr을 참조하는 것을 방지하여 줍니다.
-            return;
-
-        int imgIdx = -1;            // 참조할 이미지 인덱스 선언
-                   
-        switch( Item.Type )         // 아이템의 메인타입을 구분합니다.
-        {
-
-            case ItemType.Weapon:
-                ItemWeapon weapItem = (ItemWeapon)Item;
-                WeaponType weaponType = weapItem.WeaponType;  // 아이템의 서브타입을 구분합니다.
-
-                switch (weaponType)
-                {
-                    case WeaponType.Sword :             // 서브타입이 검이라면,
-                        imgIdx = (int)eIIC.Sword;
-                        break;
-                    case WeaponType.Bow :               // 서브타입이 활이라면,
-                        imgIdx = (int)eIIC.Bow;
-                        break;
-                }
-                break;
-                
-            case ItemType.Misc:
-                ItemMisc miscItem = (ItemMisc)Item; 
-                MiscType miscType = miscItem.MiscType;
-
-                switch (miscType)
-                {
-                    case MiscType.Basic :           // 서브타입이 기본 재료라면,
-                        imgIdx = (int)eIIC.MiscBase;
-                        break;
-                    case MiscType.Additive :        // 서브타입이 추가 재료라면,
-                        imgIdx = (int)eIIC.MiscAdd;
-                        break;
-                    default :                       // 서브타입이 기타 재료라면,
-                        imgIdx = (int)eIIC.MiscOther;
-                        break;
-                }
-                break;
-        }
-
-        // 아이템 오브젝트 이미지를 인스펙터뷰에 직렬화되어 있는 ItemImageCollection 클래스의 내부 구조체 배열 ImageColection[]에
-        // 개념아이템이 고유 정보로 가지고 있는 ImageReferenceIndex 구조체의 인덱스를 가져와서 접근합니다.                
-             
-        innerSprite = iicArr[imgIdx].icArrImg[Item.ImageRefIndex.innerImgIdx].innerSprite;
-        statusSprite = iicArr[imgIdx].icArrImg[Item.ImageRefIndex.statusImgIdx].statusSprite;
+    {        
+        // 참조할 스프라이트 이미지를 visual 관리 메서드를 통해 자신의 정보를 전달하여 참조값을 받아 저장합니다.
+        innerSprite = visualManager.GetItemSprite(this, SpriteType.innerSprite);
+        statusSprite = visualManager.GetItemSprite(this, SpriteType.statusSprite);
         
         // 참조한 스프라이트 이미지를 기반으로 아이템이 보여질 2D이미지를 장착합니다.
         itemImage.sprite = innerSprite;
-
-        // 아이템이 3D 월드상에서 보여질 컴포넌트를 찾아서 장착합니다. 
-        MeshFilter outerMeshFilter = iicArr[imgIdx].icArrImg[Item.ImageRefIndex.meshFilterIdx].meshFilter;
-        Material outerMaterial = iicArr[imgIdx].icArrImg[Item.ImageRefIndex.materialIdx].material;
-                
-        meshFilter3D.mesh = outerMeshFilter.mesh;
-        meshRenderer3D.material = outerMaterial;
     }
 
 

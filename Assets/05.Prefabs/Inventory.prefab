@@ -3055,6 +3055,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   slotListTr: {fileID: 0}
+  baseDropTr: {fileID: 0}
+  isBaseDropSetParent: 0
 --- !u!114 &5959655019433718130
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3322,8 +3324,8 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 4959367336064739641}
   m_HandleRect: {fileID: 4959367336064739640}
   m_Direction: 0
-  m_Value: 1
-  m_Size: 0.99999994
+  m_Value: 0
+  m_Size: 1
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:

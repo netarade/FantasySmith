@@ -1,11 +1,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 using ItemData;
-using InventoryManagement;
 using System;
-using UnityEngine.SceneManagement;
 using WorldItemData;
-
 
 /*
  * 
@@ -180,168 +177,197 @@ using WorldItemData;
 * 1- CreateWorldItem메서드 내부에서 아이템 생성 시 이미지와 수량정보를 반영안해주고 있었던 점 수정
 * OnItemCreatedInWorld 메서드를 호출해는 것으로 코드 변경
 * 
+* 2- 네임스페이스 VisualManger와 함께 CreateManagement에 속하도록 변경.
+* 
+* 3- itemPrefab 변수명을 itemPrefab2D로 변경
+* 
+* 4- 아이템 생성시 VisualManger에서 3D 오브젝트 참조값을 받와와서 2D 오브젝트에 합쳐주는 오브젝트를 반환하도록 구현
+* 
+* 5- GetWorldItem 메서드명을 GetWorldItemClone으로 변경
+* 
 */
 
-
-/// <summary>
-/// 아이템 생성에 관한 로직을 담당하는 클래스이며,<br/>
-/// 아이템 생성을 원하는 시점에 싱글톤 인스턴스를 참조하여 관련 메서드를 호출하면 됩니다.
-/// </summary>
-public class CreateManager : MonoBehaviour
-{       
-    public WorldItem worldItemData;         // 게임 시작 시 넣어 둘 월드 사전의 참조값입니다.
-    GameObject itemPrefab;                  // 리소스 폴더 또는 에디터에서 복제할 프리팹을 참조합니다    
-
-    Dictionary<string, Item>[] worldDic;    // 사전 배열 참조변수
-    ItemType[] dicType;                     // 각 사전 별 보관하는 아이템 종류
-    int dicLen;                             // 사전 배열의 길이
-
-    public void Awake()
-    {        
-        // 리소스 폴더에서 원본 프리팹 가져오기
-        itemPrefab=Resources.Load<GameObject>( "Item2D" );
-                
-        // 월드 아이템 데이터의 인스턴스를 하나 만듭니다.
-        worldItemData = new WorldItem();
-
-        // 사전배열의 참조변수 설정
-        worldDic = worldItemData.worldDic;
-        dicType = worldItemData.dicType;
-        dicLen = worldDic.Length;
-    }
+namespace CreateManagement
+{
 
     /// <summary>
-    /// 아이템 이름을 기반으로 해당 아이템의 ItemType을 반환합니다<br/><br/>
-    /// ** 해당 이름의 아이템이 존재하지 않는 경우 예외 발생 **
+    /// 아이템 생성에 관한 로직을 담당하는 클래스이며,<br/>
+    /// 아이템 생성을 원하는 시점에 싱글톤 인스턴스를 참조하여 관련 메서드를 호출하면 됩니다.
     /// </summary>
-    /// <returns>해당 이름 아이템의 ItemType을 반환</returns>
-    public ItemType GetWorldItemType(string itemName)
+    public class CreateManager : MonoBehaviour
     {
-        for(int i=0; i<dicLen; i++)
-            if( worldDic[i].ContainsKey(itemName) )     // 해당 이름의 키가 사전에 존재하는지 찾습니다.
-                return dicType[i];                      // 존재하는 경우 해당 사전의 아이템 타입을 반환합니다.
+        public WorldItem worldItemData;         // 게임 시작 시 넣어 둘 월드 사전의 참조값입니다.
+        GameObject itemPrefab2D;                // 리소스 폴더 또는 에디터에서 복제할 2D 프리팹을 참조합니다    
 
-        // 해당 이름이 존재하지 않는 경우 예외처리
-        throw new Exception("해당 아이템이 존재하지 않습니다."); 
+        Dictionary<string, Item>[] worldDic;    // 사전 배열 참조변수
+        ItemType[] dicType;                     // 각 사전 별 보관하는 아이템 종류
+        int dicLen;                             // 사전 배열의 길이
+
+        VisualManager visualManager;
+
+
+        public void Awake()
+        {
+            // 리소스 폴더에서 원본 프리팹 가져오기
+            itemPrefab2D=Resources.Load<GameObject>( "Item2D" );
+
+            // 월드 아이템 데이터의 인스턴스를 하나 만듭니다.
+            worldItemData=new WorldItem();
+
+            // 사전배열의 참조변수 설정
+            worldDic=worldItemData.worldDic;
+            dicType=worldItemData.dicType;
+            dicLen=worldDic.Length;
+
+            visualManager = GetComponent<VisualManager>();
+        }
+
+        /// <summary>
+        /// 아이템 이름을 기반으로 해당 아이템의 ItemType을 반환합니다<br/><br/>
+        /// ** 해당 이름의 아이템이 존재하지 않는 경우 예외 발생 **
+        /// </summary>
+        /// <returns>해당 이름 아이템의 ItemType을 반환</returns>
+        public ItemType GetWorldItemType( string itemName )
+        {
+            for( int i = 0; i<dicLen; i++ )
+                if( worldDic[i].ContainsKey( itemName ) )     // 해당 이름의 키가 사전에 존재하는지 찾습니다.
+                    return dicType[i];                      // 존재하는 경우 해당 사전의 아이템 타입을 반환합니다.
+
+            // 해당 이름이 존재하지 않는 경우 예외처리
+            throw new Exception( "해당 아이템이 존재하지 않습니다." );
+        }
+
+        /// <summary>
+        /// 아이템 이름을 기반으로 해당 아이템의 월드 딕셔너리 참조값을 반환합니다.<br/><br/>
+        /// ** 해당 이름의 아이템이 존재하지 않는 경우 예외 발생 **
+        /// </summary>
+        /// <returns>해당 아이템의 월드 사전 참조 값 반환</returns>
+        public Dictionary<string, Item> GetWorldDic( string itemName )
+        {
+            for( int i = 0; i<dicLen; i++ )
+                if( worldDic[i].ContainsKey( itemName ) )
+                    return worldDic[i];
+
+            // 해당 이름이 존재하지 않는 경우 예외처리
+            throw new Exception( "해당 아이템이 존재하지 않습니다." );
+        }
+
+
+
+        /// <summary>
+        /// 아이템 종류를 기반으로 해당 아이템의 월드 딕셔너리 참조값을 반환합니다.<br/><br/>
+        /// ** 해당 종류의 사전이 존재하지 않는 경우 예외 발생 **
+        /// </summary>
+        /// <returns>해당 아이템의 월드 사전 참조 값 반환</returns>
+        public Dictionary<string, Item> GetWorldDic( ItemType itemType )
+        {
+            if( itemType==ItemType.None )
+                throw new Exception( "정확한 종류의 사전을 선택해주세요." );
+
+            return worldItemData.worldDic[(int)itemType];
+        }
+
+
+
+
+        /// <summary>
+        /// 이름을 검색하여 클론할 월드 아이템 하나를 가져옵니다.<br/><br/>
+        /// ** 해당 이름의 아이템이 존재하지 않는 경우 예외 발생 **
+        /// </summary>
+        /// <returns>클론할 아이템의 참조 값을 반환</returns>
+        private Item GetWorldItemClone( string itemName )
+        {
+            for( int i = 0; i<dicLen; i++ )
+                if( worldDic[i].ContainsKey( itemName ) )
+                    return (Item)worldDic[i][itemName].Clone();
+
+            // 해당 이름이 존재하지 않는 경우 예외처리
+            throw new Exception( "해당 아이템이 존재하지 않습니다." );
+        }
+
+
+        /// <summary>
+        /// 해당 아이템이름을 기반으로 아이템이 월드 딕셔너리 목록에서 존재하는지 여부를 반환합니다<br/><br/>
+        /// </summary>
+        /// <returns>해당 이름의 아이템이 존재하지 않는 경우 false, 존재하는 경우 true를 반환</returns>
+        public bool IsContainsWorldItemName( string itemName )
+        {
+            for( int i = 0; i<dicLen; i++ )
+                if( worldDic[i].ContainsKey( itemName ) )
+                    return true;
+
+            return false;
+        }
+
+
+
+
+        /// <summary>
+        /// 3D 월드 상에 아이템 오브젝트 1개를 생성하여 ItemInfo 참조값을 반환합니다.<br/>
+        /// 잡화아이템의 경우 중첩수량을 인자로 전달할 수 있습니다.(비잡화 아이템의 경우 무시합니다.)<br/>
+        /// 중첩 최대 수량을 넘어가는 경우 최대 수량까지만 생성하여 줍니다.(오브젝트 1개만 생성합니다.)<br/><br/>
+        /// ** 해당 이름의 아이템이 존재하지 않는 경우와 수량이 0이하인 경우 예외 발생 **
+        /// </summary>
+        /// <returns>해당 아이템 오브젝트의 ItemInfo 컴포넌트 참조 값을 반환합니다.</returns>
+        public ItemInfo CreateWorldItem( string itemName, int overlapCount = 1 )
+        {
+            Item itemClone = GetWorldItemClone( itemName );
+            ItemType itemType = GetWorldItemType( itemName );
+
+            if( overlapCount<=0 )
+                throw new Exception( "수량이 0이하 입니다. 정확하게 입력해주세요." );
+
+            // 잡화 아이템인 경우 수량 정보 입력
+            if( itemType==ItemType.Misc )
+                ( (ItemMisc)itemClone ).SetOverlapCount( overlapCount );
+
+            // 오브젝트 월드에 생성
+            GameObject itemObj = Instantiate( itemPrefab2D );
+
+            // 아이템 정보를 등록
+            ItemInfo itemInfo = itemObj.GetComponent<ItemInfo>();
+            itemInfo.Item=itemClone;
+
+
+            // 아이템 정보를 전달하여 3D 오브젝트를 복제 생성한다음, itemObj에 부착합니다.
+            GameObject itemObj3D = Instantiate( visualManager.GetItemPrefab3D(itemInfo));
+            itemObj3D.transform.SetParent( itemObj.transform );
+            itemObj3D.transform.SetSiblingIndex(itemObj.transform.childCount-1);
+
+
+            // 아이템을 월드 상태의 형태로 초기화합니다.
+            itemInfo.OnItemCreatedInWorld();
+
+            // 컴포넌트 참조값 반환
+            return itemInfo;
+        }
+
+        /// <summary>
+        /// Item 인스턴스가 이미 존재하는 경우에<br/>
+        /// 해당 아이템의 정보로 월드 상에 아이템 오브젝트를 생성하여 참조값을 반환하여 줍니다.
+        /// </summary>
+        /// <returns>해당 아이템 오브젝트의 ItemInfo 컴포넌트 참조 값을 반환합니다.</returns>
+        public ItemInfo CreateWorldItem( Item item )
+        {
+            // 오브젝트 월드에 생성
+            GameObject itemObj = Instantiate( itemPrefab2D );
+
+            // 아이템 정보를 등록
+            ItemInfo itemInfo = itemObj.GetComponent<ItemInfo>();
+            itemInfo.Item=item;
+            
+            // 아이템 정보를 전달하여 3D 오브젝트를 복제 생성한다음, itemObj에 부착합니다.
+            GameObject itemObj3D = Instantiate( visualManager.GetItemPrefab3D(itemInfo));
+            itemObj3D.transform.SetParent( itemObj.transform );
+            itemObj3D.transform.SetSiblingIndex(itemObj.transform.childCount-1);
+
+
+            // 아이템을 월드 상태의 형태로 초기화합니다.
+            itemInfo.OnItemCreatedInWorld();
+
+            return itemInfo;
+        }
+
+
     }
-        
-    /// <summary>
-    /// 아이템 이름을 기반으로 해당 아이템의 월드 딕셔너리 참조값을 반환합니다.<br/><br/>
-    /// ** 해당 이름의 아이템이 존재하지 않는 경우 예외 발생 **
-    /// </summary>
-    /// <returns>해당 아이템의 월드 사전 참조 값 반환</returns>
-    public Dictionary<string, Item> GetWorldDic(string itemName)
-    {
-        for(int i=0; i<dicLen; i++)
-            if( worldDic[i].ContainsKey(itemName) )
-                return worldDic[i];                 
-        
-        // 해당 이름이 존재하지 않는 경우 예외처리
-        throw new Exception("해당 아이템이 존재하지 않습니다."); 
-    }
-        
-
-
-    /// <summary>
-    /// 아이템 종류를 기반으로 해당 아이템의 월드 딕셔너리 참조값을 반환합니다.<br/><br/>
-    /// ** 해당 종류의 사전이 존재하지 않는 경우 예외 발생 **
-    /// </summary>
-    /// <returns>해당 아이템의 월드 사전 참조 값 반환</returns>
-    public Dictionary<string, Item> GetWorldDic(ItemType itemType)
-    {
-        if(itemType==ItemType.None)
-            throw new Exception("정확한 종류의 사전을 선택해주세요.");
-
-        return worldItemData.worldDic[(int)itemType];
-    }
-        
-
-
-
-    /// <summary>
-    /// 이름을 검색하여 클론할 월드 아이템 하나를 가져옵니다.<br/><br/>
-    /// ** 해당 이름의 아이템이 존재하지 않는 경우 예외 발생 **
-    /// </summary>
-    /// <returns>클론할 아이템의 참조 값을 반환</returns>
-    private Item GetWorldItem(string itemName)
-    {
-        for(int i=0; i<dicLen; i++)
-            if( worldDic[i].ContainsKey(itemName) )
-                return (Item)worldDic[i][itemName].Clone();               
-        
-        // 해당 이름이 존재하지 않는 경우 예외처리
-        throw new Exception("해당 아이템이 존재하지 않습니다.");
-    }
-
-
-    /// <summary>
-    /// 해당 아이템이름을 기반으로 아이템이 월드 딕셔너리 목록에서 존재하는지 여부를 반환합니다<br/><br/>
-    /// </summary>
-    /// <returns>해당 이름의 아이템이 존재하지 않는 경우 false, 존재하는 경우 true를 반환</returns>
-    public bool IsContainsWorldItemName(string itemName)
-    {        
-        for(int i=0; i<dicLen; i++)
-            if( worldDic[i].ContainsKey(itemName) )
-                return true;
-
-        return false;
-    }
-
-        
-
-    
-    /// <summary>
-    /// 3D 월드 상에 아이템 오브젝트 1개를 생성하여 ItemInfo 참조값을 반환합니다.<br/>
-    /// 잡화아이템의 경우 중첩수량을 인자로 전달할 수 있습니다.(비잡화 아이템의 경우 무시합니다.)<br/>
-    /// 중첩 최대 수량을 넘어가는 경우 최대 수량까지만 생성하여 줍니다.(오브젝트 1개만 생성합니다.)<br/><br/>
-    /// ** 해당 이름의 아이템이 존재하지 않는 경우와 수량이 0이하인 경우 예외 발생 **
-    /// </summary>
-    /// <returns>해당 아이템 오브젝트의 ItemInfo 컴포넌트 참조 값을 반환합니다.</returns>
-    public ItemInfo CreateWorldItem(string itemName, int overlapCount=1)
-    {        
-        Item itemClone = GetWorldItem(itemName);
-        ItemType itemType = GetWorldItemType(itemName);   
-
-        if(overlapCount<=0)
-            throw new Exception("수량이 0이하 입니다. 정확하게 입력해주세요.");
-                
-        // 잡화 아이템인 경우 수량 정보 입력
-        if( itemType==ItemType.Misc )
-            ((ItemMisc)itemClone).SetOverlapCount(overlapCount);
-
-        // 오브젝트 월드에 생성
-        GameObject itemObj = Instantiate( itemPrefab );
-        
-        // 아이템 정보를 등록
-        ItemInfo itemInfo = itemObj.GetComponent<ItemInfo>();
-        itemInfo.Item = itemClone;
-        
-        // 아이템을 월드 상태의 형태로 초기화합니다.
-        itemInfo.OnItemCreatedInWorld();
-
-        // 컴포넌트 참조값 반환
-        return itemInfo;
-    }
-
-    /// <summary>
-    /// Item 인스턴스가 이미 존재하는 경우에<br/>
-    /// 해당 아이템의 정보로 월드 상에 아이템 오브젝트를 생성하여 참조값을 반환하여 줍니다.
-    /// </summary>
-    /// <returns>해당 아이템 오브젝트의 ItemInfo 컴포넌트 참조 값을 반환합니다.</returns>
-    public ItemInfo CreateWorldItem(Item item)
-    {
-        // 오브젝트 월드에 생성
-        GameObject itemObj = Instantiate( itemPrefab );
-        
-        // 아이템 정보를 등록
-        ItemInfo itemInfo = itemObj.GetComponent<ItemInfo>();
-        itemInfo.Item = item;
-                
-        // 아이템을 월드 상태의 형태로 초기화합니다.
-        itemInfo.OnItemCreatedInWorld();
-
-        return itemInfo;
-    }
-    
-
 }

@@ -2,8 +2,8 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using ItemData;
-using WorldItemData;
 using Newtonsoft.Json;
+using CreateManagement;
 
 /*
  * [파일 목적]

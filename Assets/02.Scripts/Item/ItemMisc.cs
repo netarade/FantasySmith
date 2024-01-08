@@ -71,6 +71,10 @@ using System;
  * 1- OverlapCount프로퍼티를 읽기전용 변수로 설정하고 수량을 조절할 때 SetOverlapCount 메서드를 호출하도록 변경
  * 2- SetOverlapCount메서드를 음의인자를 받도록 수정, 매개변수 count를 inCount로 수정
  * 
+ * <v6.4 - 2024_0108_최원준>
+ * 1- ItemImageCollection을 ItemVisualCollection명칭 변경관계로
+ * 생성자의 매개변수명 imgRefIndex를 visualRefIndex 변경
+ * 
  */
 
 
@@ -186,15 +190,15 @@ namespace ItemData
         /// </summary>
         [JsonIgnore] public int FirePower { get{ return iFirePower; } }
 
-        public ItemMisc( ItemType mainType, MiscType subType, string No, string name, float price, ImageReferenceIndex imgRefIdx )
-            : base( mainType, No, name, price, imgRefIdx ) 
+        public ItemMisc( ItemType mainType, MiscType subType, string No, string name, float price, VisualReferenceIndex visualRefIndex )
+            : base( mainType, No, name, price, visualRefIndex ) 
         { 
             iOverlapCount = 1;
             eMiscType = subType;
             iFirePower = 0;
 
             if(subType == MiscType.Engraving)           // 각인석이라면 이름과 상태창 이미지 인덱스를 넣어서 구조체 정보를 가지게 합니다.
-                eEngraveInfo = new ItemEngraving(name, imgRefIdx.statusImgIdx); 
+                eEngraveInfo = new ItemEngraving(name, visualRefIndex.statusImgIdx); 
             else if( subType == MiscType.Attribute )    // 속성석이라면 '-'이후의 이름을 참고하여 정보를 가지게 합니다 
             {
                 switch( name.Split('-')[1] )

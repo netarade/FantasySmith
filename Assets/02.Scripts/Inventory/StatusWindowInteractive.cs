@@ -3,6 +3,8 @@ using UnityEngine.EventSystems;
 using ItemData;
 using UnityEngine.UI;
 using System;
+using WorldItemData;
+using CreateManagement;
 
 /* [작업 사항]
  * <v1.0 - 2023_1105_최원준>
@@ -71,6 +73,10 @@ using System;
  * <5.1 - 2024_0107_최원준>
  * 1- InventoryInteractive의 IsItemSelecting 상태에 따라서 상태창을 띄우지 않도록 수정
  * 
+ * <v5.2 - 2024_0108_최원준>
+ * 1- 각인석의 Sprite이미지 참조값을 직접 찾아서 참조하는 방식에서
+ * VisualManager를 통해 인덱스 넘버를 전달하여 참조값을 얻는 방식으로 구현
+ * 
  */
 
 
@@ -93,10 +99,9 @@ public class StatusWindowInteractive : MonoBehaviour
     Text[] txtNameArr;                     // 각인 이름     
     Text[] txtDescArr;                     // 각인 설명
         
-    private ItemImageCollection iicMiscOther;   // 각인석 이미지를 참고할 직렬화 스크립트 참조
-    RectTransform inventoryRectTr;
-    InventoryInteractive inventoryInteractive;
-
+    RectTransform inventoryRectTr;                  // 자기자신 렉트 트랜스폼
+    InventoryInteractive inventoryInteractive;      // 아이템 셀렉팅 상태를 확인할 스크립트 참조
+    VisualManager visualManager;                    // 각인석 이미지 참조값을 얻을 매니저 스크립트 참조
 
 
     void Start()
@@ -133,12 +138,7 @@ public class StatusWindowInteractive : MonoBehaviour
                                                                     
 
         // 각인석 이미지는 아이템이 따로 들고 있지 않으므로, 각인석 이미지를 참조할 경로를 받아옵니다.
-        Transform controllerTr = GameObject.FindWithTag("GameController").transform;
-        iicMiscOther = controllerTr.GetChild(0).GetChild(2).gameObject.GetComponent<ItemImageCollection>();
-
-        if(iicMiscOther == null)
-            throw new Exception("iicMiscOther의 참조를 확인하여 주세요.");
-
+        visualManager = GameObject.FindWithTag("GameController").GetComponent<VisualManager>();
     }
     
 
@@ -303,8 +303,10 @@ public class StatusWindowInteractive : MonoBehaviour
                     // 각인 판넬을 켜준다.
                     PanelEngraveTrArr[i].gameObject.SetActive( true );
 
-                    // 무기아이템의 각인석 정보 구조체에서 인덱스를 받아서 IIC 직렬화 스크립트에서 이미지를 참조 접근한다.
-                    imageEngraveArr[i].sprite=iicMiscOther.icArrImg[engraveArr[i].StatusImageIdx].statusSprite;
+                    // 무기아이템의 각인석 정보 구조체에서 인덱스를 받아서 직렬화 스크립트에서 이미지를 참조값을 받아옵니다
+                    imageEngraveArr[i].sprite
+                        = visualManager.GetSpriteDirectByIVCIndex
+                        (IVCType.MiscOther, engraveArr[i].StatusImageIdx, SpriteType.statusSprite);
 
                     // 추가 각인의 정보를 반영한다.
                     txtNameArr[i].text=engraveArr[i].Name.ToString();

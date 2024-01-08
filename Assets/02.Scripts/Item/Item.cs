@@ -70,15 +70,25 @@ using UnityEngine;
  * 1- ItemType에 None을 추가
  * 선택 인자의 Null값으로 사용하기 위해
  * 
+ * <v9.0 - 2024_0108_최원준>
+ * 1- 구조체명 ImageRefenreceIndex를 VisualReferenceIndex로 변경하고
+ * outerMeshFilter, outerMaterial 변수를 삭제 및 outerPrefabIdx 변수를 추가하였습니다.
+ * 이유는 필터와 머터리얼을 따로 관리하는 것보다 오브젝트 형태로 관리하는 것이 쉽기 때문에 
+ * CreateManager에서 2D프리팹에 3D프리팹을 붙여주는 방식으로 구현하기로 변경하였습니다.
+ * 
+ * 2- 변수명 sImageRefIndex를 sVisualRefIndex로 변경, 프로퍼티 ImageRefIndex를 VisualRefIndex로 변경
+ * 
+ * 3- 생성자 매개변수 imageRefIndex를 visualRefIndex로 변경
+ * 
  */
 
 namespace ItemData
 {    
     /// <summary>
-    /// 외부의 아이템 이미지를 참조할 인덱스가 모여있는 구조체 입니다.
+    /// 외부의 아이템의 모습을 참조할 인덱스를 저장하는 구조체 입니다.
     /// </summary>
     [Serializable]
-    public struct ImageReferenceIndex
+    public struct VisualReferenceIndex
     {
         /// <summary>
         /// 아이템의 인벤토리 내부이미지 인덱스
@@ -91,36 +101,30 @@ namespace ItemData
         public int statusImgIdx;
 
         /// <summary>
-        /// 아이템의 월드 메쉬필터 인덱스
+        /// 아이템의 월드 오브젝트 인덱스
         /// </summary>
-        public int meshFilterIdx; 
+        public int outerPrefabIdx; 
 
-        /// <summary>
-        /// 아이템의 월드 머터리얼 인덱스
-        /// </summary>
-        public int materialIdx;
 
 
         /// <summary>
         /// 인벤토리 내부이미지, 상태이미지, 외부이미지의 인덱스넘버를 동일하게 지정하여 인덱스 구조체를 생성합니다.
         /// </summary>
-        public ImageReferenceIndex(int index)
+        public VisualReferenceIndex(int index)
         {
             innerImgIdx = index;
             statusImgIdx = index;
-            meshFilterIdx = index;
-            materialIdx = index;
+            outerPrefabIdx = index;
         }
 
         /// <summary>
         /// 인벤토리 내부이미지, 상태이미지, 외부이미지의 인덱스넘버를 따로 지정하여 인덱스 구조체를 생성합니다.
         /// </summary>
-        public ImageReferenceIndex(int innerImageIndex, int statusImageIndex, int meshFilterIndex, int materialIndex )
+        public VisualReferenceIndex(int innerImageIndex, int statusImageIndex, int outerPrefabIndex )
         {
             innerImgIdx = innerImageIndex;
             statusImgIdx = statusImageIndex;
-            meshFilterIdx = meshFilterIndex;
-            materialIdx = materialIndex;
+            outerPrefabIdx = outerPrefabIndex;
         }
 
     }
@@ -148,7 +152,7 @@ namespace ItemData
         [JsonProperty] string sNo;
         [JsonProperty] string sName;
         [JsonProperty] float fPrice;
-        [JsonProperty] ImageReferenceIndex sImageRefIndex;
+        [JsonProperty] VisualReferenceIndex sVisualRefIndex;
         [JsonProperty] int iSlotIndex;
         [JsonProperty] int iSlotIndexAll;
         
@@ -176,7 +180,7 @@ namespace ItemData
         /// <summary>
         /// 해당 아이템의 이미지를 표현하는 인덱스 정보가 담긴 구조체 변수입니다. 
         /// </summary>
-        [JsonIgnore] public ImageReferenceIndex ImageRefIndex { get {return sImageRefIndex;} }
+        [JsonIgnore] public VisualReferenceIndex VisualRefIndex { get {return sVisualRefIndex;} }
         
         /// <summary>
         /// 해당 아이템이 담긴 슬롯 인덱스 정보입니다. 아이템이 슬롯을 이동할 때 마다 이 정보를 변경해야 합니다.
@@ -188,13 +192,13 @@ namespace ItemData
         /// </summary>
         [JsonIgnore] public int SlotIndexAll { get{return iSlotIndexAll; } set{iSlotIndexAll=value;} }
 
-        public Item( ItemType type, string No, string name, float price, ImageReferenceIndex imageRefIndex ) 
+        public Item( ItemType type, string No, string name, float price, VisualReferenceIndex visualRefIndex ) 
         {
             eType = type;
             sName = name;
             sNo = No;
             fPrice = price; 
-            sImageRefIndex = imageRefIndex;
+            sVisualRefIndex = visualRefIndex;
         }
 
         /// <summary>

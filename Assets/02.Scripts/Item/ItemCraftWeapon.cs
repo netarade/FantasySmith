@@ -31,6 +31,11 @@ using System;
  * <v3.1 - 2023_1229_최원준>
  * 1- 파일명 변경 ItemData_CraftWeapon->ItemCraftWeapon
  * 
+ * <v3.2 - 2024_0108_최원준>
+ * 1- ItemImageCollection을 ItemVisualCollection명칭 변경관계로
+ * 생성자의 매개변수명 imgRefIndex를 visualRefIndex 변경
+ * 
+ * 
  */
 namespace ItemData
 {
@@ -96,10 +101,10 @@ namespace ItemData
         [JsonIgnore] public int FirePower { get{ return iFirePower; } }
 
 
-        public ItemCraftWeapon(ItemType mainType, WeaponType subType, string No, string name, float price, ImageReferenceIndex imgRefIdx // 아이템 기본 정보 
+        public ItemCraftWeapon(ItemType mainType, WeaponType subType, string No, string name, float price, VisualReferenceIndex visualRefIndex // 아이템 기본 정보 
             , ItemGrade basicGrade, int power, int durability, float speed, int weight, AttributeType attribute                         // 무기 고유 정보
             , CraftMaterial[] baseMaterial, CraftMaterial[] additiveMaterial, Recipie recipie                                           // 제작 관련 정보   
-        ) : base( mainType, subType, No, name, price, imgRefIdx, basicGrade, power, durability, speed, weight, attribute )
+        ) : base( mainType, subType, No, name, price, visualRefIndex, basicGrade, power, durability, speed, weight, attribute )
         {          
 
             /*** 제작 관련 정보 ***/

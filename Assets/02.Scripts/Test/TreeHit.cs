@@ -1,6 +1,5 @@
+using CreateManagement;
 using System.Collections;
-using System.Collections.Generic;
-using Unity.VisualScripting;
 using UnityEngine;
 
 public class TreeHit : MonoBehaviour
@@ -45,7 +44,7 @@ public class TreeHit : MonoBehaviour
 
 
             if(hp==5)
-                createManager.CreateWorldItem("ªÁ≥…≤€¿« »∞").OnItemWorldGain(inventoryInfo);
+                createManager.CreateWorldItem("º’µµ≥¢").OnItemWorldGain(inventoryInfo);
 
         }      
     }

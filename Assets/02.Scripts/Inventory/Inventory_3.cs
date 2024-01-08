@@ -1,6 +1,7 @@
 using ItemData;
 using System;
 using System.Collections.Generic;
+using Unity.VisualScripting.FullSerializer;
 using UnityEngine;
 
 /*
@@ -74,6 +75,14 @@ using UnityEngine;
  * a. 아이템이 아무것도 들어있지 않을때 초기값을 0으로 주게하였음.
  * b. for문 내부 break문 추가 (타겟인덱스를 찾으면 더이상 수정없도록 해야함)
  * c. 인덱스 리스트의 마지막에 도달했으면서 슬롯은 아직 남아있는 경우, 다음 인덱스를 타겟으로 설정하는 조건 추가
+ * 
+ * <v3.3 - 2024_0108_최원준>
+ * 1- IsAbleToAddMisc메서드 내부 로직에서 생성 가능한데도 불가능을 반환하던 코드를 수정
+ * reamainCount>0일때 슬롯갯수가 부족할때 false를 반환하고, remainCount<=0 이하일 때 무조건 true를 반환하여야 했으나 false를 반환하였던 점 수정
+ * 추가로 remainCount가 탐색 중일 때 0이하로 떨어진다면 바로 true를 반환하도록 수정
+ * 
+ * 
+ * 
  * 
  */
 
@@ -543,9 +552,18 @@ namespace InventoryManagement
 
                     // 해당 아이템을 최대수량으로 만들기 위한 수량이 얼마 남았는 지를 계산합니다.
                     remainCount-=( maxOverlapCount-itemMisc.OverlapCount );
+
+                    // 남은 수량이 기존 아이템에 포함가능 하다면, 
+                    // 오브젝트를 새로 생성할 필요 없으므로 더 이상 탐색을 중단하고 성공을 반환합니다.
+                    if(remainCount<=0)
+                        return true;
                 }
             }
             
+
+            
+            // 오브젝트 리스트가 아예 없는경우의 그대로인 남은 수량 또는
+            // 기존 오브젝트 리스트에서 제외 시킨 만큼의 남은 수량이 0이상이라면,
 
 
             // 생성 할 오브젝트 갯수 설정 : 최종적으로 남은 수량에서 오브젝트 1개별 최대수량으로 나눈 몫 (나누어 떨어지는 경우)
@@ -557,17 +575,12 @@ namespace InventoryManagement
                 createCnt++;
 
 
-            // 오브젝트 리스트가 아예 없는경우의 그대로인 남은 수량 또는
-            // 기존 오브젝트 리스트에서 제외 시킨 만큼의 남은 수량이 0이상이라면,
-            if(remainCount>0)       
-            {       
-                // 남은 슬롯 갯수가 생성해야 할 오브젝트 갯수보다 많거나 같다면 생성가능 반환
-                if( curRemainSlotCnt >= createCnt )
-                    return true;                    
-            }
-
-            // 성공을 반환하지 못했다면, (즉 생성이 불가능하다면) 실패를 반환 
-            return false;
+            // 남은 슬롯 갯수가 생성해야 할 오브젝트 갯수보다 많거나 같다면 생성가능 반환
+            if( curRemainSlotCnt >= createCnt )
+                 return true; 
+            // 남은 슬롯 갯수가 부족하다면, 생성 불가능 반환
+            else
+                return false;
         }
 
                 

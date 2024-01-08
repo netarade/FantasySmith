@@ -7502,6 +7502,10 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 1649624386}
     m_Modifications:
+    - target: {fileID: 23344307501762592, guid: ef10d0f747e970f41ae699cd9d062b36, type: 3}
+      propertyPath: baseDropTr
+      value: 
+      objectReference: {fileID: 2015239700}
     - target: {fileID: 3415230022926392263, guid: ef10d0f747e970f41ae699cd9d062b36, type: 3}
       propertyPath: m_AnchorMax.y
       value: 0

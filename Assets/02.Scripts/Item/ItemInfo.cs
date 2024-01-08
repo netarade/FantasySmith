@@ -277,6 +277,11 @@ using System;
  *
  *4- 월드 상태의 아이템을 먹었을 때 2d 회전값이 돌아가있는 점을 UpdatePosition에서 다시 0으로 맞추어주도록 추가
  *
+ *<v12.5 - 2024_0108_최원준>
+ *1- playerDropTr 변수명을 baseDropTr로 변경하고,
+ *기본 드랍정보를 인벤토리가 변경될 때마다 해당 인벤토리로 부터 받아서 초기화하도록 UpdateInventoryInfo에서 참조 설정
+ *
+ *
  */
 
 
@@ -335,7 +340,8 @@ public partial class ItemInfo : MonoBehaviour
     private StatusWindowInteractive statusInteractive;  // 현재 아이템이 참조 할 상태창 인터렉티브 스크립트
 
     private Transform playerTr;                 // 현재 아이템을 소유하고 있는 플레이어 캐릭터 정보 참조
-    private Transform playerDropTr;             // 플레이어가 아이템을 드롭시킬 때 아이템이 떨어질 위치
+    private Transform baseDropTr;               // 아이템이 떨어질 기본 드랍 위치
+    private bool isBaseDropSetParent;      // 기본 드랍위치에 부모설정 옵션이 걸려있는지 여부
 
 
     /**** InventoryInfoChange 메서드 호출시 변동 ****/
@@ -608,7 +614,7 @@ public partial class ItemInfo : MonoBehaviour
             emptyListTr = null;
 
             playerTr = null;
-            playerDropTr = null;
+            baseDropTr = null;
 
             prevDropSlotTr = null;
         }
@@ -626,9 +632,11 @@ public partial class ItemInfo : MonoBehaviour
             slotListTr = inventoryTr.GetChild(0).GetChild(0).GetChild(0);
             emptyListTr = inventoryTr.GetChild(0).GetChild(1);
 
-            playerTr = inventoryTr.parent.parent;
-            playerDropTr = playerTr.GetChild(playerTr.childCount-1);    // 플레이어 드롭창은 플레이어의 맨 마지막 자식인덱스로 존재
-                                                    
+            playerTr = inventoryTr.parent.parent;                   // 플레이어 위치 참조 (아직 미사용)
+                        
+            baseDropTr = inventoryInfo.baseDropTr;                  // 기본 드랍위치와 부모설정을 인벤토리로부터 참조
+            isBaseDropSetParent = inventoryInfo.isBaseDropSetParent;                                        
+
             UpdateActiveTabInfo();                                  // 액티브 탭 정보 최신화   
             prevDropSlotTr = slotListTr.GetChild(item.SlotIndex);   // 이전 드롭이벤트 호출자를 현재 들어있는 슬롯으로 최신화
         }      
@@ -725,7 +733,7 @@ public partial class ItemInfo : MonoBehaviour
         
         // 드롭 포지션이 직접 전달되지 않았다면,
         if(dropPosTr==null)
-            dropPosTr = playerDropTr;
+            dropPosTr = baseDropTr;
 
 
         // 3D 오브젝트의 부모를 설정

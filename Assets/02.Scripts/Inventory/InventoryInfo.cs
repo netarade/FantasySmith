@@ -151,8 +151,9 @@ using System.Collections.Generic;
  * => (정정) 잡화 아이템이 처음if문에서 SlotEnough문을 통과하여 인덱스 정보가 -1로 잡혀도
  * AddItem할 때 파괴되므로 상관없어보인다.
  * 
- * 
- * 
+ * <v7.3 - 2024_0108_최원준>
+ * 1- 인스펙터뷰 상에서 지정하는 옵션인 baseDropTr, isBaseDropSetParent 변수 추가
+ * 사용자가 드롭위치를 드래그앤 드롭으로 지정하여 OnItemWorldDrop메서드를 인자 없이 호출 시 편리하게 드랍하도록 하기위함.
  * 
  */
 
@@ -180,6 +181,10 @@ public partial class InventoryInfo : MonoBehaviour
     InventoryInteractive interactive;   // 자신의 인터렉티브 스크립트를 참조하여 활성화 탭정보를 받아오기 위한 변수 선언
     DataManager dataManager;            // 저장과 로드 관련 메서드를 호출 할 스크립트 참조
     CreateManager createManager;        // 아이템 생성을 요청하고 반환받을 스크립트 참조
+
+    [Header("Basic Item Drop Place")]
+    public Transform baseDropTr;        // 아이템을 기본적으로 떨어 트릴 위치를 인스펙터뷰에서 직접 지정
+    public bool isBaseDropSetParent;    // 드롭장소에 부모 계층에 속할지 지정하는 옵션 (씬정리 용도 및 부모와 함께 움직이도록 하는 용도)
     
 
 

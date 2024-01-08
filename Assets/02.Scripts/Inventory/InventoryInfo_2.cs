@@ -140,8 +140,12 @@ public partial class InventoryInfo : MonoBehaviour
         // 내부 인벤토리에 아이템을 추가합니다.
         inventory.AddItem(itemInfo);  
 
-        // 아이템의 위치정보를 반영합니다.
-        itemInfo.UpdatePositionInSlotList();
+        
+        // 아이템의 최신 정보를 반영합니다 
+        if(itemInfo.Item.Type == ItemType.Misc)
+            UpdateAllItemInfo();    // 잡화아이템의 경우 기존 아이템에 수정이 들어갔을 수도 있으므로 모든 정보 업데이트
+        else
+            itemInfo.UpdatePositionInSlotList(); // 기존 아이템은 해당 아이템만 업데이트 합니다.
 
         // 아이템 추가 성공을 반환합니다.
         return true;
@@ -160,6 +164,8 @@ public partial class InventoryInfo : MonoBehaviour
     /// <returns>인벤토리의 슬롯에 아이템 1개를 생성할 공간이 충분하지 않다면 false를 반환, 성공한 경우 true를 반환</returns>
     public bool AddItem(string itemName, int overlapCount=1)
     {
+        Debug.Log("슬롯 여부 " + IsSlotEnough(itemName, overlapCount));
+
         if( !IsSlotEnough(itemName, overlapCount) )
             return false;
                 

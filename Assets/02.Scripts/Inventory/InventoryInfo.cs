@@ -156,6 +156,9 @@ using CreateManagement;
  * 1- 인스펙터뷰 상에서 지정하는 옵션인 baseDropTr, isBaseDropSetParent 변수 추가
  * 사용자가 드롭위치를 드래그앤 드롭으로 지정하여 OnItemWorldDrop메서드를 인자 없이 호출 시 편리하게 드랍하도록 하기위함.
  * 
+ * <v7.4 - 2024_0109_최원준>
+ * 1- IsSlotEnough주석 수정
+ * 
  */
 
 
@@ -278,7 +281,7 @@ public partial class InventoryInfo : MonoBehaviour
             foreach( List<GameObject> objList in itemDic.Values )           // 인벤토리 사전에서 게임오브젝트 리스트를 하나씩 꺼내어
             {
                 foreach(GameObject itemObj in objList)                      // 리스트의 게임오브젝트를 모두 가져옵니다.
-                    itemObj.GetComponent<ItemInfo>().OnItemCreatedInInventory(this);   // OnItemChnaged메서드를 호출하며 현재 인벤토리 참조값을 전달합니다.
+                    itemObj.GetComponent<ItemInfo>().OnItemAdded(this);   // OnItemChnaged메서드를 호출하며 현재 인벤토리 참조값을 전달합니다.
             }
 
         }
@@ -417,9 +420,11 @@ public partial class InventoryInfo : MonoBehaviour
 
     /// <summary>
     /// 해당 아이템이 들어갈 수 있을 지 여부를 반환합니다.<br/>
-    /// 기존 아이템이 존재해야 합니다.
+    /// 기본 아이템의 경우 슬롯여부에 따라 성공, 실패를 반환하며,<br/>
+    /// 잡화 아이템의 경우 중첩되어서 슬롯이 필요없는 경우 슬롯에 빈자리가 없어도 성공을 반환할 수 있습니다.<br/>
+    /// 기존 아이템 정보가 존재해야 합니다.
     /// </summary>
-    /// <returns>슬롯이 자리가 남는다면 true를, 슬롯에 자리가 없다면 false를 반환합니다.</returns>
+    /// <returns>아이템을 생성가능하다면 true를, 불가능하다면 false를 반환합니다.</returns>
     public bool IsSlotEnough(ItemInfo itemInfo)
     {
         ItemType itemType = itemInfo.Item.Type;
@@ -439,7 +444,8 @@ public partial class InventoryInfo : MonoBehaviour
 
     /// <summary>
     /// 아이템 Info 컴포넌트를 인자로 받아서 어떤 슬롯에 들어갈지 최신화 해주는 메서드입니다. <br/>
-    /// 내부적으로 FindNearstSlotIdx메서드를 호출하여 슬롯 정보를 입력해줍니다.<br/>
+    /// 내부적으로 FindNearstSlotIdx메서드를 호출하여 슬롯 정보를 입력해줍니다.<br/><br/>
+    /// InventoryInfo의 AddItem에서 아이템을 추가하기 전 슬롯정보를 입력받기위해 사용됩니다.<br/>
     /// *** 슬롯에 빈자리가 없거나, 아이템 정보가 없다면 예외를 발생시킵니다. ***
     /// </summary>
     public void SetItemSlotIdxBothToNearstSlot( ItemInfo itemInfo )

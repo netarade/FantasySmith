@@ -163,7 +163,8 @@ namespace InventoryManagement
             Dictionary<string, List<GameObject>> itemDic;                   
 
 
-            if(isSlotIndexAll)      // 전체 슬롯 인덱스를 기반으로 구하는 경우
+            /*** 전체 슬롯 인덱스를 기반으로 구하는 경우 ***/
+            if(isSlotIndexAll)      
             {
                 int dicLen = (int)ItemType.None;    // 개별 사전의 총 갯수를 설정합니다.
 
@@ -176,7 +177,8 @@ namespace InventoryManagement
                     ReadSlotIdxToIndexList(indexList, itemDic, isSlotIndexAll);
                 }  
             }
-            else                    // 개별 슬롯 인덱스를 기반으로 구하는 경우
+            /*** 개별 슬롯 인덱스를 기반으로 구하는 경우  ***/
+            else                   
             {
                 // 해당 아이템 종류의 사전을 구합니다. 
                 itemDic = GetItemDicIgnoreExsists(itemType);    
@@ -186,10 +188,12 @@ namespace InventoryManagement
             }
 
             indexList.Sort();   // 인덱스 리스트를 오름차순으로 정렬합니다.
-                             
+
             // 인덱스 리스트에 아이템이 아무것도 없는 경우 0을 반환
-            if(indexList.Count==0)
+            if( indexList.Count==0 )            
                 return 0;
+
+
 
             // 아이템의 종류에 해당하는 슬롯의 칸 제한 수를 구합니다. (인자로 전달한 itemType이 None이라면 전체 슬롯 제한 수를 구합니다.)
             int slotCountLimit = GetItemSlotCountLimit(itemType); 
@@ -197,6 +201,7 @@ namespace InventoryManagement
             // 정렬 인덱스 예시 
             // 0, 1, 2, 3, 4
             // 0, 1, 4, 6, 9
+            
 
             // 인덱스 숫자까지 i를 0부터 증가시키면서 빈 슬롯을 찾습니다 
             for(int i=0; i<slotCountLimit; i++)

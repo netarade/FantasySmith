@@ -202,6 +202,14 @@ public partial class ItemInfo : MonoBehaviour, IPointerEnterHandler, IPointerExi
 
 
 
+    public void PrintItemDebugInfo()
+    {
+        print(
+            "itemTr.name : " + itemTr.name +"\n" +
+            "itemRectTr.name : "+itemRectTr.name+"\n" + 
+            "dropPosTr.name : " + baseDropTr + "\n");
+    }
+
 
     
 

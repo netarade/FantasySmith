@@ -25,6 +25,9 @@ using WorldItemData;
  * iicNum - ivcNum
  * iicIdx - ivcIdx
  * 
+ * <v1.1 - 2024_0109_최원준>
+ * 1- 주석일부 보완
+ * 
  */
 namespace CreateManagement
 {
@@ -152,14 +155,13 @@ namespace CreateManagement
 
         /// <summary>
         /// ItemVisualCollection 직렬화 오브젝트를 참조하여<br/>
-        /// 아이템 생성 시 2D 오브젝트에 부착 할 3D 오브젝트 참조값을 불러옵니다.
+        /// 아이템 생성 시 2D 오브젝트에 부착 할 3D 오브젝트 참조값을 불러옵니다.<br/>
+        /// 인자로 전달받은 ItemInfo의 VisualRefIndex 인덱스 정보를 내부적으로 참조합니다.<br/>
         /// </summary>
         /// <returns>아이템 생성 시 복제하고자 할 3D 프리팹 참조값</returns>
         public GameObject GetItemPrefab3D( ItemInfo itemInfo )
         {
             int ivcIdx = GetIVCIndex( itemInfo );
-            print("ivcIdx : " + ivcIdx);
-            print("refIdx : " + itemInfo.Item.VisualRefIndex.outerPrefabIdx);
 
             return ivcArr[ivcIdx].vcArr[itemInfo.Item.VisualRefIndex.outerPrefabIdx].outerPrefab;
         }

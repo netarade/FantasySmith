@@ -203,15 +203,12 @@ namespace InventoryManagement
         /// <returns>잡화 아이템이 들어갈 공간이 없다면 false를, 아이템 추가에 성공한 경우 true를 반환합니다.</returns>
         private bool AddItemMisc(ItemInfo itemInfo, bool isLatestModify=false)
         {
-            Debug.Log("남은 슬롯" + GetCurRemainSlotCount(itemInfo.Item.Type));
             // 아이템이 들어갈 공간이 없는 경우 실패를 반환합니다.
             if( GetCurRemainSlotCount(itemInfo.Item.Type) == 0 )
                 return false;
 
             // 아이템 정보를 전달하여 기존아이템에 채우기를 실행하고, 남은 수량을 반환받습니다.
             int afterCount = FillExistItemOverlapCount(itemInfo, isLatestModify);
-
-            Debug.Log("남은 수량 : "+ afterCount);
 
             // 수량채우기가 종료된 후 
             if( afterCount==0 )
@@ -524,12 +521,9 @@ namespace InventoryManagement
         /// <returns>아이템의 최대 갯수를 반환합니다.</returns>
         public int GetItemMaxOverlapCount(string itemName)
         {
-            Debug.Log("사전 정보를 얻습니다.");
             Dictionary<string, Item> worldDic = createManager.GetWorldDic(itemName);
 
             int count = ((ItemMisc)worldDic[itemName]).MaxOverlapCount;
-
-            Debug.Log(count);
             return count;
         }
 

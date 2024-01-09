@@ -918,6 +918,29 @@
  * 1- ItemInfo와 StatusWindowInteractive에 존재하던 iic 이미지 참조값을 인덱스 값을 바탕으로 코드를 직접 계산해서 구하던 방식에서
  * VisualManager에서 인덱스 정보를 전달하여 값을 얻는 방식으로 구현
  * 
+ * <2024_0109_최원준>
  * 
+ * (이슈)
+ * 1- 2D 오브젝트와 3D오브젝트를 분리해서 생성하면서 기존 ItemInfo에서 OnEnable에서 3D오브젝트의 ItemTr을 바로 잡을 수 없게 되면서
+ * 텍스트 정보가 보이지 않는 문제가 있음
+ * => (완료)기존 OnEnable이 아니라 Update형식으로 OnItemCreated메서드에서 다시 잡도록 구현
  * 
+ * 2- Inventory Add시 인덱스값이 이상하게 잡히는 문제, 아이템이 겹쳐서 슬롯에 장착되는 문제 
+ *  
+ *  
+ * (수정사항)
+ * ItemInfo.cs 
+ * a. 아이템 생성 시 2D오브젝트만 생성하므로, OnEnable에서 3D오브젝트 참조를 못잡는 관계로 
+ * OnItemCreated에서 아이템의 3D오브젝트 참조를 잡아주도록 변경 * 
+ * b. OnItemCreated와 OnItemAdded메서드 필요없는 재구현 (필요없는 로직 삭제)
+ * 
+ * Inventory_2.cs 
+ * AddItem메서드 내부에서 게임오브젝트가 파괴되더라고 ItemInfo는 바로 파괴되지 않고 참조값이 존재하기 때문에
+ * 전 후 수량을 파악하여 필요한 처리를 하도록하였음.
+ * 
+ * 드롭위치 직렬화 방식으로 수정
+ * 
+ * (수정예정)
+ * 1- 아이템 3D 오브젝트 생성 시 ITEM태그달기
+ * 2- worldSpace 방식의 캔버스 달기
  */

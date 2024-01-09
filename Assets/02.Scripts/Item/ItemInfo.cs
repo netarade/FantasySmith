@@ -287,6 +287,17 @@ using CreateManagement;
  *innerSprite, statusSprite를 visualManager의 GetItemSprite메서드를 통한 호출로 구현
  *
  *
+ *<v12.6 - 2024_0109_최원준>
+ *1- 2D 오브젝트와 3D오브젝트를 분리해서 생성하면서 기존 ItemInfo에서 OnEnable에서 3D오브젝트의 ItemTr을 바로 잡을 수 없게 되면서
+ *텍스트 정보가 보이지 않는 문제가 있음
+ *=> 기존 OnEnable이 아니라 Update형식으로 OnItemCreated메서드에서 다시 잡도록 구현
+ *
+ *2- OnItemCreatedInInventory메서드를 OnItemAdded로 변경, OnItemCreatedInWorld메서드를 OnItemCreated로 변경 및 로직수정
+ *이유는 메서드의 목적성이 OnItemCreated는 아이템이 항상 월드 상에서 생성한 이후 아이템 정보를 정의하기 위해서이며,
+ *OnItemAdded는 아이템 월드에서 생성 이후 인벤토리에 넣었을 때의 정보참조를 위한 메서드이기 때문
+ *
+ *3- UpdateInventoryInfo에서 baseDropTr을 null로 잡아주고 있던점 수정
+ *OnItemWorldDrop시 인벤토리의 RemoveItem을 먼저 해주게 되는데, 드랍위치를 null로 잡아버리기 때문에 드랍 불가능한 현상 발생하였기 때문
  *
  *
  */
@@ -407,8 +418,8 @@ public partial class ItemInfo : MonoBehaviour
     /// </summary>
     private void OnEnable()
     {
-        itemRectTr = transform.GetComponent<RectTransform>();   // 자기자신 2d 트랜스폼 참조(초기 계층 - 상위 부모)
-        itemTr = itemRectTr.GetChild(itemRectTr.childCount-1);  // 자기자신 3d 트랜스폼 참조(초기 계층 - 하위 마지막 자식)
+        // 자기자신 2d 트랜스폼 참조(최초 생성 시 - 자신 컴포넌트)
+        itemRectTr = transform.GetComponent<RectTransform>();   
 
         itemImage = GetComponent<Image>();
         countTxt = GetComponentInChildren<Text>();
@@ -416,30 +427,36 @@ public partial class ItemInfo : MonoBehaviour
         itemCG = GetComponent<CanvasGroup>();
         visualManager = GameObject.FindWithTag("GameController").GetComponent<VisualManager>();
     }
-    
+
+
+
 
     /// <summary>
-    /// 아이템이 인벤토리 내부에 새롭게 생성되는경우에 호출해야 할 메서드입니다.<br/>
-    /// 아이템 정보를 바탕으로 아이템 오브젝트를 구성하는데 필요한 작업을 합니다.<br/><br/>
-    /// 현재 InventoryInfo의 Load메서드에서 사용되고 있습니다.<br/>
+    /// 아이템이 인벤토리 내부에 추가되는 경우에 호출 할 메서드입니다.<br/>
+    /// 아이템의 기존 정보를 바탕으로 인벤토리에 추가되고 표현되기 위한 작업을 진행합니다.<br/><br/>
+    /// 현재 InventoryInfo의 AddItem메서드와 Load메서드에서 사용되고있습니다.<br/>
     /// </summary>
-    public void OnItemCreatedInInventory(InventoryInfo inventoryInfo)
+    public void OnItemAdded(InventoryInfo inventoryInfo)
     {
         /*** 인자 미 전달 시 예외처리 ***/
         if(inventoryInfo==null)
             throw new Exception("이 메서드는 인벤토리 정보가 반드시 필요합니다. 확인하여 주세요");
+        
+        // 월드 상에서 추가되었다면 아이템 구조를 변경합니다
+        if(isWorldPositioned)
+            DimensionShift(false);
 
-        /*** 아이템 구조를 2D에 맞게 변경 ***/
-        DimensionShift(false);
+        // 잡화아이템인 경우 추가되기 전 수량변동 가능성이 있으므로 중첩 수량 정보를 최신화합니다
+        if(item.Type == ItemType.Misc)
+            UpdateCountTxt();              
 
-        /*** 아이템 오브젝트의 고유 정보를 읽어 들여 오브젝트에 반영 ***/
-        UpdateImage();                      // 이미지 최신화
-        UpdateCountTxt();                   // 중첩 수량 정보 최신화
+        // 인벤토리 정보를 최신화합니다
+        UpdateInventoryInfo(inventoryInfo); 
 
-        /*** 인벤토리 정보를 읽어들여 오브젝트에 반영 ***/
-        UpdateInventoryInfo(inventoryInfo); // 인벤토리 정보를 최신화
-        UpdatePositionInSlotList();         // 슬롯 위치 최신화
+        // 슬롯 위치 최신화합니다
+        UpdatePositionInSlotList();        
     }
+        
 
 
     /// <summary>
@@ -447,19 +464,25 @@ public partial class ItemInfo : MonoBehaviour
     /// 아이템 정보를 바탕으로 오브젝트를 구성합니다.<br/><br/>
     /// 현재 CreateManager의 CreateItem메서드에서 사용되고 있습니다.<br/>
     /// </summary>
-    public void OnItemCreatedInWorld()
-    {        
-        /*** 아이템 구조를 3D에 맞게 변경 ***/
-        DimensionShift(true);
-        
-        /*** 아이템 오브젝트의 고유 정보를 읽어 들여 오브젝트에 반영 ***/
-        UpdateImage();                      // 이미지 최신화
-        UpdateCountTxt();                   // 중첩 수량 정보 최신화
+    public void OnItemCreated()
+    {   
+        // 아이템의 월드 상태를 활성화합니다.
+        isWorldPositioned = true;   
+
+        // 2D오브젝트와 분리되어서 생성된 3D 오브젝트의 계층 정보를 참조합니다
+        // (2D오브젝트 상위에 Canvas를 둘 때 한 번더 수정될 가능성 있음!)
+        itemTr = transform.parent;
+
+        // 아이템 오브젝트의 고유 정보를 읽어 들여 2D 오브젝트에 반영합니다
+        UpdateImage();                      
+        UpdateCountTxt();                   
                 
-        /*** 인벤토리 정보를 읽어들여 오브젝트에 반영 ***/
-        UpdateInventoryInfo(null);          // 인벤토리 정보를 초기화
+        // 인벤토리 정보를 초기화합니다
+        UpdateInventoryInfo(null);          
     }
 
+
+    
 
 
 
@@ -548,12 +571,11 @@ public partial class ItemInfo : MonoBehaviour
             emptyListTr = null;
 
             playerTr = null;
-            baseDropTr = null;
-
             prevDropSlotTr = null;
         }
         else // 다른 인벤토리로 전달된 경우
         {
+            print("인벤토리 정보를 업데이트 합니다.");
             // 인벤토리 참조 정보를 업데이트 합니다.
             inventoryInfo = newInventoryInfo;
             inventoryTr = inventoryInfo.transform;
@@ -668,8 +690,7 @@ public partial class ItemInfo : MonoBehaviour
         // 드롭 포지션이 직접 전달되지 않았다면,
         if(dropPosTr==null)
             dropPosTr = baseDropTr;
-
-
+        
         // 3D 오브젝트의 부모를 설정
         if(isSetParent)
             itemTr.SetParent(dropPosTr);

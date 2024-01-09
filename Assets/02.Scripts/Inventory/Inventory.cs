@@ -390,7 +390,7 @@ namespace InventoryManagement
         }
 
         /// <summary>
-        /// 종류 별 아이템 정보가 담겨있는 리스트를 집어넣으면 해당 딕셔너리로 변환시켜 줍니다.<br/>
+        /// 종류 별 아이템 정보가 담겨있는 리스트를 집어넣고 메서드를 호출하면, 이 인벤토리 내부의 딕셔너리로 변환시켜 저장합니다.<br/>
         /// 로드 할때나 씬을 전환했을 때 아이템 리스트를 역직렬화 하여 다시 인벤토리 목록으로 변환해야하는 용도로 사용합니다.
         /// </summary>
         public void DeserializeItemListToDic<T>( List<T> itemList ) where T : Item
@@ -399,7 +399,7 @@ namespace InventoryManagement
             { 
                 // 월드에 오브젝트를 만들고 ItemInfo 참조값을 받습니다.
                 ItemInfo itemInfo = createManager.CreateWorldItem(item);
-                
+                                
                 // 인벤토리 내부에 추가합니다.
                 AddItem(itemInfo);
             }

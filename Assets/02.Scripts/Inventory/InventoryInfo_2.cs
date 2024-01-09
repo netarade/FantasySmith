@@ -31,6 +31,11 @@ using System.Collections.Generic;
  * 1- ItemInfo를 직접 전달하여 인벤토리 목록에서 제거해주는 RemoveItem 오버로딩 메서드 추가
  * ItemSelect 스크립트에서 인벤토리에서 외부로 아이템을 드랍하였을 때 해당 아이템을 직접 제거해야하기 때문
  * 
+ * <v2.0 - 2024_0109_최원준>
+ * 1- AddItem(ItemInfo) 메서드에서 잡화아이템이 들어온 경우와 일반아이템인 경우를 구분하여 로직 작성
+ * AddItem을 통해 내부에서 게임오브젝트가 파괴되더라고 ItemInfo는 바로 파괴되지 않고 참조값이 존재하기 때문에
+ * 전 후 수량을 파악하여 필요한 처리를 하도록하였음.
+ * 
  */
 
 
@@ -95,6 +100,9 @@ public partial class InventoryInfo : MonoBehaviour
         }
         // 아이템을 3D상태로 전환합니다.
         targetItemInfo.DimensionShift(true);
+        targetItemInfo.UpdateInventoryInfo(null);
+
+        print("아이템을 목록에서 제거하였습니다.");
 
         return targetItemInfo;
     }
@@ -105,6 +113,38 @@ public partial class InventoryInfo : MonoBehaviour
 
 
 
+    /// <summary>
+    /// 인벤토리의 목록에 *없는* 아이템을 새롭게 생성하고 인벤토리 목록에 추가합니다.<br/>
+    /// 오브젝트 1개만 생성하므로, 여러 아이템을 생성시키고 싶을 때 중복하여 호출해야 합니다.<br/>
+    /// 잡화아이템의 경우 중첩수량을 설정할 수 있습니다. 비잡화 아이템의 경우는 무시합니다.(기본값:1)<br/>
+    /// </summary>
+    /// <returns>인벤토리의 슬롯에 아이템 1개를 생성할 공간이 충분하지 않다면 false를 반환, 성공한 경우 true를 반환</returns>
+    public bool AddItem(string itemName, int overlapCount=1)
+    {
+        if( !IsSlotEnough(itemName, overlapCount) )
+            return false;
+                
+        // createManager에게 생성요청을하여 오브젝트 하나를 만듭니다.
+        ItemInfo itemInfo = createManager.CreateWorldItem(itemName, overlapCount);
+
+        // 해당 아이템을 인벤토리에 넣습니다.
+        AddItem(itemInfo);
+
+        return true;
+    }
+
+    
+    /// <summary>
+    /// 인벤토리의 목록에 *없는* 아이템을 새롭게 생성하고 인벤토리 목록에 추가합니다.<br/>
+    /// 인자로 아이템 이름과 중첩 수량 묶음 구조체를 전달받습니다.<br/><br/>
+    /// 오브젝트 단위로 여러 아이템을 생성할 수 있습니다.<br/>
+    /// 비잡화아이템의 경우 ItemPair의 overlapcount는 무시됩니다.<br/>
+    /// </summary>
+    /// <returns>인벤토리의 슬롯에 아이템 여러 개를 생성할 공간이 충분하지 않다면 false를 반환, 성공한 경우 true를 반환</returns>
+    public bool AddItem(ItemPair[] itemPairs)
+    {
+        return true;
+    }
 
 
 
@@ -127,68 +167,75 @@ public partial class InventoryInfo : MonoBehaviour
         if( !IsSlotEnough( itemInfo ) )
             return false;
 
-        // 아이템이 월드상에 존재하는 상태라면, 2D로 계층구조를 변경합니다.
-        if( itemInfo.IsWorldPositioned )
-            itemInfo.DimensionShift( false );
-                
-        // 인벤토리 정보를 새로운 인벤토리로 업데이트 합니다.
-        itemInfo.UpdateInventoryInfo(this);
-        
-        // 아이템정보를 현재 인벤토리의 가까운 슬롯으로 입력합니다.        
-        SetItemSlotIdxBothToNearstSlot(itemInfo);  
+        // 아이템 인덱스 정보를 현재 인벤토리의 가까운 슬롯으로 입력합니다.
+        // 내부 인벤토리의 아이템을 하나씩 꺼내어 인덱스를 계산하기 때문에 AddItem이후에 호출하게 되면 안됩니다.
+        SetItemSlotIdxBothToNearstSlot( itemInfo );
 
-        // 내부 인벤토리에 아이템을 추가합니다.
-        inventory.AddItem(itemInfo);  
 
-        
-        // 아이템의 최신 정보를 반영합니다 
-        if(itemInfo.Item.Type == ItemType.Misc)
-            UpdateAllItemInfo();    // 잡화아이템의 경우 기존 아이템에 수정이 들어갔을 수도 있으므로 모든 정보 업데이트
+        // 아이템의 타입이 잡화종류인 경우 전후수량을 비교하여 처리합니다.
+        if( itemInfo.Item.Type==ItemType.Misc )
+        {
+            ItemMisc itemMisc = (ItemMisc)itemInfo.Item;
+
+            // 추가 이전의 수량 계산
+            int beforeOverlapCount = itemMisc.OverlapCount;
+
+            // 아이템을 내부 인벤토리에 추가합니다.
+            inventory.AddItem( itemInfo );
+
+            // 추가 이후의 수량계산
+            int afterOverlapCount = itemMisc.OverlapCount;
+
+
+            // 수량정보가 변동이 있다면, 기존 아이템과 동일한 이름의 아이템의 수량정보를 업데이트합니다.
+            if( beforeOverlapCount!=afterOverlapCount )
+            {
+                UpdateAllOverlapCountInExist( itemMisc.Name );
+                print("수량정보 변동이 있습니다.");
+            }
+
+            // 아이템 수량이 변동이 없거나, 남은 상태라면, 아이템에 최신 정보를 반영합니다. 
+            if( afterOverlapCount!=0 )                              
+                itemInfo.OnItemAdded( this );
+        }
+        // 일반 아이템인 경우 바로 추가합니다.
         else
-            itemInfo.UpdatePositionInSlotList(); // 기존 아이템은 해당 아이템만 업데이트 합니다.
+        {
+            inventory.AddItem( itemInfo );  // 아이템을 내부 인벤토리에 추가합니다.
+            itemInfo.OnItemAdded(this);     // 아이템에 최신 정보를 반영합니다.
+        }
 
         // 아이템 추가 성공을 반환합니다.
-        return true;
-        
-            
+        return true;       
     }
+
+
+
+
+
+
+
+
+
+    
+    private void UpdateAllOverlapCountInExist(string itemName)
+    {
+        List<GameObject> itemObjList = inventory.GetItemObjectList(itemName);
+
+        foreach(GameObject itemObj in itemObjList )
+        {
+            itemObj.GetComponent<ItemInfo>().UpdateCountTxt();
+        }
+
+    }
+
+
+
+
+
 
     
 
-
-    /// <summary>
-    /// 인벤토리의 목록에 *없는* 아이템을 새롭게 생성하고 인벤토리 목록에 추가합니다.<br/>
-    /// 오브젝트 1개만 생성하므로, 여러 아이템을 생성시키고 싶을 때 중복하여 호출해야 합니다.<br/>
-    /// 잡화아이템의 경우 중첩수량을 설정할 수 있습니다. 비잡화 아이템의 경우는 무시합니다.(기본값:1)<br/>
-    /// </summary>
-    /// <returns>인벤토리의 슬롯에 아이템 1개를 생성할 공간이 충분하지 않다면 false를 반환, 성공한 경우 true를 반환</returns>
-    public bool AddItem(string itemName, int overlapCount=1)
-    {
-        Debug.Log("슬롯 여부 " + IsSlotEnough(itemName, overlapCount));
-
-        if( !IsSlotEnough(itemName, overlapCount) )
-            return false;
-                
-        // createManager에게 생성요청을하여 오브젝트 하나를 만듭니다.
-        ItemInfo itemInfo = createManager.CreateWorldItem(itemName, overlapCount);
-
-        // 해당 아이템을 인벤토리에 넣습니다.
-        AddItem(itemInfo);
-
-        return true;
-    }
-
-    /// <summary>
-    /// 인벤토리의 목록에 *없는* 아이템을 새롭게 생성하고 인벤토리 목록에 추가합니다.<br/>
-    /// 인자로 아이템 이름과 중첩 수량 묶음 구조체를 전달받습니다.<br/><br/>
-    /// 오브젝트 단위로 여러 아이템을 생성할 수 있습니다.<br/>
-    /// 비잡화아이템의 경우 ItemPair의 overlapcount는 무시됩니다.<br/>
-    /// </summary>
-    /// <returns>인벤토리의 슬롯에 아이템 여러 개를 생성할 공간이 충분하지 않다면 false를 반환, 성공한 경우 true를 반환</returns>
-    public bool AddItem(ItemPair[] itemPairs)
-    {
-        return true;
-    }
 
 
 

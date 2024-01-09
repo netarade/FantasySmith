@@ -158,7 +158,6 @@ public class ItemSelect : MonoBehaviour
                 // 인벤토리에서 아이템 드롭
                 itemInfo.OnItemWorldDrop();
                 
-                
 
                 
             }

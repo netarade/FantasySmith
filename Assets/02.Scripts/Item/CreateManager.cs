@@ -173,7 +173,7 @@ using WorldItemData;
 * 인벤토리쪽에서 아이템을 집어넣고 슬롯인덱스를 기존의 아이템을 읽어들여서 인덱스를 보게되는데
 * 큰값으로 초기화되거나 하면 안되므로 지정값 초기화
 * 
-* <v12.2 - 2024_01505_최원준>
+* <v12.2 - 2024_0108_최원준>
 * 1- CreateWorldItem메서드 내부에서 아이템 생성 시 이미지와 수량정보를 반영안해주고 있었던 점 수정
 * OnItemCreatedInWorld 메서드를 호출해는 것으로 코드 변경
 * 
@@ -184,6 +184,12 @@ using WorldItemData;
 * 4- 아이템 생성시 VisualManger에서 3D 오브젝트 참조값을 받와와서 2D 오브젝트에 합쳐주는 오브젝트를 반환하도록 구현
 * 
 * 5- GetWorldItem 메서드명을 GetWorldItemClone으로 변경
+* 
+* <v12.3 - 2024_0109_최원준>
+* 1- itemObj변수명 itemObj2D로 변경
+* 2- 
+* 
+* 
 * 
 */
 
@@ -322,21 +328,22 @@ namespace CreateManagement
                 ( (ItemMisc)itemClone ).SetOverlapCount( overlapCount );
 
             // 오브젝트 월드에 생성
-            GameObject itemObj = Instantiate( itemPrefab2D );
+            GameObject itemObj2D = Instantiate( itemPrefab2D );
 
             // 아이템 정보를 등록
-            ItemInfo itemInfo = itemObj.GetComponent<ItemInfo>();
+            ItemInfo itemInfo = itemObj2D.GetComponent<ItemInfo>();
             itemInfo.Item=itemClone;
 
 
             // 아이템 정보를 전달하여 3D 오브젝트를 복제 생성한다음, itemObj에 부착합니다.
             GameObject itemObj3D = Instantiate( visualManager.GetItemPrefab3D(itemInfo));
-            itemObj3D.transform.SetParent( itemObj.transform );
-            itemObj3D.transform.SetSiblingIndex(itemObj.transform.childCount-1);
+            
+            // 2D오브젝트를 3D오브젝트 하위에 부착합니다.
+            itemObj2D.transform.SetParent( itemObj3D.transform );
 
+            // 아이템의 초기화를 진행합니다.
+            itemInfo.OnItemCreated();
 
-            // 아이템을 월드 상태의 형태로 초기화합니다.
-            itemInfo.OnItemCreatedInWorld();
 
             // 컴포넌트 참조값 반환
             return itemInfo;
@@ -350,21 +357,22 @@ namespace CreateManagement
         public ItemInfo CreateWorldItem( Item item )
         {
             // 오브젝트 월드에 생성
-            GameObject itemObj = Instantiate( itemPrefab2D );
+            GameObject itemObj2D = Instantiate( itemPrefab2D );
 
             // 아이템 정보를 등록
-            ItemInfo itemInfo = itemObj.GetComponent<ItemInfo>();
+            ItemInfo itemInfo = itemObj2D.GetComponent<ItemInfo>();
             itemInfo.Item=item;
-            
+
             // 아이템 정보를 전달하여 3D 오브젝트를 복제 생성한다음, itemObj에 부착합니다.
             GameObject itemObj3D = Instantiate( visualManager.GetItemPrefab3D(itemInfo));
-            itemObj3D.transform.SetParent( itemObj.transform );
-            itemObj3D.transform.SetSiblingIndex(itemObj.transform.childCount-1);
+            
+            // 2D오브젝트를 3D오브젝트 하위에 부착합니다.
+            itemObj2D.transform.SetParent( itemObj3D.transform );
 
-
-            // 아이템을 월드 상태의 형태로 초기화합니다.
-            itemInfo.OnItemCreatedInWorld();
-
+            // 아이템의 초기화를 진행합니다.
+            itemInfo.OnItemCreated();
+            
+            // 컴포넌트 참조값 반환
             return itemInfo;
         }
 

@@ -56,14 +56,16 @@ public class ButtonPlayTest : MonoBehaviour
 
     public void CraftStart()
     {
-        if( inventoryInfo.IsItemEnoughMisc("√∂",1, true) )
+        if( inventoryInfo.IsItemEnough("√∂", 1) )
         {
             print("IsItemEnoughMisc √∂¿Ã 1∞≥ ¡∏¿Á«’¥œ¥Ÿ.");
+            //inventoryInfo.RemoveItem("√∂", 1); 
         }
 
-        if(inventoryInfo.IsItemExist("º’µµ≥¢", true))
+        if(inventoryInfo.IsItemEnough("º’µµ≥¢"))
         {
             print("º’µµ≥¢∞° 1∞≥ ¡∏¿Á«’¥œ¥Ÿ.");
+            //inventoryInfo.IsItemEnough("º’µµ≥¢", 1);
         }
 
         

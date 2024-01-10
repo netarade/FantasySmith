@@ -368,64 +368,34 @@ public partial class InventoryInfo : MonoBehaviour
     }
 
 
-
+    
     /// <summary>
-    /// 아이템의 종류와 상관없이 아이템이 인벤토리에 존재하는지, 잡화아이템이라면 수량까지도 충분한지 여부를 반환합니다.<br/>
-    /// 또한 아이템이 존재하거나, 잡화아이템인 경우 수량까지 충분하다면 제거 또는 감소를 결정할 수 있습니다.<br/>
-    /// (기본값: 감소모드 안함, 최신순 감소)<br/><br/>
-    /// *** 비잡화 아이템의 경우 수량 값을 무시합니다. 잡화아이템의 경우 수량이 1이상이 아니면 예외를 발생시킵니다. ***
+    /// 아이템의 종류와 상관없이 아이템이 해당 수량 만큼 인벤토리에 존재하는지 여부를 반환합니다.<br/>
+    /// 아이템 이름과 수량으로 이루어진 구조체 배열을 인자로 받습니다.<br/><br/>
+    /// 일반 아이템은 오브젝트의 갯수를 의미하며, 잡화 아이템은 중첩수량을 의미합니다.<br/>   
+    /// 해당 수량만큼 감소 및 파괴옵션을 지정할 수 있습니다. (기본값: 수량 1, 수량 감소 및 파괴 안함, 최신순 감소 및 파괴)<br/><br/>
+    /// *** 수량 인자가 0이하라면 예외를 발생시킵니다. ***
     /// </summary>
-    /// <returns>전달 한 인자의 모든 조건을 충족하는 경우 true를, 조건을 충족하지 않는 경우 false를 반환, 조건이 충족한 경우 감소를 수행</returns>
-    public bool IsItemEnough( ItemPair[] pairs, bool isReduce = false, bool isLatestModify = true )
+    /// <returns>아이템이 존재하며 수량이 충분한 경우 true를, 존재하지 않거나 수량이 충분하지 않다면 false를 반환</returns>
+    public bool IsItemEnough( ItemPair[] pairs, bool isReduceAndDestroy = false, bool isLatestModify = true )
     {
-        return inventory.IsEnough(pairs, isReduce, isLatestModify);
+        return inventory.IsEnough(pairs, isReduceAndDestroy, isLatestModify);
     }
 
 
 
+    
     /// <summary>
-    /// 일반 아이템의 경우 오브젝트 수량을, 잡화 아이템의 경우 중첩 수량을 의미합니다.
+    /// 아이템의 종류와 상관없이 아이템이 해당 수량 만큼 인벤토리에 존재하는지 여부를 반환합니다.<br/>
+    /// 아이템 이름과 수량을 인자로 받습니다.<br/><br/>
+    /// 일반 아이템은 오브젝트의 갯수를 의미하며, 잡화 아이템은 중첩수량을 의미합니다.<br/>   
+    /// 해당 수량만큼 감소 및 파괴옵션을 지정할 수 있습니다. (기본값: 수량 1, 수량 감소 및 파괴 안함, 최신순 감소 및 파괴)<br/><br/>
+    /// *** 수량 인자가 0이하라면 예외를 발생시킵니다. ***
     /// </summary>
-    /// <returns></returns>
+    /// <returns>아이템이 존재하며 수량이 충분한 경우 true를, 존재하지 않거나 수량이 충분하지 않다면 false를 반환</returns>
     public bool IsItemEnough( string itemName, int count=1, bool isReduceAndDestroy = false, bool isLatestModify=true )
     {
-        // 아이템이 존재한다면
-        if( inventory.IsExist(itemName, count) ) //count갯수만큼 검사해야함
-        {
-            // 아이템 종류를 확인합니다.
-            ItemType itemType = inventory.GetItemTypeInExists(itemName);   
-
-            // 잡화 아이템이라면
-            if( itemType==ItemType.Misc )
-            {
-                // 수량이 충분하다면,
-                if( inventory.IsEnoughOverlapCount( itemName, count ) )    
-                {
-                    // 수량감산 및 파괴옵션이 걸려있다면, 수량감산 및 수량 0이하 파괴
-                    if( isReduceAndDestroy )
-                        inventory.SetOverlapCount( itemName, -count, isLatestModify, null );
-
-                    return true;    // 옵션여부와 상관없이 true 반환
-                }
-                // 수량이 충분하지 않다면,
-                else
-                    return false;   // 옵션여부와 상관없이 false 반환 
-            }
-            // 잡화 아이템이 아니라면
-            else
-            {
-                // count갯수만큼 제거해야함,
-
-                if( isReduceAndDestroy )
-                    Destroy( inventory.RemoveItem( itemName ).gameObject );       // 목록에서 제거함과 동시에 파괴
-                
-                return true;        // 옵션여부와 상관없이 true 반환
-            }
-
-        }
-        // 아이템이 존재하지 않는다면,
-        else
-            return false;       
+        return inventory.IsEnough(itemName, count, isReduceAndDestroy, isLatestModify);      
     }
 
 

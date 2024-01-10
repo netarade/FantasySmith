@@ -36,6 +36,11 @@ using System.Collections.Generic;
  * AddItem을 통해 내부에서 게임오브젝트가 파괴되더라고 ItemInfo는 바로 파괴되지 않고 참조값이 존재하기 때문에
  * 전 후 수량을 파악하여 필요한 처리를 하도록하였음.
  * 
+ * <v2.1 - 2024_0111_최원준>
+ * 1- RemoveItem메서드의 변수명 targetItemInfo->rItemInfo로 변경 
+ * 2- 이름을 인자로 받는 RemoveItem메서드 내 rItemInfo.UpdateInventoryInfo(null); 추가
+ * 
+ * 
  */
 
 
@@ -58,22 +63,23 @@ public partial class InventoryInfo : MonoBehaviour
     public ItemInfo RemoveItem(string itemName, bool isDestroy=false)
     {
         // 인벤토리 목록에서 제거하고 반환 할 참조값을 저장합니다.
-        ItemInfo targetItemInfo = inventory.RemoveItem(itemName);   
+        ItemInfo rItemInfo = inventory.RemoveItem(itemName);   
         
-        if( targetItemInfo==null )
+        if( rItemInfo==null )
             throw new Exception( "해당 이름의 아이템이 존재하지 않습니다." );       
         
         // 파괴 옵션이 걸려있다면, 아이템을 파괴하고 null을 반환합니다.
         else if( isDestroy )
         {
-            Destroy( targetItemInfo.gameObject );       
+            Destroy( rItemInfo.gameObject );       
             return null;
         }
         
         // 아이템을 3D상태로 전환합니다.
-        targetItemInfo.DimensionShift(true);
+        rItemInfo.DimensionShift(true);
+        rItemInfo.UpdateInventoryInfo(null);
 
-        return targetItemInfo;
+        return rItemInfo;
     }
 
 
@@ -87,24 +93,22 @@ public partial class InventoryInfo : MonoBehaviour
     public ItemInfo RemoveItem(ItemInfo itemInfo, bool isDestroy=false)
     {
         // 인벤토리 목록에서 제거하고 반환 할 참조값을 저장합니다.
-        ItemInfo targetItemInfo = inventory.RemoveItem(itemInfo);   
+        ItemInfo rItemInfo = inventory.RemoveItem(itemInfo);   
         
-        if( targetItemInfo==null )
+        if( rItemInfo==null )
             throw new Exception( "해당 이름의 아이템이 존재하지 않습니다." );       
         
         // 파괴 옵션이 걸려있다면, 아이템을 파괴하고 null을 반환합니다.
         else if( isDestroy )
         {
-            Destroy( targetItemInfo.gameObject );       
+            Destroy( rItemInfo.gameObject );       
             return null;
         }
         // 아이템을 3D상태로 전환합니다.
-        targetItemInfo.DimensionShift(true);
-        targetItemInfo.UpdateInventoryInfo(null);
+        rItemInfo.DimensionShift(true);
+        rItemInfo.UpdateInventoryInfo(null);
 
-        //print("아이템을 목록에서 제거하였습니다.");
-
-        return targetItemInfo;
+        return rItemInfo;
     }
 
 
@@ -114,7 +118,7 @@ public partial class InventoryInfo : MonoBehaviour
 
 
     /// <summary>
-    /// 인벤토리의 목록에 *없는* 아이템을 새롭게 생성하고 인벤토리 목록에 추가합니다.<br/>
+    /// 인벤토리의 목록에 없는 아이템을 새롭게 생성하고 인벤토리 목록에 추가합니다.<br/>
     /// 오브젝트 1개만 생성하므로, 여러 아이템을 생성시키고 싶을 때 중복하여 호출해야 합니다.<br/>
     /// 잡화아이템의 경우 중첩수량을 설정할 수 있습니다. 비잡화 아이템의 경우는 무시합니다.(기본값:1)<br/>
     /// </summary>

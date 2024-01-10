@@ -468,8 +468,9 @@ namespace InventoryManagement
 
         /// <summary>
         /// 아이템의 종류와 상관없이 아이템이 해당 수량 만큼 인벤토리에 존재하는지 여부를 반환합니다.<br/>
+        /// 아이템 이름과 수량을 인자로 받습니다.<br/><br/>
         /// 일반 아이템은 오브젝트의 갯수를 의미하며, 잡화 아이템은 중첩수량을 의미합니다.<br/>   
-        /// 기본 수량은 생략 시 1입니다.<br/>
+        /// 해당 수량만큼 감소 및 파괴옵션을 지정할 수 있습니다. (기본값: 수량 1, 수량 감소 및 파괴 안함, 최신순 감소 및 파괴)<br/><br/>
         /// *** 수량 인자가 0이하라면 예외를 발생시킵니다. ***
         /// </summary>
         /// <returns>아이템이 존재하며 수량이 충분한 경우 true를, 존재하지 않거나 수량이 충분하지 않다면 false를 반환</returns>
@@ -485,7 +486,7 @@ namespace InventoryManagement
                 if( itemType==ItemType.Misc )
                 {
                     // 수량이 충분하다면,
-                    if( IsEnoughOverlapCount( itemName, count ) )    
+                    if( IsEnoughOverlapCount( itemName, count, false, isLatestModify ) )    
                     {
                         // 수량감산 및 파괴옵션이 걸려있다면, 수량감산 및 수량 0이하 파괴
                         if( isReduceAndDestroy )
@@ -503,16 +504,11 @@ namespace InventoryManagement
                     // count갯수만큼 제거합니다.
                     if( isReduceAndDestroy )
                     {
-                        List<GameObject> itemObjList = GetItemObjectList(itemName);
-
-                        // objList의 count가 변하므로 리스트의 뒤에서부터 제거
-                        for(int i=itemObjList.Count-1; i>=0; i++)
+                        for(int i=0; i<count; i++)
                         {
-                            GameObject itemObj = itemObjList[i];
-                            itemObjList.RemoveAt(i);
-                        }
-                        // 목록에서 제거함과 동시에 파괴
-                        GameObject.Destroy( RemoveItem( itemName ).gameObject );    
+                            ItemInfo rItemInfo = RemoveItem(itemName, isLatestModify);
+                            GameObject.Destroy(rItemInfo.gameObject);
+                        }                    
                     }
 
                     return true;        // 옵션여부와 상관없이 true 반환
@@ -526,20 +522,21 @@ namespace InventoryManagement
 
 
         /// <summary>
-        /// 아이템의 종류와 상관없이 아이템이 인벤토리에 존재하는지, 잡화아이템이라면 수량까지도 충분한지 여부를 반환합니다.<br/>
-        /// 또한 아이템이 존재하거나, 잡화아이템인 경우 수량까지 충분하다면 제거 또는 감소를 결정할 수 있습니다.<br/>
-        /// (기본값: 감소모드 안함, 최신순 감소)<br/><br/>
-        /// *** 비잡화 아이템의 경우 수량 값을 무시합니다. 잡화아이템의 경우 수량이 1이상이 아니면 예외를 발생시킵니다. ***
+        /// 아이템의 종류와 상관없이 아이템이 해당 수량 만큼 인벤토리에 존재하는지 여부를 반환합니다.<br/>
+        /// 아이템 이름과 수량으로 이루어진 구조체 배열을 인자로 받습니다.<br/><br/>
+        /// 일반 아이템은 오브젝트의 갯수를 의미하며, 잡화 아이템은 중첩수량을 의미합니다.<br/>   
+        /// 해당 수량만큼 감소 및 파괴옵션을 지정할 수 있습니다. (기본값: 수량 1, 수량 감소 및 파괴 안함, 최신순 감소 및 파괴)<br/><br/>
+        /// *** 수량 인자가 0이하라면 예외를 발생시킵니다. ***
         /// </summary>
-        /// <returns>전달 한 인자의 모든 조건을 충족하는 경우 true를, 조건을 충족하지 않는 경우 false를 반환, 조건이 충족한 경우 감소를 수행</returns>
-        public bool IsEnough( ItemPair[] pairs, bool isReduce=false, bool isLatestModify=true)
+        /// <returns>아이템이 존재하며 수량이 충분한 경우 true를, 존재하지 않거나 수량이 충분하지 않다면 false를 반환</returns>
+        public bool IsEnough( ItemPair[] pairs, bool isReduceAndDestroy=false, bool isLatestModify=true)
         {
             int allEnough=0;
                         
             // 모든 아이템이 조건을 충족하는 지 확인
             foreach(ItemPair pair in pairs )
             {
-                if( IsEnough(pair) )
+                if( IsEnough(pair.itemName, pair.overlapCount, false, isLatestModify) )
                     allEnough++;
             }
                                     
@@ -548,10 +545,10 @@ namespace InventoryManagement
             if(allEnough==pairs.Length)
             {
                 // 감소모드인 경우
-                if(isReduce)
+                if(isReduceAndDestroy)
                 {
                     foreach(ItemPair pair in pairs )
-                        IsEnough(pair, isReduce, isLatestModify);
+                        IsEnough(pair.itemName, pair.overlapCount, true, isLatestModify);
                 }
 
                 return true;
@@ -559,7 +556,6 @@ namespace InventoryManagement
             // 하나라도 조건을 충족하지 않는 경우 실패를 반환
             else
                 return false;
-
         }
 
         

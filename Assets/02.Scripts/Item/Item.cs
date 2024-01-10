@@ -80,6 +80,11 @@ using UnityEngine;
  * 
  * 3- 생성자 매개변수 imageRefIndex를 visualRefIndex로 변경
  * 
+ * <v10.0 - 2024_0111_최원준>
+ * 1- 크래프팅 장르에 맞게 클래스 설계 변경
+ * 
+ * 
+ * 
  */
 
 namespace ItemData
@@ -130,18 +135,12 @@ namespace ItemData
     }
 
 
-
-
     /// <summary>
     /// 아이템의 대분류로 잡화, 무기 등의 종류가 있습니다.
     /// </summary>
     public enum ItemType { Misc, Weapon, None };
     
-    /// <summary>
-    /// 아이템 고유 등급으로 초급, 중급, 고급이 있습니다.
-    /// </summary>
-    public enum ItemGrade { Low, Medium, High }
-        
+
     /// <summary>
     /// 기본 아이템 클래스 - 반드시 상속하여 사용하세요.
     /// </summary>  
@@ -151,11 +150,17 @@ namespace ItemData
         [JsonProperty] ItemType eType;
         [JsonProperty] string sNo;
         [JsonProperty] string sName;
-        [JsonProperty] float fPrice;
+        [JsonProperty] string sDesc;
+
         [JsonProperty] VisualReferenceIndex sVisualRefIndex;
         [JsonProperty] int iSlotIndex;
         [JsonProperty] int iSlotIndexAll;
         
+
+
+
+
+
         /// <summary>
         /// 해당 아이템의 대분류 상의 종류로 무기는 Weapon, 잡화는 Misc등을 나타냅니다.
         /// </summary>
@@ -172,10 +177,13 @@ namespace ItemData
         /// </summary>
         [JsonIgnore] public string Name { get {return sName;} }
 
+                
         /// <summary>
-        /// 해당 아이템의 가격으로 float형식의 변수입니다.
+        /// 해당 아이템의 정의를 유저에게 표현해주는 설명으로, string 형식의 변수입니다.
         /// </summary>
-        [JsonIgnore] public float Price { get {return fPrice;} set{ fPrice=value; } }
+        [JsonIgnore] public string Desc { get {return sDesc;} }
+
+
         
         /// <summary>
         /// 해당 아이템의 이미지를 표현하는 인덱스 정보가 담긴 구조체 변수입니다. 
@@ -192,13 +200,18 @@ namespace ItemData
         /// </summary>
         [JsonIgnore] public int SlotIndexAll { get{return iSlotIndexAll; } set{iSlotIndexAll=value;} }
 
-        public Item( ItemType type, string No, string name, float price, VisualReferenceIndex visualRefIndex ) 
+
+
+
+
+
+        public Item( ItemType type, string No, string name, VisualReferenceIndex visualRefIndex, string desc ) 
         {
             eType = type;
             sName = name;
             sNo = No;
-            fPrice = price; 
             sVisualRefIndex = visualRefIndex;
+            sDesc = desc;
         }
 
         /// <summary>
@@ -216,9 +229,9 @@ namespace ItemData
             Debug.Log("Type : " + Type);
             Debug.Log("No : " + No);
             Debug.Log("Name : " + Name);
-            Debug.Log("Price : " + Price);
             Debug.Log("SlotIndex : " + SlotIndex);
             Debug.Log("SlotIndexAll : " + SlotIndexAll);
+            Debug.Log("Desc : " + sDesc);
         }
     }
 }

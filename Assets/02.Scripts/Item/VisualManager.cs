@@ -28,6 +28,11 @@ using WorldItemData;
  * <v1.1 - 2024_0109_최원준>
  * 1- 주석일부 보완
  * 
+ * <v1.2 - 2024_0110_최원준>
+ * 1- GetIVCIndex메서드에서 도끼에 대한 인덱스값이 설정되어 있지 않던점 수정
+ * 
+ * 
+ * 
  */
 namespace CreateManagement
 {
@@ -88,6 +93,9 @@ namespace CreateManagement
                             break;
                         case WeaponType.Bow:               // 서브타입이 활이라면,
                             ivcIdx=(int)IVCType.Bow;
+                            break;
+                        case WeaponType.Axe:               // 서브타입이 도끼라면,
+                            ivcIdx=(int)IVCType.Axe;
                             break;
                     }
                     break;

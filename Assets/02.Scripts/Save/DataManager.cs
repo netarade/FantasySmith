@@ -41,6 +41,11 @@ using Newtonsoft.Json;
  * 1- 인스턴스 생성 방식에서 스크립트 컴포넌트 방식으로 변경
  * (멀티에서 스크립트마다 인스턴스 생성을 방지)
  * 
+ * <v4.3 - 2024_0110_최원준>
+ * 1- Path지정 메서드를 주석처리하였으며, Path를 고정값 읽기전용 프로퍼티로 설정하였습니다.
+ * 이유는 Application경로를 이니셜라이저를 통해 할당할 수 없기 때문에 Awake문에서 초기화를 해야하는데
+ * 다른 스크립트의 Awake문에서 Load를 해버리면 Path값이 안들어온 상태에서 불러오기가 진행되기 때문입니다.
+ * 
  */
 
 namespace DataManagement
@@ -89,10 +94,9 @@ namespace DataManagement
         public int SlotNum {get; set; }
 
 
-
         private void Awake()
         {
-            Path = Application.persistentDataPath + "/";
+            Path = Application.persistentDataPath+"/";
             FileName = "NoName";
             Extension = ".json";
             SlotNum = 0;
@@ -112,7 +116,7 @@ namespace DataManagement
             Extension = extension;
         }
 
-        
+
 
         /// <summary>
         /// 사용자가 원하는 경로를 지정할 수 있습니다.<br/>
@@ -120,12 +124,12 @@ namespace DataManagement
         /// </summary>
         /// <param name="path">절대경로 또는 상대경로입니다.</param>
         /// <param name="isRelative">상대경로인지 여부(기본값 true)</param>
-        public void SetPath(string path, bool isRelative=true)
+        public void SetPath( string path, bool isRelative = true )
         {
-            if(isRelative)
-                Path = Application.persistentDataPath + "/" + path + "/";	
+            if( isRelative )
+                Path=Application.persistentDataPath+"/"+path+"/";
             else
-                Path = path;
+                Path=path;
         }
 
 

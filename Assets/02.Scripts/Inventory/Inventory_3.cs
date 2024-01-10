@@ -81,7 +81,9 @@ using UnityEngine;
  * reamainCount>0일때 슬롯갯수가 부족할때 false를 반환하고, remainCount<=0 이하일 때 무조건 true를 반환하여야 했으나 false를 반환하였던 점 수정
  * 추가로 remainCount가 탐색 중일 때 0이하로 떨어진다면 바로 true를 반환하도록 수정
  * 
- * 
+ * <v3.4 - 2024_0110_최원준>
+ * 1- IsExist에 인벤토리 제거옵션(isReduce)을 삭제하고 오브젝트 갯수(itemObjCount) 검출기능을 추가, 주석도 그에맞게 수정
+ * 이유는 복잡한 혼합메서드를 줄이고 오브젝트 검색이라는 본연의 목적에 초점을 더 맞추기 위함.
  * 
  * 
  */
@@ -418,7 +420,7 @@ namespace InventoryManagement
 
             if(isTotalEnough)       // 합계 누적 수량이 인자로 들어온 수량을 초과하는 경우
             {
-                if( isReduce )      // 삭제 모드라면, 충분 여부를 반환하기 전에 해당 수량만큼 감소시킵니다.
+                if( isReduce )      // 감소 모드라면, 충분 여부를 반환하기 전에 해당 수량만큼 감소시킵니다.
                     SetOverlapCount(itemName, -overlapCount, isLatestModify, null);
 
                     return true;
@@ -432,25 +434,31 @@ namespace InventoryManagement
 
         /// <summary>
         /// 아이템이 인벤토리에 존재하는지 여부를 반환합니다.<br/>
-        /// 최신 순, 오래된 순으로 삭제여부를 결정할 수있습니다. (기본값: 삭제안함, 최신순)<br/><br/>
-        /// *** 아이템의 종류나 수량과 상관없이 오브젝트 단위로 존재하는지 여부만 반환합니다. ***<br/>
+        /// 아이템의 종류에 상관없이 오브젝트 단위로 존재하는지 여부만 반환합니다.<br/>
+        /// 수량인자의 기본 값은 1입니다.<br/><br/>
+        /// 
+        /// *** 수량인자가 0이하로 전달된 경우 예외를 발생시킵니다. *** <br/>
         /// </summary>
-        /// <returns>아이템이 존재하지 않는 경우 false를, 아이템이 존재하거나 삭제에 성공한 경우 true를 반환</returns>
-        public bool IsExist(string itemName, bool isRemove=false, bool isLatestModify=true)
+        /// <returns>아이템이 존재하는 경우 true를, 존재하지 않거나 수량이 충분하지 않으면 false를 반환</returns>
+        public bool IsExist(string itemName, int itemObjCount=1)
         {
+            if(itemObjCount<=0)
+                throw new Exception("수량이 0이하로 전달되었습니다. 확인하여 주세요.");
+
+
             List<GameObject> itemObjList = GetItemObjectList(itemName);     // 인벤토리의 아이템 오브젝트 리스트 참조
            
-            if( itemObjList==null ) // 인벤토리에 오브젝트 리스트가 존재하지 않는 경우
-            {
+            // 인벤토리에 오브젝트 리스트가 존재하지 않는 경우 false반환
+            if( itemObjList==null ) 
                 return false;
-            }           
-            else                    // 오브젝트 리스트가 존재하는 경우
-            {
-                if(isRemove)        // 제거 모드인 경우
-                    RemoveItem(itemName, isLatestModify);
 
+            // 오브젝트 리스트가 존재하면서 들어있는 오브젝트 수량이 충분하다면,
+            else if( itemObjList.Count >= itemObjCount ) 
                 return true;
-            }
+
+            // 오브젝트 수량이 충분하지 않다면,
+            else
+                return false;
         }
 
 
@@ -459,21 +467,61 @@ namespace InventoryManagement
 
 
         /// <summary>
-        /// 아이템의 종류와 상관없이 아이템이 인벤토리에 존재하는지, 잡화아이템이라면 수량까지도 충분한지 여부를 반환합니다.<br/>
-        /// 또한 아이템이 존재하거나, 잡화아이템인 경우 수량까지 충분하다면 제거 또는 감소를 결정할 수 있습니다.<br/>
-        /// (기본값: 감소모드 안함, 최신순 감소)<br/><br/>
-        /// *** 비잡화 아이템의 경우 수량 값을 무시합니다. 잡화아이템의 경우 수량이 1이상이 아니면 예외를 발생시킵니다. ***
+        /// 아이템의 종류와 상관없이 아이템이 해당 수량 만큼 인벤토리에 존재하는지 여부를 반환합니다.<br/>
+        /// 일반 아이템은 오브젝트의 갯수를 의미하며, 잡화 아이템은 중첩수량을 의미합니다.<br/>   
+        /// 기본 수량은 생략 시 1입니다.<br/>
+        /// *** 수량 인자가 0이하라면 예외를 발생시킵니다. ***
         /// </summary>
-        /// <returns>전달 한 인자의 모든 조건을 충족하는 경우 true를, 조건을 충족하지 않는 경우 false를 반환, 조건이 충족한 경우 감소를 수행</returns>
-        public bool IsEnough(ItemPair pair, bool isReduce=false, bool isLatestModify=true)
+        /// <returns>아이템이 존재하며 수량이 충분한 경우 true를, 존재하지 않거나 수량이 충분하지 않다면 false를 반환</returns>
+        public bool IsEnough(string itemName, int count=1, bool isReduceAndDestroy = false, bool isLatestModify=true)
         {
-            ItemType itemType = GetItemTypeInExists(pair.itemName);
-            
-            //잡화아이템인 경우 - 수량검사 및 수량감소메서드 호출, 잡화아이템이 아닌 경우 - 존재여부 및 제거메서드 호출
-            if( itemType==ItemType.Misc )   
-                return IsEnoughOverlapCount( pair.itemName, pair.overlapCount, isReduce, isLatestModify );            
+            // 아이템이 존재한다면
+            if( IsExist(itemName, count) ) //count갯수만큼 검사해야함
+            {
+                // 아이템 종류를 확인합니다.
+                ItemType itemType = GetItemTypeInExists(itemName);   
+
+                // 잡화 아이템이라면
+                if( itemType==ItemType.Misc )
+                {
+                    // 수량이 충분하다면,
+                    if( IsEnoughOverlapCount( itemName, count ) )    
+                    {
+                        // 수량감산 및 파괴옵션이 걸려있다면, 수량감산 및 수량 0이하 파괴
+                        if( isReduceAndDestroy )
+                            SetOverlapCount( itemName, -count, isLatestModify, null );
+
+                        return true;    // 옵션여부와 상관없이 true 반환
+                    }
+                    // 수량이 충분하지 않다면,
+                    else
+                        return false;   // 옵션여부와 상관없이 false 반환 
+                }
+                // 잡화 아이템이 아니라면
+                else
+                {
+                    // count갯수만큼 제거합니다.
+                    if( isReduceAndDestroy )
+                    {
+                        List<GameObject> itemObjList = GetItemObjectList(itemName);
+
+                        // objList의 count가 변하므로 리스트의 뒤에서부터 제거
+                        for(int i=itemObjList.Count-1; i>=0; i++)
+                        {
+                            GameObject itemObj = itemObjList[i];
+                            itemObjList.RemoveAt(i);
+                        }
+                        // 목록에서 제거함과 동시에 파괴
+                        GameObject.Destroy( RemoveItem( itemName ).gameObject );    
+                    }
+
+                    return true;        // 옵션여부와 상관없이 true 반환
+                }
+
+            }
+            // 아이템이 존재하지 않는다면,
             else
-                return IsExist(pair.itemName, isReduce, isLatestModify);
+                return false;   
         }
 
 

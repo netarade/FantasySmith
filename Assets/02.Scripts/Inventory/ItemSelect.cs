@@ -127,7 +127,7 @@ public class ItemSelect : MonoBehaviour
             // 그래픽 레이캐스트를 통해 결과를 받습니다.
             gRaycaster.Raycast( pEventData, raycastResults );
 
-            print("레이캐스팅을 시작합니다.");
+            //print("레이캐스팅을 시작합니다.");
 
 
             // 레이캐스팅에 성공한 경우(검출한 오브젝트가 있는 경우)
@@ -138,7 +138,7 @@ public class ItemSelect : MonoBehaviour
                     // 검출한 오브젝트의 태그가 슬롯이라면,
                     if( raycastResults[i].gameObject.tag==strItemDropSpace )
                     {
-                        print("드랍 메서드를 호출합니다.");
+                        //print("드랍 메서드를 호출합니다.");
                         itemInfo.OnItemSlotDrop( raycastResults[i].gameObject.transform );
                     }
                     // 검출한 오브젝트의 태그가 슬롯이 아니라면, 다시 원위치로 돌려줍니다.
@@ -167,7 +167,7 @@ public class ItemSelect : MonoBehaviour
         }
         else if( Input.GetMouseButton( 0 ) )
         {
-            print( "아직 활성화되지 않았습니다" );
+            //print( "아직 활성화되지 않았습니다" );
             itemRectTr.localPosition = Vector3.zero;
         }
 

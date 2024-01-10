@@ -102,7 +102,7 @@ public partial class InventoryInfo : MonoBehaviour
         targetItemInfo.DimensionShift(true);
         targetItemInfo.UpdateInventoryInfo(null);
 
-        print("아이템을 목록에서 제거하였습니다.");
+        //print("아이템을 목록에서 제거하였습니다.");
 
         return targetItemInfo;
     }

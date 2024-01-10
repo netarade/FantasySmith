@@ -159,6 +159,32 @@ using CreateManagement;
  * <v7.4 - 2024_0109_최원준>
  * 1- IsSlotEnough주석 수정
  * 
+ * <v8.0 - 2024_0110_최원준>
+ * 1- 세이브 파일 이름을 Awake문에서 한번 세팅하지만 실제 로드 시점에서는 다시 초기화되어있는 문제가 있어서
+ * 세이브, 로드 메서드 호출 바로 전에 FileSettings를 호출해주는 것으로 변경
+ * 
+ * 2- 세이브 파일 이름을 인벤토리의 최상위 부모오브젝트명+Inventory로 변경 
+ * 
+ * 3- 인벤토리 창의 활성화 여부를 알려주는 변수및 프로퍼티 IsWindowOpen 선언 후 
+ * UpdateOpenState를 interactive 클래스에서 내부적으로 호출하도록 변경
+ * 
+ * 4- LoadPlayerData메서드를 Start문이 아니라 Awake문 호출로 변경.
+ * LoadData메서드 내부에서 호출되던 UpdateAllItemInfo를 Awake문 외부로 빼내었음.
+ * 
+ * 5- 변수 명 UpdateAllItemInfo를 UpdateAllItemVisualInfo로 수정하였음.
+ * 
+ * 
+ * 5- 슬롯의 생성을 interactive 스크립트에 맞김으로서 메서드 호출관계를 재정립
+ * info클래스 인벤토리 정보 로드 이후-> interactive 클래스에서 슬롯 생성-> 아이템의 모습을 슬롯에 표현
+ * (즉, 로드 이후 슬롯을 생성해야 하며, 슬롯이 생성 된 후 아이템의 모습을 표현해야 하기 때문)
+ * 
+ * 6- interactive 스크립트의 호출을 반드시 Info스크립트에서 하도록 변경
+ * (interactive 스크립트는 이벤트 방식으로 동작하기 때문에 Awake문 초기화가 필요없기 때문 + Info스크립트 의존성을 해결)
+ * 
+ * 7- Load메서드를 Awake에서 Start로 수정하였음.
+ * 이유는 로드 하면서 다른 스크립트의 메서드를 호출하는데 초기화가 이루어지지 않아서 에러가 발생하기 때문
+ * (DataManager의 Path, CreateManager의 itemPrefab3D, VisualManager 등..)
+ * 
  */
 
 
@@ -176,12 +202,12 @@ public partial class InventoryInfo : MonoBehaviour
     /// </summary>
     public Inventory inventory;
 
+
     /// <summary>
     /// 현재 인벤토리가 관리하는 슬롯 리스트의 Transform 정보입니다.
     /// </summary>
     public Transform slotListTr;
         
-    GameObject slotPrefab;              // 슬롯을 동적으로 생성하기 위한 프리팹 참조
     InventoryInteractive interactive;   // 자신의 인터렉티브 스크립트를 참조하여 활성화 탭정보를 받아오기 위한 변수 선언
     DataManager dataManager;            // 저장과 로드 관련 메서드를 호출 할 스크립트 참조
     CreateManager createManager;        // 아이템 생성을 요청하고 반환받을 스크립트 참조
@@ -190,7 +216,29 @@ public partial class InventoryInfo : MonoBehaviour
     public Transform baseDropTr;        // 아이템을 기본적으로 떨어 트릴 위치를 인스펙터뷰에서 직접 지정
     public bool isBaseDropSetParent;    // 드롭장소에 부모 계층에 속할지 지정하는 옵션 (씬정리 용도 및 부모와 함께 움직이도록 하는 용도)
     
+    string saveFileName;                // 저장파일 이름 설정
 
+
+
+
+    private bool isWindowOpen;
+
+    /// <summary>
+    /// 인벤토리 창이 열려 있는지 여부를 반환
+    /// </summary>
+    public bool IsWindowOpen { get; }
+
+    /// <summary>
+    /// 인벤토리 창의 활성화 여부를 업데이트 하는 메서드로 interActive클래스에서 내부적으로 사용하고 있습니다.<br/>
+    /// ** 해당 인벤토리의 Interactive 클래스에서 호출하지 않으면 예외를 발생시킵니다. **
+    /// </summary>
+    public void UpdateOpenState(InventoryInteractive caller, bool isOpen)
+    {
+        if(caller != interactive)
+            throw new Exception("수정 불가능한 호출자입니다.");
+
+        isWindowOpen = isOpen;
+    }
 
 
 
@@ -198,28 +246,27 @@ public partial class InventoryInfo : MonoBehaviour
 
     void Awake()
     {        
-        slotListTr = transform.GetChild(0).GetChild(0).GetChild(0);
-        slotPrefab = slotListTr.GetChild(0).gameObject;
-        
-        // 플레이어 인벤토리 정보(전체 탭 슬롯 칸수)를 참조하여 슬롯을 동적으로 생성 (현재 인벤토리에 슬롯이 한 개 들어있으므로 하나를 감하고 생성)
-        for( int i = 0; i<inventory.SlotCountLimitAll-1; i++ )
-            Instantiate( slotPrefab, slotListTr );
+        Transform gameController = GameObject.FindWithTag("GameController").transform;
+        dataManager = gameController.GetComponent<DataManager>();           // 게임컨트롤러 태그가 있는 오브젝트의 컴포넌트 참조
+        createManager = gameController.GetComponent<CreateManager>();       // 데이터 매니저와 동일한 오브젝트의 컴포넌트 참조
+        saveFileName = transform.parent.parent.name + "_Inventory";         // 세이브 파일이름을 오브젝트 명을 기준으로 설정
+                     
+        interactive = GetComponent<InventoryInteractive>(); // 자신의 인터렉티브 스크립트를 참조합니다.
 
-        interactive = gameObject.GetComponent<InventoryInteractive>();                          // 자신의 인터렉티브 스크립트를 참조합니다.
-        dataManager = GameObject.FindWithTag("GameController").GetComponent<DataManager>();     // 게임컨트롤러 태그가 있는 오브젝트의 컴포넌트 참조
-        dataManager.FileSettings("Inventory", 0);                                               // 세이브 파일명, 슬롯번호
-        createManager = dataManager.gameObject.GetComponent<CreateManager>();                   // 데이터 매니저와 동일한 오브젝트의 컴포넌트 참조
     }
 
-    /// <summary>
-    /// 인스턴스가 새롭게 생성될 때마다 저장된 파일을 불러옵니다.<br/>
-    /// 인벤토리를 역직렬화 할 때 내부적으로 CreateManager의 싱글톤의 메서드를 호출하므로 Start문에서 플레이어 데이터를 불러옵니다.
-    /// </summary>
+
     void Start()
     {        
-        LoadPlayerData();       // 저장된 플레이어 데이터를 불러옵니다.        
+        /** 호출 순서 고정: 로드->인터렉티브스크립트 초기화 및 슬롯생성요청->아이템표현 ***/
+        LoadPlayerData();                           // 저장된 플레이어 데이터를 불러옵니다. 
+        interactive.Initialize(this);               // 인터렉티브 스크립트 초기화를 진행합니다.
+        interactive.CreateInventorySlot(this);      // 인벤토리에 슬롯을 생성합니다.
+        UpdateAllItemVisualInfo();                  // 슬롯에 모든 아이템의 시각화를 진행합니다.        
     }
-        
+
+
+
 
     /// <summary>
     /// 파괴 되기전에 파일에 저장합니다.
@@ -243,9 +290,14 @@ public partial class InventoryInfo : MonoBehaviour
     /// </summary>
     void LoadPlayerData()
     {
-        InventorySaveData loadData = dataManager.LoadData<InventorySaveData>();                
-        inventory=loadData.savedInventory.Deserialize(createManager);
-        UpdateAllItemInfo();
+        // 로드 할 파일명을 설정합니다
+        dataManager.FileSettings(saveFileName); 
+
+        // 파일에서 로드한 데이터한 변수에 저장합니다.
+        InventorySaveData loadData = dataManager.LoadData<InventorySaveData>();              
+        
+        // 역직렬화하여 게임 상의 인벤토리로 변환합니다.
+        inventory=loadData.savedInventory.Deserialize(createManager);   
     }
 
 
@@ -254,9 +306,16 @@ public partial class InventoryInfo : MonoBehaviour
     /// </summary>
     void SavePlayerData()
     {        
+        // 세이브 할 파일명을 설정합니다
+        dataManager.FileSettings(saveFileName);   
+
         // 메서드 호출 시점에 다른 스크립트에서 save했을 수도 있으므로 새롭게 생성하지 않고 기존 데이터 최신화합니다
         InventorySaveData saveData = dataManager.LoadData<InventorySaveData>();
-        saveData.savedInventory.Serialize(inventory);
+
+        // 직렬화하여 저장 가능한 인벤토리로 변환합니다.
+        saveData.savedInventory.Serialize(inventory);   
+        
+        // 파일을 저장합니다.
         dataManager.SaveData<InventorySaveData>(saveData);
     }
 
@@ -266,7 +325,7 @@ public partial class InventoryInfo : MonoBehaviour
     /// 이미지나 위치 정보 등을 최신화하기 위한 메서드입니다.<br/>
     /// 내부적으로 모든 아이템에 OnItemCreated 메서드를 호출하여 새롭게 생성되었을 때의 정보를 입력합니다.<br/>
     /// </summary>
-    private void UpdateAllItemInfo()
+    private void UpdateAllItemVisualInfo()
     {   
         Dictionary<string, List<GameObject>> itemDic;                       // 참조할 아이템 사전을 선언합니다.
 
@@ -309,31 +368,6 @@ public partial class InventoryInfo : MonoBehaviour
     }
 
 
-    /// <summary>
-    /// 인벤토리에 해당 이름의 아이템의 중첩수량이 충분한지를 확인하는 메서드입니다.<br/>
-    /// 인자로 아이템 이름과 수량이 필요합니다.<br/><br/>
-    /// 세번 째 인자로 수량 감소모드를 선택하면 아이템의 중첩수량이 충분하다면 인자로 들어온 수량만큼 감소시키며, <br/>
-    /// 0에 도달한 경우 아이템을 인벤토리에서 제거하고 파괴 시킵니다.<br/>
-    /// 최신 순, 오래된 순으로 감소여부를 결정할 수있습니다. (기본값: 최신순)<br/><br/>
-    /// ** 해당 이름의 아이템이 존재하지 않거나, 잡화 아이템이 아니거나, 수량을 잘못 전달했다면 예외를 발생시킵니다. **
-    /// </summary>
-    /// <returns>아이템 중첩수량이 충분하면 true를, 충분하지 않으면 false를 반환</returns>
-    public bool IsItemEnoughMisc( string itemName, int overlapCount, bool isReduce = false, bool isLatestModify = true )
-    {
-        return inventory.IsEnoughOverlapCount(itemName, overlapCount, isReduce, isLatestModify);
-    }
-
-    /// <summary>
-    /// 아이템이 인벤토리에 존재하는지 여부를 반환합니다.<br/>
-    /// 최신 순, 오래된 순으로 삭제여부를 결정할 수있습니다. (기본값: 삭제안함, 최신순)<br/><br/>
-    /// *** 아이템의 종류나 수량과 상관없이 오브젝트 단위로 존재하는지 여부만 반환합니다. ***<br/>
-    /// </summary>
-    /// <returns>아이템이 존재하지 않는 경우 false를, 아이템이 존재하거나 삭제에 성공한 경우 true를 반환</returns>
-    public bool IsItemExist( string itemName, bool isRemove = false, bool isLatestModify = true )
-    {
-        return inventory.IsExist(itemName, isRemove, isLatestModify);
-    }
-
 
     /// <summary>
     /// 아이템의 종류와 상관없이 아이템이 인벤토리에 존재하는지, 잡화아이템이라면 수량까지도 충분한지 여부를 반환합니다.<br/>
@@ -342,10 +376,60 @@ public partial class InventoryInfo : MonoBehaviour
     /// *** 비잡화 아이템의 경우 수량 값을 무시합니다. 잡화아이템의 경우 수량이 1이상이 아니면 예외를 발생시킵니다. ***
     /// </summary>
     /// <returns>전달 한 인자의 모든 조건을 충족하는 경우 true를, 조건을 충족하지 않는 경우 false를 반환, 조건이 충족한 경우 감소를 수행</returns>
-    public bool IsItemsEnough( ItemPair[] pairs, bool isReduce = false, bool isLatestModify = true )
+    public bool IsItemEnough( ItemPair[] pairs, bool isReduce = false, bool isLatestModify = true )
     {
         return inventory.IsEnough(pairs, isReduce, isLatestModify);
     }
+
+
+
+    /// <summary>
+    /// 일반 아이템의 경우 오브젝트 수량을, 잡화 아이템의 경우 중첩 수량을 의미합니다.
+    /// </summary>
+    /// <returns></returns>
+    public bool IsItemEnough( string itemName, int count=1, bool isReduceAndDestroy = false, bool isLatestModify=true )
+    {
+        // 아이템이 존재한다면
+        if( inventory.IsExist(itemName, count) ) //count갯수만큼 검사해야함
+        {
+            // 아이템 종류를 확인합니다.
+            ItemType itemType = inventory.GetItemTypeInExists(itemName);   
+
+            // 잡화 아이템이라면
+            if( itemType==ItemType.Misc )
+            {
+                // 수량이 충분하다면,
+                if( inventory.IsEnoughOverlapCount( itemName, count ) )    
+                {
+                    // 수량감산 및 파괴옵션이 걸려있다면, 수량감산 및 수량 0이하 파괴
+                    if( isReduceAndDestroy )
+                        inventory.SetOverlapCount( itemName, -count, isLatestModify, null );
+
+                    return true;    // 옵션여부와 상관없이 true 반환
+                }
+                // 수량이 충분하지 않다면,
+                else
+                    return false;   // 옵션여부와 상관없이 false 반환 
+            }
+            // 잡화 아이템이 아니라면
+            else
+            {
+                // count갯수만큼 제거해야함,
+
+                if( isReduceAndDestroy )
+                    Destroy( inventory.RemoveItem( itemName ).gameObject );       // 목록에서 제거함과 동시에 파괴
+                
+                return true;        // 옵션여부와 상관없이 true 반환
+            }
+
+        }
+        // 아이템이 존재하지 않는다면,
+        else
+            return false;       
+    }
+
+
+
 
 
 

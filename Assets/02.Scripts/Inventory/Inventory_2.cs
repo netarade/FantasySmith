@@ -119,6 +119,15 @@ using WorldItemData;
  * 3- 기타 string 이름을 인자로 받는 메서드들에게서 이름이 일치하지 않으면 null이나 None반환하였는데, 예외를 던지도록 수정
  * 
  * 4- AddItemToDic메서드를 private으로 수정
+ * 
+ * <v4.4 - 2024_0110_최원준>
+ * 1- RemoveItem메서드에서 itemObjList가 null일때의 조건검사문 추가 
+ * (딕셔너리 null로는 완전히 삭제된 아이템인 경우 반복호출가능성이 있음)
+ * 
+ * 2- RemoveItem메서드에서 itemObjList가 itemObjList.Count==0일때의 조건 검사문 추가
+ * 현재 오브젝트리스트의 count가 0이되어도 한번 생성되면 남는 상태로 존재
+ * (이는 1개짜리 오브젝트가 삭제와 생성이 반복되는 경우가 있기 때문에 리스트를 완전히 지우지 않기 때문)
+ * 
  */
 
 namespace InventoryManagement
@@ -349,6 +358,11 @@ namespace InventoryManagement
             
             // 딕셔너리에서 오브젝트 리스트를 받습니다
             List<GameObject> itemObjList = itemDic[itemName]; 
+
+            // 오브젝트 리스트가 존재하지 않는다면 null을 반환합니다.
+            if(itemObjList==null || itemObjList.Count==0)
+                return null;
+
 
             // 해당 오브젝트 리스트를 참고하여 아이템의 타입을 미리 얻습니다
             ItemType itemType = itemObjList[0].GetComponent<ItemInfo>().Item.Type;            

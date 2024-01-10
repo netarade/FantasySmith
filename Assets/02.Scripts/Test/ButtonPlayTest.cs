@@ -34,6 +34,7 @@ public class ButtonPlayTest : MonoBehaviour
         inventoryInfo.AddItem( "√∂", 1 );
         inventoryInfo.AddItem( "∞≠√∂", 3 );
         inventoryInfo.AddItem( "πÃΩ∫∏±", 10 );
+        inventoryInfo.AddItem( "º’µµ≥¢" );
     }
 
     public void btnNext()
@@ -51,6 +52,25 @@ public class ButtonPlayTest : MonoBehaviour
         #else
             Application.Quit();
         #endif
+    }
+
+    public void CraftStart()
+    {
+        if( inventoryInfo.IsItemEnoughMisc("√∂",1, true) )
+        {
+            print("IsItemEnoughMisc √∂¿Ã 1∞≥ ¡∏¿Á«’¥œ¥Ÿ.");
+        }
+
+        if(inventoryInfo.IsItemExist("º’µµ≥¢", true))
+        {
+            print("º’µµ≥¢∞° 1∞≥ ¡∏¿Á«’¥œ¥Ÿ.");
+        }
+
+        
+        //if(inventoryInfo.Is("º’µµ≥¢", true))
+        //{
+        //    print("º’µµ≥¢∞° 1∞≥ ¡∏¿Á«’¥œ¥Ÿ.");
+        //}
     }
 
 

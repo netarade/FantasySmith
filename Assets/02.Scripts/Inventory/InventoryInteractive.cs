@@ -4,6 +4,9 @@ using UnityEngine.UI;
 using InventoryManagement;
 using ItemData;
 using System.Runtime.CompilerServices;
+using System;
+using Unity.VisualScripting;
+using UnityEngine.Events;
 
 /*
 * [작업 사항]  
@@ -128,7 +131,26 @@ using System.Runtime.CompilerServices;
 * 1- UpdateAllActiveTabInfo 메서드 내부의 SetActiveTabInfo코드를 UpdaeteActiveTabInfo로 변경
 * 호출인자를 따로 주는 것이 아니라 호출자를 현재 아이템이 속한 interactive로 고정시킴으로서 외부호출의 위험성을 줄임.
 * 
+* <v7.0 - 2024_0110_최원준>
+* 1- 메서드 InventoryQuit를 InventoryOpenSwitch로 변경 후
+* InventoryInfo 스크립트의 UpdateOpenState를 호출하여 오픈창의 상태를 반영하도록 수정
+* ( 인벤토리 창 열고닫는 메서드로 InputSystem과 아이콘X클릭 양쪽에서 활용 예정)
 * 
+* 2- itemInfo의 UpdateActiveTabInfo를 안전성을 위해 호출자를 매개변수로 넣어서 호출하는 방식으로 변경.
+* 
+* 3- public 접근제한자 제거, enum eTabType 삭제
+* 4- 슬롯의 동적 생성을 Info클래스에서 옮겨온 후 메서드로 정의하였고, 이 메서드를 Info클래스에서 호출하는 형식으로 변경
+* 
+* 5- (Interactive클래스의 역할 설정)
+* 초기화하는데 InventroyInfo 클래스의 정보 의존성이 발생하며, 
+* 즉시 사용하는 것이 아니라 특정 액션 이벤트가 발생 시 사용하면 되므로 InventoryInfo 클래스에 초기화를 맡기는 것으로 변경하였음.
+* (Awake문에서 각자 초기화를 진행하면 호출시점이 명확하지 않기 때문에 
+* CreateInventorySlot의 호출이 발생할 때 info클래스 관련 참조값이 잡혀있지 않는 문제가 발생하여 참조값을 한 번더 잡아줘야함.)
+* 
+* 6- Awkae문 삭제 및 코드를 Initialize메서드를 만들어 이동. Info클래스에서 호출방식으로 변경
+* 
+* 7- 탭이벤트 등록 시 람다식 내부에 i가 참조값으로 들어가기 때문에 모든 버튼이벤트가 마지막 참조값으로 호출되는 것을 발견
+* (람다식 클로저 특성) 수정하기 위해 내부 for문에서 새롭게 int변수를 할당해서 i값을 받아서 넣는 형태로 구현
 * 
 * 
 * 
@@ -141,23 +163,30 @@ using System.Runtime.CompilerServices;
 /// 현재 Canvas-Character에 부착되어 있습니다.<br/>
 /// </summary>
 public class InventoryInteractive : MonoBehaviour
-{
+{   
+    Transform inventoryTr;          // 인벤토리 판넬을 참조하여 껐다 켰다 하기 위함.   
+    InventoryInfo inventoryInfo;    // 플레이어의 인벤토리 정보
+    Inventory inventory;            // 인벤토리 스크립트 내부 인벤토리 데이터
+
+    Transform slotListTr;           // 인벤토리 전체탭 슬롯리스트의 트랜스폼 참조
+    Transform emptyListTr;          // 아이템을 보이지 않는 곳에 잠시 옮겨둘 오브젝트(뷰포트의 1번째 자식)
+
+    Button[] btnTap;                // 버튼 탭을 눌렀을 때 각 탭에 맞는 아이템이 표시되도록 하기 위한 참조
+
+    bool isInventoryOn;             // On상태 기록하기 위한 변수
+    CanvasGroup inventoryCG;        // 인벤토리의 캔버스 그룹
+
+    ItemType curActiveTab;          // 현재 활성화 중인 탭을 저장 (버튼 클릭 시 중복 실행을 방지하기 위해)
+    bool isActiveTabAll;            // 현재 활성화 중인 탭이 전체 기준인지, 개별 기준인지 여부를 반환
+
+
     
-    Transform inventoryTr;                      // 인벤토리 판넬을 참조하여 껐다 켰다 하기 위함.   
-    public Transform slotListTr;                // 인벤토리 전체탭 슬롯리스트의 트랜스폼 참조
-    public Transform emptyListTr;               // 아이템을 보이지 않는 곳에 잠시 옮겨둘 오브젝트(뷰포트의 1번째 자식)
+    GameObject slotPrefab;          // 슬롯을 동적으로 생성하기 위한 프리팹 참조
 
-    InventoryInfo inventoryInfo;                // 플레이어의 인벤토리 정보
-    Inventory inventory;                        // 인벤토리 스크립트 내부 인벤토리 데이터
 
-    Button[] btnTap;                            // 버튼 탭을 눌렀을 때 각 탭에 맞는 아이템이 표시되도록 하기 위한 참조
 
-    bool isInventoryOn;                         // On상태 기록하기 위한 변수
-    CanvasGroup inventoryCG;                    // 인벤토리의 캔버스 그룹
 
-    public enum eTapType { All, Weap, Misc }    // 어떤 종류의 탭인지를 보여주는 열거형
-    ItemType curActiveTab;                      // 현재 활성화 중인 탭을 저장 (버튼 클릭 시 중복 실행을 방지하기 위해)
-    bool isActiveTabAll;                        // 현재 활성화 중인 탭이 전체 기준인지, 개별 기준인지 여부를 반환
+
 
 
     /// <summary>
@@ -166,10 +195,6 @@ public class InventoryInteractive : MonoBehaviour
     /// ItemDrag에서 정보를 받고 수정합니다.
     /// </summary>
     public bool IsItemSelecting {get; set;} = false;
-
-
-
-
 
     /// <summary>
     /// 현재 활성화탭이 전체 기준인지, 개별 기준인지 여부를 반환합니다.
@@ -184,59 +209,125 @@ public class InventoryInteractive : MonoBehaviour
 
 
 
-    void Awake()
+    /// <summary>
+    /// 이 스크립트가 동작하기 위해서 InventoryInfo클래스에서 호출해줘야 할 메서드입니다.<br/>
+    /// 해당 InventoryInfo에서 Load가 이루어진 이후에 내부 정보를 바탕으로 초기화를 진행합니다.<br/><br/>
+    /// *** 호출 InventoryInfo와 InventoryInteractive의 계층이 다르다면 예외가 발생합니다. ***
+    /// </summary>
+    public void Initialize(InventoryInfo caller)
     {
-        inventoryTr = transform;                                       // 인벤토리 판넬 참조
+        inventoryTr = transform;                                       // 인벤토리 판넬 참조  
+
+        if(caller.transform != inventoryTr)
+            throw new Exception("초기화를 진행할 수 없는 호출자입니다. 확인하여 주세요.");
+
+        inventoryInfo = caller;                                        // Info 클래스 참조 등록
+        inventory = inventoryInfo.inventory;                           // 내부 인벤토리 정보 참조 등록
+        
+        inventoryCG = inventoryTr.GetComponent<CanvasGroup>();         // 인벤토리의 캔버스그룹 참조
         slotListTr = inventoryTr.GetChild(0).GetChild(0).GetChild(0);  // 뷰포트-컨텐트-전체 슬롯리스트
+        slotPrefab = slotListTr.GetChild(0).gameObject;                // 슬롯 리스트 하위에 미리 1개가 추가되어 있음
         emptyListTr = inventoryTr.GetChild(0).GetChild(1);             // 뷰포트-EmptyList
                                                                        
-        inventoryInfo = inventoryTr.GetComponent<InventoryInfo>();     // 인벤토리 정보를 참조합니다
-        inventory = inventoryInfo.inventory;            
+        CreateActiveTabBtn();   // 액티브탭 버튼 생성
+        InitOpenState();        // 인벤토리 오픈 상태 초기화
+    }
 
 
-        btnTap = new Button[3]; //버튼 배열의 갯수 설정
+    /// <summary>
+    /// 버튼 액티브 탭을 동적으로 생성하고 이벤트를 등록합니다.
+    /// </summary>
+    private void CreateActiveTabBtn()
+    {        
+        // 액티브탭 갯수 - 향후 inventory의 dicNum+1로 수정예정
+        int activeTabNum = 3;
 
-        // 탭 버튼 컴포넌트 참조 후 버튼의 이벤트를 등록합니다.(int값 인자를 다르게 줘서 등록합니다)
-        for( int i = 0; i<3; i++ )
+        // 버튼 배열을 참조할 갯수를 설정합니다.
+        btnTap = new Button[activeTabNum]; 
+
+        // 미리 생성되어있는 전체탭의 참조값을 가져 온 후 이벤트를 연결합니다.
+        btnTap[0] = inventoryTr.GetChild(1).GetChild(0).GetComponent<Button>();
+        btnTap[0].onClick.AddListener( () => BtnTapClick( 0 ) );
+        
+
+        // 나머지 탭을 전체탭을 바탕으로 동적할당하여 이벤트를 연결합니다.
+        for(int i=1; i<activeTabNum; i++)
         {
-            btnTap[i]=inventoryTr.GetChild( 1 ).GetChild( i ).GetComponent<Button>(); //인벤토리-Buttons하위에 존재
-            btnTap[i].onClick.AddListener( () => BtnTapClick( i ) );
+            int idx = i;
+            btnTap[i] = Instantiate(btnTap[0].gameObject, btnTap[0].transform.parent).GetComponent<Button>();
+            btnTap[i].onClick.AddListener( () => BtnTapClick( idx ) );
         }
+        
+        // 버튼 이름과 텍스트를 설정합니다. (향후 인벤토리 클래스 구조 변경 후 수정예정) 
+        btnTap[1].gameObject.name = "ActiveTab-Weap";
+        btnTap[1].GetComponentInChildren<Text>().text = "무기";
+        
+        btnTap[2].gameObject.name = "ActiveTab-Misc";
+        btnTap[2].GetComponentInChildren<Text>().text = "잡화";
+                
+        
+
 
         btnTap[0].Select();            // 첫 시작 시 항상 전체탭을 Select로 표시해줍니다.
         curActiveTab = ItemType.None;  // 활성화중인 탭을 전체탭으로 설정
         isActiveTabAll = true;         // 전체탭 기준 상태변수 설정
-        
-        // 인벤토리의 모든 이미지와 텍스트 참조, 캔버스그룹 참조
-        inventoryCG = inventoryTr.GetComponent<CanvasGroup>();
-
-        // 게임 시작 시 인벤토리 판넬을 꺼둔다.
-        SwitchInventoryAppear(false);
-        isInventoryOn = false;          //초기에 인벤토리는 꺼진 상태
     }
 
 
     /// <summary>
-    /// 인벤토리 아이콘 클릭 시 OnOff 스위치
+    /// 인벤토리 창의 상태 초기화를 진행합니다.
     /// </summary>
-    public void InventoryQuit()
+    private void InitOpenState()
+    {
+        // 게임 시작 시 인벤토리 판넬을 꺼둔다.
+        SwitchInventoryAppear(false);
+        isInventoryOn = false;          //초기에 인벤토리는 꺼진 상태        
+    }
+
+
+
+
+
+
+
+    /// <summary>
+    /// InventoryInfo에서 slotCoutLimit정보를 전달 받아서 슬롯을 생성하는 메서드입니다.<br/>
+    /// slotCountLimit정보가 최신화된 상태에서 호출하여야 합니다.<br/>
+    /// *** 동일 인벤토리의 InventoryInfo가 아니면 호출할 수 없습니다. ***
+    /// </summary>
+    public void CreateInventorySlot(InventoryInfo caller)
+    {                          
+        if( caller != inventoryInfo )
+            throw new Exception("호출자를 확인하여 주세요. 동일 인벤토리에서만 호출 할 수 있습니다.");
+                      
+
+        // 플레이어 인벤토리 정보(전체 탭 슬롯 칸수)를 참조하여 슬롯을 동적으로 생성
+        // 현재 인벤토리에 슬롯이 한 개 들어있으므로 하나를 감하고 생성
+        for( int i = 0; i<caller.inventory.SlotCountLimitAll-1; i++ )
+            Instantiate( slotPrefab, slotListTr );
+    }
+
+
+
+
+
+
+
+
+
+
+    /// <summary>
+    /// 인벤토리 창을 열고닫는 메서드입니다.<br/>
+    /// 플레이어 InputSystem에서의 I키를 누르거나 인벤토리 아이콘 x아이콘 클릭 시 호출됩니다.<br/>
+    /// </summary>
+    public void InventoryOpenSwitch()
     {
         SwitchInventoryAppear( !isInventoryOn );    // 호출 시 마다 반대 상태로 넣어줍니다
         isInventoryOn = !isInventoryOn;             // 상태 변화를 반대로 기록합니다
+
+        inventoryInfo.UpdateOpenState(this, isInventoryOn);     // 상태를 Info클래스에 반영합니다.
     }
 
-
-    /// <summary>
-    /// 인벤토리 키 맵핑 I키를 누르면 인벤토리를 종료합니다 (나중에 InputSystem방식으로 변경해야 합니다)
-    /// </summary>
-    private void Update()
-    {
-        if(Input.GetKeyDown(KeyCode.I))
-        {
-            SwitchInventoryAppear( !isInventoryOn );    // 호출 시 마다 반대 상태로 넣어줍니다
-            isInventoryOn = !isInventoryOn;             // 상태 변화를 반대로 기록합니다
-        }        
-    }
 
 
     /// <summary>
@@ -256,12 +347,11 @@ public class InventoryInteractive : MonoBehaviour
     /// <param name="btnIdx"></param>
     public void BtnTapClick( int btnIdx )
     {
-        
         if(btnIdx==0)       // All 탭
-        {   
-            if(curActiveTab==ItemType.None)     // 현재 활성화 중인 탭이 전체 탭이라면 재실행하지 않는다.
+        {
+            if( curActiveTab==ItemType.None )     // 현재 활성화 중인 탭이 전체 탭이라면 재실행하지 않는다.
                 return;
-
+            
             curActiveTab = ItemType.None;       // 활성화 중인 탭 변경 
             isActiveTabAll = true;              // 활성화 기준 전체로 변경
         }
@@ -300,15 +390,15 @@ public class InventoryInteractive : MonoBehaviour
 
         for( int i = 0; i<inventory.CurDicLen; i++ )
         {
-            itemDic=inventory.GetItemDicIgnoreExsists( (ItemType)i );   // CurDicLen 갯수만큼 딕셔너리를 하나씩 변경합니다.
+            itemDic=inventory.GetItemDicIgnoreExsists( (ItemType)i );      // CurDicLen 갯수만큼 딕셔너리를 하나씩 변경합니다.
 
-            foreach( List<GameObject> itemObjList in itemDic.Values )   // 해당 딕셔너리의 오브젝트리스트를 가져옵니다.
+            foreach( List<GameObject> itemObjList in itemDic.Values )      // 해당 딕셔너리의 오브젝트리스트를 가져옵니다.
             {
-                foreach( GameObject itemObj in itemObjList )            // 오브젝트리스트에서 오브젝트를 하나씩 가져옵니다.
+                foreach( GameObject itemObj in itemObjList )               // 오브젝트리스트에서 오브젝트를 하나씩 가져옵니다.
                 {
                     ItemInfo itemInfo = itemObj.GetComponent<ItemInfo>();  // 아이템 정보를 읽어들입니다.
 
-                    itemInfo.UpdateActiveTabInfo();                     // 활성화 탭 정보를 현재 활성화탭 기준으로 변경합니다.
+                    itemInfo.UpdateActiveTabInfo(this, isActiveTabAll);    // 활성화 탭 정보를 현재 활성화탭 기준으로 변경합니다.
                 }
 
             }
@@ -352,16 +442,17 @@ public class InventoryInteractive : MonoBehaviour
     /// 내부적으로 InventoryInfo 클래스의 개별 딕셔너리에 존재하는 모든 아이템의 위치 정보를 업데이트하는 메서드를 활용합니다
     /// </summary>
     private void MoveActiveItemToSlot()
-    {        
+    {
         // 현재 활성화 탭이 전체 탭인 경우 모든 딕셔너리를 대상으로 호출
-        if( isActiveTabAll )   
+        if( isActiveTabAll )
         {
-            for(int i=0; i<inventory.CurDicLen; i++)
-                inventoryInfo.UpdateDicItemPosition( (ItemType)i );  
+            print(inventory.CurDicLen);
+            for( int i = 0; i<inventory.CurDicLen; i++ )
+                inventoryInfo.UpdateDicItemPosition( (ItemType)i );
         }
         // 현재 활성화 탭이 개별 탭인 경우 개별 딕셔너리를 대상으로 호출
         else
-            inventoryInfo.UpdateDicItemPosition(curActiveTab);
+            inventoryInfo.UpdateDicItemPosition( curActiveTab );
     }
 
     

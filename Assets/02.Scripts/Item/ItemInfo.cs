@@ -299,6 +299,11 @@ using CreateManagement;
  *3- UpdateInventoryInfo에서 baseDropTr을 null로 잡아주고 있던점 수정
  *OnItemWorldDrop시 인벤토리의 RemoveItem을 먼저 해주게 되는데, 드랍위치를 null로 잡아버리기 때문에 드랍 불가능한 현상 발생하였기 때문
  *
+ *<v12.7 - 2024_0110_최원준>
+ *1- UpdateActiveTabInfo를 안전성을 위해 호출자를 매개변수로 넣어서 호출하는 방식으로 변경하여 외부에서만 호출가능하게 함.
+ *UpdateInventoryInfo에서 액티브탭의 정보를 읽어올 때는 InventoryInteractive 클래스의 프로퍼티에 직접접근하여 가져오는 방식으로 변경
+ *
+ *
  *
  */
 
@@ -575,7 +580,6 @@ public partial class ItemInfo : MonoBehaviour
         }
         else // 다른 인벤토리로 전달된 경우
         {
-            print("인벤토리 정보를 업데이트 합니다.");
             // 인벤토리 참조 정보를 업데이트 합니다.
             inventoryInfo = newInventoryInfo;
             inventoryTr = inventoryInfo.transform;
@@ -593,23 +597,24 @@ public partial class ItemInfo : MonoBehaviour
             baseDropTr = inventoryInfo.baseDropTr;                  // 기본 드랍위치와 부모설정을 인벤토리로부터 참조
             isBaseDropSetParent = inventoryInfo.isBaseDropSetParent;                                        
 
-            UpdateActiveTabInfo();                                  // 액티브 탭 정보 최신화   
+            isActiveTabAll = inventoryInteractive.IsActiveTabAll;   // 액티브 탭 정보 최신화   
             prevDropSlotTr = slotListTr.GetChild(item.SlotIndex);   // 이전 드롭이벤트 호출자를 현재 들어있는 슬롯으로 최신화
         }      
     }
 
     /// <summary>
-    /// 아이템 외부 스크립트인 인벤토리의 interactive스크립트에서 활성화 탭의 변경이 시도되었을 때<br/>
+    /// 아이템 외부 스크립트인 인벤토리의 interactive스크립트에서 활성화 탭의 변경이 시도되었을 때
     /// 활성화 탭 정보를 최신화 하기 위해 호출하는 메서드입니다.<br/><br/>
     /// 다른 인벤토리로의 정보의 변동이 있을때, 혹은 같은 인벤토리 내에서 탭정보의 변동이 있을 때 호출을 진행합니다.<br/><br/>
-    /// ** 3D 월드에 있는 상태에서 호출하면 예외를 발생시킵니다.<br/>
+    /// ** 현재 아이템이 속한 인벤토리의 Interactive 스크립트에서만 호출가능합니다. **<br/>
     /// </summary>
-    public void UpdateActiveTabInfo()
+    public void UpdateActiveTabInfo(InventoryInteractive caller, bool isActiveTabAll)
     {
-        if(IsWorldPositioned)
-            throw new Exception("아이템이 월드에 있을 때는 호출 할 수 없습니다. 확인하여 주세요.");
+        if(caller != inventoryInteractive)
+            throw new Exception("변경 불가능한 호출자입니다. 확인하여주세요.");
 
-        isActiveTabAll = inventoryInteractive.IsActiveTabAll; 
+
+        this.isActiveTabAll = isActiveTabAll; 
     }
 
      

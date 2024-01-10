@@ -155,6 +155,9 @@ using UnityEngine;
  * 2- DeserializeItemListToDic내부에 코드 수정 
  * (Item클래스를 직접 Add하는 메서드를 제거한 관계로 createManager에서 호출하여 참조값을 받도록 수정)
  * 
+ * <v8.6 - 2024_0110_최원준>
+ * 1- CurDicLen 의 값이 ItemType.None-1이던 점을 ItemType.None으로수정
+ * (열거형이 0부터 시작하므로)
  * 
  * 
  */
@@ -232,7 +235,7 @@ namespace InventoryManagement
         /// <summary>
         /// 현재 인벤토리의 딕셔너리 길이를 반환합니다.
         /// </summary>
-        public int CurDicLen { get { return (int)ItemType.None-1;} } //전체 길이이므로 개별 종류를 가지는 인벤토리에서는 적용되지 않으므로 수정필요
+        public int CurDicLen { get { return (int)ItemType.None;} } //전체 길이이므로 개별 종류를 가지는 인벤토리에서는 적용되지 않으므로 수정필요
 
         
         /**** 내부적으로만 사용하는 속성 ****/

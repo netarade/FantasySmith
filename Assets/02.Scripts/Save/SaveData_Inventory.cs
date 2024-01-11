@@ -15,6 +15,9 @@ using System.Collections.Generic;
  * 인벤토리를 새롭게 생성할 때 InventoryInfo를 인자로 넣어주도록 수정
  * 이는 CreateManager의 참조값을 얻기 위함
  * 
+ * <v1.3 -2024_0111_최원준>
+ * 1- 아이템 클래스 추가로 인해 questList를 추가
+ * 
  */
 
 
@@ -56,8 +59,12 @@ namespace DataManagement
     {
         public List<ItemWeapon> weapList;
         public List<ItemMisc> miscList;
+        public List<ItemQuest> questList;
+
         public int slotCountLimitWeap;
         public int slotCountLimitMisc;
+        public int slotCountLimitQuest;
+
         
         /// <summary>
         /// SerializableInventory의 디폴트 생성자입니다. 직렬화 가능한 인벤토리 인스턴스를 생성해 줍니다.
@@ -86,8 +93,11 @@ namespace DataManagement
                       
             inventory.DeserializeItemListToDic<ItemWeapon>( this.weapList );
             inventory.DeserializeItemListToDic<ItemMisc>( this.miscList );
+            inventory.DeserializeItemListToDic<ItemQuest>( this.questList );
+
             inventory.SlotCountLimitWeap = this.slotCountLimitWeap;
             inventory.SlotCountLimitMisc = this.slotCountLimitMisc;
+            inventory.SlotCountLimitQuest = this.slotCountLimitQuest;
 
             return inventory;
         }
@@ -99,8 +109,11 @@ namespace DataManagement
         {
             this.weapList=inventory.SerializeDicToItemList<ItemWeapon>();
             this.miscList=inventory.SerializeDicToItemList<ItemMisc>();
+            this.questList=inventory.SerializeDicToItemList<ItemQuest>();
+
             this.slotCountLimitWeap = inventory.SlotCountLimitWeap;
             this.slotCountLimitMisc = inventory.SlotCountLimitMisc;
+            this.slotCountLimitQuest = inventory.SlotCountLimitQuest;
         }
 
 

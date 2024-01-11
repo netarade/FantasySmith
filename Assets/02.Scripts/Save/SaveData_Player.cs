@@ -1,8 +1,3 @@
-using CraftData;
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
-
 namespace DataManagement
 { 
     /// <summary>
@@ -25,10 +20,6 @@ namespace DataManagement
         /// </summary>
         public int silver;
 
-        /// <summary>
-        /// 플레이어의 제작 가능 목록과 숙련도, 레시피 맞춘 횟수 정보가 담겨 있는 제작 관련 클래스 입니다.
-        /// </summary>
-        public Craftdic craftDic;        
              
 
         /// <summary>
@@ -40,7 +31,6 @@ namespace DataManagement
             playTime = 0f;
             gold = 0;
             silver = 0;
-            craftDic = new Craftdic();
         }
 
     }

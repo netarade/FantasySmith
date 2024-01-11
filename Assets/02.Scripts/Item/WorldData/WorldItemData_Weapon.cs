@@ -30,9 +30,9 @@ public partial class WorldItem
         return new Dictionary<string, Item>()
         {
             /*** 검 ***/
-            { "검", new ItemWeapon( ItemType.Weapon, "1000", "검", new VisualReferenceIndex(0),
-                WeaponType.Sword, 10, 100, 
-                "아이템 설명넣기" )
+            { 
+                "손도끼", new ItemWeapon( ItemType.Weapon, "2000", "손도끼", new VisualReferenceIndex(0),
+                WeaponType.Sword, 10, 100, "아이템 설명넣기" )
             },
         };    
     }

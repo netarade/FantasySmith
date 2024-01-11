@@ -31,6 +31,10 @@ using WorldItemData;
  * <v1.2 - 2024_0110_최원준>
  * 1- GetIVCIndex메서드에서 도끼에 대한 인덱스값이 설정되어 있지 않던점 수정
  * 
+ * <v2.0 - 2024_0111_최원준>
+ * 1- 아이템 클래스 추가 및 변경으로 인한 수정
+ * IVCType과 ivcNum수정
+ * GetIVCIndex메서드 내부 퀘스트 타입 추가
  * 
  * 
  */
@@ -39,23 +43,23 @@ namespace CreateManagement
     public enum SpriteType { innerSprite, statusSprite }             // 어떤 Sprite값을 얻기위한 종류 정의
 
     // 이미지 집합 배열의 인덱스 구분
-    public enum IVCType { MiscBase, MiscAdd, MiscOther, Sword, Bow, Axe }
+    public enum IVCType { Weapon, Quest, MiscBasic, MiscBuilding }
 
 
     public class VisualManager : MonoBehaviour
     {
         /*** 아이템 외부 참조 정보 ***/
         public ItemVisualCollection[] ivcArr;    // 인스펙터 뷰 상에서 등록할 아이템 이미지 집합 배열
-         
         
-        // 이미지 집합 배열의 갯수
-        private readonly int ivcNum = 6;                                 
-
+        
 
         void Awake()
         {
             // 인스펙터뷰 상에서 하위에 달아놓은 스프라이트 이미지 집합을 참조합니다.
             Transform imageCollectionsTr = transform.GetChild( 0 );
+            
+            // 이미지 집합 배열의 갯수
+            int ivcNum = imageCollectionsTr.childCount;
 
             // 배열을 해당 갯수만큼 생성해줍니다.
             ivcArr=new ItemVisualCollection[ivcNum];
@@ -82,39 +86,28 @@ namespace CreateManagement
             // 인스펙터 뷰에서 참조할 인덱스를 현재 들어온 아이템의 기본타입 및 서브타입에 따라서 구합니다. 
             switch( itemType )        
             {
-                case ItemType.Weapon:
-                    ItemWeapon weapItem = (ItemWeapon)item;
-                    WeaponType weaponType = weapItem.WeaponType;  // 아이템의 서브타입을 구분합니다.
+                case ItemType.Quest:
+                    ivcIdx=(int)IVCType.Quest;
+                    break;
 
-                    switch( weaponType )
-                    {
-                        case WeaponType.Sword:             // 서브타입이 검이라면,
-                            ivcIdx=(int)IVCType.Sword;
-                            break;
-                        case WeaponType.Bow:               // 서브타입이 활이라면,
-                            ivcIdx=(int)IVCType.Bow;
-                            break;
-                        case WeaponType.Axe:               // 서브타입이 도끼라면,
-                            ivcIdx=(int)IVCType.Axe;
-                            break;
-                    }
+                case ItemType.Weapon:
+                    ivcIdx=(int)IVCType.Weapon;
                     break;
 
                 case ItemType.Misc:
                     ItemMisc miscItem = (ItemMisc)item;
-                    MiscType miscType = miscItem.MiscType;
 
-                    switch( miscType )
+                    switch( miscItem.MiscType )
                     {
                         case MiscType.Basic:           // 서브타입이 기본 재료라면,
-                            ivcIdx=(int)IVCType.MiscBase;
+                            ivcIdx=(int)IVCType.MiscBasic;
                             break;
-                        case MiscType.Additive:        // 서브타입이 추가 재료라면,
-                            ivcIdx=(int)IVCType.MiscAdd;
+                        case MiscType.Building:        // 서브타입이 추가 재료라면,
+                            ivcIdx=(int)IVCType.MiscBuilding;
                             break;
                         default:                       // 서브타입이 기타 재료라면,
-                            ivcIdx=(int)IVCType.MiscOther;
-                            break;
+                            throw new Exception("현재 ItemVisualCollection 인덱스가 설정되어있지 않습니다.");
+                            
                     }
                     break;
             }
@@ -125,6 +118,7 @@ namespace CreateManagement
             else
                 return ivcIdx;        
         }
+
 
 
         /// <summary>

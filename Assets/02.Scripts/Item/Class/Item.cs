@@ -138,7 +138,7 @@ namespace ItemData
     /// <summary>
     /// 아이템의 대분류로 잡화, 무기 등의 종류가 있습니다.
     /// </summary>
-    public enum ItemType { Misc, Weapon, None };
+    public enum ItemType { Misc, Weapon, Quest ,None };
     
 
     /// <summary>

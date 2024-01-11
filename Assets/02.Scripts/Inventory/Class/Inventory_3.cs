@@ -85,6 +85,10 @@ using UnityEngine;
  * 1- IsExist에 인벤토리 제거옵션(isReduce)을 삭제하고 오브젝트 갯수(itemObjCount) 검출기능을 추가, 주석도 그에맞게 수정
  * 이유는 복잡한 혼합메서드를 줄이고 오브젝트 검색이라는 본연의 목적에 초점을 더 맞추기 위함.
  * 
+ * <v3.5 - 2024_0111_최원준>
+ * 1- 퀘스트 아이템 클래스 추가로 인해 
+ * FindNearstSlotIdx메서드에 아이템을 읽어오는 사전 길이를 수정
+ * 
  * 
  */
 
@@ -170,7 +174,8 @@ namespace InventoryManagement
             {
                 int dicLen = (int)ItemType.None;    // 개별 사전의 총 갯수를 설정합니다.
 
-                for(int i=0; i<dicLen; i++)               
+                // 퀘스트 아이템을 제외한 총 아이템 사전만큼.
+                for(int i=0; i<dicLen-1; i++)               
                 {
                     // 존재하는 모든 딕셔너리 사전을 하나씩 가져옵니다.
                     itemDic = GetItemDicIgnoreExsists((ItemType)i); 

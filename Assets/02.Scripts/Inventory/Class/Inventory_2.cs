@@ -128,6 +128,10 @@ using WorldItemData;
  * 현재 오브젝트리스트의 count가 0이되어도 한번 생성되면 남는 상태로 존재
  * (이는 1개짜리 오브젝트가 삭제와 생성이 반복되는 경우가 있기 때문에 리스트를 완전히 지우지 않기 때문)
  * 
+ * <V5.0 -2024_0111_최원준>
+ * 1- 퀘스트 아이템 클래스를 추가하면서 관련 메서드를 수정
+ * 
+ * 
  */
 
 namespace InventoryManagement
@@ -399,8 +403,13 @@ namespace InventoryManagement
         {
             if(weapDic.ContainsKey(itemName))
                 return true;
+
             else if(miscDic.ContainsKey(itemName))
                 return true;
+
+            else if( questDic.ContainsKey(itemName))
+                return true;
+
             else
                 return false;
         }
@@ -415,8 +424,13 @@ namespace InventoryManagement
         {
             if(weapDic.ContainsKey(itemName))
                 return ItemType.Weapon;
+
             else if(miscDic.ContainsKey(itemName))
                 return ItemType.Misc;
+
+            else if(questDic.ContainsKey(itemName))
+                return ItemType.Quest;
+
             else
                 return ItemType.None;
         }
@@ -445,8 +459,12 @@ namespace InventoryManagement
         {
             if(weapDic.ContainsKey(itemName))
                 return weapDic;
+
             else if(miscDic.ContainsKey(itemName))
                 return miscDic;
+
+            else if(questDic.ContainsKey(itemName))
+                return questDic;
             else
                 return null;
         }
@@ -473,15 +491,13 @@ namespace InventoryManagement
         /// <returns>해당 아이템 종류의 사전을 반환</returns>
         public Dictionary<string, List<GameObject>> GetItemDicIgnoreExsists(ItemType itemType)
         {
-            switch(itemType)
+            for( int i = 0; i<dicType.Length; i++ )
             {
-                case ItemType.Weapon:
-                    return weapDic;
-                case ItemType.Misc:
-                    return miscDic;
-                default :
-                    throw new Exception("해당 종류의 사전이 존재하지 않습니다. 아이템 명을 확인하여 주세요.");
+                if( dicType[i] == itemType )
+                    return itemDic[i];
             }
+
+            throw new Exception("이 인벤토리는 해당 종류의 사전을 보관하고 있지 않습니다.");
         }
         
 
@@ -496,8 +512,13 @@ namespace InventoryManagement
         {
             if(weapDic.ContainsKey(itemName))
                 return weapDic[itemName];
+
             else if(miscDic.ContainsKey(itemName))
                 return miscDic[itemName];
+
+            else if(questDic.ContainsKey(itemName))
+                return questDic[itemName];
+
             // 해당 리스트가 인벤토리 내부에 없는 경우
             else 
             {                                   

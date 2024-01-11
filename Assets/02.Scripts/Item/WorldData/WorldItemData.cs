@@ -8,6 +8,9 @@ using UnityEngine;
  * <v1.0 - 2024_0105_최원준>
  * 1- 배열형식으로 내부 딕셔너리 새롭게 구성, 생성자에서 메서드를 통해 딕셔너리 초기화
  * 
+ * <v2.0 - 2024_0110_최원준>
+ * 1- InitDic메서드를 만들고 인자로 ItemType을 넣으면 해당 타입의 사전메서드를 호출해주도록 변경
+ * 
  */
 
 namespace WorldItemData
@@ -35,17 +38,41 @@ namespace WorldItemData
         public WorldItem()
         {
             // 사전길이 설정
-            worldDicLen = 2;
+            worldDicLen = (int)ItemType.None;
 
             // 사전과 사전 종류 초기화
             worldDic = new Dictionary<string, Item>[worldDicLen];
             dicType = new ItemType[worldDicLen];
                        
-            worldDic[0] = InitDic_Misc();
-            dicType[0] = ItemType.Misc;
-
-            worldDic[1] = InitDic_Weapon(); 
-            dicType[1] = ItemType.Weapon;
+            for(int i=0; i<worldDicLen; i++)
+            {
+                worldDic[i] = InitDic( (ItemType)i );
+                dicType[i] = (ItemType)i;
+            }
         }
+
+
+        
+        private Dictionary<string, Item> InitDic(ItemType itemType)
+        {
+            switch(itemType)
+            {
+                case ItemType.Misc:
+                    return InitDic_Misc();
+                case ItemType.Weapon:
+                    return InitDic_Weapon();
+                case ItemType.Quest:
+                    return InitDic_Quest();
+                default:
+                    throw new System.Exception("해당 사전이 존재하지 않습니다.");
+            }
+        }
+
+
+
     }
+
+
+
+
 }

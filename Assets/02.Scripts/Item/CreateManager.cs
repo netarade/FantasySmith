@@ -187,7 +187,10 @@ using WorldItemData;
 * 
 * <v12.3 - 2024_0109_최원준>
 * 1- itemObj변수명 itemObj2D로 변경
-* 2- 
+* 
+* 
+* <v12.4 - 2024_0111_최원준>
+* 1- 아이템 3D 오브젝트에 생성 시 태그 추가
 * 
 * 
 * 
@@ -210,7 +213,7 @@ namespace CreateManagement
         int dicLen;                             // 사전 배열의 길이
 
         VisualManager visualManager;
-
+        readonly string itemTag = "Item";       // 아이템 3D 오브젝트에 적용시킬 태그
 
         public void Awake()
         {
@@ -337,7 +340,8 @@ namespace CreateManagement
 
             // 아이템 정보를 전달하여 3D 오브젝트를 복제 생성한다음, itemObj에 부착합니다.
             GameObject itemObj3D = Instantiate( visualManager.GetItemPrefab3D(itemInfo));
-            
+            itemObj3D.tag = itemTag;
+
             // 2D오브젝트를 3D오브젝트 하위에 부착합니다.
             itemObj2D.transform.SetParent( itemObj3D.transform );
 
@@ -365,6 +369,7 @@ namespace CreateManagement
 
             // 아이템 정보를 전달하여 3D 오브젝트를 복제 생성한다음, itemObj에 부착합니다.
             GameObject itemObj3D = Instantiate( visualManager.GetItemPrefab3D(itemInfo));
+            itemObj3D.tag = itemTag;
             
             // 2D오브젝트를 3D오브젝트 하위에 부착합니다.
             itemObj2D.transform.SetParent( itemObj3D.transform );

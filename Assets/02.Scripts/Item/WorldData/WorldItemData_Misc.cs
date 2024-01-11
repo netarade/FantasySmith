@@ -21,21 +21,17 @@ public partial class WorldItem
     {        
         return new Dictionary<string, Item>()
         {           
-            { "철", new ItemMisc( ItemType.Misc, "0000", "철", new VisualReferenceIndex(0),
-               MiscType.Basic, "~~하는용도") 
+            { 
+                "장작", new ItemMisc( ItemType.Misc, "1000", "장작", new VisualReferenceIndex(0),
+                MiscType.Basic, "~~하는용도로 사용") 
             },
-        };        
+        };
+
+
+
+
     }
 
-    private Dictionary<string, Item> InitDic_Quest()
-    {        
-        return new Dictionary<string, Item>()
-        {           
-            { "철", new ItemMisc( ItemType.Misc, "0000", "철", new VisualReferenceIndex(0),
-               MiscType.Basic, "~~하는용도") 
-            },
-        };        
-    }
 
 }
 }

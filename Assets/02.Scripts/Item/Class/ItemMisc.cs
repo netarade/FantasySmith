@@ -79,6 +79,9 @@ using System;
  * 1- 크래프팅 장르에 맞게 클래스 설계 변경
  * 2- 상세 분류 타입 및 퀘스트 아이템 상속 클래스 추가
  * 
+ * <v7.1 - 2024_0111_최원준>
+ * 1- 퀘스트아이템을 수량을 두지 않는 키아이템으로 변경하였기 때문에 새로운 파일ItemQuest로 이전
+ * 
  */
 
 
@@ -90,20 +93,6 @@ namespace ItemData
     /// </summary>
     public enum MiscType { Basic, Essential, Craft, Building, Tool, Potion } // 기본, 필수, 제작, 건설, 도구, 포션
         
-
-    /// <summary>
-    /// 퀘스트 아이템 - 잡화 아이템을 상속합니다
-    /// </summary>
-    [Serializable]
-    public class ItemQuest : ItemMisc
-    {
-        public ItemQuest( ItemType mainType, string No, string name, VisualReferenceIndex visualRefIndex, MiscType subType, string desc )
-            : base( mainType, No, name, visualRefIndex, subType, desc ) 
-        { 
-            
-        }
-    }
-
 
     /// <summary>
     /// 잡화 아이템 - 기본 아이템과 다른점은 인벤토리에 중복해서 쌓을 수 있다는 점 (count가 존재)

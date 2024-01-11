@@ -303,6 +303,8 @@ using CreateManagement;
  *1- UpdateActiveTabInfo를 안전성을 위해 호출자를 매개변수로 넣어서 호출하는 방식으로 변경하여 외부에서만 호출가능하게 함.
  *UpdateInventoryInfo에서 액티브탭의 정보를 읽어올 때는 InventoryInteractive 클래스의 프로퍼티에 직접접근하여 가져오는 방식으로 변경
  *
+ *<v12.8 - 2024_0111_최원준>
+ *1- 퀘스트 아이템을 추가하면서 UpdatePositionInSlotList에서 전체탭인 경우에 로직이 작동하지 못하도록 변경
  *
  *
  */
@@ -540,10 +542,16 @@ public partial class ItemInfo : MonoBehaviour
             Debug.Log( "현재 슬롯이 생성되지 않은 상태입니다." );
             return;
         }
+
+        
+        // 아이템 종류가 퀘스트아이템인 경우, 전체탭 기준이라면 포지션 업데이트를 실행하지 않습니다.
+        if( item.Type == ItemType.Quest && isActiveTabAll )
+            return;
         
         // 현재 활성화 중인 탭을 기반으로 어떤 인덱스를 참조할지 설정합니다.
         int activeIndex = isActiveTabAll? item.SlotIndexAll : item.SlotIndex;
         
+
         // 아이템의 크기를 슬롯리스트의 cell크기와 동일하게 맞춥니다.(슬롯의 크기와 동일하게 맞춥니다.)
         itemRectTr.sizeDelta = slotListTr.GetComponent<GridLayoutGroup>().cellSize;
 

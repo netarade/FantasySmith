@@ -36,8 +36,6 @@ public class InventoryDrag : MonoBehaviour, IDragHandler, IBeginDragHandler, IEn
     InventoryInteractive inventoryInteractive;  // 아이템이 셀렉팅되어있는 상태를 보관하고 있는 스크립트 참조
     
 
-    bool isStop = false;
-
     void Start()
     {
         inventoryTr= GetComponent<RectTransform>();

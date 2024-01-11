@@ -160,6 +160,22 @@ using UnityEngine;
  * (열거형이 0부터 시작하므로)
  * 
  * 
+ * <V9.0 -2024_0111_최원준>
+ * 1- 퀘스트 아이템 클래스를 추가하면서 관련 메서드를 수정
+ * 
+ * 2- 생성자 및 SetCurItemObjCount와 GetItemSlotCountLimit메서드에 퀘스트아이템 관련 코드를 추가
+ * 
+ * 
+ * 3- 딕셔너리 일반화를 진행중이며, 개별 딕셔너리를 딕셔너리 배열로 변환하고, (itemDic[])
+ * 해당 딕셔너리의 아이템 타입 변수를 새롭게 선언하였음.(dicType[])
+ * 
+ * 4- 인벤토리 생성자, 직렬화, 역직렬화 메서드 배열방식으로 변경
+ * 
+ * 5- 아이템 종류 사전의 인덱스 검색을 돕는 GetDicIdxByItemType메서드와
+ * 아이템 클래스를 아이템 종류와 매칭시켜주는 TypeMatchingItemClassToItemType메서드를 추가
+ * 
+ * 
+ * 
  */
 
 
@@ -176,74 +192,75 @@ namespace InventoryManagement
     public partial class Inventory
     {
         /**** 세이브 로드 시 저장해야할 속성들 ****/
+        public Dictionary<string, List<GameObject>>[] itemDic;
+        ItemType[] dicType;        
+        public int[] slotCountLimitDic;
 
-        /// <summary>
-        /// 플레이어가 보유하고 있는 무기 아이템 목록입니다. 아이템 이름을 통해 해당 아이템 오브젝트를 보관하는 리스트에 접근할 수 있습니다.
-        /// </summary>
-        public Dictionary< string, List<GameObject> > weapDic;
-
-        /// <summary>
-        /// 플레이어가 보유하고 있는 잡화 아이템 목록 입니다. 아이템 이름을 통해 해당 아이템 오브젝트를 보관하는 리스트에 접근할 수 있습니다.
-        /// </summary>
-        public Dictionary< string, List<GameObject> > miscDic;
-                        
-        /// <summary>
-        /// 플레이어 인벤토리의 무기 탭의 슬롯 칸 제한 수 입니다. 게임 중에 업그레이드 등으로 인해 변동될 수 있습니다.
-        /// </summary>
-        public int SlotCountLimitWeap { get; set; }
-
-        /// <summary>
-        /// 플레이어 인벤토리의 잡화 탭의 슬롯 칸 제한 수 입니다. 게임 중에 업그레이드 등으로 인해 변동될 수 있습니다.
-        /// </summary>
-        public int SlotCountLimitMisc { get; set; }
-        
-        
 
 
         /**** 로드 시에만 불러온 후 게임 중에 지속적으로 관리 및 참조해야 할 속성 ****/            
-
+       
         /// <summary>
-        /// 현재 인벤토리에 들어있는 무기 아이템 오브젝트의 갯수를 반환받거나 설정합니다.
+        /// 현재 인벤토리에 사전에 들어있는 종류의  아이템 오브젝트의 갯수를 반환받거나 설정합니다.
         /// </summary>
-        public int CurWeapItemObjCount {get; set;} = 0;  // 새로운 인벤토리 생성 시 0으로 초기화
+        public int[] CurDicItemObjCount { get; set; }
         
-        /// <summary>
-        /// 현재 인벤토리에 들어있는 잡화 아이템 오브젝트의 갯수를 반환받거나 설정합니다.
-        /// </summary>
-        public int CurMiscItemObjCount {get; set;} = 0;  // 새로운 인벤토리 생성 시 0으로 초기화
-                        
 
-
-
-        /**** 자동으로 지정되는 고정 속성들 ****/
-        
+        /**** 자동으로 지정되는 고정 속성들 ****/        
         /// <summary>
         /// 플레이어 인벤토리의 각 탭에 공통으로 주어지는 초기 칸의 제한 수입니다.
         /// </summary>
-        public int InitialCountLimit { get{ return 50; } }        
+        public int InitialCountLimit { get{ return 10; } }        
+
 
         /// <summary>
         /// 플레이어 인벤토리의 전체 탭의 칸의 제한 수 입니다. 게임 중에 업그레이드 등으로 인해 변동될 수 있습니다.
         /// </summary>
-        public int SlotCountLimitAll { get{return SlotCountLimitWeap+SlotCountLimitMisc; } }        
+        public int SlotCountLimitAll {
+            get{
+                    int totalCnt = 0;
+                    for(int i=0; i<itemDic.Length; i++)
+                        totalCnt += slotCountLimitDic[i]; 
+                    return totalCnt;
+                } }        
         
+
         /// <summary>
-        /// 플레이어 인벤토리에 종류와 상관없이 모든 아이템이 차지하고 있는 현재 칸 수입니다.
+        /// 인벤토리가 현재 보유하고 있는 사전의 길이를 반환합니다
         /// </summary>
-        public int TotalCurItemCount { get{ return CurWeapItemObjCount + CurMiscItemObjCount; } }
-        
-        /// <summary>
-        /// 현재 인벤토리의 딕셔너리 길이를 반환합니다.
-        /// </summary>
-        public int CurDicLen { get { return (int)ItemType.None;} } //전체 길이이므로 개별 종류를 가지는 인벤토리에서는 적용되지 않으므로 수정필요
+        public int dicLen { get { return dicType.Length; } }
+
 
         
         /**** 내부적으로만 사용하는 속성 ****/
         List<int> indexList = new List<int>();
-
-
         CreateManager createManager;
 
+
+
+
+
+
+        /// <summary>
+        /// 전달된 아이템 사전에 해당하는 딕셔너리 인덱스가 있는지 찾아보고 반환합니다.<br/>
+        /// 일치하는 종류의 사전이 없으면 -1을 반환합니다.<br/>
+        /// *** ItemType.None을 전달하거나, 일치하는 종류의 사전이 없다면 예외가 발생합니다.
+        /// </summary>
+        /// <returns>일치하는 종류의 사전이 있다면 해당 사전의 인덱스 값</returns>
+        public int GetDicIdxByItemType(ItemType itemType)
+        {
+            if(itemType==ItemType.None )
+                throw new Exception("아이템 종류가 잘못되었습니다. 해당 종류의 사전을 구할 수 없습니다.");
+
+            for( int i = 0; i<dicType.Length; i++ )
+            {
+                if( itemType==dicType[i] )
+                    return i;                    
+            }
+
+            // 일치하는 종류의 사전이 없는 경우
+            throw new Exception("이 인벤토리에 일치하는 아이템 종류의 사전이 없습니다.");
+        }
 
 
 
@@ -298,10 +315,15 @@ namespace InventoryManagement
                     CurMiscItemObjCount += inCount;
                     break;
 
+                case ItemType.Quest:
+                    CurQuestItemObjCount += inCount;
+                    break;
+
                 default:
                     throw new Exception("인자로 전달 한 아이템 종류가 해당 인벤토리에 맞지 않습니다. 확인하여 주세요.");
             }
         }
+
 
         /// <summary>
         /// 아이템 종류에 따른 슬롯의 제한 수를 반환합니다. <br/>
@@ -311,25 +333,17 @@ namespace InventoryManagement
         /// <returns>인자로 전달 된 슬롯의 최대 제한 수를 반환합니다</returns>
         public int GetItemSlotCountLimit(ItemType itemType=ItemType.None)
         {
-            int slotCountLimit;
-                        
-            switch(itemType)
-            { 
-                case ItemType.Weapon:
-                    slotCountLimit = SlotCountLimitWeap; 
-                    break;
-
-                case ItemType.Misc:
-                    slotCountLimit = SlotCountLimitMisc;
-                    break;
-
-                default:
-                    slotCountLimit = SlotCountLimitAll;
-                    break;
-            }            
-
-            return slotCountLimit;
+            if( itemType==ItemType.None )
+                return SlotCountLimitAll;
+            else
+                return slotCountLimitDic[GetDicIdxByItemType(itemType)];
         }
+
+       
+
+
+
+
 
 
         /// <summary>
@@ -370,27 +384,57 @@ namespace InventoryManagement
         public List<T> SerializeDicToItemList<T>() where T : Item
         {
             List<T> itemList = new List<T>();       // 새로운 T형식 아이템리스트 생성
-            
+
 
             // 현재 인벤토리에서 어떤 사전을 참조 할 것인지 T를 바탕으로 결정합니다.
             Dictionary<string, List<GameObject>> itemDic = null;
+            ItemType itemType = ItemType.None;
 
-            if( typeof(T)==typeof(ItemWeapon) )     // 무기 종류라면 인벤토리의 무기 사전 참조
-                itemDic = weapDic;          
-            else if( typeof(T)==typeof(ItemMisc) )  // 잡화 종류라면 인벤토리의 잡화 사전 참조
-                itemDic = miscDic;              
-              
+            // 들어온 아이템 클래스 T인자를 ItemType에 맞게 변환합니다.
+            itemType = TypeMatchingItemClassToItemType<T>();
+
+            // 변환한 itemType을 바탕으로 어떤 딕셔너리를 참조할 지 결정합니다.
+            itemDic = GetItemDicIgnoreExsists(itemType);
+
 
             // 해당 사전의 아이템을 하나씩 불러와서 하위 클래스 형식(T형식) 으로 저장합니다.
             foreach( List<GameObject> objList in itemDic.Values )                // 해당 사전에서 게임오브젝트 리스트를 하나씩 꺼내어
             {
-                for(int i=0; i<objList.Count; i++)                               // 리스트의 게임오브젝트를 모두 가져옵니다.
+                for( int i = 0; i<objList.Count; i++ )                               // 리스트의 게임오브젝트를 모두 가져옵니다.
                     itemList.Add( (T)objList[i].GetComponentInChildren<ItemInfo>().Item ); // item 스크립트를 하나씩 꺼내어 T형식으로 저장합니다.
             }
 
             // item 정보가 하나씩 저장되어있는 itemList를 반환합니다.
-            return itemList;                                                     
+            return itemList;
         }
+
+
+        /// <summary>
+        /// 정의된 각 아이템 클래스를 인벤토리가 관리하는 ItemType으로 매칭시켜주는 메서드입니다.
+        /// </summary>
+        /// <returns>해당 아이템 클래스를 인식할 수 있는 ItemType 값</returns>
+        public ItemType TypeMatchingItemClassToItemType<T>() where T : Item
+        {
+            ItemType itemType = ItemType.None;
+
+            if( typeof( T )==typeof( ItemWeapon ) )
+                itemType = ItemType.Weapon;
+            else if( typeof( T )==typeof( ItemMisc ) )
+                itemType = ItemType.Misc;
+            else if( typeof( T )==typeof( ItemQuest ) )
+                itemType = ItemType.Quest;
+            else
+                throw new Exception("아이템 클래스에 맞는 아이템 타입이 정의되어있지 않습니다.");
+
+            return itemType;
+        }
+
+
+
+
+
+
+
 
         /// <summary>
         /// 종류 별 아이템 정보가 담겨있는 리스트를 집어넣고 메서드를 호출하면, 이 인벤토리 내부의 딕셔너리로 변환시켜 저장합니다.<br/>
@@ -411,16 +455,28 @@ namespace InventoryManagement
 
 
         /// <summary>
-        /// 기본 인벤토리 생성자입니다. 새로운 게임을 시작할 때 사용해주세요.
+        /// 기본 인벤토리 생성자입니다. 새로운 게임을 시작할 때 사용해주세요.<br/>
+        /// 인자를 전달하지 않을 시 전체 아이템 종류의 딕셔너리를 생성합니다.<br/>
         /// </summary>
         public Inventory()
         {
-            weapDic=new Dictionary<string, List<GameObject>>();
-            miscDic=new Dictionary<string, List<GameObject>>();
-            SlotCountLimitWeap=InitialCountLimit;
-            SlotCountLimitMisc=InitialCountLimit;
-        }
+            // 모든 종류의 사전길이
+            int dicLen = (int)ItemType.None;
 
+            // 배열 길이 할당
+            itemDic = new Dictionary<string, List<GameObject>>[dicLen];
+            dicType = new ItemType[dicLen];
+            slotCountLimitDic = new int[dicLen];
+
+            // 배열의 모든 요소 할당
+            for( int i = 0; i<dicLen; i++ )
+            {
+                itemDic[i] = new Dictionary<string, List<GameObject>>();
+                dicType[i] = (ItemType)i;
+                slotCountLimitDic[i] = InitialCountLimit;
+            }
+        }
+                
         /// <summary>
         /// CreateManager 참조값을 받아 초기화를 진행합니다. 기존의 게임을 시작할 때 사용해야 합니다.  
         /// </summary>
@@ -428,6 +484,31 @@ namespace InventoryManagement
         {
             this.createManager = createManager;
         }
+
+
+
+        public Inventory( DicType[] dicTypes, CreateManager createManager)
+        {
+            // 사전 길이는 받은 인자의 길이입니다
+            int dicLen = dicTypes.Length;
+            
+            // 배열 길이 할당
+            itemDic = new Dictionary<string, List<GameObject>>[dicLen];
+            dicType = new ItemType[dicLen];
+            slotCountLimitDic = new int[dicLen];
+           
+            // 배열의 모든 요소를 받은 인자를 토대로 할당합니다
+            for( int i = 0; i<dicLen; i++ )
+            {
+                itemDic[i] = new Dictionary<string, List<GameObject>>();
+                dicType[i] = dicTypes[i].itemType;
+                slotCountLimitDic[i] = dicTypes[i].slotLimit;
+            }
+
+            // CreateManager 참조값을 설정
+            this.createManager = createManager;
+        }
+
 
                
     }

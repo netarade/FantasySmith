@@ -152,6 +152,8 @@ using UnityEngine.Events;
 * 7- 탭이벤트 등록 시 람다식 내부에 i가 참조값으로 들어가기 때문에 모든 버튼이벤트가 마지막 참조값으로 호출되는 것을 발견
 * (람다식 클로저 특성) 수정하기 위해 내부 for문에서 새롭게 int변수를 할당해서 i값을 받아서 넣는 형태로 구현
 * 
+* <v7.1 - 2024_0111_최원준>
+* 1- 서바이벌 장르에 맞게 아이템 클래스를 변경하면서 탭관련 로직을 전체,퀘스트아이템 탭에 맞게 수정
 * 
 * 
 */
@@ -228,9 +230,10 @@ public class InventoryInteractive : MonoBehaviour
         slotListTr = inventoryTr.GetChild(0).GetChild(0).GetChild(0);  // 뷰포트-컨텐트-전체 슬롯리스트
         slotPrefab = slotListTr.GetChild(0).gameObject;                // 슬롯 리스트 하위에 미리 1개가 추가되어 있음
         emptyListTr = inventoryTr.GetChild(0).GetChild(1);             // 뷰포트-EmptyList
-                                                                       
-        CreateActiveTabBtn();   // 액티브탭 버튼 생성
-        InitOpenState();        // 인벤토리 오픈 상태 초기화
+                                 
+        CreateInventorySlot(caller);    // 인벤토리 슬롯 생성
+        CreateActiveTabBtn();           // 액티브탭 버튼 생성
+        InitOpenState();                // 인벤토리 오픈 상태 초기화
     }
 
 
@@ -240,7 +243,7 @@ public class InventoryInteractive : MonoBehaviour
     private void CreateActiveTabBtn()
     {        
         // 액티브탭 갯수 - 향후 inventory의 dicNum+1로 수정예정
-        int activeTabNum = 3;
+        int activeTabNum = 2;
 
         // 버튼 배열을 참조할 갯수를 설정합니다.
         btnTap = new Button[activeTabNum]; 
@@ -259,18 +262,13 @@ public class InventoryInteractive : MonoBehaviour
         }
         
         // 버튼 이름과 텍스트를 설정합니다. (향후 인벤토리 클래스 구조 변경 후 수정예정) 
-        btnTap[1].gameObject.name = "ActiveTab-Weap";
-        btnTap[1].GetComponentInChildren<Text>().text = "무기";
-        
-        btnTap[2].gameObject.name = "ActiveTab-Misc";
-        btnTap[2].GetComponentInChildren<Text>().text = "잡화";
-                
-        
-
-
-        btnTap[0].Select();            // 첫 시작 시 항상 전체탭을 Select로 표시해줍니다.
-        curActiveTab = ItemType.None;  // 활성화중인 탭을 전체탭으로 설정
-        isActiveTabAll = true;         // 전체탭 기준 상태변수 설정
+        btnTap[1].gameObject.name = "ActiveTab-Quest";
+        btnTap[1].GetComponentInChildren<Text>().text = "퀘스트";
+                      
+        // 첫 시작 시 항상 전체탭을 Select로 표시해줍니다.
+        isActiveTabAll = true;
+        curActiveTab = ItemType.None;
+        btnTap[0].Select();            
     }
 
 
@@ -286,16 +284,12 @@ public class InventoryInteractive : MonoBehaviour
 
 
 
-
-
-
-
     /// <summary>
     /// InventoryInfo에서 slotCoutLimit정보를 전달 받아서 슬롯을 생성하는 메서드입니다.<br/>
     /// slotCountLimit정보가 최신화된 상태에서 호출하여야 합니다.<br/>
     /// *** 동일 인벤토리의 InventoryInfo가 아니면 호출할 수 없습니다. ***
     /// </summary>
-    public void CreateInventorySlot(InventoryInfo caller)
+    private void CreateInventorySlot(InventoryInfo caller)
     {                          
         if( caller != inventoryInfo )
             throw new Exception("호출자를 확인하여 주세요. 동일 인벤토리에서만 호출 할 수 있습니다.");
@@ -355,20 +349,12 @@ public class InventoryInteractive : MonoBehaviour
             curActiveTab = ItemType.None;       // 활성화 중인 탭 변경 
             isActiveTabAll = true;              // 활성화 기준 전체로 변경
         }
-        else if(btnIdx==1)  // 무기 탭버튼 클릭
+        else if(btnIdx==1)  // 퀘스트 탭버튼 클릭
         {
-            if(curActiveTab==ItemType.Weapon)   // 현재 활성화 중인 탭이 무기 탭이라면 재실행하지 않는다.
+            if(curActiveTab==ItemType.Quest)   // 현재 활성화 중인 탭이 무기 탭이라면 재실행하지 않는다.
                 return;
 
-            curActiveTab = ItemType.Weapon;     // 활성화 중인 탭 변경
-            isActiveTabAll = false;             // 활성화 기준 전체로 변경
-        }
-        else if(btnIdx==2)  // 잡화 탭버튼 클릭
-        {
-            if(curActiveTab==ItemType.Misc)     // 현재 활성화 중인 탭이 잡화 탭이라면 재실행하지 않는다.
-                return;
-
-            curActiveTab = ItemType.Misc;       // 활성화 중인 탭 변경
+            curActiveTab = ItemType.Quest;      // 활성화 중인 탭 변경
             isActiveTabAll = false;             // 활성화 기준 전체로 변경
         }
 
@@ -385,7 +371,7 @@ public class InventoryInteractive : MonoBehaviour
     /// </summary>
     private void UpdateAllItemActiveTabInfo()
     {
-        //// 하나씩 가져와서 참조 할 딕셔너리 변수 선언
+        // 하나씩 가져와서 참조 할 딕셔너리 변수 선언
         Dictionary<string, List<GameObject>> itemDic;
 
         for( int i = 0; i<inventory.CurDicLen; i++ )
@@ -446,8 +432,8 @@ public class InventoryInteractive : MonoBehaviour
         // 현재 활성화 탭이 전체 탭인 경우 모든 딕셔너리를 대상으로 호출
         if( isActiveTabAll )
         {
-            print(inventory.CurDicLen);
-            for( int i = 0; i<inventory.CurDicLen; i++ )
+            // 퀘스트 아이템을 제외한 모든 아이템 표현
+            for( int i = 0; i<inventory.CurDicLen-1; i++ )
                 inventoryInfo.UpdateDicItemPosition( (ItemType)i );
         }
         // 현재 활성화 탭이 개별 탭인 경우 개별 딕셔너리를 대상으로 호출

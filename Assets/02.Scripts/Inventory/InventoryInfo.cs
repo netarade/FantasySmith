@@ -212,8 +212,10 @@ public partial class InventoryInfo : MonoBehaviour
     DataManager dataManager;            // 저장과 로드 관련 메서드를 호출 할 스크립트 참조
     CreateManager createManager;        // 아이템 생성을 요청하고 반환받을 스크립트 참조
 
-    [Header("Basic Item Drop Place")]
+    [Header("이 인벤토리의 아이템 기본 드랍위치")]
     public Transform baseDropTr;        // 아이템을 기본적으로 떨어 트릴 위치를 인스펙터뷰에서 직접 지정
+    
+    [Header("기본 드랍위치 부모 지정 옵션")]
     public bool isBaseDropSetParent;    // 드롭장소에 부모 계층에 속할지 지정하는 옵션 (씬정리 용도 및 부모와 함께 움직이도록 하는 용도)
     
     string saveFileName;                // 저장파일 이름 설정
@@ -261,8 +263,7 @@ public partial class InventoryInfo : MonoBehaviour
         /** 호출 순서 고정: 로드->인터렉티브스크립트 초기화 및 슬롯생성요청->아이템표현 ***/
         LoadPlayerData();                           // 저장된 플레이어 데이터를 불러옵니다. 
         interactive.Initialize(this);               // 인터렉티브 스크립트 초기화를 진행합니다.
-        interactive.CreateInventorySlot(this);      // 인벤토리에 슬롯을 생성합니다.
-        UpdateAllItemVisualInfo();                  // 슬롯에 모든 아이템의 시각화를 진행합니다.        
+        this.UpdateAllItemVisualInfo();             // 슬롯에 모든 아이템의 시각화를 진행합니다.        
     }
 
 
@@ -332,7 +333,7 @@ public partial class InventoryInfo : MonoBehaviour
         for(int i=0; i<(int)ItemType.None; i++)                             // 아이템 종류의 숫자만큼 (인벤토리 사전의 갯수만큼) 반복합니다.
         {
             itemDic = inventory.GetItemDicIgnoreExsists((ItemType)i);       // 아이템 종류에 따른 인벤토리의 사전을 할당받습니다.
-              
+                          
 
             if(itemDic.Count==0)   // 아이템 사전에 값이 입력되어있지 않다면 다음 사전을 참조합니다.
                 continue;
@@ -528,6 +529,10 @@ public partial class InventoryInfo : MonoBehaviour
         item.SlotIndexAll = slotIdxAll;
 
     }
+
+
+
+
 
 
 

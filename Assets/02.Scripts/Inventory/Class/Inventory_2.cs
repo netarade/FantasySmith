@@ -131,6 +131,9 @@ using WorldItemData;
  * <V5.0 -2024_0111_최원준>
  * 1- 퀘스트 아이템 클래스를 추가하면서 관련 메서드를 수정
  * 
+ * <v5.1 -2024_0111_최원준>
+ * 1- 인벤토리를 딕셔너리 배열로 전환하면서 관련 메서드 수정하고 최적화
+ * 
  * 
  */
 
@@ -184,23 +187,17 @@ namespace InventoryManagement
             if( GetCurRemainSlotCount(itemType) == 0 )            
                 return false;   
 
-            
-            // 아이템 타입을 기반으로 딕셔너리를 결정합니다.
-            Dictionary<string, List<GameObject>> itemDic = GetItemDicIgnoreExsists(itemType);
+            // 아이템 이름을 기반으로 오브젝트 리스트를 결정합니다. (존재하지 않는다면 새롭게 생성하여 반환합니다.)
+            List<GameObject> itemObjList = GetItemObjectList(itemName, true);
 
-            if( !itemDic.ContainsKey(itemName) )            // 해당 사전에 오브젝트 리스트가 존재하지 않는 경우
-            {
-                List<GameObject> itemObjList = new List<GameObject>();  // 신규 오브젝트 리스트를 만듭니다
-                itemObjList.Add(itemInfo.gameObject);                   // 신규 오브젝트 리스트에 아이템 오브젝트를 추가합니다
-                itemDic.Add(itemName, itemObjList);                     // 사전에 신규 오브젝트 리스트를 추가합니다.
-            }
-            else                                            // 해당 사전에 오브젝트 리스트가 존재하는 경우 
-            {
-                itemDic[itemName].Add(itemInfo.gameObject); // 기존 오브젝트 리스트에 접근하여 게임오브젝트를 넣습니다.
-            }            
-            
-            SetCurItemObjCount(itemType, 1);                // 해당 아이템 종류의 현재 오브젝트의 갯수를 증가시킵니다.
-            return true;                                    // 성공을 반환합니다.
+            // 해당 아이템 오브젝트를 추가합니다.
+            itemObjList.Add(itemInfo.gameObject);          
+                  
+            // 해당 아이템 종류의 현재 오브젝트의 갯수를 증가시킵니다.
+            SetCurDicItemObjCount(itemType, 1);          
+
+            // 성공을 반환합니다.
+            return true;                                    
         }
 
         
@@ -333,14 +330,14 @@ namespace InventoryManagement
                 throw new Exception("아이템 스크립트가 존재하지 않는 오브젝트입니다. 확인하여 주세요.");
             
             // 이름을 기반으로 해당 딕셔너리 참조를 받습니다.
-            Dictionary<string, List<GameObject>> itemDic = GetItemDicInExists(itemInfo.Item.Name);            
+            List<GameObject> itemObjList = GetItemObjectList(itemInfo.Item.Name);            
 
             // 인벤토리 목록에서 없는 아이템 예외처리
-            if(itemDic==null)
+            if( itemObjList==null || itemObjList.Count==0 )
                 throw new Exception("해당 아이템이 인벤토리 내부에 존재하지 않습니다. 확인하여 주세요.");
 
             // List<GameObject>에 직접 GameObject 인스턴스를 전달하여 목록에서 제거합니다.
-            itemDic[itemInfo.Item.Name].Remove(itemInfo.gameObject);
+            itemObjList.Remove(itemInfo.gameObject);
 
             // 목록에서 제거한 참조값을 다시 반환합니다. 
             return itemInfo;
@@ -352,18 +349,11 @@ namespace InventoryManagement
         /// </summary>
         /// <returns>딕셔너리 목록의 제거에 성공한 경우 해당 아이템의 ItemInfo 참조값을, 목록에 없는 아이템인 경우 null을 반환합니다.</returns>
         public ItemInfo RemoveItem(string itemName, bool isLatest=true)
-        {
-            // 이름을 통해 현재 아이템이 담긴 딕셔너리가 있는지 조사합니다
-            Dictionary<string, List<GameObject>> itemDic = GetItemDicInExists(itemName);    
-               
-            // 딕셔너리가 존재하지 않는다면, 실패를 반환합니다
-            if(itemDic==null)       
-                return null;       
-            
+        {            
             // 딕셔너리에서 오브젝트 리스트를 받습니다
-            List<GameObject> itemObjList = itemDic[itemName]; 
+            List<GameObject> itemObjList = GetItemObjectList(itemName); 
 
-            // 오브젝트 리스트가 존재하지 않는다면 null을 반환합니다.
+            // 오브젝트 리스트가 존재하지 않는거나, 오브젝트 리스트의 갯수가 0이라면 null을 반환합니다.
             if(itemObjList==null || itemObjList.Count==0)
                 return null;
 
@@ -382,7 +372,7 @@ namespace InventoryManagement
             targetItemInfo =itemObjList[targetIdx].GetComponent<ItemInfo>();  // 반환 할 아이템 참조값을 얻습니다.
             itemObjList.RemoveAt(targetIdx);        // 해당 인덱스의 아이템을 제거합니다            
         
-            SetCurItemObjCount(itemType, -1);       // 해당 아이템 종류의 현재 오브젝트의 갯수를 감소시킵니다.      
+            SetCurDicItemObjCount(itemType, -1);       // 해당 아이템 종류의 현재 오브젝트의 갯수를 감소시킵니다.      
                         
             return targetItemInfo;            // 목록에서 제거한 아이템을 반환합니다.     
         }
@@ -401,17 +391,11 @@ namespace InventoryManagement
         /// <returns>해당하는 이름의 아이템이 인벤토리 목록에 존재하는 경우 true, 존재하지 않는 경우 false를 반환합니다</returns>
         public bool IsContainsItemName(string itemName)
         {
-            if(weapDic.ContainsKey(itemName))
-                return true;
+            for(int i=0; i<dicLen; i++)
+                if(itemDic[i].ContainsKey(itemName))
+                    return true;
 
-            else if(miscDic.ContainsKey(itemName))
-                return true;
-
-            else if( questDic.ContainsKey(itemName))
-                return true;
-
-            else
-                return false;
+            return false;
         }
 
 
@@ -422,17 +406,11 @@ namespace InventoryManagement
         /// <returns>해당하는 이름의 아이템이 현재 인벤토리 목록에 존재하지 않는 경우 ItemType.None을 반환합니다</returns>
         public ItemType GetItemTypeInExists(string itemName)
         {
-            if(weapDic.ContainsKey(itemName))
-                return ItemType.Weapon;
-
-            else if(miscDic.ContainsKey(itemName))
-                return ItemType.Misc;
-
-            else if(questDic.ContainsKey(itemName))
-                return ItemType.Quest;
-
-            else
-                return ItemType.None;
+            for(int i=0; i<dicLen; i++)
+                if(itemDic[i].ContainsKey(itemName))
+                    return dicType[i];
+                       
+            return ItemType.None;
         }
 
 
@@ -452,27 +430,23 @@ namespace InventoryManagement
 
         /// <summary>
         /// 아이템 이름을 기반으로 해당 아이템의 딕셔너리 참조값을 반환합니다<br/>
-        /// 아이템이 딕셔너리 내부에 존재하여야 합니다.
+        /// 아이템이 딕셔너리 내부에 존재하여야 합니다.<br/>
+        /// *** 해당 하는 이름의 아이템이 인벤토리 내부에 없으면 예외가 발생합니다. ***
         /// </summary>
-        /// <returns>해당하는 이름의 아이템이 인벤토리 목록에 존재하지 않는 경우 null을 반환합니다</returns>
+        /// <returns>해당하는 이름의 아이템이 인벤토리 내부에 존재한다면 해당 사전을 반환</returns>
         public Dictionary<string, List<GameObject>> GetItemDicInExists(string itemName)
         {
-            if(weapDic.ContainsKey(itemName))
-                return weapDic;
+            for(int i=0; i<dicLen; i++)
+                if(itemDic[i].ContainsKey(itemName))
+                    return itemDic[i];
 
-            else if(miscDic.ContainsKey(itemName))
-                return miscDic;
-
-            else if(questDic.ContainsKey(itemName))
-                return questDic;
-            else
-                return null;
+            throw new Exception("해당 아이템이 인벤토리 내부에 존재하지 않습니다. 확인하여 주세요.");
         }
 
         /// <summary>
         /// 아이템 이름을 기반으로 해당 아이템의 딕셔너리 참조값을 반환합니다<br/>
         /// 아이템이 현재 인벤토리의 목록에 존재하지 않아도 사전 참조값을 얻을 수 있습니다.<br/><br/>
-        /// ** itemType인자가 ItemType.None으로 전달 된 경우 예외를 던집니다 ** 
+        /// ** 해당이름의 아이템이 월드 사전에 없으면 예외가 발생합니다. ** 
         /// </summary>
         /// <returns>해당 아이템 종류의 사전을 반환</returns>
         public Dictionary<string, List<GameObject>> GetItemDicIgnoreExsists(string itemName)
@@ -491,7 +465,7 @@ namespace InventoryManagement
         /// <returns>해당 아이템 종류의 사전을 반환</returns>
         public Dictionary<string, List<GameObject>> GetItemDicIgnoreExsists(ItemType itemType)
         {
-            for( int i = 0; i<dicType.Length; i++ )
+            for( int i = 0; i<dicLen; i++ )
             {
                 if( dicType[i] == itemType )
                     return itemDic[i];
@@ -503,34 +477,27 @@ namespace InventoryManagement
 
         /// <summary>
         /// 아이템 이름을 기반으로 해당 아이템의 오브젝트 리스트 참조값을 반환합니다<br/>
-        /// 해당 오브젝트 리스트가 존재하지 않는 경우 null을 반환하지만,<br/><br/>
-        /// 
-        /// isNewIfNotExist 옵션을 통해 인벤토리 내부에 새롭게 생성하여 반환할 수 있습니다. (단, 이름이 월드사전에 매칭되지 않는 경우 예외발생)<br/>
+        /// 해당 오브젝트 리스트가 존재하지 않는 경우 null을 반환하지만,<br/>
+        /// isNewIfNotExist 옵션을 통해 인벤토리 내부에 새롭게 생성하여 반환할 수 있습니다.<br/><br/>
+        /// *** 해당 아이템 이름이 월드사전에 매칭되지 않는 경우 예외가 발생합니다. ***<br/>
         /// </summary>
         /// <returns>해당하는 이름의 아이템이 인벤토리 목록에 존재하는 경우 GameObject형식의 리스트를, 존재하지 않는 경우 null을 반환합니다</returns>
         public List<GameObject> GetItemObjectList(string itemName, bool isNewIfNotExist=false)
         {
-            if(weapDic.ContainsKey(itemName))
-                return weapDic[itemName];
-
-            else if(miscDic.ContainsKey(itemName))
-                return miscDic[itemName];
-
-            else if(questDic.ContainsKey(itemName))
-                return questDic[itemName];
-
-            // 해당 리스트가 인벤토리 내부에 없는 경우
-            else 
-            {                                   
-                if(isNewIfNotExist)     // 새로 생성하기 옵션이 설정된 경우 
-                {                    
-                    List<GameObject> itemObjList = new List<GameObject>();        // 오브젝트 리스트를 새로 만듭니다.
-                    GetItemDicIgnoreExsists(itemName).Add(itemName, itemObjList); // 인벤토리 사전에 오브젝트 리스트를 집어넣습니다.
-                    return itemObjList;                                           // 생성된 오브젝트 리스트 참조를 반환합니다.
-                }
-                else                    
-                    return null;
+            for(int i=0; i<dicLen; i++)
+            {
+                if(itemDic[i].ContainsKey(itemName))
+                    return itemDic[i][itemName];
             }
+                             
+            if(isNewIfNotExist)     // 새로 생성하기 옵션이 설정된 경우 
+            {                    
+                List<GameObject> itemObjList = new List<GameObject>();        // 오브젝트 리스트를 새로 만듭니다.
+                GetItemDicIgnoreExsists(itemName).Add(itemName, itemObjList); // 인벤토리 사전에 오브젝트 리스트를 집어넣습니다.
+                return itemObjList;                                           // 생성된 오브젝트 리스트 참조를 반환합니다.
+            }
+            else                    
+                return null;           
         }
 
 
@@ -550,7 +517,7 @@ namespace InventoryManagement
         /// 해당 아이템의 이름을 인자로 넣어 아이템의 중첩 최대 갯수를 반환 받습니다.<br/>
         /// 아이템 별로 동일한 최대 중첩 가능 갯수를 알기 위한 메서드입니다.<br/><br/>
         /// 현재 IsAbleToAddMisc메서드에서 내부적으로 사용됩니다.<br/><br/>
-        /// *** 해당하는 이름의 아이템이 없는 경우 예외가 발생합니다.<br/>
+        /// *** 해당하는 이름의 아이템이 잡화아이템이 아니거나 없는 경우 예외가 발생합니다.<br/>
         /// </summary>
         /// <param name="itemName"></param>
         /// <returns>아이템의 최대 갯수를 반환합니다.</returns>
@@ -558,8 +525,12 @@ namespace InventoryManagement
         {
             Dictionary<string, Item> worldDic = createManager.GetWorldDic(itemName);
 
-            int count = ((ItemMisc)worldDic[itemName]).MaxOverlapCount;
-            return count;
+            ItemMisc itemMisc = worldDic[itemName] as ItemMisc;
+            
+            if(itemMisc==null)
+                throw new Exception("해당 아이템 이름이 잡화아이템이 아닙니다.");
+
+            return itemMisc.MaxOverlapCount;
         }
 
 

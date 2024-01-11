@@ -208,9 +208,11 @@ public partial class InventoryInfo : MonoBehaviour
     /// </summary>
     public Transform slotListTr;
         
+    InventoryInitializer initializer;   // 사용자가 정의한 방식으로 인벤토리의 초기화를 진행하기 위한 참조
     InventoryInteractive interactive;   // 자신의 인터렉티브 스크립트를 참조하여 활성화 탭정보를 받아오기 위한 변수 선언
     DataManager dataManager;            // 저장과 로드 관련 메서드를 호출 할 스크립트 참조
     CreateManager createManager;        // 아이템 생성을 요청하고 반환받을 스크립트 참조
+    
 
     [Header("이 인벤토리의 아이템 기본 드랍위치")]
     public Transform baseDropTr;        // 아이템을 기본적으로 떨어 트릴 위치를 인스펙터뷰에서 직접 지정
@@ -253,7 +255,8 @@ public partial class InventoryInfo : MonoBehaviour
         createManager = gameController.GetComponent<CreateManager>();       // 데이터 매니저와 동일한 오브젝트의 컴포넌트 참조
         saveFileName = transform.parent.parent.name + "_Inventory";         // 세이브 파일이름을 오브젝트 명을 기준으로 설정
                      
-        interactive = GetComponent<InventoryInteractive>(); // 자신의 인터렉티브 스크립트를 참조합니다.
+        initializer = GetComponent<InventoryInitializer>();     // 자신 오브젝트의 스크립트 참조
+        interactive = GetComponent<InventoryInteractive>();     
 
     }
 
@@ -295,10 +298,10 @@ public partial class InventoryInfo : MonoBehaviour
         dataManager.FileSettings(saveFileName); 
 
         // 파일에서 로드한 데이터한 변수에 저장합니다.
-        InventorySaveData loadData = dataManager.LoadData<InventorySaveData>();              
+        InventorySaveData loadData = dataManager.LoadData(initializer);              
         
         // 역직렬화하여 게임 상의 인벤토리로 변환합니다.
-        inventory=loadData.savedInventory.Deserialize(createManager);   
+        inventory=loadData.savedInventory.Deserialize(initializer, createManager);   
     }
 
 
@@ -311,13 +314,13 @@ public partial class InventoryInfo : MonoBehaviour
         dataManager.FileSettings(saveFileName);   
 
         // 메서드 호출 시점에 다른 스크립트에서 save했을 수도 있으므로 새롭게 생성하지 않고 기존 데이터 최신화합니다
-        InventorySaveData saveData = dataManager.LoadData<InventorySaveData>();
+        InventorySaveData saveData = dataManager.LoadData(initializer);
 
         // 직렬화하여 저장 가능한 인벤토리로 변환합니다.
         saveData.savedInventory.Serialize(inventory);   
         
         // 파일을 저장합니다.
-        dataManager.SaveData<InventorySaveData>(saveData);
+        dataManager.SaveData(saveData);
     }
 
 

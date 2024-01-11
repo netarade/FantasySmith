@@ -155,6 +155,9 @@ using UnityEngine.Events;
 * <v7.1 - 2024_0111_최원준>
 * 1- 서바이벌 장르에 맞게 아이템 클래스를 변경하면서 탭관련 로직을 전체,퀘스트아이템 탭에 맞게 수정
 * 
+* <v7.2 - 2024_0112_최원준>
+* 1- 인벤토리 클래스 구조 변경으로 인해
+* MoveActiveItemToSlot에서 dicLen을 dicLen-1까지만 하던것을 수정하고, if문으로 dicType 퀘스트 아이템 검사문을 집어넣음.
 * 
 */
 
@@ -374,7 +377,7 @@ public class InventoryInteractive : MonoBehaviour
         // 하나씩 가져와서 참조 할 딕셔너리 변수 선언
         Dictionary<string, List<GameObject>> itemDic;
 
-        for( int i = 0; i<inventory.CurDicLen; i++ )
+        for( int i = 0; i<inventory.dicLen; i++ )
         {
             itemDic=inventory.GetItemDicIgnoreExsists( (ItemType)i );      // CurDicLen 갯수만큼 딕셔너리를 하나씩 변경합니다.
 
@@ -433,8 +436,13 @@ public class InventoryInteractive : MonoBehaviour
         if( isActiveTabAll )
         {
             // 퀘스트 아이템을 제외한 모든 아이템 표현
-            for( int i = 0; i<inventory.CurDicLen-1; i++ )
+            for( int i = 0; i<inventory.dicLen; i++ )
+            {
+                if(inventory.dicType[i]==ItemType.Quest)
+                    continue;
+
                 inventoryInfo.UpdateDicItemPosition( (ItemType)i );
+            }
         }
         // 현재 활성화 탭이 개별 탭인 경우 개별 딕셔너리를 대상으로 호출
         else

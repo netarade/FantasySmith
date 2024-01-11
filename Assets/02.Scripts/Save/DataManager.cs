@@ -46,6 +46,10 @@ using Newtonsoft.Json;
  * 이유는 Application경로를 이니셜라이저를 통해 할당할 수 없기 때문에 Awake문에서 초기화를 해야하는데
  * 다른 스크립트의 Awake문에서 Load를 해버리면 Path값이 안들어온 상태에서 불러오기가 진행되기 때문입니다.
  * 
+ * <v4.4 - 2024_0112_최원준>
+ * 1- 인벤토리 전용 초기화 인자를 전달받는 로드메서드를 만듬.
+ * 이유는 매개변수를 전달받는 T타입 생성자호출이 어렵기 때문 
+ * 
  */
 
 namespace DataManagement
@@ -160,7 +164,6 @@ namespace DataManagement
         /// <summary>
         /// 세이브 데이터를 불러옵니다. 인자로 전달하는 T는 SaveData인터페이스를 상속하는 사용자정의 클래스여야 합니다.
         /// </summary>
-        /// <param name="loadSlot">로드할 슬롯</param>
         /// <returns>SaveData 인터페이스를 상속하는 사용자 정의 자료형</returns>
         public T LoadData<T>() where T : SaveData, new()  // 제약조건: SaveData 인터페이스의 종류이며, 디폴트 생성자가 존재
         {
@@ -173,10 +176,52 @@ namespace DataManagement
             }
             else //저장된 슬롯이 없다면 새롭게 게임데이터를 만들어 반환
             {
-                Debug.Log("파일이 없음");
+                Debug.Log("파일이 없음");                                    
                 return new T();   
             }
         }
+
+
+        /// <summary>
+        /// 인벤토리 전용 로드 메서드입니다. 초기화 전용 클래스 전달인자를 토대로 인벤토리의 초기화를 진행합니다.<br/>
+        /// </summary>
+        /// <returns>인벤토리 사용자 정의 클래스를 반환</returns>
+        public InventorySaveData LoadData(InventoryInitializer initializer) 
+        {
+            if(initializer==null)
+                throw new System.Exception("이니셜라이져가 전달되지 않았습니다.");
+
+            print(initializer.dicTypes.Length);
+
+
+            // 리셋 옵션이 전달 된 경우
+            if(initializer.isReset)
+            {
+                Debug.Log("파일 초기화 " + Path);
+                return new InventorySaveData(initializer); 
+            }
+            
+            if( IsFileExist() ) // 저장된 파일이 있다면 기존 게임데이터를 만들어 반환
+            {
+                Debug.Log("파일이 존재 " + Path);
+                string data = File.ReadAllText(Path + FileName + "S" + SlotNum.ToString() + Extension);
+                return JsonConvert.DeserializeObject<InventorySaveData>(data); 
+            }
+            else //저장된 슬롯이 없다면 새롭게 게임데이터를 만들어 반환
+            {
+                Debug.Log("파일이 없음");                                    
+                return new InventorySaveData(initializer);   
+            }
+        }
+
+
+
+        
+
+
+
+
+
         #else
         /// <summary>
         /// 현재 슬롯에 파일이 존재하는지 여부를 반환합니다.

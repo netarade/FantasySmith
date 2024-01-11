@@ -174,8 +174,11 @@ using UnityEngine;
  * 5- 아이템 종류 사전의 인덱스 검색을 돕는 GetDicIdxByItemType메서드와
  * 아이템 클래스를 아이템 종류와 매칭시켜주는 TypeMatchingItemClassToItemType메서드를 추가
  * 
- * 
- * 
+ * <v9.1 - 2024_0111_최원준>
+ * 1- 메서드명 변경 (Get,Set)CurItemCount(,All)-> GetCurDicItemObjCountAll, GetCurDicItemObjCount, SetCurDicItemObjCount
+ * 2- GetCurDicItemObjCountAll메서드와 SetCurDicItemObjCount메서드를 GetCurDicItemObjCount기반이 아니라, CurDicItemObjCount로 구하는 것으로 변경
+ * 3- dicType변수 public으로 변경
+ * 4- Serialize, Deserialize 메서드 null값 전달 조건검사문 추가(사용자가 사전을 정의할 수 있기 때문)
  */
 
 
@@ -193,7 +196,7 @@ namespace InventoryManagement
     {
         /**** 세이브 로드 시 저장해야할 속성들 ****/
         public Dictionary<string, List<GameObject>>[] itemDic;
-        ItemType[] dicType;        
+        public ItemType[] dicType;        
         public int[] slotCountLimitDic;
 
 
@@ -275,53 +278,39 @@ namespace InventoryManagement
         /// *** 해당 종류의 아이템 사전이 없으면 예외를 발생시킵니다. ***
         /// </summary>
         /// <returns>아이템 타입과 일치하는 인벤토리에 저장 되어있는 오브젝트의 갯수를 반환합니다.</returns>
-        public int GetCurItemCount(ItemType itemType) 
+        public int GetCurDicItemObjCount(ItemType itemType) 
         { 
-            int count = 0;
+            // 계산할 오브젝트의 총 갯수를 선언과 초기화합니다
+            int toatlCount = 0;
 
             // 아이템 타입을 기반으로 딕셔너리를 구합니다.
             Dictionary<string, List<GameObject>> itemDic = GetItemDicIgnoreExsists(itemType);
 
-            if(itemDic==null)
-                throw new Exception("해당 종류의 아이템 사전이 존재하지 않습니다.");
-            
             // 해당 인벤토리 딕셔너리에 들어있는 리스트가 하나도 없다면, 바로 0을 반환합니다.
             if(itemDic.Count==0)        
                 return 0;
 
             // 해당 딕셔너리에서 게임오브젝트 리스트를 꺼내고 리스트의 Count 프로퍼티를 통해 게임오브젝트 숫자를 누적시킵니다.
             foreach(List<GameObject> objList in itemDic.Values)
-                count += objList.Count;   
+                toatlCount += objList.Count;   
             
-            return count;  
+            return toatlCount;  
         }
         
         /// <summary>
         /// ItemType을 기반으로 어떤 종류의 curItemCount를 증가 또는 감소 시킬 지 결정하는 메서드입니다.<br/>
         /// inCount를 음수로 전달하면 아이템의 현재 수량을 감소시킵니다.<br/>
         /// AddItem메서드에서 내부적으로 사용되고 있습니다.<br/><br/>
-        /// 
-        /// *** 인자로 해당 인벤토리에 해당하지 않는 ItemType을 전달한 경우 예외를 발생시킵니다. ***
+        /// *** 인자로 ItemType.None을 전달한 경우 예외를 발생시킵니다. ***
         /// </summary>
-        public void SetCurItemObjCount(ItemType itemType, int inCount)
+        public void SetCurDicItemObjCount(ItemType itemType, int inCount)
         {
-            switch(itemType)
-            {
-                case ItemType.Weapon:
-                    CurWeapItemObjCount += inCount;
-                    break;
+            if(itemType == ItemType.None )
+                throw new Exception("인자로 전달 한 아이템 종류가 해당 인벤토리에 맞지 않습니다. 확인하여 주세요.");
 
-                case ItemType.Misc:
-                    CurMiscItemObjCount += inCount;
-                    break;
-
-                case ItemType.Quest:
-                    CurQuestItemObjCount += inCount;
-                    break;
-
-                default:
-                    throw new Exception("인자로 전달 한 아이템 종류가 해당 인벤토리에 맞지 않습니다. 확인하여 주세요.");
-            }
+            for(int i=0; i<dicLen; i++)
+                if( dicType[i] == itemType )
+                    CurDicItemObjCount[i] += inCount; 
         }
 
 
@@ -339,37 +328,34 @@ namespace InventoryManagement
                 return slotCountLimitDic[GetDicIdxByItemType(itemType)];
         }
 
-       
-
-
-
-
 
 
         /// <summary>
         /// 현재 인벤토리에 들어있는 아이템 오브젝트의 전체 갯수를 연산하여 반환합니다
         /// </summary>
         /// <returns>현재 인벤토리에 존재하는 모든 아이템의 총 갯수입니다.</returns>
-        private int GetCurItemCountAll()
+        private int GetCurDicItemObjCountAll()
         {
             int count = 0;
             int dicLen = (int)ItemType.None;
 
             for(int i=0; i<dicLen; i++)
-                count += GetCurItemCount((ItemType)i);
+                count += CurDicItemObjCount[i];
 
             return count;
         }
 
         /// <summary>
-        /// 현재 인벤토리의 남아있는 슬롯 갯수를 반환합니다.<br/>
-        /// 아이템 종류를 전달해야 합니다.<br/>
-        /// *** 아이템의 종류에 해당하는 사전이 없다면 예외를 발생시킵니다. ***
+        /// 현재 인벤토리의 아이템 종류에 따른 남아있는 슬롯 갯수를 반환합니다.<br/>
+        /// *** 아이템의 종류로 ItemType.None이 전달되었다면 예외를 발생시킵니다. ***
         /// </summary>
         /// <returns>남아있는 슬롯이 없으면 0, 남아있는 슬롯이 있다면 해당 슬롯의 갯수</returns>
         public int GetCurRemainSlotCount(ItemType itemType)
         {
-            return GetItemSlotCountLimit(itemType) - GetCurItemCount(itemType);
+            if(itemType==ItemType.None )
+                throw new Exception("잘못된 유형의 아이템 종류입니다.");
+
+            return GetItemSlotCountLimit(itemType) - CurDicItemObjCount[(int)itemType];
         }
 
 
@@ -395,6 +381,10 @@ namespace InventoryManagement
 
             // 변환한 itemType을 바탕으로 어떤 딕셔너리를 참조할 지 결정합니다.
             itemDic = GetItemDicIgnoreExsists(itemType);
+
+            // 아이템 딕셔너리가 할당되어있지 않거나 갯수가 0이라면, null을 반환합니다.
+            if( itemDic==null || itemDic.Count==0 )
+                return null;
 
 
             // 해당 사전의 아이템을 하나씩 불러와서 하위 클래스 형식(T형식) 으로 저장합니다.
@@ -441,7 +431,10 @@ namespace InventoryManagement
         /// 로드 할때나 씬을 전환했을 때 아이템 리스트를 역직렬화 하여 다시 인벤토리 목록으로 변환해야하는 용도로 사용합니다.
         /// </summary>
         public void DeserializeItemListToDic<T>( List<T> itemList ) where T : Item
-        {   
+        {               
+            if(itemList==null)  // 리스트에 null 전달되었다면 종료합니다.
+                return;
+
             foreach(Item item in itemList) // 아이템 리스트에서 개념 아이템 정보를 하나씩 꺼내옵니다.
             { 
                 // 월드에 오브젝트를 만들고 ItemInfo 참조값을 받습니다.
@@ -450,12 +443,16 @@ namespace InventoryManagement
                 // 인벤토리 내부에 추가합니다.
                 AddItem(itemInfo);
             }
+
+            // 현재 각 사전에 등록된 아이템의 갯수를 구하여 저장합니다.
+            for(int i=0; i<dicLen; i++)
+                CurDicItemObjCount[i] = GetCurDicItemObjCount((ItemType)i);
         }
 
 
 
         /// <summary>
-        /// 기본 인벤토리 생성자입니다. 새로운 게임을 시작할 때 사용해주세요.<br/>
+        /// 기본 인벤토리 생성자입니다. 직렬화 저장 시 사용됩니다.<br/>
         /// 인자를 전달하지 않을 시 전체 아이템 종류의 딕셔너리를 생성합니다.<br/>
         /// </summary>
         public Inventory()
@@ -478,7 +475,8 @@ namespace InventoryManagement
         }
                 
         /// <summary>
-        /// CreateManager 참조값을 받아 초기화를 진행합니다. 기존의 게임을 시작할 때 사용해야 합니다.  
+        /// 기본 인벤토리 생성자에서 게임 진행 중에 필요한 CreateManager 참조값을 받아 초기화를 진행합니다.<br/>
+        /// 역직렬화 로드 시 사용됩니다.
         /// </summary>
         public Inventory(CreateManager createManager) : this() //디폴트 생성자 호출
         {
@@ -487,8 +485,15 @@ namespace InventoryManagement
 
 
 
-        public Inventory( DicType[] dicTypes, CreateManager createManager)
+        /// <summary>
+        /// 인벤토리 클래스를 직렬화시켜 저장하기 위해 필요한 생성자입니다.<br/>
+        /// InventoryInitializer에 입력한 DicType[]의 참조값을 토대로 초기화를 진행합니다.
+        /// </summary>
+        public Inventory( InventoryInitializer initializer )
         {
+            // 전달받은 이니셜라이저의 DicType 배열을 참조합니다.
+            DicType[] dicTypes = initializer.dicTypes;
+
             // 사전 길이는 받은 인자의 길이입니다
             int dicLen = dicTypes.Length;
             
@@ -504,7 +509,15 @@ namespace InventoryManagement
                 dicType[i] = dicTypes[i].itemType;
                 slotCountLimitDic[i] = dicTypes[i].slotLimit;
             }
-
+        }
+        
+        
+        /// <summary>
+        /// 게임 중에 필요한 역직렬화 시킬 인벤토리 클래스 생성자입니다.<br/>
+        /// 전달받은 InventoryInitializer와 createManager를 토대로 인벤토리를 생성하고 초기화합니다.<br/>
+        /// </summary>
+        public Inventory( InventoryInitializer initializer, CreateManager createManager ) : this(initializer)            
+        {            
             // CreateManager 참조값을 설정
             this.createManager = createManager;
         }

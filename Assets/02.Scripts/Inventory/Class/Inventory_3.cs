@@ -89,6 +89,9 @@ using UnityEngine;
  * 1- 퀘스트 아이템 클래스 추가로 인해 
  * FindNearstSlotIdx메서드에 아이템을 읽어오는 사전 길이를 수정
  * 
+ * <v3.6 - 2024_0112_최원준>
+ * 1- Inventory를 개별사전에서 사전배열로 구조를 변경한 관계로 FindNearstSlotIdx메서드의 퀘스트아이템 로직 수정
+ * 
  * 
  */
 
@@ -174,9 +177,13 @@ namespace InventoryManagement
             {
                 int dicLen = (int)ItemType.None;    // 개별 사전의 총 갯수를 설정합니다.
 
-                // 퀘스트 아이템을 제외한 총 아이템 사전만큼.
-                for(int i=0; i<dicLen-1; i++)               
+                
+                for(int i=0; i<dicLen; i++)               
                 {
+                    // 퀘스트 아이템이라면 읽어들이지 않습니다.
+                    if(dicType[i]==ItemType.Quest)
+                        continue;
+
                     // 존재하는 모든 딕셔너리 사전을 하나씩 가져옵니다.
                     itemDic = GetItemDicIgnoreExsists((ItemType)i); 
 

@@ -5671,7 +5671,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1428161326487368616
 RectTransform:
   m_ObjectHideFlags: 0
@@ -7032,6 +7032,7 @@ GameObject:
   - component: {fileID: 8173849078218799481}
   - component: {fileID: 3886186159620564757}
   - component: {fileID: 7424356148983815751}
+  - component: {fileID: 8419837652940000942}
   m_Layer: 5
   m_Name: Inventory
   m_TagString: Untagged
@@ -7063,7 +7064,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -665, y: 0}
+  m_AnchoredPosition: {x: 591, y: 0}
   m_SizeDelta: {x: 500, y: 650}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &8173849078218799463
@@ -7158,6 +7159,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: eb80311b149cf5a4ea454c79ac05022d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  showTabType: 0000000001000000
 --- !u!114 &8173849078218799481
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7182,6 +7184,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0c201a006a6b1b44fa0b6adf770475b2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  inventory:
+    dicType: 000000000100000002000000
+    slotCountLimitDic: 0a0000000a0000000a000000
   slotListTr: {fileID: 0}
   baseDropTr: {fileID: 0}
   isBaseDropSetParent: 0
@@ -7197,6 +7202,32 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0539cfe88b5c3d642ba484145b283e40, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &8419837652940000942
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8173849078218799459}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1b61a2b3ab67e3241b177c91b38553e6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  isReset: 0
+  dicTypes:
+  - itemType: 0
+    slotLimit: 10
+  - itemType: 1
+    slotLimit: 5
+  - itemType: 2
+    slotLimit: 7
+  isCustomFileSetting: 0
+  fileName: 
+  saveSlotNo: 0
+  isShare: 0
+  shareSlotCountLimit: 0
+  shareExceptTabTypes: []
 --- !u!1 &8173849078787920210
 GameObject:
   m_ObjectHideFlags: 0
@@ -7319,7 +7350,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 8173849079173006861}
   m_Direction: 0
   m_Value: 0
-  m_Size: 1
+  m_Size: 0
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -7850,7 +7881,7 @@ GameObject:
   - component: {fileID: 8173849079872675233}
   - component: {fileID: 8173849079872675262}
   m_Layer: 5
-  m_Name: Button-All
+  m_Name: Button-TabPrefab
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

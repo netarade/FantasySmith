@@ -35,6 +35,9 @@ public partial class ItemInfo : MonoBehaviour, IPointerEnterHandler, IPointerExi
      * 
      * 2- Pointer Enter와 PointerExit이벤트 상속 후 아이템의 포인터 접근이 일어날 때마다 상태창의 메서드를 호출
      * 
+     * <v2.3 -2024_0112_최원준>
+     * 1- 테스트용 메서드 PrintDebugInfo 삭제
+     * 
      */
 
     string strItemDropSpace = "ItemDropSpace";
@@ -198,16 +201,6 @@ public partial class ItemInfo : MonoBehaviour, IPointerEnterHandler, IPointerExi
             UpdatePositionInSlotList();     // 원위치로 되돌리고 실패를 반환합니다.
             return false;
         }
-    }
-
-
-
-    public void PrintItemDebugInfo()
-    {
-        print(
-            "itemTr.name : " + itemTr.name +"\n" +
-            "itemRectTr.name : "+itemRectTr.name+"\n" + 
-            "dropPosTr.name : " + baseDropTr + "\n");
     }
 
 

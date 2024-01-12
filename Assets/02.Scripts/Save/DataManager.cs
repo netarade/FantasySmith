@@ -191,9 +191,6 @@ namespace DataManagement
             if(initializer==null)
                 throw new System.Exception("이니셜라이져가 전달되지 않았습니다.");
 
-            print(initializer.dicTypes.Length);
-
-
             // 리셋 옵션이 전달 된 경우
             if(initializer.isReset)
             {

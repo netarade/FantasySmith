@@ -51,6 +51,10 @@ using UnityEngine;
  * <v5.0 - 2024_0111_최원준>
  * 1- 크래프팅 장르에 맞게 클래스 설계 변경
  * 
+ * <v5.1 - 2024_0112_최원준>
+ * 1- ItemWeapon클래스의 부모를 Item이 아니라 ItemEquip으로 수정
+ * 이유는 방어구 등 착용가능한 아이템 클래스만 따로 선별하기 위함
+ * 
  */
 namespace ItemData
 {    
@@ -64,7 +68,7 @@ namespace ItemData
     /// 일반 무기 아이템
     /// </summary>
     [Serializable]
-    public class ItemWeapon : Item
+    public class ItemWeapon : ItemEquip
     {       
         /*** 기본 고유 정보 ***/
         [JsonProperty] protected WeaponType eWeaponType;   // 무기 소분류 타입 (검,창,활...)

@@ -179,6 +179,14 @@ using UnityEngine;
  * 2- GetCurDicItemObjCountAll메서드와 SetCurDicItemObjCount메서드를 GetCurDicItemObjCount기반이 아니라, CurDicItemObjCount로 구하는 것으로 변경
  * 3- dicType변수 public으로 변경
  * 4- Serialize, Deserialize 메서드 null값 전달 조건검사문 추가(사용자가 사전을 정의할 수 있기 때문)
+ * 
+ * <v9.2 - 2024_0112_최원준>
+ * 1- CurDicItemObjCount int배열 프로퍼티를 생성자에서 할당안해주고 있던점을 수정
+ * 
+ * 
+ * 
+ * 
+ * 
  */
 
 
@@ -243,6 +251,7 @@ namespace InventoryManagement
 
 
 
+        
 
         /// <summary>
         /// 전달된 아이템 사전에 해당하는 딕셔너리 인덱스가 있는지 찾아보고 반환합니다.<br/>
@@ -264,8 +273,6 @@ namespace InventoryManagement
             // 일치하는 종류의 사전이 없는 경우
             throw new Exception("이 인벤토리에 일치하는 아이템 종류의 사전이 없습니다.");
         }
-
-
 
 
 
@@ -296,6 +303,23 @@ namespace InventoryManagement
             
             return toatlCount;  
         }
+
+        
+        /// <summary>
+        /// 현재 인벤토리에 들어있는 아이템 오브젝트의 전체 갯수를 연산하여 반환합니다
+        /// </summary>
+        /// <returns>현재 인벤토리에 존재하는 모든 아이템의 총 갯수입니다.</returns>
+        public int GetCurDicItemObjCountAll()
+        {
+            int count = 0;
+            int dicLen = (int)ItemType.None;
+
+            for(int i=0; i<dicLen; i++)
+                count += CurDicItemObjCount[i];
+
+            return count;
+        }
+
         
         /// <summary>
         /// ItemType을 기반으로 어떤 종류의 curItemCount를 증가 또는 감소 시킬 지 결정하는 메서드입니다.<br/>
@@ -314,6 +338,10 @@ namespace InventoryManagement
         }
 
 
+
+
+
+
         /// <summary>
         /// 아이템 종류에 따른 슬롯의 제한 수를 반환합니다. <br/>
         /// ItemType을 인자로 전달받습니다.<br/>
@@ -321,7 +349,7 @@ namespace InventoryManagement
         /// </summary>
         /// <returns>인자로 전달 된 슬롯의 최대 제한 수를 반환합니다</returns>
         public int GetItemSlotCountLimit(ItemType itemType=ItemType.None)
-        {
+        {          
             if( itemType==ItemType.None )
                 return SlotCountLimitAll;
             else
@@ -329,21 +357,6 @@ namespace InventoryManagement
         }
 
 
-
-        /// <summary>
-        /// 현재 인벤토리에 들어있는 아이템 오브젝트의 전체 갯수를 연산하여 반환합니다
-        /// </summary>
-        /// <returns>현재 인벤토리에 존재하는 모든 아이템의 총 갯수입니다.</returns>
-        private int GetCurDicItemObjCountAll()
-        {
-            int count = 0;
-            int dicLen = (int)ItemType.None;
-
-            for(int i=0; i<dicLen; i++)
-                count += CurDicItemObjCount[i];
-
-            return count;
-        }
 
         /// <summary>
         /// 현재 인벤토리의 아이템 종류에 따른 남아있는 슬롯 갯수를 반환합니다.<br/>
@@ -357,6 +370,13 @@ namespace InventoryManagement
 
             return GetItemSlotCountLimit(itemType) - CurDicItemObjCount[(int)itemType];
         }
+
+
+
+
+
+
+
 
 
 
@@ -390,6 +410,10 @@ namespace InventoryManagement
             // 해당 사전의 아이템을 하나씩 불러와서 하위 클래스 형식(T형식) 으로 저장합니다.
             foreach( List<GameObject> objList in itemDic.Values )                // 해당 사전에서 게임오브젝트 리스트를 하나씩 꺼내어
             {
+                // 오브젝트 리스트가 할당되어있지만 아이템이 존재하지 않는경우 다음 오브젝트리스트를 찾습니다.
+                if(objList.Count==0)
+                    continue;
+
                 for( int i = 0; i<objList.Count; i++ )                               // 리스트의 게임오브젝트를 모두 가져옵니다.
                     itemList.Add( (T)objList[i].GetComponentInChildren<ItemInfo>().Item ); // item 스크립트를 하나씩 꺼내어 T형식으로 저장합니다.
             }
@@ -464,6 +488,7 @@ namespace InventoryManagement
             itemDic = new Dictionary<string, List<GameObject>>[dicLen];
             dicType = new ItemType[dicLen];
             slotCountLimitDic = new int[dicLen];
+            CurDicItemObjCount = new int[dicLen];
 
             // 배열의 모든 요소 할당
             for( int i = 0; i<dicLen; i++ )
@@ -501,6 +526,7 @@ namespace InventoryManagement
             itemDic = new Dictionary<string, List<GameObject>>[dicLen];
             dicType = new ItemType[dicLen];
             slotCountLimitDic = new int[dicLen];
+            CurDicItemObjCount = new int[dicLen];
            
             // 배열의 모든 요소를 받은 인자를 토대로 할당합니다
             for( int i = 0; i<dicLen; i++ )

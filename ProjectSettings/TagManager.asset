@@ -6,6 +6,10 @@ TagManager:
   tags:
   - Shadow
   - Collide
+  - ItemDropSpace
+  - CinemachineTarget
+  - Item
+  - Inventory
   layers:
   - Default
   - TransparentFX

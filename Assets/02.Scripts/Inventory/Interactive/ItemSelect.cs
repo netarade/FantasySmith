@@ -54,6 +54,15 @@ using UnityEngine.UI;
  * OnSelect의 중복호출을 방지하기 위하여 isFirstSelectDelay변수에 DelayTime 두어서 활성화 시기를 늦추고, 
  * OnUpdateSelected와 OnSelect의 중복호출을 방지하기 위하여 isMyItemSelecting에 DelayTime을 두어서 비활성화시기를 늦추었음.
  * 
+ * => 
+ * 서로 위치 스왑 시 동시 Select및 UpdateSelected 호출을 방지해야 하며,
+ * OnUpdateSelected에서 클릭버튼을 누르면 반드시 Select를 종료시키고 EventSystem의 Select상태를 null로 만들어야
+ * 다른 아이템의 Select를 발동시킬 수 있다.
+ * (이는 스왑 시 들고 있는 같은 아이템을 한 번더 누르게 되는데 이것이 다시 셀렉트로 이어지기 때문)
+ * 
+ * <v6.1 - 2024_0112_최원준>
+ * 1- OnSelectUpdated에 있는 셀렉트가 종료된 경우에 처리하던 로직을 Deselect로 옮김.
+ * 
  * 
  */
 
@@ -94,12 +103,12 @@ public class ItemSelect : MonoBehaviour
         itemInfo = GetComponent<ItemInfo>();
         itemSelectBtn = GetComponent<Button>(); 
 
-        raycastResults = new List<RaycastResult>();
-        pEventData = new PointerEventData(EventSystem.current);
+        raycastResults = new List<RaycastResult>();                
+        pEventData=new PointerEventData( EventSystem.current ); // 이벤트 시스템을 설정합니다.
     }
 
-
-
+    
+    // 셀렉트 진행 중의 처리
     public void OnUpdateSelected( BaseEventData eventData )
     {
         // 내 아이템 선택상태가 아니라면 실행하지 않습니다. (아이템 1개만 실행합니다.)
@@ -108,76 +117,20 @@ public class ItemSelect : MonoBehaviour
             
 
         // 아이템 위치를 마우스 위치와 일치시면 원점이 마우스 위치로 끌려오므로, 다시 원점위치로 보내서 해당 위치를 기준으로 움직이도록 해줍니다.
-        itemRectTr.position = Input.mousePosition + moveVecToCenter;  
+        itemRectTr.position = Input.mousePosition + moveVecToCenter;
 
         // 선택 중에 마우스 버튼을 클릭한 경우 - 반드시 선택 종료
-        if( Input.GetMouseButton(0) && isFirstSelectDelay )
+        if( Input.GetMouseButton( 0 )&&isFirstSelectDelay )
         {
-            print("버튼을 누릅니다.");
             itemSelectBtn.OnDeselect( eventData );              // 버튼을 Deselect상태로 만듭니다.
             EventSystem.current.SetSelectedGameObject( null );  // 이벤트 시스템의 셀렉트 상태를 null로 만듭니다.
-            
-            isMyItemSelecting = false;                            // 내 아이템 선택 상태를 바로 비활성화합니다.
-            isFirstSelectDelay = false;                              // 처음 클릭 상태를 비활성화 합니다.
-
-
-            // 이벤트가 일어날 포지션을 마우스를 다시 클릭했을 때의 지점으로 설정합니다.
-            pEventData.position=Input.mousePosition;
-
-            // 그래픽 레이캐스트를 통해 결과를 받습니다.
-            gRaycaster.Raycast( pEventData, raycastResults );
-
-            //print("레이캐스팅을 시작합니다.");
-
-
-            // 레이캐스팅에 성공한 경우(검출한 오브젝트가 있는 경우)
-            if( raycastResults.Count>0 )
-            {
-                for( int i = 0; i<raycastResults.Count; i++ )
-                {
-                    // 검출한 오브젝트의 태그가 슬롯이라면,
-                    if( raycastResults[i].gameObject.tag==strItemDropSpace )
-                    {
-                        //print("드랍 메서드를 호출합니다.");
-                        itemInfo.OnItemSlotDrop( raycastResults[i].gameObject.transform );
-                    }
-                    // 검출한 오브젝트의 태그가 슬롯이 아니라면, 다시 원위치로 돌려줍니다.
-                    else
-                        itemInfo.UpdatePositionInSlotList();    
-                }
-                
-                // 아이템 셀렉팅 상태를 딜레이 시간을 줘서 비활성화시킵니다.
-                StartCoroutine( SelectDoneDelayTime( 0.03f ) );
-            }
-            // 레이캐스팅의 검출이 없으면서, 부모의 이동이 발생하지 않았다면,(슬롯의 드랍에 실패했다면)
-            else if( raycastResults.Count==0 && itemRectTr.parent==movingParentTr )          
-            {
-                // 아이템 셀렉팅 상태를 딜레이 시간을 주지 않고 비활성화시킵니다.
-                StartCoroutine( SelectDoneDelayTime( 0f ) );
-                
-                // 인벤토리에서 아이템 드롭
-                itemInfo.OnItemWorldDrop();
-                
-
-                
-            }
-            else
-                throw new System.Exception("드랍 이상이 발생하였습니다. 확인하여 주세요.");
 
         }
-        else if( Input.GetMouseButton( 0 ) )
-        {
-            //print( "아직 활성화되지 않았습니다" );
-            itemRectTr.localPosition = Vector3.zero;
-        }
-
-
-
-
     }
 
 
 
+    // 셀렉트 시작 시
     public void OnSelect( BaseEventData eventData )
     {        
         // Select를 시작하면 현재 아이템의 인벤토리 정보를 최신화하여 가져옵니다. 
@@ -215,9 +168,64 @@ public class ItemSelect : MonoBehaviour
     }
 
 
+
+    // 셀렉트 종료 시
     public void OnDeselect( BaseEventData eventData )
     {        
-        
+        isMyItemSelecting=false;                            // 내 아이템 선택 상태를 바로 비활성화합니다.
+        isFirstSelectDelay=false;                           // 처음 클릭 상태를 비활성화 합니다.
+
+        // 이벤트가 일어날 포지션을 마우스를 다시 클릭했을 때의 지점으로 설정합니다.
+        pEventData.position=Input.mousePosition;
+
+        // 그래픽 레이캐스트를 통해 결과를 받습니다.
+        gRaycaster.Raycast( pEventData, raycastResults );
+
+
+        // 레이캐스팅에 성공한 경우(검출한 오브젝트가 있는 경우)
+        if( raycastResults.Count>0 )
+        {
+            string objNames = "";
+
+            for( int i = 0; i<raycastResults.Count; i++ )
+                objNames+=raycastResults[i].gameObject.name+" ";
+
+            print( "[검출되었습니다!]"+objNames );
+
+
+            for( int i = 0; i<raycastResults.Count; i++ )
+            {
+                // 검출한 오브젝트의 태그가 슬롯이라면,
+                if( raycastResults[i].gameObject.tag==strItemDropSpace )
+                {
+                    //print("드랍 메서드를 호출합니다.");
+                    itemInfo.OnItemSlotDrop( raycastResults[i].gameObject.transform );
+                }
+                // 검출한 오브젝트의 태그가 슬롯이 아니라면, 다시 원위치로 돌려줍니다.
+                else
+                    itemInfo.UpdatePositionInSlotList();
+            }
+
+            // 아이템 셀렉팅 상태를 딜레이 시간을 줘서 비활성화시킵니다.
+            StartCoroutine( SelectDoneDelayTime( 0.03f ) );
+        }
+        // 레이캐스팅의 검출이 없으면서, 부모의 이동이 발생하지 않았다면,(슬롯의 드랍에 실패했다면)
+        else if( raycastResults.Count==0&&itemRectTr.parent==movingParentTr )
+        {
+            print( "[검출되지 않았습니다]" );
+
+
+            // 아이템 셀렉팅 상태를 딜레이 시간을 주지 않고 비활성화시킵니다.
+            StartCoroutine( SelectDoneDelayTime( 0f ) );
+
+            // 인벤토리에서 아이템 드롭
+            itemInfo.OnItemWorldDrop();
+
+
+        }
+        else
+            throw new System.Exception( "드랍 이상이 발생하였습니다. 확인하여 주세요." );
+
     }
 
     

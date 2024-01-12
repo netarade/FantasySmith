@@ -53,6 +53,40 @@ public partial class InventoryInfo : MonoBehaviour
     List<ItemInfo> tempInfoList = new List<ItemInfo>();
 
 
+
+    
+    /// <summary>
+    /// 아이템의 이름과 수량을 인자로 받아 해당 아이템을 수량만큼 감소시켜줍니다.<br/>
+    /// 아이템의 종류와 상관없이 해당 수량 만큼 인벤토리에서 감소시킨 후 성공 여부를 반환합니다.<br/>
+    /// 잡화아이템의 경우 중첩수량을 감소시키며, 일반 아이템의 경우 오브젝트 갯수를 감소시킵니다.<br/><br/>
+    /// *** 수량 인자가 0이하라면 예외를 발생시킵니다. ***
+    /// </summary>
+    /// <returns>아이템이 존재하며 수량이 충분한 경우 true를, 존재하지 않거나 수량이 충분하지 않다면 false를 반환</returns>
+    public bool ReduceItem(string itemName, int count)
+    {
+        return IsItemEnough(itemName, count, true);
+    }
+    
+    /// <summary>
+    /// 아이템의 이름과 수량을 가지는 구조체 배열을 인자로 받아 해당 아이템을 수량만큼 감소시켜줍니다.<br/>
+    /// 아이템의 종류와 상관없이 해당 수량 만큼 인벤토리에서 감소시킨 후 성공 여부를 반환합니다.<br/>
+    /// 잡화아이템의 경우 중첩수량을 감소시키며, 일반 아이템의 경우 오브젝트 갯수를 감소시킵니다.<br/><br/>
+    /// *** 수량 인자가 0이하라면 예외를 발생시킵니다. ***
+    /// </summary>
+    /// <returns>아이템이 존재하며 수량이 충분한 경우 true를, 존재하지 않거나 수량이 충분하지 않다면 false를 반환</returns>
+    public bool ReduceItem( ItemPair[] itemPairs )
+    {
+        return IsItemEnough(itemPairs, true);
+    }
+
+
+
+
+
+
+
+
+
     /// <summary>
     /// 해당 이름의 아이템을 인벤토리의 목록에서 제거후에 목록에서 제거한 아이템의 ItemInfo 참조값을 반환합니다.<br/>
     /// 제거 후 바로 파괴하려면 두번 째 인자를 true로 설정합니다. (기본적으로 파괴되지 않습니다.)<br/><br/>
@@ -212,6 +246,8 @@ public partial class InventoryInfo : MonoBehaviour
         // 아이템 추가 성공을 반환합니다.
         return true;       
     }
+
+
 
 
 

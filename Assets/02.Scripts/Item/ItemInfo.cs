@@ -306,6 +306,10 @@ using CreateManagement;
  *<v12.8 - 2024_0111_최원준>
  *1- 퀘스트 아이템을 추가하면서 UpdatePositionInSlotList에서 전체탭인 경우에 로직이 작동하지 못하도록 변경
  *
+ *<v12.9 - 2024_0112_최원준>
+ *1- 퀘스트탭을 열어놓은 상태에서 아이템을 먹으면 퀘스트 슬롯에 업데이트 되는 문제가 있어서 UpdatePositionInSlotList에
+ *퀘스트아이템이 아니고, 개별탭 기준이라면, 포지션 업데이트를 실행하지않도록 조건검사문을 추가
+ *
  *
  */
 
@@ -544,9 +548,14 @@ public partial class ItemInfo : MonoBehaviour
         }
 
         
-        // 아이템 종류가 퀘스트아이템인 경우, 전체탭 기준이라면 포지션 업데이트를 실행하지 않습니다.
+        // 아이템 종류가 퀘스트아이템인 경우, 전체탭 기준이라면 포지션 업데이트를 실행하지 않습니다. (현재 프로젝트 특성에 맞춤화 코드)
         if( item.Type == ItemType.Quest && isActiveTabAll )
             return;
+        
+        // 아이템 종류가 퀘스트아이템이 아니고, 개별탭 기준이라면, 포지션 업데이트를 실행하지 않습니다. (현재 프로젝트 특성에 맞춤화 코드)
+        if( item.Type != ItemType.Quest && !isActiveTabAll )
+            return;
+
         
         // 현재 활성화 중인 탭을 기반으로 어떤 인덱스를 참조할지 설정합니다.
         int activeIndex = isActiveTabAll? item.SlotIndexAll : item.SlotIndex;

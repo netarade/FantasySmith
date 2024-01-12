@@ -185,6 +185,11 @@ using CreateManagement;
  * 이유는 로드 하면서 다른 스크립트의 메서드를 호출하는데 초기화가 이루어지지 않아서 에러가 발생하기 때문
  * (DataManager의 Path, CreateManager의 itemPrefab3D, VisualManager 등..)
  * 
+ * <v8.1 - 2024_0112_최원준>
+ * 1- 변수및 프로퍼티명 isWindowOpen을 isOpen으로 변경
+ * 
+ * 
+ * 
  */
 
 
@@ -223,26 +228,13 @@ public partial class InventoryInfo : MonoBehaviour
     string saveFileName;                // 저장파일 이름 설정
 
 
-
-
-    private bool isWindowOpen;
+    private bool isOpen;
 
     /// <summary>
     /// 인벤토리 창이 열려 있는지 여부를 반환
     /// </summary>
-    public bool IsWindowOpen { get; }
+    public bool IsOpen { get; }
 
-    /// <summary>
-    /// 인벤토리 창의 활성화 여부를 업데이트 하는 메서드로 interActive클래스에서 내부적으로 사용하고 있습니다.<br/>
-    /// ** 해당 인벤토리의 Interactive 클래스에서 호출하지 않으면 예외를 발생시킵니다. **
-    /// </summary>
-    public void UpdateOpenState(InventoryInteractive caller, bool isOpen)
-    {
-        if(caller != interactive)
-            throw new Exception("수정 불가능한 호출자입니다.");
-
-        isWindowOpen = isOpen;
-    }
 
 
 
@@ -322,6 +314,37 @@ public partial class InventoryInfo : MonoBehaviour
         // 파일을 저장합니다.
         dataManager.SaveData(saveData);
     }
+
+
+    
+    /// <summary>
+    /// 인벤토리 창의 활성화 여부를 업데이트 하는 메서드로 interActive클래스에서 내부적으로 사용하고 있습니다.<br/>
+    /// ** 해당 인벤토리의 Interactive 클래스에서 호출하지 않으면 예외를 발생시킵니다. **
+    /// </summary>
+    public void UpdateOpenState(InventoryInteractive caller, bool isOpen)
+    {
+        if(caller != interactive)
+            throw new Exception("수정 불가능한 호출자입니다.");
+
+        this.isOpen = isOpen;
+    }
+
+
+    /// <summary>
+    /// 이 인벤토리 창을 열고 닫아주는 메서드입니다.<br/>
+    /// Interactive 클래스의 메서드를 재 참조하고 있습니다.
+    /// </summary>
+    public void InventoryOpenSwitch()
+    {
+        interactive.InventoryOpenSwitch();
+    }
+
+
+
+
+
+
+
 
 
     /// <summary>

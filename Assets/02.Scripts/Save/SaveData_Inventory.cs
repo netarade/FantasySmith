@@ -3,6 +3,8 @@ using InventoryManagement;
 using ItemData;
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using UnityEngine;
 
 /*
  * <v1.1 - 2023_1231_최원준>
@@ -22,6 +24,24 @@ using System.Collections.Generic;
  * 1- Initializer를 통해 생성자를 호출하도록 구현
  * 2- slotCountLimit을 개별 변수가 아니라 배열로 구현
  * 
+ * <v2.1 - 2024_0112_최원준>
+ * (이슈)
+ * 1- 이니셜라이저 전달을 통한 JSON Deserialize가 되지 않는 문제가 있어서 두가지 방법으로 해결을 진행하려고 했으나
+ * 
+ * a. 디폴트 생성자를 호출한 후 따로 Initialize메서드를 호출해주는 방식
+ * b. Initializer자체를 같이 저장하는 방식
+ * 
+ * => 처음에는 b이니셜라이져를 같이 저장하는 방식으로 구현하려 했으나, 
+ * 참조값을 저장하면 안되므로 내부의 DicType, isReset을 따로 저장해야하는 문제
+ * 
+ * a는 JSon의 Deserialize를하고 바로 반환하기 전에 Initialize메서드를 한번더 호출하여야 하는 문제가 있었음
+ * 
+ * => 해결방법은 JSon이 Deserialize가 이루어질때 알아서 매개변수 생성자를 호출해버리는 문제가 있었으므로,
+ * 디폴트 생성자를 호출하게끔 빈 디폴트 생성자 InventorySaveData와 SInventory를 따로 만들어주었음.
+ * (빈 디폴트 생성자를 만들어도 JSon이 알아서 배열 크기까지 잡아서 할당을 진행하기 때문)
+ * 
+ * 
+ * 
  */
 
 
@@ -39,7 +59,10 @@ namespace DataManagement
         /// 로드시 Deserialize메서드를 사용해서 기존 Inventory 클래스의 인스턴스를 반환받아 사용하세요.
         /// </summary>
         public SInventory savedInventory;
-              
+        
+
+        public InventorySaveData() { }
+
 
         /// <summary>
         /// DataManager에서 Load메서드에서 새로운 GameData를 생성하기 위한 생성자입니다.<br/>
@@ -48,12 +71,11 @@ namespace DataManagement
         public InventorySaveData(InventoryInitializer initializer)
         {
             if(initializer==null)
-                throw new Exception("전달되지 않았습니다.");
+                throw new Exception("이니셜라이저가 전달되지 않았습니다.");
 
             savedInventory = new SInventory(initializer);     // 새로운 직렬화 인벤토리 생성  
         }
-
-
+              
     }
 
 
@@ -70,8 +92,11 @@ namespace DataManagement
         public List<ItemQuest> questList;
 
         public int[] slotCountLimit;
-        
-        
+
+
+        public SInventory() { }
+                            
+
         /// <summary>
         /// SerializableInventory의 생성자입니다.<br/>
         /// InventoryInitializer에서 세팅 한 DicType[]을 인자로 받습니다. <br/>
@@ -125,7 +150,7 @@ namespace DataManagement
             this.weapList=inventory.SerializeDicToItemList<ItemWeapon>();
             this.miscList=inventory.SerializeDicToItemList<ItemMisc>();
             this.questList=inventory.SerializeDicToItemList<ItemQuest>();
-
+            
             for(int i=0; i<inventory.dicLen; i++)
                 this.slotCountLimit[i] = inventory.slotCountLimitDic[i];
         }

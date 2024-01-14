@@ -134,6 +134,21 @@ using WorldItemData;
  * <v5.1 -2024_0111_최원준>
  * 1- 인벤토리를 딕셔너리 배열로 전환하면서 관련 메서드 수정하고 최적화
  * 
+ * <v5.2 - 2024_0114_최원준>
+ * 1- GetDicIndex메서드 추가
+ * DicType과 일치하는 인덱스를 구하여 slotCountLimit 배열에 접근하기 위함
+ * 
+ * 2- GetSlotCountLimit 메서드 추가
+ * ItemType을 인자로 넣어 해당 종류의 slotCountLimit을 빠르게 구하기 위함
+ * 
+ * <v5.3 - 2024_0115_최원준>
+ * 1- InventoryInfo클래스에서 SetItemSlotIndexBothLatest메서드를 옮겨옴
+ * 이유는 슬롯 인덱스를 Inventory클래스에서 밖에 구할 수 없으며, 
+ * AddItem시에 한 동작으로 이루어져야 순서관계가 무너지지 않기 때문
+ * 
+ * (추가예정)
+ * 지정 슬롯인덱스를 결정하는 메서드
+ * 
  * 
  */
 
@@ -142,9 +157,39 @@ namespace InventoryManagement
     public partial class Inventory
     {
         
+        /// <summary>
+        /// 아이템 Info 컴포넌트를 인자로 받아서 어떤 슬롯에 들어갈지 최신화 해주는 메서드입니다. <br/>
+        /// Inventory의 AddItem에서 아이템을 추가하기 전 슬롯정보를 입력 받기위해 사용됩니다.<br/>
+        /// *** 슬롯에 빈자리가 없거나, 아이템 정보가 없다면 예외를 발생시킵니다. ***
+        /// </summary>
+        public void SetItemSlotIndexBothLatest( ItemInfo itemInfo )
+        {        
+            // 인자 전달 오류 처리
+            if( itemInfo==null )
+                throw new Exception("ItemInfo 스크립트가 존재하지 않는 아이템입니다.");
+            
+            // 아이템 정보와 종류를 저장합니다.
+            Item item = itemInfo.Item;
+            ItemType itemType = item.Type;
+
+            // 슬롯에 빈공간이 없을 때
+            if( GetCurRemainSlotCount(itemType)==0 )     
+                throw new Exception("아이템이 들어갈 자리가 충분하지 않습니다. 확인하여 주세요.");    
+                          
+            // 구한 슬롯 인덱스를 아이템 정보에 입력합니다.
+            item.SlotIndex = GetLatestSlotIndex(itemType);
+            item.SlotIndexAll = GetLatestSlotIndex(ItemType.None);
+        }
+
+
+
+
+
 
         /// <summary>
-        /// ItemInfo 컴포넌트를 인자로 전달받아 해당 아이템 오브젝트에 해당하는 사전을 찾아서 아이템을 넣어주는 메서드입니다.<br/><br/>
+        /// ItemInfo 컴포넌트를 인자로 전달받아 
+        /// 해당 아이템 오브젝트에 해당하는 사전을 찾아서 아이템을 넣어주는 메서드입니다.<br/>
+        /// <br/>
         /// *** 인자로 들어온 컴포넌트 참조값이 없다면 예외를 발생시킵니다. ***<br/>
         /// </summary>
         /// <returns>아이템 추가 성공시 true를, 현재 인벤토리에 들어갈 공간이 부족하다면 false를 반환합니다</returns>
@@ -177,7 +222,7 @@ namespace InventoryManagement
         /// 해당 종류의 아이템 1개가 들어갈 빈 슬롯이 있어야 합니다.
         /// </summary>
         /// <returns>해당 아이템 종류의 아이템이 들어갈 빈 슬롯이 없다면 false, 아이템 추가에 성공 시 true를 반환합니다.</returns>
-        private bool AddItemToDic(ItemInfo itemInfo)
+        private bool AddItemToDic(ItemInfo itemInfo, int slotIndex=-1)
         {          
             // 아이템 이름과 종류를 참조합니다.
             string itemName = itemInfo.Item.Name;
@@ -186,6 +231,15 @@ namespace InventoryManagement
             // 남은 슬롯이 없다면 실패를 반환합니다.
             if( GetCurRemainSlotCount(itemType) == 0 )            
                 return false;   
+            
+            // 해당아이템의 슬롯을 결정합니다.
+            if(slotIndex>0)
+            {
+
+            }
+            // 슬롯 인덱스 값이 음수로 전달되었다면, 가장 가까운 슬롯의 인덱스로 집어넣습니다.
+            else
+                SetItemSlotIndexBothLatest(itemInfo);
 
             // 아이템 이름을 기반으로 오브젝트 리스트를 결정합니다. (존재하지 않는다면 새롭게 생성하여 반환합니다.)
             List<GameObject> itemObjList = GetItemObjectList(itemName, true);
@@ -534,6 +588,37 @@ namespace InventoryManagement
         }
 
 
+
+        /// <summary>
+        /// 아이템 종류에 해당하는 사전의 인덱스를 반환합니다.<br/>
+        /// 이는 dicType 배열과 일치하는 ItemType의 인덱스를 말합니다.<br/><br/>
+        /// *** 해당하는 종류의 아이템 사전이 없으면 예외가 발생 합니다. ***
+        /// </summary>
+        /// <returns></returns>
+        public int GetDicIndex(ItemType itemType)
+        {
+            for(int i=0; i<dicLen; i++)
+            {
+                if( dicType[i]==itemType) 
+                    return i;
+            }
+
+            throw new Exception("해당하는 아이템 종류의 사전이 없습니다.");
+        }
+
+
+        /// <summary>
+        /// 아이템 종류에 해당하는 슬롯의 제한 수를 반환합니다.<br/>
+        /// ItemType.None 전달 시 전체 슬롯의 제한 수를 반환합니다.(기본 값) 
+        /// </summary>
+        /// <returns></returns>
+        public int GetSlotCountLimit(ItemType itemType=ItemType.None)
+        {
+            if(itemType==ItemType.None)
+                return SlotCountLimitAll;
+            else
+                return slotCountLimitDic[GetDicIndex(itemType)];
+        }
         
 
 

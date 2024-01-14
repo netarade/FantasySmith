@@ -4,6 +4,7 @@ using DataManagement;
 using ItemData;
 using System;
 using System.Collections.Generic;
+using UnityEngine.UI;
 
 /*
  * [작업 사항]  
@@ -40,9 +41,15 @@ using System.Collections.Generic;
  * 1- RemoveItem메서드의 변수명 targetItemInfo->rItemInfo로 변경 
  * 2- 이름을 인자로 받는 RemoveItem메서드 내 rItemInfo.UpdateInventoryInfo(null); 추가
  * 
+ * <v3.0 -2024_0114_최원준>
+ * 1- UpdateAllOverlapCountInExist메서드 주석 추가
+ * 2- 상속스크립트 QuickSlot을 정의하고 관련속성을 상속받기위해 private 변수와 메서드를 protected처리
+ * 
+ * <v3.1 - 2024_0115_최원준>
+ * 1- AddItem메서드 내부의 FindSlotIdxToNearstSlot을 내부적으로 호출 하던 것을 삭제
+ * Inventory클래스에서 밖에 Index를 구할 수 없으므로, Inventory클래스의 AddItem에서 내부적으로 통합하였기 때문
  * 
  */
-
 
 public partial class InventoryInfo : MonoBehaviour
 {
@@ -50,7 +57,7 @@ public partial class InventoryInfo : MonoBehaviour
     /// Inventory클래스에서 필요 시 아이템 정보를 전송받기 위해 사용하는 ItemInfo를 임시적으로 담는 리스트입니다.<br/>
     /// AddItem메서드에서 
     /// </summary>
-    List<ItemInfo> tempInfoList = new List<ItemInfo>();
+    protected List<ItemInfo> tempInfoList = new List<ItemInfo>();
 
 
 
@@ -61,7 +68,7 @@ public partial class InventoryInfo : MonoBehaviour
     /// 잡화아이템의 경우 중첩수량을 감소시키며, 일반 아이템의 경우 오브젝트 갯수를 감소시킵니다.<br/><br/>
     /// *** 수량 인자가 0이하라면 예외를 발생시킵니다. ***
     /// </summary>
-    /// <returns>아이템이 존재하며 수량이 충분한 경우 true를, 존재하지 않거나 수량이 충분하지 않다면 false를 반환</returns>
+    /// <returns>아이템 수량 감소에 성공한 경우 true를, 존재하지 않거나 수량이 충분하지 않다면 false를 반환</returns>
     public bool ReduceItem(string itemName, int count)
     {
         return IsItemEnough(itemName, count, true);
@@ -73,7 +80,7 @@ public partial class InventoryInfo : MonoBehaviour
     /// 잡화아이템의 경우 중첩수량을 감소시키며, 일반 아이템의 경우 오브젝트 갯수를 감소시킵니다.<br/><br/>
     /// *** 수량 인자가 0이하라면 예외를 발생시킵니다. ***
     /// </summary>
-    /// <returns>아이템이 존재하며 수량이 충분한 경우 true를, 존재하지 않거나 수량이 충분하지 않다면 false를 반환</returns>
+    /// <returns>아이템 수량 감소에 성공한 경우 true를, 존재하지 않거나 수량이 충분하지 않다면 false를 반환</returns>
     public bool ReduceItem( ItemPair[] itemPairs )
     {
         return IsItemEnough(itemPairs, true);
@@ -152,7 +159,7 @@ public partial class InventoryInfo : MonoBehaviour
 
 
     /// <summary>
-    /// 인벤토리의 목록에 없는 아이템을 새롭게 생성하고 인벤토리 목록에 추가합니다.<br/>
+    /// 인벤토리의 목록에 없는 아이템을 새롭게 생성하고 가까운 슬롯에 추가합니다.<br/>
     /// 오브젝트 1개만 생성하므로, 여러 아이템을 생성시키고 싶을 때 중복하여 호출해야 합니다.<br/>
     /// 잡화아이템의 경우 중첩수량을 설정할 수 있습니다. 비잡화 아이템의 경우는 무시합니다.(기본값:1)<br/>
     /// </summary>
@@ -173,7 +180,7 @@ public partial class InventoryInfo : MonoBehaviour
 
     
     /// <summary>
-    /// 인벤토리의 목록에 *없는* 아이템을 새롭게 생성하고 인벤토리 목록에 추가합니다.<br/>
+    /// 인벤토리의 목록에 *없는* 아이템을 새롭게 생성하고 가까운 슬롯에 추가합니다.<br/>
     /// 인자로 아이템 이름과 중첩 수량 묶음 구조체를 전달받습니다.<br/><br/>
     /// 오브젝트 단위로 여러 아이템을 생성할 수 있습니다.<br/>
     /// 비잡화아이템의 경우 ItemPair의 overlapcount는 무시됩니다.<br/>
@@ -190,7 +197,7 @@ public partial class InventoryInfo : MonoBehaviour
 
 
     /// <summary>
-    /// 인벤토리의 목록에 *월드*에 존재하는 기존의 아이템을 추가합니다.<br/>
+    /// 인벤토리의 목록에 *월드*에 존재하는 기존의 아이템을 가까운 슬롯에 추가합니다.<br/>
     /// 다른 인벤토리에 존재하는 아이템은 OnItemSlotDrop메서드 호출을 통해 다른 인벤토리로 전이되어야 합니다.<br/><br/>
     /// *** 인자로 들어온 컴포넌트 참조값이 null이라면 예외를 발생시킵니다. ***<br/>
     /// </summary>
@@ -204,11 +211,6 @@ public partial class InventoryInfo : MonoBehaviour
         // 슬롯에 빈자리가 없으면 실행하지 않습니다.
         if( !IsSlotEnough( itemInfo ) )
             return false;
-
-        // 아이템 인덱스 정보를 현재 인벤토리의 가까운 슬롯으로 입력합니다.
-        // 내부 인벤토리의 아이템을 하나씩 꺼내어 인덱스를 계산하기 때문에 AddItem이후에 호출하게 되면 안됩니다.
-        SetItemSlotIdxBothToNearstSlot( itemInfo );
-
 
         // 아이템의 타입이 잡화종류인 경우 전후수량을 비교하여 처리합니다.
         if( itemInfo.Item.Type==ItemType.Misc )
@@ -227,10 +229,7 @@ public partial class InventoryInfo : MonoBehaviour
 
             // 수량정보가 변동이 있다면, 기존 아이템과 동일한 이름의 아이템의 수량정보를 업데이트합니다.
             if( beforeOverlapCount!=afterOverlapCount )
-            {
                 UpdateAllOverlapCountInExist( itemMisc.Name );
-                print("수량정보 변동이 있습니다.");
-            }
 
             // 아이템 수량이 변동이 없거나, 남은 상태라면, 아이템에 최신 정보를 반영합니다. 
             if( afterOverlapCount!=0 )                              
@@ -248,17 +247,12 @@ public partial class InventoryInfo : MonoBehaviour
     }
 
 
-
-
-
-
-
-
-
-
-
-    
-    private void UpdateAllOverlapCountInExist(string itemName)
+    /// <summary>
+    /// 인자로 전달한 이름과 동일한 기존 아이템의 수량을 모두 업데이트 해주는 메서드<br/>
+    /// AddItem에서 내부적으로 사용됩니다. 
+    /// </summary>
+    /// <param name="itemName"></param>
+    protected void UpdateAllOverlapCountInExist(string itemName)
     {
         List<GameObject> itemObjList = inventory.GetItemObjectList(itemName);
 
@@ -268,6 +262,43 @@ public partial class InventoryInfo : MonoBehaviour
         }
 
     }
+
+
+
+    /// <summary>
+    /// 인벤토리의 목록에 기존의 아이템을 *특정 슬롯*에 추가합니다.<br/>
+    /// *** 인자로 들어온 컴포넌트 참조값이 null이라면 예외를 발생시킵니다. ***<br/>
+    /// </summary>
+    /// <returns>오브젝트가 생성 될 빈 공간이 부족하다면 false를, 아이템 생성 성공 시 true를 반환</returns>
+    public bool AddItemToSpecificSlot(ItemInfo itemInfo, TabType  ,Transform slotTr)
+    {
+        if( itemInfo==null || slotTr==null )
+            throw new Exception( "전달 받은 참조 값이 존재하지 않습니다." );
+                        
+        return AddItemToSpecificSlot(itemInfo, slotTr.GetSiblingIndex());
+    }
+
+
+
+    /// <summary>
+    /// 인벤토리의 목록에 기존의 아이템을 *특정 슬롯*에 추가합니다.<br/>
+    /// *** 인자로 들어온 컴포넌트 참조값이 null이거나, 슬롯 인덱스가 잘못되었다면 예외를 발생시킵니다. ***<br/>
+    /// </summary>
+    /// <returns>오브젝트가 생성 될 빈 공간이 부족하다면 false를, 아이템 생성 성공 시 true를 반환</returns>
+    public bool AddItemToSpecificSlot(ItemInfo itemInfo, int slotIndex)
+    {
+        if( itemInfo==null )
+            throw new Exception( "전달 받은 아이템 참조 값이 존재하지 않습니다." );
+        if( inventory.GetSlotCountLimit(itemInfo.Item.Type) < slotIndex || slotIndex < 0 )
+            throw new Exception( "슬롯 인덱스 정보가 잘못되었습니다." );
+
+        // 해당 슬롯에 자리가 없다면, 실패를 반환
+        if( !IsSlotEnough(itemInfo, slotIndex) )
+            return false;
+        
+
+    }
+
 
 
 

@@ -1,0 +1,259 @@
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.UI;
+
+/*
+ * [작업 사항]  
+ * <v1.0 - 2024_0113_최원준>
+ * 1- 인벤토리 간 전송을 위한 분할 클래스를 작성
+ * 그래픽레이캐스터의 레이캐스팅의 UI 이벤트는 다른 캔버스 (다른계층)간에 발생하지 않기 때문에,
+ * 플레이어가 상호작용을 통하여 다른 인벤토리 창을 Open시 해당 인벤토리의 GraphicRaycaster 참조값을 알아야
+ * 동시에 레이캐스팅을 걸어줄 수 있다. 
+ * 
+ * <v2.0 - 2024-0114_최원준>
+ * 
+ * 1- 리스트 clientInfo는 Awake문에서 isServer인 경우에만 할당하도록 변경
+ * 
+ * 2- ConnectInventory를 void에서 bool로 성공 실패 반환값을 주게되었음.
+ * 이유는 상대 인벤토리가 연결중일 때 알려주기 위함.
+ * 
+ * 3- DisconnectInventory메서드에서 인자로 InventoryInfo를 받던 부분 삭제
+ * 연결 중일 때는 서버든 클라이언트든 자신의 정보를 참조하여 상대것까지 해제가 가능
+ * 
+ * 
+ * 4- 닫기 버튼시 수행하는 동작(BtnInventoryClose)를 InventoryInteractive클래스로 옮김
+ * 이유는 x버튼만 누르면 자동으로 상대 인벤토리까지 연결 해제 혹은 닫기를 할 수 있기 때문에
+ * 연결하고나서 별도로 메서드를 호출해줄 필요가 없기 때문
+ * 
+ * 5- 서버인벤토리의 경우 serverInfo에 자기자신을 설정하도록 설정하였으며, 읽기전용 프로퍼티를 할당
+ * 아이템의 셀렉팅이 클라이언트 인벤토리에서 일어나든, 서버 인벤토리에서 일어나든 바로 서버주소를 참조할 수 있게 하기 위함
+ * 
+ * 6- ClientInfo 읽기전용 프로퍼티를 할당하여 clientInfo 리스트를 AsReadOnly메서드를 사용하여 
+ * 읽기전용 인터페이스로 반환하여, ItemSelect에서 참조할 수 있게 하였으며, 항목 수정을 막음.
+ * 
+ * <v2.1 - 2024-0114_최원준>
+ * 1- 상속스크립트 QuickSlot을 정의하고 관련속성을 상속받기위해 private 변수와 메서드를 protected처리
+ * 
+ * 
+ * 
+ */
+
+
+
+public partial class InventoryInfo : MonoBehaviour
+{
+    // 플레이어와 상호작용하는 인벤토리쪽에서 참조하게 될 플레이어(서버) 인벤토리
+    protected InventoryInfo serverInfo = null;    
+
+    // 플레이어(서버) 쪽에서 상호작용 시 참조하게 될 클라이언트 인벤토리
+    protected List<InventoryInfo> clientInfo = null;     
+
+    /// <summary>
+    /// 해당 인벤토리가 다른 인벤토리와 상호작용 (연결) 상태라면 서버(플레이어) 인벤토리의 참조를 반환합니다.<br/>
+    /// </summary>
+    public InventoryInfo ServerInfo {  get { return serverInfo; } }
+
+    
+    /// <summary>
+    /// 해당 인벤토리가 서버 인벤토리라면, 연결 중인 클라이언트 인벤토리의 정보를 가지고 있으며 
+    /// 이 리스트의 참조를 반환합니다.<br/>
+    /// 서버가 아니라면 null값이 반환됩니다.
+    /// </summary>
+    public IReadOnlyList<InventoryInfo> ClientInfo { get { return clientInfo.AsReadOnly(); } }
+
+
+
+
+
+    /// <summary>
+    /// 다른 인벤토리를 다중 참조하기 위한 서버역할을 하게 됩니다.<br/>
+    /// 플레이어 인벤토리의 경우 인스펙터 뷰에서 서버를 체크해야 합니다.
+    /// </summary>
+    [Header("플레이어 인벤토리인 경우 체크")]
+    [SerializeField] protected bool isServer = false;
+
+    
+    protected bool isOpen;
+
+    protected bool isConnect = false;
+
+    /// <summary>
+    /// 인벤토리 창이 열려 있는지 여부를 반환합니다.
+    /// </summary>
+    public bool IsOpen { get { return isOpen; } }
+
+    /// <summary>
+    /// 현재 인벤토리가 다른 인벤토리와 연결되어있는지 여부를 반환합니다.
+    /// </summary>
+    public bool IsConnect { get { return isConnect; } }
+    
+
+
+    protected CanvasGroup inventoryCG;        // 인벤토리의 캔버스 그룹
+
+    /// <summary>
+    /// 현재 인벤토리의 상위부모 캔버스의 그래픽레이캐스터를 반환합니다.
+    /// </summary>
+    public GraphicRaycaster gRaycaster { get { return inventoryTr.parent.GetComponent<GraphicRaycaster>(); } }
+
+    
+    /// <summary>
+    /// 인벤토리 창을 자동으로 열고닫는 메서드입니다.<br/>
+    /// 플레이어 InputSystem에서의 I키를 누를 때 호출해야 합니다.<br/>
+    /// </summary>
+    public void InventoryOpenSwitch()
+    {
+        // 다른 인벤토리와 연결된 상태라면 작동하지 않습니다.
+        if(isConnect)
+            return;
+        
+        SwitchInventoryAppear( !isOpen );   // 호출 시 마다 반대 상태로 넣어줍니다
+        isOpen = !isOpen;                   // 상태 변화를 반대로 기록합니다
+    }
+
+
+    /// <summary>
+    /// 인벤토리 창을 수동으로 열고 닫는 메서드입니다.<br/>
+    /// connect, disconnect 상태에서의 호출에 사용합니다.
+    /// </summary>
+    public void InitOpenState(bool isOpen)
+    {        
+        SwitchInventoryAppear(isOpen);  // 게임 시작 시 인벤토리 판넬을 꺼둔다.
+        this.isOpen = isOpen;           //초기에 인벤토리는 꺼진 상태
+    }
+
+
+    /// <summary>
+    /// 인벤토리의 모든 이미지와 텍스트를 꺼줍니다.
+    /// </summary>
+    protected void SwitchInventoryAppear( bool isOpen )
+    {
+        inventoryCG.blocksRaycasts = isOpen;   // 그룹의 블록 레이캐스트를 조절해줍니다
+        inventoryCG.alpha = isOpen ? 1f : 0f;  // 그룹의 투명도를 조절해줍니다
+    }
+
+
+
+    
+
+
+
+
+    /// <summary>
+    /// 서버, 클라이언트 인벤토리 간 연결을 시도합니다.<br/><br/>
+    /// *** 전달한 인벤토리 참조가 잘못되었거나, 이미 연결 중인 상태이거나, 클라이언트 서버 관계가 아니라면 예외가 발생***
+    /// </summary>
+    /// <returns>전달한 인벤토리가 연결 중인 상태라면 flase를 반환, 연결에 성공 시 true를 반환</returns>
+    public bool ConnectInventory(InventoryInfo otherInfo)
+    {
+        if(otherInfo==null || otherInfo==this )
+            throw new Exception("인벤토리 참조가 정확하지 않습니다. 다른 인벤토리의 참조값이 필요합니다.");
+
+        if(this.isConnect)
+            throw new Exception("현재 인벤토리가 연결 상태입니다.");
+
+        // 상대가 연결 상태라면 실패를 반환합니다.
+        if(otherInfo.isConnect)
+            return false;
+            
+
+        // 자신 서버<-> 상대 클라이언트 연결인 경우
+        if( this.isServer && !otherInfo.isServer )
+        {
+            // 두 인벤토리 연결상태 활성화 및 Open
+            this.isConnect=true;
+            this.InitOpenState(true);
+
+            otherInfo.isConnect = true;
+            otherInfo.InitOpenState(true);
+
+            // 자신의 클라이언트 정보에 상대를 추가합니다.
+            this.clientInfo.Add(otherInfo);  
+
+            // 상대의 서버 정보에 자신을 등록합니다.
+            otherInfo.serverInfo = this;
+
+            return true;
+        }
+        // 자신 클라이언트<->상대 서버 연결인 경우
+        else if( !this.isServer && otherInfo.isServer)
+        {
+            // 두 인벤토리 연결상태 활성화 및 Open
+            this.isConnect = true;
+            this.InitOpenState(true);
+
+            otherInfo.isConnect = true;
+            otherInfo.InitOpenState(true);
+
+            // 상대의 클라이언트 정보에 자신을 추가합니다.
+            otherInfo.clientInfo.Add(this);  
+
+            // 자신의 서버정보에 상대를 설정합니다.
+            this.serverInfo = otherInfo;   
+            
+            return true;
+        }
+
+
+        throw new Exception("서버끼리 연결할 수 없으며, 클라이언트끼리 연결 할 수 없습니다.");
+    }
+
+
+
+
+
+    /// <summary>
+    /// 인벤토리 간 연결을 제거하고 정보를 초기화 합니다.<br/>
+    /// 자신의 인벤토리와 연결된 상대의 인벤토리 정보를 모두 초기화하고 연결을 해제합니다.<br/><br/>
+    /// *** 메서드를 호출한 인벤토리가 연결상태가 아니라면 예외가 발생 ***
+    /// </summary>
+    public void DisconnectInventory()
+    {
+        if(!this.isConnect)
+            throw new Exception("연결상태가 아닙니다.");
+        
+        // 자신이 서버라면,
+        if(this.isServer)
+        {   
+            // 마지막으로 추가 된 클라이언트 정보를 참조하여 클라이언트로 설정합니다.
+            InventoryInfo clientInfo = this.clientInfo[this.clientInfo.Count-1];
+
+            // 두 인벤토리 연결상태 비활성화 및 Close
+            this.isConnect = false;
+            this.InitOpenState(false);
+            
+            clientInfo.isConnect=false;
+            clientInfo.InitOpenState(false);
+
+            // 자신의 클라이언트 정보에서 상대를 삭제
+            this.clientInfo.Remove(clientInfo);  
+
+            // 상대의 서버정보에서 자신을 삭제
+            clientInfo.serverInfo = null;
+        }
+        // 자신이 클라이언트라면,
+        else
+        {               
+            // 두 인벤토리 연결상태 비활성화 및 Close
+            serverInfo.isConnect=false;
+            serverInfo.InitOpenState(false);
+                        
+            this.isConnect = false;
+            this.InitOpenState(false);        
+            
+            // 상대의 클라이언트 정보에서 자신을 삭제
+            serverInfo.clientInfo.Remove(this); 
+            
+            // 자신의 서버 정보에서 상대를 삭제
+            this.serverInfo = null;                 
+        }
+        
+    }
+
+
+
+
+
+}

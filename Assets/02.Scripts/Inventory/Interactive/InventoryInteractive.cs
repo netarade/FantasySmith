@@ -166,6 +166,14 @@ using System;
 * 5- TabType과 ItemType간의 변환 메서드를 추가, 관련 변수를 추가
 * 
 * 
+* <v8.1 - 2024_0113_최원준>
+* 1- 인벤토리의 오픈 상태를 InventoryInfo클래스에서 관리할 필요성이 생겨 관련 메서드및 변수를 이전하였음.
+* 
+* <v8.2 - 2024_0114_최원준>
+* 1- 인벤토리 닫기 버튼인 X버튼을 눌렀을 때의 BtnInventoryClose메서드를 정의
+* 다른 인벤토리와 연결 중일 때는 연결 상태를 해제하고, 연결 상태가 아닐때는 자신의 창만 닫는 동작을 실행
+* 
+* 
 */
 
 
@@ -190,11 +198,7 @@ public class InventoryInteractive : MonoBehaviour
     Transform slotListTr;           // 인벤토리 전체탭 슬롯리스트의 트랜스폼 참조
     Transform emptyListTr;          // 아이템을 보이지 않는 곳에 잠시 옮겨둘 오브젝트(뷰포트의 1번째 자식)
 
-    Button[] btnTap;                // 버튼 탭을 눌렀을 때 각 탭에 맞는 아이템이 표시되도록 하기 위한 참조
-
-    bool isInventoryOn;             // On상태 기록하기 위한 변수
-    CanvasGroup inventoryCG;        // 인벤토리의 캔버스 그룹
-        
+    Button[] btnTap;                // 버튼 탭을 눌렀을 때 각 탭에 맞는 아이템이 표시되도록 하기 위한 참조        
     GameObject slotPrefab;          // 슬롯을 동적으로 생성하기 위한 프리팹 참조
         
     /// <summary>
@@ -233,11 +237,6 @@ public class InventoryInteractive : MonoBehaviour
     public bool IsActiveTabAll { get{return isActiveTabAll; } }
 
 
-    /// <summary>
-    /// 현재 인벤토리 오브젝트가 켜져 있는지 여부를 반환합니다.
-    /// </summary>
-    public bool IsInventoryOn { get { return isInventoryOn;} } 
-
 
 
     /// <summary>
@@ -255,14 +254,12 @@ public class InventoryInteractive : MonoBehaviour
         inventoryInfo = caller;                                        // Info 클래스 참조 등록
         inventory = inventoryInfo.inventory;                           // 내부 인벤토리 정보 참조 등록
         
-        inventoryCG = inventoryTr.GetComponent<CanvasGroup>();         // 인벤토리의 캔버스그룹 참조
         slotListTr = inventoryTr.GetChild(0).GetChild(0).GetChild(0);  // 뷰포트-컨텐트-전체 슬롯리스트
         slotPrefab = slotListTr.GetChild(0).gameObject;                // 슬롯 리스트 하위에 미리 1개가 추가되어 있음
         emptyListTr = inventoryTr.GetChild(0).GetChild(1);             // 뷰포트-EmptyList
                                  
         CreateInventorySlot(caller);    // 인벤토리 슬롯 생성
         CreateActiveTabBtn();           // 액티브탭 버튼 생성
-        InitOpenState();                // 인벤토리 오픈 상태 초기화
     }
 
 
@@ -431,16 +428,6 @@ public class InventoryInteractive : MonoBehaviour
 
 
 
-    /// <summary>
-    /// 인벤토리 창의 상태 초기화를 진행합니다.
-    /// </summary>
-    private void InitOpenState()
-    {
-        // 게임 시작 시 인벤토리 판넬을 꺼둔다.
-        SwitchInventoryAppear(false);
-        isInventoryOn = false;          //초기에 인벤토리는 꺼진 상태        
-    }
-
 
 
     /// <summary>
@@ -466,31 +453,27 @@ public class InventoryInteractive : MonoBehaviour
 
 
 
-
-
-
     /// <summary>
-    /// 인벤토리 창을 열고닫는 메서드입니다.<br/>
-    /// 플레이어 InputSystem에서의 I키를 누르거나 인벤토리 아이콘 x아이콘 클릭 시 호출됩니다.<br/>
+    /// X버튼을 눌러 인벤토리를 닫을 때 호출해주는 메서드입니다.<br/>
+    /// 다른 인벤토리와 연결 상태라면 연결을 해제하고 모든 인벤토리 창을 닫으며,<br/>
+    /// 연결 상태가 아니라면 자신의 인벤토리 창만 닫습니다.
     /// </summary>
-    public void InventoryOpenSwitch()
+    public void BtnInventoryClose()
     {
-        SwitchInventoryAppear( !isInventoryOn );    // 호출 시 마다 반대 상태로 넣어줍니다
-        isInventoryOn = !isInventoryOn;             // 상태 변화를 반대로 기록합니다
-
-        inventoryInfo.UpdateOpenState(this, isInventoryOn);     // 상태를 Info클래스에 반영합니다.
+        if(inventoryInfo.IsConnect)
+            inventoryInfo.DisconnectInventory();
+        else
+            inventoryInfo.InitOpenState(false);
     }
 
 
 
-    /// <summary>
-    /// 인벤토리의 모든 이미지와 텍스트를 꺼줍니다.
-    /// </summary>
-    private void SwitchInventoryAppear(bool onOffState )
-    {
-        inventoryCG.blocksRaycasts = onOffState;   // 그룹의 블록 레이캐스트를 조절해줍니다
-        inventoryCG.alpha = onOffState ? 1f : 0f;  // 그룹의 투명도를 조절해줍니다
-    }
+
+
+
+
+
+
 
 
 

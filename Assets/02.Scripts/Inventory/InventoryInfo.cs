@@ -188,6 +188,30 @@ using CreateManagement;
  * <v8.1 - 2024_0112_최원준>
  * 1- 변수및 프로퍼티명 isWindowOpen을 isOpen으로 변경
  * 
+ * <v8.2 - 2024_0113_최원준>
+ * 1- 관련성을 이유로 isOpen 변수를 InventoryInfo_3.cs로 이전
+ * 
+ * 2- UpdateOpenState메서드 삭제
+ * Interactive클래스의 InventoryOpenSwitch메서드를 직접 Inventory_3.cs로 옮긴 관계로
+ * 더 이상 interactive에서 isOpen변수를 업데이트 해줄 필요가 없게되었음.
+ * 
+ * <9.0 -2024_0114_최원준>
+ * 1- 자기 트랜스폼 캐싱 inventoryTr변수 추가 및 slotListTr public 삭제, emptyList추가
+ * 
+ * 2- Awake문에 Inventory_3.cs 관련 변수 초기화를 진행
+ * 
+ * 3- 상속스크립트 QuickSlot을 정의하고 관련속성을 상속받기위해 private 변수와 메서드를 protected처리
+ * 
+ * 4- OnDestroy에서 Save하던 코드를 삭제
+ * 이유는 파괴시 아이템의 컴포넌트를 하나씩 가져와서 저장하려고 하면 이미 오브젝트가 파괴되었기 때문에 에러가 뜨기 때문
+ * (씬 전환 버튼을 누르기 직전에 Save를 호출해줘야 함)
+ * 
+ * 5- 메서드명 SetItemSlotIdxBothNearst를 SetItemSlotIndexBothLatest로 변경 후 Inventory클래스로 옮김
+ * 이유는 AddItem 할 때 한동작으로 이루어져야 하며, 내부 inventory에서 밖에 계산할 수 없기 때문. 
+ * 
+ * 6- IsSlotEnough에 지정 슬롯인덱스를 받아서 확인하는 오버로딩 메서드 추가
+ * 
+ * 7- IsSlotEnoughIgnoreOverlap메서드 삭제
  * 
  * 
  */
@@ -208,15 +232,14 @@ public partial class InventoryInfo : MonoBehaviour
     public Inventory inventory;
 
 
-    /// <summary>
-    /// 현재 인벤토리가 관리하는 슬롯 리스트의 Transform 정보입니다.
-    /// </summary>
-    public Transform slotListTr;
-        
-    InventoryInitializer initializer;   // 사용자가 정의한 방식으로 인벤토리의 초기화를 진행하기 위한 참조
-    InventoryInteractive interactive;   // 자신의 인터렉티브 스크립트를 참조하여 활성화 탭정보를 받아오기 위한 변수 선언
-    DataManager dataManager;            // 저장과 로드 관련 메서드를 호출 할 스크립트 참조
-    CreateManager createManager;        // 아이템 생성을 요청하고 반환받을 스크립트 참조
+    protected Transform inventoryTr;              // 자신의 트랜스폼 캐싱
+    protected Transform slotListTr;               // 현재 인벤토리가 관리하는 슬롯 리스트의 Transform 정보입니다.
+    protected Transform emptyListTr;              // 현재 인벤토리가 관리하는 빈 리스트의 Transform 정보입니다.
+
+    protected InventoryInitializer initializer;   // 사용자가 정의한 방식으로 인벤토리의 초기화를 진행하기 위한 참조
+    protected InventoryInteractive interactive;   // 자신의 인터렉티브 스크립트를 참조하여 활성화 탭정보를 받아오기 위한 변수 선언
+    protected DataManager dataManager;            // 저장과 로드 관련 메서드를 호출 할 스크립트 참조
+    protected CreateManager createManager;        // 아이템 생성을 요청하고 반환받을 스크립트 참조
     
 
     [Header("이 인벤토리의 아이템 기본 드랍위치")]
@@ -225,57 +248,56 @@ public partial class InventoryInfo : MonoBehaviour
     [Header("기본 드랍위치 부모 지정 옵션")]
     public bool isBaseDropSetParent;    // 드롭장소에 부모 계층에 속할지 지정하는 옵션 (씬정리 용도 및 부모와 함께 움직이도록 하는 용도)
     
-    string saveFileName;                // 저장파일 이름 설정
-
-
-    private bool isOpen;
-
-    /// <summary>
-    /// 인벤토리 창이 열려 있는지 여부를 반환
-    /// </summary>
-    public bool IsOpen { get; }
+    protected string saveFileName;                // 저장파일 이름 설정
 
 
 
 
 
+    protected void Awake()
+    {         
+        inventoryTr = transform; 
+        slotListTr = inventoryTr.GetChild(0).GetChild(0).GetChild(0);
+        emptyListTr = inventoryTr.GetChild(0).GetChild(1);
 
-    void Awake()
-    {        
         Transform gameController = GameObject.FindWithTag("GameController").transform;
         dataManager = gameController.GetComponent<DataManager>();           // 게임컨트롤러 태그가 있는 오브젝트의 컴포넌트 참조
         createManager = gameController.GetComponent<CreateManager>();       // 데이터 매니저와 동일한 오브젝트의 컴포넌트 참조
-        saveFileName = transform.parent.parent.name + "_Inventory";         // 세이브 파일이름을 오브젝트 명을 기준으로 설정
+        saveFileName = inventoryTr.parent.parent.name + "_Inventory";   // 세이브 파일이름을 오브젝트 명을 기준으로 설정
                      
         initializer = GetComponent<InventoryInitializer>();     // 자신 오브젝트의 스크립트 참조
         interactive = GetComponent<InventoryInteractive>();     
+        
 
+        /*** Inventory_3.cs 관련 변수 ***/
+        inventoryCG = GetComponent<CanvasGroup>();  // 인벤토리의 캔버스그룹을 참조합니다
+        InitOpenState(false);                       // 인벤토리의 오픈상태를 꺼짐으로 만듭니다
+
+        // 플레이어(서버)인벤토리가 체크되어있다면, 
+        if( isServer )
+        {
+            clientInfo = new List<InventoryInfo>(); // 클라이언트 인벤토리를 담을 수 있는 리스트를 할당합니다.
+            clientInfo.Add(this);                   // 연결 인벤토리 정보에 자신을 등록합니다.
+            serverInfo = this;                      // 자기자신을 서버로 등록합니다.
+        }
     }
 
-
-    void Start()
+    // dataManager와 createManager의 초기화가 이루어진 이후 로드해야함.
+    protected void Start()
     {        
         /** 호출 순서 고정: 로드->인터렉티브스크립트 초기화 및 슬롯생성요청->아이템표현 ***/
-        LoadPlayerData();                           // 저장된 플레이어 데이터를 불러옵니다. 
-        interactive.Initialize(this);               // 인터렉티브 스크립트 초기화를 진행합니다.
-        this.UpdateAllItemVisualInfo();             // 슬롯에 모든 아이템의 시각화를 진행합니다.        
+        LoadPlayerData();                   // 저장된 플레이어 데이터를 불러옵니다. 
+        interactive.Initialize(this);       // 인터렉티브 스크립트 초기화를 진행합니다.
+        this.UpdateAllItemVisualInfo();     // 슬롯에 모든 아이템의 시각화를 진행합니다.        
     }
 
 
 
 
     /// <summary>
-    /// 파괴 되기전에 파일에 저장합니다.
+    /// 게임 종료시 저장합니다.
     /// </summary>
-    private void OnDestroy()
-    {
-        SavePlayerData();   // 플레이어 데이터 저장
-    }
-       
-    /// <summary>
-    /// 플레이어가 게임을 종료할 때
-    /// </summary>
-    public void OnApplicationQuit()
+    protected void OnApplicationQuit()
     {
         SavePlayerData(); // 플레이어 데이터 저장
     }
@@ -284,7 +306,7 @@ public partial class InventoryInfo : MonoBehaviour
     /// <summary>
     /// 인벤토리 관련 플레이어 데이터를 불러옵니다
     /// </summary>
-    void LoadPlayerData()
+    protected void LoadPlayerData()
     {
         // 로드 할 파일명을 설정합니다
         dataManager.FileSettings(saveFileName); 
@@ -300,7 +322,7 @@ public partial class InventoryInfo : MonoBehaviour
     /// <summary>
     /// 인벤토리 관련 플레이어 데이터를 저장합니다 
     /// </summary>
-    void SavePlayerData()
+    protected void SavePlayerData()
     {        
         // 세이브 할 파일명을 설정합니다
         dataManager.FileSettings(saveFileName);   
@@ -316,32 +338,6 @@ public partial class InventoryInfo : MonoBehaviour
     }
 
 
-    
-    /// <summary>
-    /// 인벤토리 창의 활성화 여부를 업데이트 하는 메서드로 interActive클래스에서 내부적으로 사용하고 있습니다.<br/>
-    /// ** 해당 인벤토리의 Interactive 클래스에서 호출하지 않으면 예외를 발생시킵니다. **
-    /// </summary>
-    public void UpdateOpenState(InventoryInteractive caller, bool isOpen)
-    {
-        if(caller != interactive)
-            throw new Exception("수정 불가능한 호출자입니다.");
-
-        this.isOpen = isOpen;
-    }
-
-
-    /// <summary>
-    /// 이 인벤토리 창을 열고 닫아주는 메서드입니다.<br/>
-    /// Interactive 클래스의 메서드를 재 참조하고 있습니다.
-    /// </summary>
-    public void InventoryOpenSwitch()
-    {
-        interactive.InventoryOpenSwitch();
-    }
-
-
-
-
 
 
 
@@ -352,7 +348,7 @@ public partial class InventoryInfo : MonoBehaviour
     /// 이미지나 위치 정보 등을 최신화하기 위한 메서드입니다.<br/>
     /// 내부적으로 모든 아이템에 OnItemCreated 메서드를 호출하여 새롭게 생성되었을 때의 정보를 입력합니다.<br/>
     /// </summary>
-    private void UpdateAllItemVisualInfo()
+    protected void UpdateAllItemVisualInfo()
     {   
         Dictionary<string, List<GameObject>> itemDic;                       // 참조할 아이템 사전을 선언합니다.
 
@@ -444,7 +440,7 @@ public partial class InventoryInfo : MonoBehaviour
     /// *** 활성화 중인 탭의 인덱스 밖에 구할 수 없기 때문에 같은 슬롯간의 이동 시에 호출하는 용도로 사용합니다. ***<br/>
     /// </summary>
     /// <returns>활성화 중인 탭에서 비어있는 슬롯의 가장 작은 인덱스입니다. 남은 슬롯이 없다면 -1을 반환합니다.</returns>
-    public int FindNearstRemainActiveSlotIdx()
+    public int FindNearstRemainSlotIdx()
     {
         int findIdx = -1;
 
@@ -466,19 +462,7 @@ public partial class InventoryInfo : MonoBehaviour
 
 
 
-    /// <summary>
-    /// 이 인벤토리의 슬롯에 아이템이 들어갈 자리가 있는지 여부를 반환하는 메서드입니다.<br/>
-    /// 잡화 아이템의 중첩을 무시하고 순수한 오브젝트의 빈 슬롯 여부를 반환합니다.<br/><br/>
-    /// 인자로 아이템 종류를 전달하여야 하며, 추가 인자로 몇개의 아이템을 넣고 싶은지를 설정할 수 있습니다. (기본값: 1개)<br/><br/>
-    /// </summary>
-    /// <returns>슬롯이 자리가 남는다면 true를, 슬롯에 자리가 없다면 false를 반환합니다.</returns>
-    public bool IsSlotEnoughIgnoreOverlap(ItemType itemType, int objectCount=1)
-    {        
-        if(inventory.GetCurRemainSlotCount(itemType) >= objectCount)
-            return true;
-        else
-            return false;       
-    }
+
 
     /// <summary>
     /// 이 인벤토리의 슬롯에 잡화 아이템을 원하는 수량만큼 생성했을 때,
@@ -522,39 +506,35 @@ public partial class InventoryInfo : MonoBehaviour
 
 
 
+    /// <summary>
+    /// 해당 아이템이 특정 슬롯에 들어갈 수 있을 지 여부를 반환합니다.<br/>
+    /// 아이템 정보와 슬롯의 지정 인덱스를 인자로 받습니다.
+    /// </summary>
+    /// <returns>슬롯에 빈자리가 없는 경우 false를, 빈자리가 있는 경우 true를 반환</returns>
+    public bool IsSlotEnough(ItemInfo itemInfo, int slotIndex)
+    {
+        return inventory.IsRemainSlot(itemInfo.Item.Type, slotIndex);
+    }
+
+
 
     /// <summary>
-    /// 아이템 Info 컴포넌트를 인자로 받아서 어떤 슬롯에 들어갈지 최신화 해주는 메서드입니다. <br/>
-    /// 내부적으로 FindNearstSlotIdx메서드를 호출하여 슬롯 정보를 입력해줍니다.<br/><br/>
-    /// InventoryInfo의 AddItem에서 아이템을 추가하기 전 슬롯정보를 입력받기위해 사용됩니다.<br/>
-    /// *** 슬롯에 빈자리가 없거나, 아이템 정보가 없다면 예외를 발생시킵니다. ***
+    /// 해당 종류의 아이템이 특정 슬롯에 들어갈 수 있을 지 여부를 반환합니다.<br/>
+    /// 아이템 타입과 슬롯의 지정 인덱스를 인자로 받습니다.
     /// </summary>
-    public void SetItemSlotIdxBothToNearstSlot( ItemInfo itemInfo )
-    {        
-        // 인자 전달 오류 처리
-        if( itemInfo==null )
-            throw new Exception("ItemInfo 스크립트가 존재하지 않는 아이템입니다.");
-        // 슬롯에 빈공간이 없을 때
-        else if( !IsSlotEnough(itemInfo) )     
-            throw new Exception("아이템이 들어갈 자리가 충분하지 않습니다. 확인하여 주세요.");    
-                
-        
-        // 아이템 정보와 종류를 저장합니다.
-        Item item = itemInfo.Item;
-        ItemType itemType = item.Type;
-  
-        // 종류를 인자로 넣어서 개별 슬롯 인덱스를 반환 받습니다.
-        int slotIdxEach = inventory.FindNearstSlotIdx(itemType);  
-
-        // 전체 슬롯 인덱스를 구합니다.
-        int slotIdxAll = inventory.FindNearstSlotIdx(ItemType.None);
-                
-
-        // 구한 슬롯 인덱스를 아이템 정보에 입력합니다.
-        item.SlotIndex = slotIdxEach;
-        item.SlotIndexAll = slotIdxAll;
-
+    /// <returns>슬롯에 빈자리가 없는 경우 false를, 빈자리가 있는 경우 true를 반환</returns>
+    public bool IsSlotEnough(ItemType itemType, int slotIndex)
+    {
+        return inventory.IsRemainSlot(itemType, slotIndex);
     }
+
+
+
+
+
+
+
+
 
 
 

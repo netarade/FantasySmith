@@ -61,7 +61,7 @@ namespace ItemData
     /// <summary>
     /// 무기 아이템의 상세 분류
     /// </summary>
-    public enum WeaponType { Sword, Spear, Axe, Blunt, Bow, ETC } // 검, 창, 도끼, 둔기, 활, 기타 
+    public enum WeaponType { Sword, Spear, Axe, Blunt, Bow, ETC } // 손, 검, 창, 도끼, 둔기, 활, 기타 
 
 
     /// <summary>

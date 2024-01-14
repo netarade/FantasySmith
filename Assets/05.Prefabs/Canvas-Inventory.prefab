@@ -7005,7 +7005,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 8173849078218799483}
         m_TargetAssemblyTypeName: InventoryInteractive, Assembly-CSharp
-        m_MethodName: InventoryOpenSwitch
+        m_MethodName: BtnInventoryClose
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -7187,9 +7187,9 @@ MonoBehaviour:
   inventory:
     dicType: 000000000100000002000000
     slotCountLimitDic: 0a0000000a0000000a000000
-  slotListTr: {fileID: 0}
   baseDropTr: {fileID: 0}
   isBaseDropSetParent: 0
+  isServer: 0
 --- !u!114 &7424356148983815751
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7217,11 +7217,11 @@ MonoBehaviour:
   isReset: 0
   dicTypes:
   - itemType: 0
-    slotLimit: 10
+    slotLimit: 15
   - itemType: 1
-    slotLimit: 5
+    slotLimit: 15
   - itemType: 2
-    slotLimit: 7
+    slotLimit: 15
   isCustomFileSetting: 0
   fileName: 
   saveSlotNo: 0
@@ -7350,7 +7350,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 8173849079173006861}
   m_Direction: 0
   m_Value: 0
-  m_Size: 0
+  m_Size: 1
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:

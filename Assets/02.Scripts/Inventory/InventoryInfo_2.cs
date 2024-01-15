@@ -267,15 +267,15 @@ public partial class InventoryInfo : MonoBehaviour
 
     /// <summary>
     /// 인벤토리의 목록에 기존의 아이템을 *특정 슬롯*에 추가합니다.<br/>
-    /// *** 인자로 들어온 컴포넌트 참조값이 null이라면 예외를 발생시킵니다. ***<br/>
+    /// *** 인자로 들어온 컴포넌트 참조값이 null이거나, 슬롯 인덱스가 잘못되었다면 예외를 발생시킵니다. ***<br/>
     /// </summary>
     /// <returns>오브젝트가 생성 될 빈 공간이 부족하다면 false를, 아이템 생성 성공 시 true를 반환</returns>
-    public bool AddItemToSpecificSlot(ItemInfo itemInfo, TabType  ,Transform slotTr)
+    public bool AddItemToSlot(ItemInfo itemInfo, Transform slotTr, bool isIndexAll)
     {
         if( itemInfo==null || slotTr==null )
             throw new Exception( "전달 받은 참조 값이 존재하지 않습니다." );
                         
-        return AddItemToSpecificSlot(itemInfo, slotTr.GetSiblingIndex());
+        return AddItemToSlot(itemInfo, slotTr.GetSiblingIndex(), isIndexAll);
     }
 
 
@@ -285,7 +285,7 @@ public partial class InventoryInfo : MonoBehaviour
     /// *** 인자로 들어온 컴포넌트 참조값이 null이거나, 슬롯 인덱스가 잘못되었다면 예외를 발생시킵니다. ***<br/>
     /// </summary>
     /// <returns>오브젝트가 생성 될 빈 공간이 부족하다면 false를, 아이템 생성 성공 시 true를 반환</returns>
-    public bool AddItemToSpecificSlot(ItemInfo itemInfo, int slotIndex)
+    public bool AddItemToSlot(ItemInfo itemInfo, int slotIndex, bool isIndexAll)
     {
         if( itemInfo==null )
             throw new Exception( "전달 받은 아이템 참조 값이 존재하지 않습니다." );

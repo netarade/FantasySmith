@@ -1,18 +1,23 @@
 using System;
 using UnityEngine;
 using ItemData;
+using InventoryManagement;
 /*
- * [작업 사항]  
- * <v1.0 - 2024_0101_최원준>
- * 1 - 인벤토리를 원하는 사전과 원하는 제한 크기만큼 생성하기 위한 옵션 추가
- * 
- * <v1.1 - 2024_0102_최원준>
- * 1- 슬롯 칸공유 옵션을 추가
- * 이유는 전체 슬롯으로 모든것을 추가하기 위함
- * 
- * 2- 저장파일 이름 직접 설정 옵션을 추가 
- * 
- */
+* [작업 사항]  
+* <v1.0 - 2024_0101_최원준>
+* 1 - 인벤토리를 원하는 사전과 원하는 제한 크기만큼 생성하기 위한 옵션 추가
+* 
+* <v1.1 - 2024_0102_최원준>
+* 1- 슬롯 칸공유 옵션을 추가
+* 이유는 전체 슬롯으로 모든것을 추가하기 위함
+* 
+* 2- 저장파일 이름 직접 설정 옵션을 추가 
+* 
+* <v2.0 - 2024_0115_최원준>
+* 1- 표시탭옵션을 Interactive클래스에서 옮겨옴.
+* 2- 공유옵션 삭제 (반드시 공유옵션이 들어가야하므로)
+* 
+*/
 public class InventoryInitializer : MonoBehaviour
 {
     [Header("인벤토리 모든 설정 리셋")]
@@ -21,23 +26,25 @@ public class InventoryInitializer : MonoBehaviour
     [Header("딕셔너리와 슬롯 제한수를 지정(같은 딕셔너리 불가)")]
     public DicType[] dicTypes;
     
+    [Header("활성화 할 액티브탭의 종류를 지정")]
+    [Header("(길이가 0이면 탭표시 안함 - 전체탭으로 작동)")]
+    [Header("(표시탭 종류 All-전체, Quest-퀘스트, Misc-잡화, Equip-장비)")]
+    public TabType[] showTabType;
+
+
     [Header("----- 아래부터 미완성 -----")]
     [Header("저장파일 이름과 저장 슬롯을 직접 설정")]
     public bool isCustomFileSetting;
     public string fileName;
     public int saveSlotNo;
 
-    [Header ("슬롯칸 공유 옵션")]
-    [Header("(개별탭 생성이 불가능하며, 전체탭으로만 볼 수 있습니다.)")]
-    public bool isShare;
-
-    [Header ("슬롯칸 공유 시 제한 칸수 지정")]
-    public int shareSlotCountLimit;
-
-    [Header ("슬롯 공유 시 제외 타입(전체탭 선택 금지)")]
-    public DicType[] shareExceptTabTypes;
 }
 
+
+/// <summary>
+/// 딕셔너리의 종류와 슬롯 제한수를 나타내는 구조체입니다.<br/>
+/// Initializer에서 Inventory로 전달하여 초기화 값을 주기 위한용도로 사용됩니다.<br/>
+/// </summary>
 [Serializable]
 public struct DicType
 {

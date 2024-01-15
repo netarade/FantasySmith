@@ -173,10 +173,24 @@ using System;
 * 1- 인벤토리 닫기 버튼인 X버튼을 눌렀을 때의 BtnInventoryClose메서드를 정의
 * 다른 인벤토리와 연결 중일 때는 연결 상태를 해제하고, 연결 상태가 아닐때는 자신의 창만 닫는 동작을 실행
 * 
+* <V9.0 - 2024_0115_최원준>
+* 1- TapType 관련 정보와 메서드를 Inventory클래스로 이전하였으며, 메서드는 static으로 두어 접근성을 증가시킴.
+* 이유는 Inventory클래스 내부적으로도 어떤 탭을 기준으로 Add할지, SlotIndex를 계산할지 여부가 필요하기 때문
+* 
+* 2- showTabType을 Interactive클래스에서 입력받아 초기화 하는 것을 Initializer클래스로 옮겨서 초기화하도록 변경
+* 이유는 Inventory클래스에서 생성시 어떤 탭을 기준으로 Add할지 알아야 하기 때문에 초기화값을 넘겨받을 필요가 있기 때문
+* 
+* 3- showTabType을 CreateActiveTabBtn메서드에서 Initilizer로부터 값을 읽어들이도록 변경 
+* 
+* 4- 변수명 tabKindItemTypeList를 tabKindList로 변경
+* 
+* 5- 변수명 btnTabIdx를 btnTabType으로 변경
+* 
+* 6- MoveActiveItemToSlot메서드의 코드를 전체탭과 개별탭으로 구분하던 것을 하나의 로직으로 작성
+* ConvertTabTypeToItemTypeList메서드에서 curActiveTab에 따라서 ItemType을 List에 담아주기 때문
+* 
 * 
 */
-
-
 
 
 
@@ -201,23 +215,13 @@ public class InventoryInteractive : MonoBehaviour
     Button[] btnTap;                // 버튼 탭을 눌렀을 때 각 탭에 맞는 아이템이 표시되도록 하기 위한 참조        
     GameObject slotPrefab;          // 슬롯을 동적으로 생성하기 위한 프리팹 참조
         
-    /// <summary>
-    /// 탭의 종류입니다.
-    /// </summary>
-    public enum TabType { All, Quest, Misc, Equip }
-      
-    
-    [Header("활성화 할 액티브탭의 종류를 지정")]
-    [Header("(길이가 0이면 탭표시 안함 - 전체탭으로 작동)")]
-    [Header("(표시탭 종류 All-전체, Quest-퀘스트, Misc-잡화, Equip-장비)")]
-    [SerializeField] TabType[] showTabType;       //인스펙터뷰에서 지정할 탭의 종류
-    
-    
+          
+    TabType[] showTabType;    // Initializer의 인스펙터뷰에서 지정한 활성화 시킬 탭의 종류      
     TabType curActiveTab;       // 현재 활성화 중인 탭을 저장 (버튼 클릭 시 중복 실행을 방지하기 위해)
     bool isActiveTabAll;        // 현재 활성화 중인 탭이 전체 기준인지, 개별 기준인지 여부를 반환
     
-    // 탭에 해당하는 아이템 타입을 담을 리스트
-    List<ItemType> tabKindItemTypeList = new List<ItemType>();     
+    // 탭에 해당하는 아이템 타입을 담을 임시 리스트
+    List<ItemType> tabKindList = new List<ItemType>();     
 
 
 
@@ -263,12 +267,41 @@ public class InventoryInteractive : MonoBehaviour
     }
 
 
+    
+    /// <summary>
+    /// InventoryInfo에서 slotCoutLimit정보를 전달 받아서 슬롯을 생성하는 메서드입니다.<br/>
+    /// slotCountLimit정보가 최신화된 상태에서 호출하여야 합니다.<br/>
+    /// *** 동일 인벤토리의 InventoryInfo가 아니면 호출할 수 없습니다. ***
+    /// </summary>
+    private void CreateInventorySlot(InventoryInfo caller)
+    {                          
+        if( caller != inventoryInfo )
+            throw new Exception("호출자를 확인하여 주세요. 동일 인벤토리에서만 호출 할 수 있습니다.");
+                      
+        // 내부 인벤토리에서 탭제한 수를 참조하기 위해 전체탭의 인덱스를 계산합니다.
+        int allTabIdx = inventory.GetTabIndex(ItemType.None);
+
+        // 플레이어 인벤토리 정보(전체 탭 슬롯 칸수)를 참조하여 슬롯을 동적으로 생성
+        // 현재 인벤토리에 슬롯이 한 개 들어있으므로 하나를 감하고 생성
+        for( int i = 0; i<caller.inventory.slotCountLimitTab[allTabIdx]-1; i++ )
+            Instantiate( slotPrefab, slotListTr );
+    }
+
+
+
+
+
+
+
     /// <summary>
     /// 버튼 액티브 탭을 동적으로 생성하고 이벤트를 등록합니다.
     /// </summary>
     private void CreateActiveTabBtn()
     {        
-        // 사용자가 지정한 액티브탭 갯수 (인스펙터뷰에서 정의한 종류만 표시하도록)
+        // 보여줄 지정 탭타입을 이니셜라이저 클래스로부터 읽어들입니다.
+        showTabType = inventoryTr.GetComponent<InventoryInitializer>().showTabType;
+
+        // 사용자가 지정한 액티브탭 갯수
         int activeTabNum = showTabType.Length;
 
         // 미리 생성되어있는 탭버튼 1개를 참조합니다.
@@ -280,13 +313,13 @@ public class InventoryInteractive : MonoBehaviour
         for(int i=0; i<activeTabNum; i++)
         {
             //람다식 클로져 특성으로 값을 그대로쓰지 않고 새롭게 할당합니다.
-            TabType btnTabIdx = showTabType[i];   
+            TabType btnTabType = showTabType[i];   
                         
             // 버튼을 새롭게 생성하여 하이러키에 배치하고, 이름 설정 및 이벤트를 연결합니다.
             btnTap[i] = Instantiate(tabBtnPrefab.gameObject, tabBtnPrefab.transform.parent).GetComponent<Button>();
-            btnTap[i].onClick.AddListener( () => BtnTapClick( btnTabIdx ) );
-            btnTap[i].gameObject.name = GetTabObjectName(btnTabIdx);
-            btnTap[i].GetComponentInChildren<Text>().text = GetTabTextName(btnTabIdx);
+            btnTap[i].onClick.AddListener( () => BtnTapClick( btnTabType ) );
+            btnTap[i].gameObject.name = GetTabObjectName(btnTabType);
+            btnTap[i].GetComponentInChildren<Text>().text = GetTabTextName(btnTabType);
         }
         
         // 모든 탭버튼을 생성을 완료하였다면 기존 탭 버튼은 비활성화합니다.
@@ -311,69 +344,6 @@ public class InventoryInteractive : MonoBehaviour
 
 
     
-    /// <summary>
-    /// 아이템 타입을 해당하는 탭 타입으로 변환해주는 메서드입니다. 
-    /// </summary>
-    /// <returns>인자로 들어온 아이템 종류에 해당하는 탭 타입</returns>
-    /// <exception cref="Exception"></exception>
-    public TabType ConvertItemTypeToTabType(ItemType itemType)
-    {
-        if(itemType == ItemType.None )
-            return TabType.All;
-        else if(itemType == ItemType.Quest)
-            return TabType.Quest;
-        else if(itemType is ItemType.Misc)          //빌딩재료, 요리재료등 모두 잡화로 인식
-            return TabType.Misc;
-        else if(itemType is ItemType.Weapon)
-            return TabType.Equip;
-        else
-            throw new Exception("해당 아이템 종류로 설정된 탭타입이 존재하지 않습니다.");        
-    }
-
-    /// <summary>
-    /// 탭 타입에 해당하는 모든 아이템 타입을 찾아주는 메서드입니다.<br/>
-    /// 아이템 타입을 담을 수 있는 리스트를 전달해야 합니다.<br/><br/>
-    /// *** 리스트 미전달 시 예외가 발생하며, 리스트 전달 시 리스트를 초기화하므로 주의해주세요. ***
-    /// </summary>
-    /// <returns>해당하는 탭의 아이템 타입의 갯수(리스트에 담긴 갯수)를 반환</returns>
-    public int ConvertTabTypeToItemTypeList(ref List<ItemType> itemTypeList, TabType curTabType)
-    {        
-        if(itemTypeList==null)
-            throw new Exception("아이템 종류를 담을 리스트를 전달해주세요.");
-
-        // 리스트 초기화 메서드 호출
-        itemTypeList.Clear();
-
-        // 현재 활성화 탭이 전체 탭이라면,
-        if( curTabType==TabType.All )
-        {
-            // 모든 종류의 아이템 타입을 담습니다.
-            for( int i = 0; i<(int)ItemType.None; i++ )
-                itemTypeList.Add( (ItemType)i );
-        }
-        // 현재 활성화 탭이 개별 탭이라면,
-        else
-        {
-            // 현재 탭에 해당하는 아이템 종류를 찾기 위해 개별 아이템 종류를 하나씩 순회합니다.
-            for( int i = 0; i<(int)ItemType.None; i++ )
-            {
-                // 순회 넘버에 해당하는 아이템 타입변수를 새롭게 선언합니다.
-                ItemType findItemType = (ItemType)i;
-
-                // 현재활성화 된 탭과 동일한 종류의 아이템 타입을 찾습니다.
-                if( curTabType==ConvertItemTypeToTabType( findItemType ) )
-                    itemTypeList.Add( findItemType );
-            }
-        }
-        
-        // 리스트에 담긴 갯수를 반환합니다.
-        return itemTypeList.Count;
-    }
-
-
-
-
-
 
 
     /// <summary>
@@ -426,26 +396,21 @@ public class InventoryInteractive : MonoBehaviour
 
 
 
+    
 
 
 
 
-    /// <summary>
-    /// InventoryInfo에서 slotCoutLimit정보를 전달 받아서 슬롯을 생성하는 메서드입니다.<br/>
-    /// slotCountLimit정보가 최신화된 상태에서 호출하여야 합니다.<br/>
-    /// *** 동일 인벤토리의 InventoryInfo가 아니면 호출할 수 없습니다. ***
-    /// </summary>
-    private void CreateInventorySlot(InventoryInfo caller)
-    {                          
-        if( caller != inventoryInfo )
-            throw new Exception("호출자를 확인하여 주세요. 동일 인벤토리에서만 호출 할 수 있습니다.");
-                      
 
-        // 플레이어 인벤토리 정보(전체 탭 슬롯 칸수)를 참조하여 슬롯을 동적으로 생성
-        // 현재 인벤토리에 슬롯이 한 개 들어있으므로 하나를 감하고 생성
-        for( int i = 0; i<caller.inventory.SlotCountLimitAll-1; i++ )
-            Instantiate( slotPrefab, slotListTr );
-    }
+
+
+
+
+
+
+
+
+
 
 
 
@@ -480,17 +445,17 @@ public class InventoryInteractive : MonoBehaviour
     /// <summary>
     /// 버튼 클릭 시 각탭에 해당하는 아이템만 보여주기 위한 메서드입니다. 각 탭의 버튼 클릭 이벤트에 등록해야 합니다.
     /// </summary>
-    public void BtnTapClick( TabType btnTabIdx )
+    public void BtnTapClick( TabType btnTabType )
     {        
         // 현재 이벤트가 일어난 탭인덱스가 현재 활성화중인 탭과 동일하다면 재실행하지 않습니다.
-        if( curActiveTab==btnTabIdx )      
+        if( curActiveTab==btnTabType )      
             return;
 
         // 인자로 들어온 탭정보를 현재 활성화 탭으로 지정합니다.
-        curActiveTab = btnTabIdx;
+        curActiveTab = btnTabType;
 
         // 탭선택에 따라 탭 활성화 변수를 전체탭인지, 개별탭인지 설정합니다.
-        if(btnTabIdx==TabType.All)
+        if(btnTabType==TabType.All)
             isActiveTabAll = true;
         else
             isActiveTabAll = false;
@@ -537,14 +502,14 @@ public class InventoryInteractive : MonoBehaviour
         int curTabSlotCount = 0;
 
         // 전체 탭에 해당하는 슬롯 갯수
-        int allTabSlotCount = inventory.GetItemSlotCountLimit(ItemType.None);
+        int allTabSlotCount = inventory.GetSlotCountLimitDic(ItemType.None);
 
         // 현재 탭에 해당하는 아이템 종류의 갯수
-        int tabKindLen = ConvertTabTypeToItemTypeList(ref tabKindItemTypeList, curActiveTab);
+        int tabKindLen = Inventory.ConvertTabTypeToItemTypeList(ref tabKindList, curActiveTab);
 
         // 찾아낸 아이템 종류에 해당하는 슬롯 갯수를 탭 슬롯 갯수에 누적시킵니다.
         for(int i=0; i<tabKindLen; i++)
-            curTabSlotCount += inventory.GetItemSlotCountLimit( tabKindItemTypeList[i] );
+            curTabSlotCount += inventory.GetSlotCountLimitDic( tabKindList[i] );
 
         // 현재 탭의 갯수만큼 켜줍니다
         for(int i=0; i<curTabSlotCount; i++)                   
@@ -563,7 +528,9 @@ public class InventoryInteractive : MonoBehaviour
     /// </summary>
     private void MoveSlotItemToEmptyList()
     {
-        for( int i = 0; i<inventory.SlotCountLimitAll; i++ )    // 전체 슬롯리스트의 모든 슬롯 순회
+        int allTabIdx = inventory.GetTabIndex(ItemType.None);
+
+        for( int i = 0; i<inventory.slotCountLimitTab[allTabIdx]; i++ )    // 전체 슬롯리스트의 모든 슬롯 순회
         {
             if( slotListTr.GetChild(i).childCount!=0 )          // i번째 슬롯에 아이템이 들어있다면
             {
@@ -580,28 +547,12 @@ public class InventoryInteractive : MonoBehaviour
     /// </summary>
     private void MoveActiveItemToSlot()
     {
-        // 현재 활성화 탭이 전체 탭인 경우 모든 딕셔너리를 대상으로 호출
-        if( isActiveTabAll )
-        {
-            // 퀘스트 아이템을 제외한 모든 아이템의 포지션을 업데이트합니다.
-            for( int i = 0; i<inventory.dicLen; i++ )
-            {
-                if( inventory.dicType[i]==ItemType.Quest )
-                    continue;
+        // 탭종류에 해당하는 아이템 종류와 길이를 구합니다.
+        int tabKindLen = Inventory.ConvertTabTypeToItemTypeList(ref tabKindList, curActiveTab);
 
-                inventoryInfo.UpdateDicItemPosition( (ItemType)i );
-            }
-        }
-        // 현재 활성화 탭이 개별 탭인 경우 개별 탭에 해당하는 종류의 모든 딕셔너리를 대상으로 호출
-        else
-        {
-            // 탭종류에 해당하는 아이템 종류와 길이를 구합니다.
-            int tabKindLen = ConvertTabTypeToItemTypeList(ref tabKindItemTypeList, curActiveTab);
-
-            // 탭종류에 해당하는 모든 아이템의 포지션을 업데이트 합니다.
-            for(int i=0; i<tabKindLen; i++)
-                inventoryInfo.UpdateDicItemPosition( tabKindItemTypeList[i] );    
-        }
+        // 탭종류에 해당하는 모든 아이템의 포지션을 업데이트 합니다.
+        for(int i=0; i<tabKindLen; i++)
+            inventoryInfo.UpdateDicItemPosition( tabKindList[i] );  
     }
 
     

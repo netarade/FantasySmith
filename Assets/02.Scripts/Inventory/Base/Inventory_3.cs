@@ -105,6 +105,18 @@ using UnityEngine;
  * FindNearstSlotIdx메서드명을 GetLatestSlotIndex로 변경
  * 변수명 findSlotIdx를 latestSlotIndex로 변경
  * 
+ * 
+ * (이슈)
+ * 1- IsRemainSlot에서 나중에 탭타입을 인자로 받아야함.
+ * (이유는 탭상에서의 슬롯위치를 의미하기 때문)
+ * => 공유 슬롯 구현 이후
+ * 
+ * <v4.1 - 2024_0115_최원준>
+ * 1- GetDicIndex메서드를 Inventoy.cs로 옮김.(GetDicIdxByItemType과 중복기능)
+ * 
+ * 
+ * 
+ * 
  */
 
 
@@ -145,12 +157,13 @@ namespace InventoryManagement
         
         /// <summary>
         /// 해당 종류의 아이템이 들어있는 특정 슬롯이 비었는지 여부를 반환합니다.<br/>
-        /// 인자로 어떤 종류의 아이템인지, 해당하는 슬롯의 인덱스값을 전달 받습니다.
+        /// 인자로 어떤 종류의 아이템인지, 해당하는 슬롯의 인덱스값을 전달 받습니다.<br/>
+        /// ItemType.None이 전달되면 전체에서의 슬롯위치를 말하며, 이외는 개별 위치를 말합니다.
         /// </summary>
         /// <returns></returns>
         public bool IsRemainSlot(ItemType itemType, int slotIndex)
         {
-            if(slotIndex<0 || slotIndex > GetSlotCountLimit(itemType) )
+            if(slotIndex<0 || slotIndex > GetSlotCountLimitTab(itemType) )
                 throw new Exception("슬롯 인덱스가 정확하지 않습니다. 0이하거나 슬롯 제한수를 초과했습니다.");
 
             // 인덱스 리스트를 전달하여, 해당하는 아이템 종류의 슬롯 인덱스 리스트를 구합니다.
@@ -171,6 +184,11 @@ namespace InventoryManagement
             // 인덱스 리스트에서 slotIndex를 찾지 못했다면 true를 반환합니다.
             return true;
         }
+
+
+
+
+
 
 
         /// <summary>
@@ -311,7 +329,7 @@ namespace InventoryManagement
 
 
             // 아이템의 종류에 해당하는 슬롯의 칸 제한 수를 구합니다. (인자로 전달한 itemType이 None이라면 전체 슬롯 제한 수를 구합니다.)
-            int slotCountLimit = GetItemSlotCountLimit(itemType); 
+            int slotCountLimit = GetSlotCountLimitDic(itemType); 
 
             // 정렬 인덱스 예시 
             // 0, 1, 2, 3, 4

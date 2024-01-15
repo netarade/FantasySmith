@@ -184,6 +184,59 @@ using UnityEngine;
  * 1- CurDicItemObjCount int배열 프로퍼티를 생성자에서 할당안해주고 있던점을 수정
  * 
  * 
+ * <v10.0 - 2024_0115_최원준>
+ * 1- Initializer로부터 TabType 관련 정보를 받아 초기화 하도록 변경      
+ * 이유는 Add시 어떤 탭타입을 기준으로 슬롯 인덱스를 구할지 계산해야하기 때문
+ * => (취소) TabType을 이니셜라이저로 받지 않고 항상 정의하도록 변경
+ * 
+ * 2- slotCountLimitTab변수 추가하고 생성자에서 초기화
+ * 탭 별로 어느정도의 슬롯이 남았는 지 기록할 필요가 있기 때문
+ * 
+ * 3- InitSlotCountLimitTab메서드 추가하여, slotCountLimitTab의 값 계산을 메서드호출로 자동계산 
+ * 
+ * 4- 기본 인벤토리 생성자 제거 
+ * Initializer를 이용한 생성자만 호출할 것이기 때문
+ * 
+ * 5- InitialCountLimit프로퍼티 삭제, Initializer를 이용해서 지정 제한 수로 초기화하기 때문
+ * 
+ * 6- CurDicItemObjCount프로퍼티를 일반 배열변수로 변경, 변수명 dicItemObjCount로 변경
+ * 
+ * 7- GetItemSlotCountLimit메서드명 GetSlotCountLimitDic으로 변경, GetSlotCountLimitTab 메서드 추가
+ * (딕셔너리별 슬롯 제한수와 탭 별 슬롯 제한수를 반드시 구분해서 구해야하기 때문)
+ * 
+ * 
+ * 8 - tabItemObjCount변수 새롭게 선언
+ * 탭에 담긴 아이템의 갯수를 알려주는 속성
+ * 
+ * 9- GetDicIdxByItemType메서드 삭제(GetDicIndex와 중복되므로)
+ * 
+ * 10- GetTabIndex메서드 작성
+ * 탭의 인덱스를 반환하는 기능
+ * 
+ * 11 - 메서드명 SetCurDicItemObjCount를 AccumulateItemObjCount로 변경
+ * 이유는 아이템 종류에 따라 딕셔너리 오브젝트 수와 함께 탭 오브젝트 수도 동시에 증가시켜야 하기 때문
+ * 
+ * 12- GetCurDicItemObjCountAll메서드 삭제
+ * tabItemObjCount에서 전체탭의 경우에 따로 기록하기 때문
+ * 
+ * 13 - SlotCountLimitAll제거 slotCountLimitTab에서 전체탭별 제한 수를 기록하고 있기 때문
+ * 
+ * 14- isShareSlot변수 선언 및 생성자에서 Initializer를통해 isShareSlot 옵션을 인자로 넘겨받아 초기화 
+ * 
+ * 15- GetCurDicItemObjCount를 InitCurDicItemObjCount로 변경, privat메서드로 변경
+ * GetCurDicItemObjCountAll메서드 삭제
+ * 
+ * 16- GetCurRemainSlotCount메서드 개별사전별 제한수 기반에서 탭제한수 기반으로 변경
+ * 탭제한을 기준으로 증감시켜야 하므로,
+ * 
+ * <v10.1 - 2024_0115_최원준>
+ * 1- slotCountLimitDic 및 dicItemObjCount 변수 삭제, GetSlotCountLimitDic메서드 삭제
+ * 항상 아이템 제한 수의 탭 공유 방식으로 진행해야 하므로 관리하거나 저장할 필요성이 없음.
+ * 
+ * 2- InitSlotCountLimitTab메서드 삭제
+ * 탭슬롯제한을 이미 저장하므로 새롭게 계산할 필요가 없어짐
+ * 
+ * 
  * 
  */
 
@@ -201,38 +254,26 @@ namespace InventoryManagement
     public partial class Inventory
     {
         /**** 세이브 로드 시 저장해야할 속성들 ****/
-        public Dictionary<string, List<GameObject>>[] itemDic;
-        public ItemType[] dicType;        
-        public int[] slotCountLimitDic;
+        public Dictionary<string, List<GameObject>>[] itemDic;  // 아이템 딕셔너리
+        public ItemType[] dicType;                              // 딕셔너리의 종류
+
+        public int[] slotCountLimitTab;                         // 탭별 슬롯 제한 수
+
+        /*** 로드시에만 지정되는 속성들 ***/
+        public TabType[] tabType;                           // 탭의 종류
 
 
-
-        /**** 로드 시에만 불러온 후 게임 중에 지속적으로 관리 및 참조해야 할 속성 ****/            
-       
+        /**** 로드 시에만 불러온 후 게임 중에 지속적으로 관리 및 참조해야 할 속성 ****/ 
         /// <summary>
-        /// 현재 인벤토리에 사전에 들어있는 종류의  아이템 오브젝트의 갯수를 반환받거나 설정합니다.
+        /// 탭 별로 보유하고 있는 아이템 오브젝트의 수를 반환받거나 설정합니다.
         /// </summary>
-        public int[] CurDicItemObjCount { get; set; }
-        
-
-        /**** 자동으로 지정되는 고정 속성들 ****/        
-        /// <summary>
-        /// 플레이어 인벤토리의 각 탭에 공통으로 주어지는 초기 칸의 제한 수입니다.
-        /// </summary>
-        public int InitialCountLimit { get{ return 10; } }        
+        public int[] tabItemObjCount; 
 
 
-        /// <summary>
-        /// 플레이어 인벤토리의 전체 탭의 칸의 제한 수 입니다. 게임 중에 업그레이드 등으로 인해 변동될 수 있습니다.
-        /// </summary>
-        public int SlotCountLimitAll {
-            get{
-                    int totalCnt = 0;
-                    for(int i=0; i<itemDic.Length; i++)
-                        totalCnt += slotCountLimitDic[i]; 
-                    return totalCnt;
-                } }        
-        
+
+
+
+        /**** 자동으로 지정되는 고정 속성들 ****/    
 
         /// <summary>
         /// 인벤토리가 현재 보유하고 있는 사전의 길이를 반환합니다
@@ -240,50 +281,74 @@ namespace InventoryManagement
         public int dicLen { get { return dicType.Length; } }
 
 
+        /// <summary>
+        /// 인벤토리가 현재 보유하고 있는 탭의 길이를 반환합니다
+        /// </summary>
+        public int tabLen { get { return tabType.Length;} }
+
+
         
         /**** 내부적으로만 사용하는 속성 ****/
-        List<int> indexList = new List<int>();
-        CreateManager createManager;
+        List<int> indexList = new List<int>();      // 딕셔너리에 담긴 아이템의 인덱스를 읽어들여 담는 리스트
+
+        CreateManager createManager;                // 월드 아이템 정보를 참조할 매니저 인스턴스
+
+        List<ItemType> tabKindList = new List<ItemType>();  // 탭종류와 일치하는 아이템타입을 담는 리스트
 
 
 
 
 
         
-
         /// <summary>
-        /// 전달된 아이템 사전에 해당하는 딕셔너리 인덱스가 있는지 찾아보고 반환합니다.<br/>
-        /// 일치하는 종류의 사전이 없으면 -1을 반환합니다.<br/>
-        /// *** ItemType.None을 전달하거나, 일치하는 종류의 사전이 없다면 예외가 발생합니다.
+        /// 아이템 종류에 해당하는 사전의 인덱스를 반환합니다.<br/>
+        /// 일치하는 종류의 사전이 없다면 -1을 반환합니다.<br/><br/>
+        /// *** ItemType.None을 전달하면 예외가 발생합니다. ***
         /// </summary>
-        /// <returns>일치하는 종류의 사전이 있다면 해당 사전의 인덱스 값</returns>
-        public int GetDicIdxByItemType(ItemType itemType)
+        /// <returns>일치하는 종류의 사전이 있다면 해당 사전의 인덱스 값을 반환, 없다면 -1을 반환</returns>
+        public int GetDicIndex(ItemType itemType)
         {
             if(itemType==ItemType.None )
                 throw new Exception("아이템 종류가 잘못되었습니다. 해당 종류의 사전을 구할 수 없습니다.");
 
-            for( int i = 0; i<dicType.Length; i++ )
+            for(int i=0; i<dicLen; i++)
             {
-                if( itemType==dicType[i] )
-                    return i;                    
+                if( dicType[i]==itemType) 
+                    return i;
             }
 
-            // 일치하는 종류의 사전이 없는 경우
-            throw new Exception("이 인벤토리에 일치하는 아이템 종류의 사전이 없습니다.");
+            return -1;
         }
+
+
+        /// <summary>
+        /// 아이템 종류에 해당하는 텝의 인덱스를 반환합니다.<br/>
+        /// ItemType.None이 전달되었다면 전체 탭 인덱스 (TabType.All)을 구합니다.<br/>
+        /// *** 아이템 종류에 해당하는 탭이없다면 예외가 발생합니다. ***
+        /// </summary>
+        /// <returns>아이템 종류에 해당하는 탭이 있다면 해당 탭의 인덱스를 반환, 없다면 -1을 반환</returns>
+        public int GetTabIndex(ItemType itemType)
+        {
+            return (int)ConvertItemTypeToTabType(itemType);            
+        }
+
+
+
+
+
 
 
 
         
         
         /// <summary>
-        /// 현재 인벤토리에 들어있는 아이템 오브젝트의 갯수를 연산하여 반환합니다.<br/>
-        /// 초기 로드 시 인벤토리에 로드 한 오브젝트를 넣은 후 CurItemCount를 연산하기 위해 필요합니다.<br/><br/>
+        /// 현재 인벤토리에 들어있는 딕셔너리 별 아이템 오브젝트의 수를 연산하여 반환합니다.<br/>
+        /// 초기 로드 시 인벤토리에 로드 한 오브젝트를 넣은 후 dicItemObjCount를 연산하기 위해 필요합니다.<br/><br/>
         /// 인자로 ItemType을 전달하여 해당 ItemType의 딕셔너리에서 오브젝트 갯수를 카운팅합니다.<br/><br/>
         /// *** 해당 종류의 아이템 사전이 없으면 예외를 발생시킵니다. ***
         /// </summary>
         /// <returns>아이템 타입과 일치하는 인벤토리에 저장 되어있는 오브젝트의 갯수를 반환합니다.</returns>
-        public int GetCurDicItemObjCount(ItemType itemType) 
+        private int InitCurDicItemObjCount(ItemType itemType) 
         { 
             // 계산할 오브젝트의 총 갯수를 선언과 초기화합니다
             int toatlCount = 0;
@@ -302,38 +367,61 @@ namespace InventoryManagement
             return toatlCount;  
         }
 
-        
         /// <summary>
-        /// 현재 인벤토리에 들어있는 아이템 오브젝트의 전체 갯수를 연산하여 반환합니다
+        /// 현재 인벤토리에 들어있는 탭 별 아이템 오브젝트의 수를 연산하여 반환합니다.<br/>
+        /// (딕셔너리별 아이템 오브젝트의 수를 기반으로 연산합니다.)<br/><br/>
+        /// 초기 로드 시 인벤토리에 로드 한 오브젝트를 넣은 후 tabItemObjCount를 연산하기 위해 필요합니다.<br/><br/>
+        /// 인자로 TabType을 전달하여 해당 탭의 ItemType을 모두 구하여 ItemType의 딕셔너리 오브젝트 수를 모두 카운팅합니다.<br/><br/>
+        /// *** 해당 종류의 탭이 없으면 예외를 발생시킵니다. ***
         /// </summary>
-        /// <returns>현재 인벤토리에 존재하는 모든 아이템의 총 갯수입니다.</returns>
-        public int GetCurDicItemObjCountAll()
+        /// <returns>아이템 타입과 일치하는 인벤토리에 저장 되어있는 오브젝트의 갯수를 반환합니다.</returns>
+        private int InitCurTabItemObjCount(TabType tapType)
         {
-            int count = 0;
-            int dicLen = (int)ItemType.None;
+            int totalCount = 0;
 
-            for(int i=0; i<dicLen; i++)
-                count += CurDicItemObjCount[i];
+            // 탭종류에 해당하는 모든 아이템 종류가 담긴 리스트를 전달받습니다.
+            int tabKindLen = ConvertTabTypeToItemTypeList(ref tabKindList, tapType);
 
-            return count;
+            // 탭에 해당하는 아이템 종류를 하나씩 순회합니다.
+            for(int i=0; i<tabKindLen; i++)
+            {
+                // 아이템 종류에 따른 오브젝트 수를 구한 다음 해당 탭의 오브젝트 수로 누적시킵니다.
+                totalCount += InitCurDicItemObjCount(tabKindList[i]);
+            }
+            
+            return totalCount;
         }
 
-        
+
+
+
+
+
+
+
         /// <summary>
-        /// ItemType을 기반으로 어떤 종류의 curItemCount를 증가 또는 감소 시킬 지 결정하는 메서드입니다.<br/>
+        /// ItemType을 기반으로 어떤 종류의 dicItemCount를 증가 또는 감소 시킬 지 결정하는 메서드입니다.<br/>
         /// inCount를 음수로 전달하면 아이템의 현재 수량을 감소시킵니다.<br/>
-        /// AddItem메서드에서 내부적으로 사용되고 있습니다.<br/><br/>
+        /// AddItem메서드, RemoveItem메서드에서 내부적으로 사용되고 있습니다.<br/><br/>
         /// *** 인자로 ItemType.None을 전달한 경우 예외를 발생시킵니다. ***
         /// </summary>
-        public void SetCurDicItemObjCount(ItemType itemType, int inCount)
+        public void AccumulateItemObjCount(ItemType itemType, int inCount)
         {
             if(itemType == ItemType.None )
                 throw new Exception("인자로 전달 한 아이템 종류가 해당 인벤토리에 맞지 않습니다. 확인하여 주세요.");
 
-            for(int i=0; i<dicLen; i++)
-                if( dicType[i] == itemType )
-                    CurDicItemObjCount[i] += inCount; 
+            // 아이템 종류에 해당하는 딕셔너리와 탭의 인덱스를 구합니다.
+            int eachTabIdx = GetTabIndex(itemType);
+            int allTabIdx = GetTabIndex(ItemType.None);
+
+            // 아이템 종류에 해당하는 탭 별 오브젝트 수를 증가시킵니다
+            tabItemObjCount[eachTabIdx] += inCount;
+
+            // 퀘스트 아이템이 아닌 경우에는 전체탭 카운트를 증가시킵니다
+            if(itemType != ItemType.Quest)
+                tabItemObjCount[allTabIdx] += inCount;
         }
+
 
 
 
@@ -341,18 +429,16 @@ namespace InventoryManagement
 
 
         /// <summary>
-        /// 아이템 종류에 따른 슬롯의 제한 수를 반환합니다. <br/>
-        /// ItemType을 인자로 전달받습니다.<br/>
-        /// *** 인자를 미 전달 또는 ItemType.None 전달 시 전체 슬롯 인덱스를 기준으로 반환합니다.(기본 값) *** <br/>
+        /// 아이템 종류에 해당하는 탭별 슬롯의 제한 수를 반환합니다.<br/>
+        /// ItemType을 인자로 전달받으며, 
+        /// ItemType.None 전달 시 전체탭의 슬롯 제한 수를 반환합니다<br/>
         /// </summary>
-        /// <returns>인자로 전달 된 슬롯의 최대 제한 수를 반환합니다</returns>
-        public int GetItemSlotCountLimit(ItemType itemType=ItemType.None)
-        {          
-            if( itemType==ItemType.None )
-                return SlotCountLimitAll;
-            else
-                return slotCountLimitDic[GetDicIdxByItemType(itemType)];
+        /// <returns></returns>
+        public int GetSlotCountLimitTab(ItemType itemType)
+        {
+            return slotCountLimitTab[GetTabIndex(itemType)];
         }
+
 
 
 
@@ -366,7 +452,8 @@ namespace InventoryManagement
             if(itemType==ItemType.None )
                 throw new Exception("잘못된 유형의 아이템 종류입니다.");
 
-            return GetItemSlotCountLimit(itemType) - CurDicItemObjCount[(int)itemType];
+            // 아이템 종류에 해당하는 탭의 (최대 슬롯제한수-현재 오브젝트수)
+            return GetSlotCountLimitTab(itemType) - tabItemObjCount[GetTabIndex(itemType)];
         }
 
 
@@ -466,45 +553,28 @@ namespace InventoryManagement
                 AddItem(itemInfo);
             }
 
-            // 현재 각 사전에 등록된 아이템의 갯수를 구하여 저장합니다.
-            for(int i=0; i<dicLen; i++)
-                CurDicItemObjCount[i] = GetCurDicItemObjCount((ItemType)i);
+
+
+
+
+            /**** 로드 이후 추가로 계산해서 초기화해야 할 (저장하지 않는) 속성들 *****/
+            /**** 저장된 속성에 따라서 초기화 값이 달라지기 때문에 재 계산 ****/            
+
+            // 탭 종류별 오브젝트 수 설정
+            for(int i=0; i<tabLen; i++)
+                tabItemObjCount[i] = InitCurTabItemObjCount( tabType[i] );
         }
 
 
 
-        /// <summary>
-        /// 기본 인벤토리 생성자입니다. 직렬화 저장 시 사용됩니다.<br/>
-        /// 인자를 전달하지 않을 시 전체 아이템 종류의 딕셔너리를 생성합니다.<br/>
-        /// </summary>
-        public Inventory()
-        {
-            // 모든 종류의 사전길이
-            int dicLen = (int)ItemType.None;
+        
 
-            // 배열 길이 할당
-            itemDic = new Dictionary<string, List<GameObject>>[dicLen];
-            dicType = new ItemType[dicLen];
-            slotCountLimitDic = new int[dicLen];
-            CurDicItemObjCount = new int[dicLen];
 
-            // 배열의 모든 요소 할당
-            for( int i = 0; i<dicLen; i++ )
-            {
-                itemDic[i] = new Dictionary<string, List<GameObject>>();
-                dicType[i] = (ItemType)i;
-                slotCountLimitDic[i] = InitialCountLimit;
-            }
-        }
-                
-        /// <summary>
-        /// 기본 인벤토리 생성자에서 게임 진행 중에 필요한 CreateManager 참조값을 받아 초기화를 진행합니다.<br/>
-        /// 역직렬화 로드 시 사용됩니다.
-        /// </summary>
-        public Inventory(CreateManager createManager) : this() //디폴트 생성자 호출
-        {
-            this.createManager = createManager;
-        }
+
+
+
+
+
 
 
 
@@ -514,28 +584,49 @@ namespace InventoryManagement
         /// </summary>
         public Inventory( InventoryInitializer initializer )
         {
-            // 전달받은 이니셜라이저의 DicType 배열을 참조합니다.
-            DicType[] dicTypes = initializer.dicTypes;
+            // 모든 탭타입을 할당합니다.
+            // 선택한 아이템 종류에따른 탭타입만 할당해야하지만 딕셔너리 변경 시 탭인덱스의 추가가 아닌
+            // 순서 변경이 일어나 데이터 손실이 일어날 수 있으므로 모든 탭을 할당
+            int tabLen = (int)TabType.None;
 
-            // 사전 길이는 받은 인자의 길이입니다
+            tabType = new TabType[tabLen];
+
+            for(int i=0; i<tabLen; i++)
+                tabType[i] = (TabType)i;
+
+            slotCountLimitTab = new int[tabLen];    
+            tabItemObjCount = new int[tabLen];    
+
+
+
+
+
+            // 이니셜라이저에서 정의한 딕셔너리 타입을 참조하여 길이를 설정합니다.
+            DicType[] dicTypes = initializer.dicTypes;
             int dicLen = dicTypes.Length;
-            
-            // 배열 길이 할당
-            itemDic = new Dictionary<string, List<GameObject>>[dicLen];
-            dicType = new ItemType[dicLen];
-            slotCountLimitDic = new int[dicLen];
-            CurDicItemObjCount = new int[dicLen];
-           
-            // 배열의 모든 요소를 받은 인자를 토대로 할당합니다
+
+            // 전체 배열 사용 전 할당합니다
+            itemDic=new Dictionary<string, List<GameObject>>[dicLen];
+            dicType=new ItemType[dicLen];
+
+            // 배열의 개별 요소를 할당합니다.
             for( int i = 0; i<dicLen; i++ )
             {
-                itemDic[i] = new Dictionary<string, List<GameObject>>();
-                dicType[i] = dicTypes[i].itemType;
-                slotCountLimitDic[i] = dicTypes[i].slotLimit;
+                itemDic[i] = new Dictionary<string, List<GameObject>>();    // 개별 딕셔너리 할당
+                dicType[i] = dicTypes[i].itemType;                          // 개별 타입을 이니셜라이저의 타입으로 설정
+                
+
+                // 아이템 종류에 해당하는 탭타입 인덱스를 구합니다.
+                int tabIdx = GetTabIndex(dicType[i]);
+
+                // 개별 딕셔너리 제한수를 해당 탭의 제한수에 누적시킵니다.
+                slotCountLimitTab[tabIdx] += dicTypes[i].slotLimit;
             }
+
         }
-        
-        
+
+
+
         /// <summary>
         /// 게임 중에 필요한 역직렬화 시킬 인벤토리 클래스 생성자입니다.<br/>
         /// 전달받은 InventoryInitializer와 createManager를 토대로 인벤토리를 생성하고 초기화합니다.<br/>

@@ -41,6 +41,11 @@ using UnityEngine;
  * (빈 디폴트 생성자를 만들어도 JSon이 알아서 배열 크기까지 잡아서 할당을 진행하기 때문)
  * 
  * 
+ * <v2.2 - 2024_0115_최원준>
+ * 1- slotCountLimit변수명을 slotCountLimitTap으로 수정
+ * 탭별 슬롯제한수의 공유 개념을 도입하면서 
+ * 기존에 slotCountLimitDic을 기준으로 저장하였으나 slotCountLimitTap을 기준으로 저장하도록 하였음.
+ * 
  * 
  */
 
@@ -91,7 +96,7 @@ namespace DataManagement
         public List<ItemMisc> miscList;
         public List<ItemQuest> questList;
 
-        public int[] slotCountLimit;
+        public int[] slotCountLimitTab;
 
 
         public SInventory() { }
@@ -109,7 +114,7 @@ namespace DataManagement
 
             // 사전 길이만큼 슬롯배열을 생성합니다.
             int dicLen = initializer.dicTypes.Length;
-            slotCountLimit = new int[dicLen];
+            slotCountLimitTab = new int[dicLen];
 
             // 새로운 인벤토리를 이니셜라이저를 전달하여 생성 후 SInventory를 초기화합니다.
             Serialize( new Inventory(initializer) );
@@ -127,16 +132,17 @@ namespace DataManagement
             if( initializer== null || createManager==null )
                 throw new Exception("이니셜라이져와 createManager 참조값이 전달되지 않았습니다.");
 
-            // 새 인벤토리를 만들고, 파일에 저장되어있는 SInventory의 정보를 Inventory로 옮깁니다.
+            // 새 인벤토리를 만들고, 파일에 저장되어있는 SInventory의 정보를 Inventory로 옮깁니다. (덮어쓰기가 진행됩니다.)
             Inventory inventory = new Inventory(initializer, createManager);
                       
             inventory.DeserializeItemListToDic<ItemWeapon>( this.weapList );
             inventory.DeserializeItemListToDic<ItemMisc>( this.miscList );
             inventory.DeserializeItemListToDic<ItemQuest>( this.questList );
 
-            for(int i=0; i<initializer.dicTypes.Length; i++)
-                inventory.slotCountLimitDic[i] = this.slotCountLimit[i];
 
+            for( int i = 0; i<inventory.tabLen; i++ )
+                inventory.slotCountLimitTab[i] = this.slotCountLimitTab[i];
+            
             return inventory;
         }
 
@@ -146,13 +152,16 @@ namespace DataManagement
         /// </summary>
         public void Serialize( Inventory inventory )
         {
+            if(inventory==null)
+                throw new Exception("인벤토리 참조값이 전달되지 않았습니다.");
+
             // SInventory에 최신 Inventory의 정보를 입력합니다.
             this.weapList=inventory.SerializeDicToItemList<ItemWeapon>();
             this.miscList=inventory.SerializeDicToItemList<ItemMisc>();
             this.questList=inventory.SerializeDicToItemList<ItemQuest>();
             
-            for(int i=0; i<inventory.dicLen; i++)
-                this.slotCountLimit[i] = inventory.slotCountLimitDic[i];
+            for(int i=0; i<inventory.tabLen; i++)
+                this.slotCountLimitTab[i] = inventory.slotCountLimitTab[i];
         }
 
 

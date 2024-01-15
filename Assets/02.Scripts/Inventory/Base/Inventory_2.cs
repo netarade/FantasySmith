@@ -146,8 +146,10 @@ using WorldItemData;
  * 이유는 슬롯 인덱스를 Inventory클래스에서 밖에 구할 수 없으며, 
  * AddItem시에 한 동작으로 이루어져야 순서관계가 무너지지 않기 때문
  * 
- * (추가예정)
- * 지정 슬롯인덱스를 결정하는 메서드
+ * 2- GetSlotCountLimit메서드 삭제
+ * Inventory.cs에 GetSlotCountLimitDic과 GetSlotCountLimitTab으로 구분하여 새롭게 작성
+ * 
+ * 
  * 
  * 
  */
@@ -180,6 +182,21 @@ namespace InventoryManagement
             item.SlotIndex = GetLatestSlotIndex(itemType);
             item.SlotIndexAll = GetLatestSlotIndex(ItemType.None);
         }
+        
+        public void SetItemSlotIndex(ItemInfo itemInfo, int slotIndex, bool isIndexAll)
+        {
+            // 인자 전달 오류 처리
+            if( itemInfo==null )
+                throw new Exception("ItemInfo 스크립트가 존재하지 않는 아이템입니다.");
+                        
+            // 아이템 정보와 종류를 저장합니다.
+            Item item = itemInfo.Item;
+            ItemType itemType = item.Type;
+
+            if( IsRemainSlot(itemType, slotIndex) )
+
+        }
+
 
 
 
@@ -248,7 +265,7 @@ namespace InventoryManagement
             itemObjList.Add(itemInfo.gameObject);          
                   
             // 해당 아이템 종류의 현재 오브젝트의 갯수를 증가시킵니다.
-            SetCurDicItemObjCount(itemType, 1);          
+            AccumulateItemObjCount(itemType, 1);          
 
             // 성공을 반환합니다.
             return true;                                    
@@ -426,7 +443,7 @@ namespace InventoryManagement
             targetItemInfo =itemObjList[targetIdx].GetComponent<ItemInfo>();  // 반환 할 아이템 참조값을 얻습니다.
             itemObjList.RemoveAt(targetIdx);        // 해당 인덱스의 아이템을 제거합니다            
         
-            SetCurDicItemObjCount(itemType, -1);       // 해당 아이템 종류의 현재 오브젝트의 갯수를 감소시킵니다.      
+            AccumulateItemObjCount(itemType, -1);       // 해당 아이템 종류의 현재 오브젝트의 갯수를 감소시킵니다.      
                         
             return targetItemInfo;            // 목록에서 제거한 아이템을 반환합니다.     
         }
@@ -589,36 +606,13 @@ namespace InventoryManagement
 
 
 
-        /// <summary>
-        /// 아이템 종류에 해당하는 사전의 인덱스를 반환합니다.<br/>
-        /// 이는 dicType 배열과 일치하는 ItemType의 인덱스를 말합니다.<br/><br/>
-        /// *** 해당하는 종류의 아이템 사전이 없으면 예외가 발생 합니다. ***
-        /// </summary>
-        /// <returns></returns>
-        public int GetDicIndex(ItemType itemType)
-        {
-            for(int i=0; i<dicLen; i++)
-            {
-                if( dicType[i]==itemType) 
-                    return i;
-            }
-
-            throw new Exception("해당하는 아이템 종류의 사전이 없습니다.");
-        }
 
 
-        /// <summary>
-        /// 아이템 종류에 해당하는 슬롯의 제한 수를 반환합니다.<br/>
-        /// ItemType.None 전달 시 전체 슬롯의 제한 수를 반환합니다.(기본 값) 
-        /// </summary>
-        /// <returns></returns>
-        public int GetSlotCountLimit(ItemType itemType=ItemType.None)
-        {
-            if(itemType==ItemType.None)
-                return SlotCountLimitAll;
-            else
-                return slotCountLimitDic[GetDicIndex(itemType)];
-        }
+
+
+
+
+        
         
 
 

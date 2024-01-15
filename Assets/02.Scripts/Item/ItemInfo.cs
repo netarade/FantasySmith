@@ -403,7 +403,7 @@ public partial class ItemInfo : MonoBehaviour
     /// <summary>
     /// 아이템 오브젝트가 해당하는 탭에서 몇번 째 슬롯에 들어있는 지 인덱스를 반환하거나 설정합니다.
     /// </summary>
-    public int SlotIndex { get{return item.SlotIndex;} set{ item.SlotIndex=value;} }
+    public int SlotIndex { get{return item.SlotIndexEach;} set{ item.SlotIndexEach=value;} }
 
     
     /// <summary>
@@ -558,7 +558,7 @@ public partial class ItemInfo : MonoBehaviour
 
         
         // 현재 활성화 중인 탭을 기반으로 어떤 인덱스를 참조할지 설정합니다.
-        int activeIndex = isActiveTabAll? item.SlotIndexAll : item.SlotIndex;
+        int activeIndex = isActiveTabAll? item.SlotIndexAll : item.SlotIndexEach;
         
 
         // 아이템의 크기를 슬롯리스트의 cell크기와 동일하게 맞춥니다.(슬롯의 크기와 동일하게 맞춥니다.)
@@ -615,7 +615,7 @@ public partial class ItemInfo : MonoBehaviour
             isBaseDropSetParent = inventoryInfo.isBaseDropSetParent;                                        
 
             isActiveTabAll = inventoryInteractive.IsActiveTabAll;   // 액티브 탭 정보 최신화   
-            prevDropSlotTr = slotListTr.GetChild(item.SlotIndex);   // 이전 드롭이벤트 호출자를 현재 들어있는 슬롯으로 최신화
+            prevDropSlotTr = slotListTr.GetChild(item.SlotIndexEach);   // 이전 드롭이벤트 호출자를 현재 들어있는 슬롯으로 최신화
         }      
     }
 

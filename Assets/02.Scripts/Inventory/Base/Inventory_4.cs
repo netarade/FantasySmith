@@ -31,6 +31,7 @@ namespace InventoryManagement
         
         /// <summary>
         /// 아이템 타입을 해당하는 탭 타입으로 변환해주는 메서드입니다.<br/>
+        /// ItemType.None을 전달 시 TabType.All을 반환합니다.<br/><br/>
         /// *** 아이템 종류에 해당하는 탭이 없다면 예외가 발생합니다. ***
         /// </summary>
         /// <returns>인자로 들어온 아이템 종류에 해당하는 탭 타입</returns>

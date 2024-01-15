@@ -213,6 +213,16 @@ using CreateManagement;
  * 
  * 7- IsSlotEnoughIgnoreOverlap메서드 삭제
  * 
+ * <9.1 -2024_0115_최원준>
+ * 1- interactive 변수 protected에서 public으로 변경
+ * 이유는 각 info클래스에서 빠르게 접근하여 actvieTab값을 얻어오기 위함
+ * 
+ * 2- FindNearstRemainSlotIdx메서드 삭제
+ * 인덱스 정보는 내부 inventory에서 처리해야 정확하기 때문
+ * 
+ * 3- IsSlotEnough 지정슬롯 인덱스를 인자로 받는 오버로딩 메서드명을 IsSlotEnoughCertain로 수정
+ * 
+ * 
  * 
  */
 
@@ -237,7 +247,7 @@ public partial class InventoryInfo : MonoBehaviour
     protected Transform emptyListTr;              // 현재 인벤토리가 관리하는 빈 리스트의 Transform 정보입니다.
 
     protected InventoryInitializer initializer;   // 사용자가 정의한 방식으로 인벤토리의 초기화를 진행하기 위한 참조
-    protected InventoryInteractive interactive;   // 자신의 인터렉티브 스크립트를 참조하여 활성화 탭정보를 받아오기 위한 변수 선언
+    public InventoryInteractive interactive;   // 자신의 인터렉티브 스크립트를 참조하여 활성화 탭정보를 받아오기 위한 변수 선언
     protected DataManager dataManager;            // 저장과 로드 관련 메서드를 호출 할 스크립트 참조
     protected CreateManager createManager;        // 아이템 생성을 요청하고 반환받을 스크립트 참조
     
@@ -434,31 +444,6 @@ public partial class InventoryInfo : MonoBehaviour
 
 
 
-    /// <summary>
-    /// 현재 활성화 중인 가장 가까이 있는 남은 슬롯의 인덱스를 반환합니다.<br/>
-    /// 연산이 빠르며, 인자를 받지 않습니다.<br/><br/>
-    /// *** 활성화 중인 탭의 인덱스 밖에 구할 수 없기 때문에 같은 슬롯간의 이동 시에 호출하는 용도로 사용합니다. ***<br/>
-    /// </summary>
-    /// <returns>활성화 중인 탭에서 비어있는 슬롯의 가장 작은 인덱스입니다. 남은 슬롯이 없다면 -1을 반환합니다.</returns>
-    public int FindNearstRemainSlotIdx()
-    {
-        int findIdx = -1;
-
-        for( int i = 0; i<slotListTr.childCount; i++ )  // 슬롯의 인덱스 0번부터 봅니다
-        {
-            if( slotListTr.GetChild(i).childCount!=0 )  // 해당 슬롯리스트에 자식이 있다면 다음 슬롯리스트로 넘어갑니다.
-                continue;
-
-            findIdx = i;                                // 찾은 인덱스로 설정합니다.
-            break;
-        }
-
-        // findIdx가 수정되지 않았다면 -1을 반환합니다. 수정되었다면 0이상의 인덱스값을 반환합니다.
-        return findIdx;
-    }
-
-
-
 
 
 
@@ -500,7 +485,7 @@ public partial class InventoryInfo : MonoBehaviour
             return inventory.IsAbleToAddMisc(itemMisc.Name, itemMisc.OverlapCount);
         }
         else
-            return inventory.GetCurRemainSlotCount(itemType) >= 1;  // 남은 슬롯 칸수가 1개 이상
+            return inventory.IsRemainSlotNearst(itemType);  // 아무자리에 남은 슬롯 칸수가 있는지
     }
 
 
@@ -508,24 +493,47 @@ public partial class InventoryInfo : MonoBehaviour
 
     /// <summary>
     /// 해당 아이템이 특정 슬롯에 들어갈 수 있을 지 여부를 반환합니다.<br/>
-    /// 아이템 정보와 슬롯의 지정 인덱스를 인자로 받습니다.
+    /// 아이템 정보와 슬롯의 지정 인덱스, 전체 탭 여부를 인자로 받습니다.
     /// </summary>
     /// <returns>슬롯에 빈자리가 없는 경우 false를, 빈자리가 있는 경우 true를 반환</returns>
-    public bool IsSlotEnough(ItemInfo itemInfo, int slotIndex)
+    public bool IsSlotEnoughCertain(ItemInfo itemInfo, int slotIndex, bool isActiveTabAll)
     {
-        return inventory.IsRemainSlot(itemInfo.Item.Type, slotIndex);
+        ItemType itemType = itemInfo.Item.Type;
+
+        // 전체 탭인 경우
+        if( isActiveTabAll )
+        {
+            if(itemType==ItemType.Quest)
+                throw new Exception("퀘스트 아이템은 전체탭에서의 슬롯 인덱스를 가질 수 없습니다.");
+
+            return inventory.IsRemainSlotCertain( ItemType.None, slotIndex );
+        }
+        // 개별 탭인 경우
+        else
+            return inventory.IsRemainSlotCertain( itemType, slotIndex );
+        
     }
 
 
 
     /// <summary>
     /// 해당 종류의 아이템이 특정 슬롯에 들어갈 수 있을 지 여부를 반환합니다.<br/>
-    /// 아이템 타입과 슬롯의 지정 인덱스를 인자로 받습니다.
+    /// 아이템 정보와 슬롯의 지정 인덱스, 전체 탭 여부를 인자로 받습니다.
     /// </summary>
     /// <returns>슬롯에 빈자리가 없는 경우 false를, 빈자리가 있는 경우 true를 반환</returns>
-    public bool IsSlotEnough(ItemType itemType, int slotIndex)
+    public bool IsSlotEnoughCertain(ItemType itemType, int slotIndex, bool isActiveTabAll)
     {
-        return inventory.IsRemainSlot(itemType, slotIndex);
+        // 전체 탭인 경우
+        if( isActiveTabAll )
+        {
+            if(itemType==ItemType.Quest)
+                throw new Exception("퀘스트 아이템은 전체탭에서의 슬롯 인덱스를 가질 수 없습니다.");
+
+            return inventory.IsRemainSlotCertain( ItemType.None, slotIndex );
+        }
+        // 개별 탭인 경우
+        else
+            return inventory.IsRemainSlotCertain( itemType, slotIndex );
     }
 
 

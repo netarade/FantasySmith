@@ -114,8 +114,24 @@ using UnityEngine;
  * <v4.1 - 2024_0115_최원준>
  * 1- GetDicIndex메서드를 Inventoy.cs로 옮김.(GetDicIdxByItemType과 중복기능)
  * 
+ * <v4.2 - 2024_0115_최원준>
+ * 1- GetSlotIndexList메서드를 
+ * a. 단일 종류의 아이템 SlotIndex만 Index를 Add시키던 부분을 Tab에 해당하는 모든 아이템 종류의 Index를 Add시킬 수 있도록 수정
+ * b. ItemType.None 선택인자를 삭제하고 명시적 인자로 전환
  * 
  * 
+ * 2- ReadSlotIndexByItemDic메서드 명을 ReadSlotIndexFromItemDic으로 수정
+ * 
+ * 3- GetLatestSlotIndex(string itemName, bool isIndexAll) 오버로딩 메서드 삭제
+ * (ItemType을 인자로 전달받는 메서드만 주로 사용하므로)
+ * 
+ * 4- GetLatestSlotIndex메서드의 내용 GetSlotCountLimitTab에 맞게 수정
+ * 
+ * 5- 기존의 ItemType과 slotIndex를 인자로 받는 IsRemainSlot 메서드를 IsRemainSlotCertain으로 변경하고 
+ * ItemType만 인자로 받는 IsRemainSlotNearst메서드 작성
+ * (지정 슬롯 자리가 있는지 여부를 반환하는 메서드와 아무 슬롯 자리가 있는지 여부를 반환하는 메서드로 나누었음)
+ * 
+ * 6- 일관성을 위해 GetLatestSlotIndex메서드명을 GetItemSlotIndexNearst로 변경
  * 
  */
 
@@ -153,33 +169,66 @@ namespace InventoryManagement
 
 
 
+        /// <summary>
+        /// 해당 종류의 아이템이 들어갈 슬롯이 비었는지 여부를 판단합니다.<br/>
+        /// 인자로 어떤 종류의 아이템인지 전달받습니다.<br/><br/>
+        /// *** ItemType.None을 전달하면 예외를 던집니다. ***
+        /// </summary>
+        /// <param name="itemType"></param>
+        /// <returns></returns>
+        public bool IsRemainSlotNearst( ItemType itemType )
+        {
+            // 전체 탭에 들어갈 자리가 있어도 특정 탭에 들어갈 자리가 없으면 안되기 때문
+            if(itemType == ItemType.None)
+                throw new Exception("해당 종류의 인자를 전달할 수 없습니다.");
+
+            if( GetCurRemainSlotCount(itemType)>0 )
+                return true;
+
+            return false;
+        }
+
+
 
         
         /// <summary>
-        /// 해당 종류의 아이템이 들어있는 특정 슬롯이 비었는지 여부를 반환합니다.<br/>
+        /// 해당 종류의 아이템이 들어갈 특정 슬롯이 비었는지 여부를 반환합니다.<br/>
         /// 인자로 어떤 종류의 아이템인지, 해당하는 슬롯의 인덱스값을 전달 받습니다.<br/>
-        /// ItemType.None이 전달되면 전체에서의 슬롯위치를 말하며, 이외는 개별 위치를 말합니다.
+        /// ItemType.None이 전달되면 전체탭에서의 슬롯위치를 말하며, 이외는 개별탭에서의 위치를 말합니다.
         /// </summary>
-        /// <returns></returns>
-        public bool IsRemainSlot(ItemType itemType, int slotIndex)
+        /// <returns>슬롯에 들어갈 공간이 있다면 true, 없다면 false를 반환</returns>
+        public bool IsRemainSlotCertain(ItemType itemType, int slotIndex)
         {
-            if(slotIndex<0 || slotIndex > GetSlotCountLimitTab(itemType) )
+            if(slotIndex<0 || slotIndex >= GetSlotCountLimitTab(itemType) )
                 throw new Exception("슬롯 인덱스가 정확하지 않습니다. 0이하거나 슬롯 제한수를 초과했습니다.");
 
             // 인덱스 리스트를 전달하여, 해당하는 아이템 종류의 슬롯 인덱스 리스트를 구합니다.
             GetSlotIndexList( ref indexList, itemType );
 
+            // 오름차순으로 정렬합니다.
+            indexList.Sort();
+
             // 인덱스 리스트에 아무것도 없는 경우 true를 반환
             if( indexList.Count==0 )
                 return true;
 
+            int idx;
+
             // 인덱스 리스트를 모두 읽어들여 slotIndex가 존재하는 지 찾습니다.
-            for( int i = 0; i<indexList.Count; i++ )
+            for( idx = 0; idx<indexList.Count; idx++ )
             {
+                // 오름 차순으로 정렬된 인덱스 리스트의 값이 지정 슬롯 인덱스보다 크다면 true를 반환합니다.
+                if( indexList[idx] > slotIndex )
+                    return true;
+
                 // 인덱스 리스트에 해당하는 슬롯 인덱스가 존재한다면 false를 반환합니다.
-                if( indexList[i] == slotIndex)
+                if( indexList[idx] == slotIndex)
                     return false;
             }
+
+            // idx가 슬롯제한수에 도달했다면 false를 반환합니다.
+            if( idx == GetSlotCountLimitTab(itemType) )
+                return false;
 
             // 인덱스 리스트에서 slotIndex를 찾지 못했다면 true를 반환합니다.
             return true;
@@ -192,66 +241,53 @@ namespace InventoryManagement
 
 
         /// <summary>
-        /// 아이템 종류에 해당하는 딕셔너리를 읽어들여 아이템의 슬롯 인덱스를 인자로 전달한 indexList에 담습니다.<br/>
+        /// 아이템 종류와 동일한 탭을 가지는 아이템들의 딕셔너리를 읽어들여 
+        /// 인자로 전달한 indexList에 아이템의 슬롯 인덱스를 담습니다.<br/><br/>
         /// 두번째 인자가 ItemType.None으로 전달되었다면, 퀘스트 아이템을 제외한
-        /// 모든 종류의 아이템의 전체 인덱스를 읽어들입니다. (기본값)<br/><br/>
-        /// 메서드 호출 시 인덱스 리스트는 초기화되며, 정렬되지 않은 상태로 반환됩니다.<br/>
+        /// 모든 종류의 아이템의 전체 인덱스를 읽어들입니다. <br/><br/>
+        /// ** 메서드 호출 시 인덱스 리스트는 초기화되며, 정렬되지 않은 상태로 반환됩니다. **<br/>
         /// </summary>
         /// <param name="indexList"></param>
         /// <param name="itemType"></param>
-        private void GetSlotIndexList( ref List<int> indexList, ItemType itemType = ItemType.None )
+        private void GetSlotIndexList( ref List<int> indexList, ItemType itemType )
         {
-            bool isSlotIndexAll;
+            // 기존의 인덱스 리스트를 초기화합니다.
+            indexList.Clear();   
 
             // 전달 받은 itemType인자를 기준으로 개별 슬롯을 구할 지, 전체 슬롯을 구할 지 여부를 판단합니다.
-            if( itemType==ItemType.None )
-                isSlotIndexAll=true;
-            else
-                isSlotIndexAll=false;
-
-            indexList.Clear();       // 기존의 인덱스 리스트를 지웁니다
-
+            bool isSlotIndexAll = itemType==ItemType.None ? true : false;
+            
             // 아이템의 ItemType을 기반으로 해당하는 딕셔너리를 구합니다
             Dictionary<string, List<GameObject>> itemDic;
 
+            // 인자로 전달받은 ItemType에 해당하는 TabType을 구합니다.
+            TabType tabType = ConvertItemTypeToTabType(itemType);
 
-            /*** 전체 슬롯 인덱스를 기반으로 구하는 경우 ***/
-            if( isSlotIndexAll )
+            // 해당 TabType에 속하는 ItemType을 리스트로 반환받습니다.
+            int tabKindLen = ConvertTabTypeToItemTypeList(ref tabKindList, tabType); 
+
+            // 리스트의 길이만큼 순회합니다
+            for(int i=0; i<tabKindLen; i++)
             {
-                for( int i = 0; i<dicLen; i++ )
-                {
-                    // 퀘스트 아이템이라면 읽어들이지 않습니다.
-                    if( dicType[i]==ItemType.Quest )
-                        continue;
-
-                    // 존재하는 모든 딕셔너리 사전을 하나씩 가져옵니다.
-                    itemDic=GetItemDicIgnoreExsists( dicType[i] );
-
-                    // 오브젝트를 하나씩 읽어들여서 아이템 인덱스를 인덱스 리스트에 집어넣습니다.
-                    ReadSlotIndexByItemDic( ref indexList, itemDic, isSlotIndexAll );
-                }
-            }
-            /*** 개별 슬롯 인덱스를 기반으로 구하는 경우  ***/
-            else
-            {
-                // 해당 아이템 종류의 사전을 구합니다. 
-                itemDic=GetItemDicIgnoreExsists( itemType );
+                // 아이템 종류 별 사전을 하나씩 가져옵니다.
+                itemDic = GetItemDicIgnoreExsists( tabKindList[i] );
 
                 // 오브젝트를 하나씩 읽어들여서 아이템 인덱스를 인덱스 리스트에 집어넣습니다.
-                ReadSlotIndexByItemDic( ref indexList, itemDic, isSlotIndexAll );
+                ReadSlotIndexFromItemDic(ref indexList, itemDic, isSlotIndexAll );
             }
         }
 
 
         
         /// <summary>
-        /// 슬롯 인덱스를 해당 딕셔너리로부터 하나씩 읽어들여 저장합니다.
+        /// 슬롯 인덱스를 해당 딕셔너리로부터 하나씩 읽어들여 저장합니다.<br/>
         /// </summary>
-        private void ReadSlotIndexByItemDic(ref List<int> indexList, Dictionary<string, List<GameObject>> itemDic, bool isSlotIndexAll )
+        private void ReadSlotIndexFromItemDic(ref List<int> indexList, Dictionary<string, List<GameObject>> itemDic, bool isSlotIndexAll )
         {   
             // 딕셔너리에 아무 아이템이 들어있지 않다면 바로 종료합니다.
             if( itemDic==null || itemDic.Count==0)
                 return;
+                
 
             // 해당 사전에서 아이템 정보를 하나씩 읽어옵니다.
             foreach(List<GameObject> itemObjList in itemDic.Values)     
@@ -263,7 +299,7 @@ namespace InventoryManagement
                     if( isSlotIndexAll )  
                         indexList.Add(item.SlotIndexAll);   // 전체 슬롯 인덱스 기반으로 구하는 경우
                     else                
-                        indexList.Add(item.SlotIndex);      // 개별 슬롯 인덱스 기반으로 구하는 경우
+                        indexList.Add(item.SlotIndexEach);  // 개별 슬롯 인덱스 기반으로 구하는 경우
                 } 
             }
         }
@@ -288,32 +324,11 @@ namespace InventoryManagement
 
 
         /// <summary>
-        /// 가장 가까운 슬롯의 인덱스를 구합니다. 어떤 이름의 아이템을 넣을 것인지와 <br/>
-        /// 개별탭 혹은 전체탭의 인덱스를 반환받고자 하는지 여부를 전달하여야 합니다. (기본값: 전체탭)<br/><br/>
-        /// *** 이름에 해당하는 아이템이 월드 사전에 존재하지 않는 경우 예외가 발생합니다.<br/>
-        /// </summary>
-        /// <returns>true을 전달할 경우 전체탭 슬롯 인덱스를 반환하며, false는 개별탭 슬롯 인덱스를 반환합니다. 
-        /// 슬롯에 자리가 없다면 -1을 반환합니다.</returns>
-        public int GetLatestSlotIndex(string itemName, bool isSlotIndexAll = true)
-        {
-            if(isSlotIndexAll)  // 전체 인덱스 모드가 설정되어 있는 경우
-            {
-                return GetLatestSlotIndex(ItemType.None);                // 전체 슬롯 인덱스를 기준으로 가까운 슬롯 인덱스를 반환받습니다.                
-            }
-            else                // 개별 인덱스 모드가 설정되어 있는 경우
-            {
-                ItemType itemType = GetItemTypeIgnoreExists(itemName);  // 아이템의 이름 기반으로 아이템 종류를 구합니다.
-                return GetLatestSlotIndex(itemType);                     // 개별 슬롯인덱스를 기준으로 가까운 슬롯 인덱스를 반환받습니다.
-            }
-        }
-
-        /// <summary>
         /// 가장 가까운 슬롯의 인덱스를 구합니다. 어떤 종류의 아이템을 넣을 것인지 인자로 전달하여야 합니다.<br/>
         /// ItemType인자에 해당하는 개별탭 슬롯 인덱스를 반환합니다. ItemType.None을 전달할 경우 전체탭의 슬롯 인덱스를 반환합니다. (기본값: 전체탭)
         /// </summary>
-        /// <returns>ItemType.None을 전달할 경우 전체탭 슬롯 인덱스를 반환하며, 이외의 인자는 개별탭 슬롯 인덱스를 반환합니다. 
-        /// 슬롯에 자리가 없다면 -1을 반환합니다.</returns>
-        public int GetLatestSlotIndex(ItemType itemType = ItemType.None)
+        /// <returns> 아이템의 종류에 해당하는 탭의 슬롯인 덱스를 반환, 슬롯에 자리가 없다면 -1을 반환</returns>
+        public int GetItemSlotIndexNearst(ItemType itemType = ItemType.None)
         {
             GetSlotIndexList(ref indexList, itemType);
 
@@ -322,14 +337,11 @@ namespace InventoryManagement
             // 인덱스 리스트에 아이템이 아무것도 없는 경우 0을 반환
             if( indexList.Count==0 )            
                 return 0;
-
-
-            
+                        
             int latestSlotIndex = -1;    // 찾을 슬롯 인덱스를 선언하고 초기값을 -1으로 설정합니다.
 
-
-            // 아이템의 종류에 해당하는 슬롯의 칸 제한 수를 구합니다. (인자로 전달한 itemType이 None이라면 전체 슬롯 제한 수를 구합니다.)
-            int slotCountLimit = GetSlotCountLimitDic(itemType); 
+            // 인자로 전달한 아이템의 종류에 해당하는 탭의 슬롯의 칸 제한 수를 구합니다.
+            int slotCountLimitTab = GetSlotCountLimitTab(itemType); 
 
             // 정렬 인덱스 예시 
             // 0, 1, 2, 3, 4
@@ -337,16 +349,16 @@ namespace InventoryManagement
             
 
             // 인덱스 숫자까지 i를 0부터 증가시키면서 빈 슬롯을 찾습니다 
-            for(int i=0; i<slotCountLimit; i++)
+            for(int i=0; i<slotCountLimitTab; i++)
             {
                 // i번째 인덱스리스트에 저장된 인덱스와 i가 일치하지 않는다면 슬롯이 빈 것으로 판단
                 if( indexList[i]!=i )
                 {
-                    latestSlotIndex=i;
+                    latestSlotIndex = i;
                     break;
                 }
                 //인덱스 리스트의 마지막에 도달했으면서 슬롯은 아직 남아있는 경우
-                else if( i==indexList.Count-1 && i!=slotCountLimit-1 ) 
+                else if( i==indexList.Count-1 && i!=slotCountLimitTab-1 ) 
                 {
                     latestSlotIndex = i+1; // 다음 인덱스를 타겟으로 설정
                     break;
@@ -381,7 +393,7 @@ namespace InventoryManagement
         {
             ItemMisc itemMisc1 = (ItemMisc)itemObj1.GetComponent<ItemInfo>().Item;
             ItemMisc itemMisc2 = (ItemMisc)itemObj2.GetComponent<ItemInfo>().Item;
-            return itemMisc1.SlotIndex.CompareTo(itemMisc2.SlotIndex);
+            return itemMisc1.SlotIndexEach.CompareTo(itemMisc2.SlotIndexEach);
         }
 
 
@@ -450,7 +462,7 @@ namespace InventoryManagement
                                 
                 // 즉시 삭제가 활성화 되있다면 오브젝트 삭제
                 if(isInstantRemove)
-                    GameObject.Destroy(tempInfoList[i].gameObject);    
+                    GameObject.Destroy(tempInfoList[i].gameObject);
             }
 
             // 즉시 삭제의 경우 전송리스트 초기화

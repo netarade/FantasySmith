@@ -236,6 +236,9 @@ using UnityEngine;
  * 2- InitSlotCountLimitTab메서드 삭제
  * 탭슬롯제한을 이미 저장하므로 새롭게 계산할 필요가 없어짐
  * 
+ * <v10.2 - 2024_0115_최원준>
+ * 1- GetCurRemainSlotCount메서드 주석 일부 수정 
+ * (ItemType.None전달시 예외-> 전체탭반환)
  * 
  * 
  */
@@ -443,8 +446,8 @@ namespace InventoryManagement
 
 
         /// <summary>
-        /// 현재 인벤토리의 아이템 종류에 따른 남아있는 슬롯 갯수를 반환합니다.<br/>
-        /// *** 아이템의 종류로 ItemType.None이 전달되었다면 예외를 발생시킵니다. ***
+        /// 현재 인벤토리의 아이템 종류에 해당 하는 탭의 남아있는 슬롯 갯수를 반환합니다.<br/>
+        /// 아이템의 종류로 ItemType.None이 전달되었다면 전체탭의 남은 슬롯 수를 반환합니다.
         /// </summary>
         /// <returns>남아있는 슬롯이 없으면 0, 남아있는 슬롯이 있다면 해당 슬롯의 갯수</returns>
         public int GetCurRemainSlotCount(ItemType itemType)

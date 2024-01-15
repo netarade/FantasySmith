@@ -1128,8 +1128,11 @@
  * 
  * 탭별 공유 제한 관련하여 InventoryInitializer, InventoryInteractive, SaveData_Inventory.cs 소폭 수정
  * 
- * 
- * 
+ * <2024_0116_최원준>
+ * (수정사항)
+ * Inventory2.cs, Inventory3.cs - 지정 슬롯으로 인덱스를 설정하거나 아이템을 추가하기 위한 신규 메서드 작성 및 기존 메서드 보완
+ * InventoryInteractive.cs - AdjustSlotCount 메서드 오류수정 완료
+ * InventoryInfo.cs - IsEnoughSlotCertain오버로딩메서드 작성완료
  * 
  * 
  * 

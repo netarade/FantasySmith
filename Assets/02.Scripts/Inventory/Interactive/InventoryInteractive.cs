@@ -189,6 +189,9 @@ using System;
 * 6- MoveActiveItemToSlot메서드의 코드를 전체탭과 개별탭으로 구분하던 것을 하나의 로직으로 작성
 * ConvertTabTypeToItemTypeList메서드에서 curActiveTab에 따라서 ItemType을 List에 담아주기 때문
 * 
+* <v9.1 - 2024_0116_최원준>
+* 1- AdjustSlotCount메서드에서 개별탭의 제한 수를 딕셔너리 제한수를 누적시켜 구하던 것에서
+* 바로 인덱스를 통해 구하도록 변경
 * 
 */
 
@@ -499,17 +502,10 @@ public class InventoryInteractive : MonoBehaviour
     private void AdjustSlotCount()
     {
         // 현재 탭에 해당하는 슬롯 갯수
-        int curTabSlotCount = 0;
+        int curTabSlotCount = inventory.slotCountLimitTab[(int)curActiveTab];
 
         // 전체 탭에 해당하는 슬롯 갯수
-        int allTabSlotCount = inventory.GetSlotCountLimitDic(ItemType.None);
-
-        // 현재 탭에 해당하는 아이템 종류의 갯수
-        int tabKindLen = Inventory.ConvertTabTypeToItemTypeList(ref tabKindList, curActiveTab);
-
-        // 찾아낸 아이템 종류에 해당하는 슬롯 갯수를 탭 슬롯 갯수에 누적시킵니다.
-        for(int i=0; i<tabKindLen; i++)
-            curTabSlotCount += inventory.GetSlotCountLimitDic( tabKindList[i] );
+        int allTabSlotCount = inventory.GetSlotCountLimitTab(ItemType.None);
 
         // 현재 탭의 갯수만큼 켜줍니다
         for(int i=0; i<curTabSlotCount; i++)                   

@@ -38,6 +38,10 @@ public partial class ItemInfo : MonoBehaviour, IPointerEnterHandler, IPointerExi
      * <v2.3 -2024_0112_최원준>
      * 1- 테스트용 메서드 PrintDebugInfo 삭제
      * 
+     * <v2.4 - 2024_0116_최원준>
+     * 1- MoveSlotToAnotherListSlot메서드 내부에
+     * 슬롯 충분 여부 검사 메서드를 IsSlotEnough를 IsSlotEnoughCertain으로 변경
+     * 
      */
 
     string strItemDropSpace = "ItemDropSpace";
@@ -130,7 +134,7 @@ public partial class ItemInfo : MonoBehaviour, IPointerEnterHandler, IPointerExi
             if(isActiveTabAll)
                 item.SlotIndexAll = nextSlotIdx;
             else
-                item.SlotIndex = nextSlotIdx;
+                item.SlotIndexEach = nextSlotIdx;
 
             // 해당 정보로 위치정보를 업데이트 합니다.
             UpdatePositionInSlotList();
@@ -148,8 +152,8 @@ public partial class ItemInfo : MonoBehaviour, IPointerEnterHandler, IPointerExi
             }
             else
             {
-                switchItemInfo.SlotIndex = item.SlotIndex;          
-                item.SlotIndex = nextSlotIdx;
+                switchItemInfo.SlotIndex = item.SlotIndexEach;          
+                item.SlotIndexEach = nextSlotIdx;
             }
             
             switchItemInfo.UpdatePositionInSlotList();      // 바꿀 아이템의 위치 정보를 업데이트 합니다.
@@ -185,10 +189,14 @@ public partial class ItemInfo : MonoBehaviour, IPointerEnterHandler, IPointerExi
         Transform nextInventoryTr = nextSlotTr.parent.parent.parent.parent;
         InventoryInfo nextInventoryInfo = nextInventoryTr.GetComponent<InventoryInfo>();
 
+        // 전체탭 여부와 자식 인덱스값 리딩
+        bool isActiveTabAllNext = nextInventoryInfo.interactive.IsActiveTabAll;
+        int childIdxNext = nextSlotTr.GetSiblingIndex();
+
         // 새로운 인벤토리 슬롯에 남는 자리가 있는 경우
-        if( nextInventoryInfo.IsSlotEnough(this) )
+        if( nextInventoryInfo.IsSlotEnoughCertain(this,childIdxNext,isActiveTabAllNext) )
         {
-            inventoryInfo.RemoveItem(item.Name);    // 이전 인벤토리에서 아이템을 제거해야 합니다.
+            inventoryInfo.RemoveItem(this);         // 이전 인벤토리에서 아이템을 제거해야 합니다.
             
             nextInventoryInfo.AddItem(this);        // 현재 아이템을 새로운 아이템에 추가합니다.
                                                     // (AddItem내부적으로 UpdateInventoryInfo가 들어가기 때문에 prevDropSlot 정보도 들어감)

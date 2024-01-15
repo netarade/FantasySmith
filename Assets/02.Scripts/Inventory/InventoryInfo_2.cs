@@ -270,12 +270,12 @@ public partial class InventoryInfo : MonoBehaviour
     /// *** 인자로 들어온 컴포넌트 참조값이 null이거나, 슬롯 인덱스가 잘못되었다면 예외를 발생시킵니다. ***<br/>
     /// </summary>
     /// <returns>오브젝트가 생성 될 빈 공간이 부족하다면 false를, 아이템 생성 성공 시 true를 반환</returns>
-    public bool AddItemToSlot(ItemInfo itemInfo, Transform slotTr, bool isIndexAll)
+    public bool AddItemToSlot(ItemInfo itemInfo, Transform slotTr, bool isActiveTabAll)
     {
         if( itemInfo==null || slotTr==null )
             throw new Exception( "전달 받은 참조 값이 존재하지 않습니다." );
                         
-        return AddItemToSlot(itemInfo, slotTr.GetSiblingIndex(), isIndexAll);
+        return AddItemToSlot(itemInfo, slotTr.GetSiblingIndex(), isActiveTabAll);
     }
 
 
@@ -285,7 +285,7 @@ public partial class InventoryInfo : MonoBehaviour
     /// *** 인자로 들어온 컴포넌트 참조값이 null이거나, 슬롯 인덱스가 잘못되었다면 예외를 발생시킵니다. ***<br/>
     /// </summary>
     /// <returns>오브젝트가 생성 될 빈 공간이 부족하다면 false를, 아이템 생성 성공 시 true를 반환</returns>
-    public bool AddItemToSlot(ItemInfo itemInfo, int slotIndex, bool isIndexAll)
+    public bool AddItemToSlot(ItemInfo itemInfo, int slotIndex, bool isActiveTabAll)
     {
         if( itemInfo==null )
             throw new Exception( "전달 받은 아이템 참조 값이 존재하지 않습니다." );
@@ -293,7 +293,7 @@ public partial class InventoryInfo : MonoBehaviour
             throw new Exception( "슬롯 인덱스 정보가 잘못되었습니다." );
 
         // 해당 슬롯에 자리가 없다면, 실패를 반환
-        if( !IsSlotEnough(itemInfo, slotIndex) )
+        if( !IsSlotEnoughCertain(itemInfo, slotIndex) )
             return false;
         
 

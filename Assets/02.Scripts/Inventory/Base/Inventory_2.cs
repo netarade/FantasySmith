@@ -149,8 +149,12 @@ using WorldItemData;
  * 2- GetSlotCountLimit메서드 삭제
  * Inventory.cs에 GetSlotCountLimitDic과 GetSlotCountLimitTab으로 구분하여 새롭게 작성
  * 
+ * <v5.4 - 2024_0115_최원준>
+ * 1- SetItemSlotIndexBothLatest메서드명을 SetItemSlotIndexNearst로 변경
+ * SetItemSlotIndex메서드명을 SetItemSlotIndexCertain로 변경후 작성완료
+ * (최신슬롯 인덱스를 설정해주는 메서드와 지정슬롯을 설정해주는 메서드로 구분)
  * 
- * 
+ * 2- AddItem메서드에 지정슬롯에 추가하는 선택인자 추가
  * 
  */
 
@@ -160,11 +164,11 @@ namespace InventoryManagement
     {
         
         /// <summary>
-        /// 아이템 Info 컴포넌트를 인자로 받아서 어떤 슬롯에 들어갈지 최신화 해주는 메서드입니다. <br/>
+        /// 해당 아이템의 인덱스 정보를 가장 가까운 최신슬롯으로 지정해주는 메서드입니다. <br/>
         /// Inventory의 AddItem에서 아이템을 추가하기 전 슬롯정보를 입력 받기위해 사용됩니다.<br/>
         /// *** 슬롯에 빈자리가 없거나, 아이템 정보가 없다면 예외를 발생시킵니다. ***
         /// </summary>
-        public void SetItemSlotIndexBothLatest( ItemInfo itemInfo )
+        public void SetItemSlotIndexNearst( ItemInfo itemInfo )
         {        
             // 인자 전달 오류 처리
             if( itemInfo==null )
@@ -175,15 +179,21 @@ namespace InventoryManagement
             ItemType itemType = item.Type;
 
             // 슬롯에 빈공간이 없을 때
-            if( GetCurRemainSlotCount(itemType)==0 )     
+            if( IsRemainSlotNearst(itemType) )     
                 throw new Exception("아이템이 들어갈 자리가 충분하지 않습니다. 확인하여 주세요.");    
                           
             // 구한 슬롯 인덱스를 아이템 정보에 입력합니다.
-            item.SlotIndex = GetLatestSlotIndex(itemType);
-            item.SlotIndexAll = GetLatestSlotIndex(ItemType.None);
+            item.SlotIndexEach = GetItemSlotIndexNearst(itemType);
+            item.SlotIndexAll = GetItemSlotIndexNearst(ItemType.None);
         }
         
-        public void SetItemSlotIndex(ItemInfo itemInfo, int slotIndex, bool isIndexAll)
+
+        /// <summary>
+        /// 해당 아이템의 인덱스 정보를 지정 슬롯 인덱스로 설정해주는 메서드입니다.<br/>
+        /// 인자로 아이템의 정보와, 어떤 슬롯의 인덱스인지, 전체탭이 활성화되어있는지 여부를 전달받습니다.<br/>
+        /// *** 슬롯에 빈자리가 없거나, 아이템 정보가 없다면 예외를 발생시킵니다. ***
+        /// </summary>
+        public void SetItemSlotIndexCertain(ItemInfo itemInfo, int slotIndex, bool isActiveTabAll)
         {
             // 인자 전달 오류 처리
             if( itemInfo==null )
@@ -193,7 +203,22 @@ namespace InventoryManagement
             Item item = itemInfo.Item;
             ItemType itemType = item.Type;
 
-            if( IsRemainSlot(itemType, slotIndex) )
+            // 슬롯에 빈공간이 없다면 예외를 발생
+            if( !IsRemainSlotCertain(itemType, slotIndex) )
+                throw new Exception("슬롯에 자리가 충분하지 않습니다.");
+
+            // 전체 탭이 활성화되어 있는 경우
+            if(isActiveTabAll)
+            {
+                item.SlotIndexAll = slotIndex;                      // 전체 슬롯 인덱스를 지정
+                item.SlotIndexEach = GetItemSlotIndexNearst(itemType);  // 개별 슬롯 인덱스는 가까운 아무곳
+            }
+            // 개별 탭이 활성화되어 있는 경우
+            else
+            {
+                item.SlotIndexAll = GetItemSlotIndexNearst(ItemType.None);  // 전체 슬롯 인덱스는 가까운 아무곳
+                item.SlotIndexEach = slotIndex;                         // 개별 슬롯 인덱스를 지정
+            }            
 
         }
 
@@ -204,13 +229,15 @@ namespace InventoryManagement
 
 
         /// <summary>
-        /// ItemInfo 컴포넌트를 인자로 전달받아 
-        /// 해당 아이템 오브젝트에 해당하는 사전을 찾아서 아이템을 넣어주는 메서드입니다.<br/>
+        /// ItemInfo 컴포넌트를 인자로 전달받아 해당 아이템 오브젝트에 해당하는 사전을 찾아서 
+        /// 아이템을 넣어주는 메서드입니다.<br/>
+        /// 선택 인자로 특정 슬롯 인덱스와 현재탭상태를 전달하면,
+        /// 최신 슬롯인덱스가 아니라 지정 슬롯 인덱스에 아이템을 추가합니다.<br/><br/>
         /// <br/>
         /// *** 인자로 들어온 컴포넌트 참조값이 없다면 예외를 발생시킵니다. ***<br/>
         /// </summary>
         /// <returns>아이템 추가 성공시 true를, 현재 인벤토리에 들어갈 공간이 부족하다면 false를 반환합니다</returns>
-        public bool AddItem(ItemInfo itemInfo)
+        public bool AddItem(ItemInfo itemInfo, int slotIndex=-1, bool isActiveTabAll=false)
         {   
             if(itemInfo==null)
                 throw new Exception("아이템 스크립트가 존재하지 않는 오브젝트입니다. 확인하여 주세요.");
@@ -226,37 +253,49 @@ namespace InventoryManagement
                     throw new Exception("해당 아이템의 종류가 명확하지 않습니다. 확인하여 주세요.");
 
                 case ItemType.Misc:
-                    return AddItemMisc(itemInfo);   // 별도의 추가 메서드를 호출합니다.
+                    return AddItemMisc(itemInfo, false ,slotIndex, isActiveTabAll);   // 별도의 추가 메서드를 호출합니다.
 
                 default:
-                    return AddItemToDic(itemInfo);  // 바로 딕셔너리에 추가합니다.
+                    return AddItemToDic(itemInfo, slotIndex, isActiveTabAll);           // 바로 딕셔너리에 추가합니다.
             }            
         }
                 
   
         /// <summary>
         /// 추가 할 ItemInfo 컴포넌트를 인자로 전달받아 해당 사전에 아이템 오브젝트를 넣어주는 메서드입니다.<br/>
-        /// 해당 종류의 아이템 1개가 들어갈 빈 슬롯이 있어야 합니다.
+        /// 해당 종류의 아이템 1개가 들어갈 빈 슬롯이 있어야 합니다.<br/><br/>
+        /// 선택 인자로 특정 슬롯 인덱스와 현재탭상태를 전달하면,
+        /// 최신 슬롯인덱스가 아니라 지정 슬롯 인덱스에 아이템을 추가합니다.<br/><br/>
         /// </summary>
         /// <returns>해당 아이템 종류의 아이템이 들어갈 빈 슬롯이 없다면 false, 아이템 추가에 성공 시 true를 반환합니다.</returns>
-        private bool AddItemToDic(ItemInfo itemInfo, int slotIndex=-1)
+        private bool AddItemToDic(ItemInfo itemInfo, int slotIndex=-1, bool isActiveTabAll=false)
         {          
             // 아이템 이름과 종류를 참조합니다.
             string itemName = itemInfo.Item.Name;
             ItemType itemType = itemInfo.Item.Type;
 
-            // 남은 슬롯이 없다면 실패를 반환합니다.
-            if( GetCurRemainSlotCount(itemType) == 0 )            
-                return false;   
             
-            // 해당아이템의 슬롯을 결정합니다.
-            if(slotIndex>0)
+            // 슬롯 인덱스 값이 음수로 전달되었다면,(인자를 따로 주지 않았다면)
+            if( slotIndex<0 )
             {
-
-            }
-            // 슬롯 인덱스 값이 음수로 전달되었다면, 가장 가까운 슬롯의 인덱스로 집어넣습니다.
+                // 근처의 남은 슬롯이 없다면 실패를 반환합니다.
+                if( !IsRemainSlotNearst(itemType) )            
+                    return false;
+                
+                // 아이템 정보를 가장 가까운 슬롯의 인덱스로 설정합니다.
+                SetItemSlotIndexNearst( itemInfo );
+            }         
+            // 슬롯 인덱스의 값이 양수로 전달되었다면
             else
-                SetItemSlotIndexBothLatest(itemInfo);
+            {             
+                // 지정 슬롯에 빈자리가 없다면 실패를 반환합니다.
+                if( !IsRemainSlotCertain( itemType, slotIndex ) )
+                    return false;
+
+                // 아이템 정보를 지정 슬롯 인덱스로 설정합니다.
+                SetItemSlotIndexCertain(itemInfo, slotIndex, isActiveTabAll);
+            }
+
 
             // 아이템 이름을 기반으로 오브젝트 리스트를 결정합니다. (존재하지 않는다면 새롭게 생성하여 반환합니다.)
             List<GameObject> itemObjList = GetItemObjectList(itemName, true);
@@ -277,12 +316,16 @@ namespace InventoryManagement
         /// 잡화 아이템 오브젝트를 기존의 인벤토리에 추가하여 줍니다.<br/>
         /// 기존의 동일한 잡화아이템이 최대 수량이 채워지지 않았다면, 들어온 아이템의 수량을 감소시켜 기존 아이템의 수량을 채웁니다.
         /// <br/><br/>
+        /// 
         /// 들어온 아이템의 수량이 0이 되었다면 오브젝트를 파괴하고,<br/> 
         /// 0이되지 않았다면 해당 아이템을 새롭게 인벤토리 슬롯에 추가합니다.<br/><br/>
-        /// 기본적으로 슬롯에서 앞선 순서로 채워지며 이를 변경할 수 있습니다. (기본값: 오래된순)<br/>
+        /// 기본적으로 슬롯에서 앞선 순서로 채워지며 이를 변경할 수 있습니다. (기본값: 오래된순)<br/><br/>
+        /// 
+        /// 선택 인자로 특정 슬롯 인덱스와 현재탭상태를 전달하면,
+        /// 최신 슬롯인덱스가 아니라 지정 슬롯 인덱스에 아이템을 추가합니다.<br/><br/>
         /// </summary>
         /// <returns>잡화 아이템이 들어갈 공간이 없다면 false를, 아이템 추가에 성공한 경우 true를 반환합니다.</returns>
-        private bool AddItemMisc(ItemInfo itemInfo, bool isLatestModify=false)
+        private bool AddItemMisc(ItemInfo itemInfo, bool isLatestModify=false, int slotIndex=-1, bool isActiveTabAll=false)
         {
             // 아이템이 들어갈 공간이 없는 경우 실패를 반환합니다.
             if( GetCurRemainSlotCount(itemInfo.Item.Type) == 0 )
@@ -293,9 +336,9 @@ namespace InventoryManagement
 
             // 수량채우기가 종료된 후 
             if( afterCount==0 )
-                GameObject.Destroy( itemInfo.gameObject );  // 남은 수량이 0이 되었다면, 인자로 전달받은 오브젝트 삭제
+                GameObject.Destroy( itemInfo.gameObject );      // 남은 수량이 0이 되었다면, 인자로 전달받은 오브젝트 삭제
             else
-                AddItemToDic(itemInfo);                     // 남은 수량이 존재한다면, 해당 아이템을 사전에 추가
+                AddItemToDic(itemInfo, slotIndex, isActiveTabAll);  // 남은 수량이 존재한다면, 해당 아이템을 사전에 추가
 
             return true;
         }

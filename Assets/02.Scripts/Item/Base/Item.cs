@@ -81,8 +81,10 @@ using UnityEngine;
  * 3- 생성자 매개변수 imageRefIndex를 visualRefIndex로 변경
  * 
  * <v10.0 - 2024_0111_최원준>
- * 1- 크래프팅 장르에 맞게 클래스 설계 변경
+ * 1- 크래프팅 장르에 맞게 클래스 설계 변경 (필요없는 정의 삭제)
  * 
+ * <v10.1 - 2024_0115_최원준>
+ * 1- 변수 및 프로퍼티명 SlotIndex를 SlotIndexEach로 변경
  * 
  * 
  */
@@ -153,7 +155,7 @@ namespace ItemData
         [JsonProperty] string sDesc;
 
         [JsonProperty] VisualReferenceIndex sVisualRefIndex;
-        [JsonProperty] int iSlotIndex;
+        [JsonProperty] int iSlotIndexEach;
         [JsonProperty] int iSlotIndexAll;
         
 
@@ -193,7 +195,7 @@ namespace ItemData
         /// <summary>
         /// 해당 아이템이 담긴 슬롯 인덱스 정보입니다. 아이템이 슬롯을 이동할 때 마다 이 정보를 변경해야 합니다.
         /// </summary>
-        [JsonIgnore] public int SlotIndex { get{return iSlotIndex;} set{iSlotIndex = value;} }
+        [JsonIgnore] public int SlotIndexEach { get{return iSlotIndexEach;} set{iSlotIndexEach = value;} }
 
         /// <summary>
         /// 해당 아이템이 담긴 전체 슬롯에 대한 인덱스 정보입니다.
@@ -229,7 +231,7 @@ namespace ItemData
             Debug.Log("Type : " + Type);
             Debug.Log("No : " + No);
             Debug.Log("Name : " + Name);
-            Debug.Log("SlotIndex : " + SlotIndex);
+            Debug.Log("SlotIndexEach : " + SlotIndexEach);
             Debug.Log("SlotIndexAll : " + SlotIndexAll);
             Debug.Log("Desc : " + sDesc);
         }

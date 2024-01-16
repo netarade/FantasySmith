@@ -193,6 +193,25 @@ using System;
 * 1- AdjustSlotCount메서드에서 개별탭의 제한 수를 딕셔너리 제한수를 누적시켜 구하던 것에서
 * 바로 인덱스를 통해 구하도록 변경
 * 
+* 2- AdjustSlotCount메서드 내부 전체 탭의 제한 수를 구할 때 
+* GetSlotCountLimitTab메서드를 사용하던 것을 slotCoutLimitTab변수를 바로 사용하도록 수정
+* 
+* 3- UpdateAllItemActiveTabInfo메서드 내부의 GetItemDicIgnoreExsists호출 매개변수 수정
+* (ItemType)i 직접 전달에서 dicType[i]를 전달하도록 변경
+* 
+* 4- MoveSlotItemToEmptyList메서드명 MoveCurSlotItemToEmptyList로 변경하고,
+* 전체 탭제한 기준으로 반복문을 돌려 아이템을 이동시키던 부분을 현재 액티브 탭의 슬롯 제한 개수로 변경.
+* 또한 메서드 호출 위치를 curActiveTab 정보가 바뀌기 이전에 바로 호출해주는 것으로 변경
+* 
+* 5- MoveActiveItemToSlot메서드명 MoveCurActiveItemToSlot으로 변경
+* (현재 탭정보와 일치하는 모든 아이템을 이동시킨다는 의미)
+* 
+* 6- UpdateAllItemActiveTabInfo메서드 내부 UpdateActiveTabInfo의 호출인자로 curActiveTab 추가
+* 
+* 7- BtnTapClick메서드 isActiveTabAll 구하는 부분을 if문에서 이항연산자로 변경
+* 
+* 8- CurActiveTab프로퍼티를 선언하여, ItemInfo에서 AddItem이 이루어질 때 최신탭정보를 개별적으로 수정하도록 하였음.
+* 
 */
 
 
@@ -228,9 +247,6 @@ public class InventoryInteractive : MonoBehaviour
 
 
 
-
-
-
     /// <summary>
     /// 아이템이 선택중인지 여부를 반환하거나 설정합니다.<br/>
     /// 아이템이 1개라도 선택중이라면 다른 아이템은 선택할 수 없습니다.<br/>
@@ -238,10 +254,18 @@ public class InventoryInteractive : MonoBehaviour
     /// </summary>
     public bool IsItemSelecting {get; set;} = false;
 
+
+    /// <summary>
+    /// 현재 활성화 탭의 정보를 반환합니다.
+    /// </summary>
+    public TabType CurActiveTab { get {  return curActiveTab; } }   
+
     /// <summary>
     /// 현재 활성화탭이 전체 기준인지, 개별 기준인지 여부를 반환합니다.
     /// </summary>
     public bool IsActiveTabAll { get{return isActiveTabAll; } }
+
+
 
 
 
@@ -283,6 +307,8 @@ public class InventoryInteractive : MonoBehaviour
                       
         // 내부 인벤토리에서 탭제한 수를 참조하기 위해 전체탭의 인덱스를 계산합니다.
         int allTabIdx = inventory.GetTabIndex(ItemType.None);
+
+        print("전체 탭 갯수 " +caller.inventory.slotCountLimitTab[allTabIdx] );
 
         // 플레이어 인벤토리 정보(전체 탭 슬롯 칸수)를 참조하여 슬롯을 동적으로 생성
         // 현재 인벤토리에 슬롯이 한 개 들어있으므로 하나를 감하고 생성
@@ -453,20 +479,18 @@ public class InventoryInteractive : MonoBehaviour
         // 현재 이벤트가 일어난 탭인덱스가 현재 활성화중인 탭과 동일하다면 재실행하지 않습니다.
         if( curActiveTab==btnTabType )      
             return;
+                
+        MoveCurSlotItemToEmptyList();           // (탭정보가 바뀌기전에) 현재 탭의 슬롯에 있는 모든 아이템을 빈리스트로 이동합니다.
 
-        // 인자로 들어온 탭정보를 현재 활성화 탭으로 지정합니다.
+        // 인자로 들어온 최신 탭정보를 현재 활성화 탭으로 지정합니다.
         curActiveTab = btnTabType;
 
         // 탭선택에 따라 탭 활성화 변수를 전체탭인지, 개별탭인지 설정합니다.
-        if(btnTabType==TabType.All)
-            isActiveTabAll = true;
-        else
-            isActiveTabAll = false;
+        isActiveTabAll = (btnTabType==TabType.All)? true : false;
 
         UpdateAllItemActiveTabInfo();           // 인벤토리의 모든 아이템에 활성화 탭 정보를 반영합니다
-        MoveSlotItemToEmptyList();              // 현재 슬롯에 있는 모든 아이템을 빈리스트로 이동합니다
         AdjustSlotCount();                      // 활성화 탭의 갯수만큼 슬롯을 늘리거나 줄입니다
-        MoveActiveItemToSlot();                 // 활성화 탭 종류와 동일한 딕셔너리의 모든 아이템을 슬롯에 배치합니다       
+        MoveCurActiveItemToSlot();              // 활성화 탭 종류와 동일한 딕셔너리의 모든 아이템을 슬롯에 배치합니다       
     }
 
 
@@ -481,7 +505,7 @@ public class InventoryInteractive : MonoBehaviour
 
         for( int i = 0; i<inventory.dicLen; i++ )
         {
-            itemDic=inventory.GetItemDicIgnoreExsists( (ItemType)i );      // CurDicLen 갯수만큼 딕셔너리를 하나씩 변경합니다.
+            itemDic=inventory.GetItemDic( inventory.dicType[i] );          // CurDicLen 갯수만큼 딕셔너리를 하나씩 변경합니다.
 
             foreach( List<GameObject> itemObjList in itemDic.Values )      // 해당 딕셔너리의 오브젝트리스트를 가져옵니다.
             {
@@ -489,7 +513,7 @@ public class InventoryInteractive : MonoBehaviour
                 {
                     ItemInfo itemInfo = itemObj.GetComponent<ItemInfo>();  // 아이템 정보를 읽어들입니다.
 
-                    itemInfo.UpdateActiveTabInfo(this, isActiveTabAll);    // 활성화 탭 정보를 현재 활성화탭 기준으로 변경합니다.
+                    itemInfo.UpdateActiveTabInfo(this, curActiveTab, isActiveTabAll);   // 아이템의 활성화 탭 정보를 최신화합니다.
                 }
 
             }
@@ -505,7 +529,7 @@ public class InventoryInteractive : MonoBehaviour
         int curTabSlotCount = inventory.slotCountLimitTab[(int)curActiveTab];
 
         // 전체 탭에 해당하는 슬롯 갯수
-        int allTabSlotCount = inventory.GetSlotCountLimitTab(ItemType.None);
+        int allTabSlotCount = inventory.slotCountLimitTab[(int)TabType.All];
 
         // 현재 탭의 갯수만큼 켜줍니다
         for(int i=0; i<curTabSlotCount; i++)                   
@@ -522,16 +546,15 @@ public class InventoryInteractive : MonoBehaviour
     /// <summary>
     /// 현재 슬롯 리스트에 있는 오브젝트를 일시적으로 빈 리스트로 옮겨주는 메서드입니다
     /// </summary>
-    private void MoveSlotItemToEmptyList()
+    private void MoveCurSlotItemToEmptyList()
     {
-        int allTabIdx = inventory.GetTabIndex(ItemType.None);
-
-        for( int i = 0; i<inventory.slotCountLimitTab[allTabIdx]; i++ )    // 전체 슬롯리스트의 모든 슬롯 순회
+        
+        for( int i = 0; i<inventory.slotCountLimitTab[(int)curActiveTab]; i++ )     // 현재 슬롯리스트의 모든 슬롯 순회
         {
             if( slotListTr.GetChild(i).childCount!=0 )          // i번째 슬롯에 아이템이 들어있다면
             {
                 // 슬롯에 들어있는 아이템 오브젝트를 모두 잠시 오브젝트 emptyList로 이동하고, 위치를 수정합니다
-                slotListTr.GetChild(i).GetChild(0).SetParent( emptyListTr, false );
+                slotListTr.GetChild(i).GetChild(0).SetParent(emptyListTr, false);
             }
         }
     }
@@ -541,7 +564,7 @@ public class InventoryInteractive : MonoBehaviour
     /// 현재 활성화 중인 탭 종류와 동일한 딕셔너리의 모든 아이템을 슬롯에 배치합니다<br/>
     /// 내부적으로 InventoryInfo 클래스의 개별 딕셔너리에 존재하는 모든 아이템의 위치 정보를 업데이트하는 메서드를 활용합니다
     /// </summary>
-    private void MoveActiveItemToSlot()
+    private void MoveCurActiveItemToSlot()
     {
         // 탭종류에 해당하는 아이템 종류와 길이를 구합니다.
         int tabKindLen = Inventory.ConvertTabTypeToItemTypeList(ref tabKindList, curActiveTab);
@@ -552,9 +575,6 @@ public class InventoryInteractive : MonoBehaviour
     }
 
     
-
-
-
 
 
 

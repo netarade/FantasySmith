@@ -137,7 +137,7 @@ public partial class ItemInfo : MonoBehaviour, IPointerEnterHandler, IPointerExi
                 item.SlotIndexEach = nextSlotIdx;
 
             // 해당 정보로 위치정보를 업데이트 합니다.
-            UpdatePositionInSlotList();
+            UpdatePositionInfo();
         }
         else if(nextSlotTr.childCount==1)
         {             
@@ -156,8 +156,8 @@ public partial class ItemInfo : MonoBehaviour, IPointerEnterHandler, IPointerExi
                 item.SlotIndexEach = nextSlotIdx;
             }
             
-            switchItemInfo.UpdatePositionInSlotList();      // 바꿀 아이템의 위치 정보를 업데이트 합니다.
-            UpdatePositionInSlotList();                     // 이 아이템의 위치 정보를 업데이트 합니다.
+            switchItemInfo.UpdatePositionInfo();      // 바꿀 아이템의 위치 정보를 업데이트 합니다.
+            UpdatePositionInfo();                     // 이 아이템의 위치 정보를 업데이트 합니다.
         }
         else  // 슬롯에 자식이 2개 이상인 경우 - 예외 처리
             throw new Exception("슬롯에 자식이 2개 이상 겹쳐있습니다. 확인하여 주세요.");
@@ -181,7 +181,7 @@ public partial class ItemInfo : MonoBehaviour, IPointerEnterHandler, IPointerExi
     {
         if(nextSlotTr.childCount>=1)        // 슬롯에 아이템이 담겨있다면,
         {
-            UpdatePositionInSlotList();     // 원위치로 되돌리고 실패를 반환합니다.
+            UpdatePositionInfo();     // 원위치로 되돌리고 실패를 반환합니다.
             return false;
         }
 
@@ -194,7 +194,7 @@ public partial class ItemInfo : MonoBehaviour, IPointerEnterHandler, IPointerExi
         int childIdxNext = nextSlotTr.GetSiblingIndex();
 
         // 새로운 인벤토리 슬롯에 남는 자리가 있는 경우
-        if( nextInventoryInfo.IsSlotEnoughCertain(this,childIdxNext,isActiveTabAllNext) )
+        if( nextInventoryInfo.IsSlotEmpty(this,childIdxNext,isActiveTabAllNext) )
         {
             inventoryInfo.RemoveItem(this);         // 이전 인벤토리에서 아이템을 제거해야 합니다.
             
@@ -206,7 +206,7 @@ public partial class ItemInfo : MonoBehaviour, IPointerEnterHandler, IPointerExi
         // 새로운 인벤토리 슬롯에 남는 자리가 없는 경우
         else
         {
-            UpdatePositionInSlotList();     // 원위치로 되돌리고 실패를 반환합니다.
+            UpdatePositionInfo();     // 원위치로 되돌리고 실패를 반환합니다.
             return false;
         }
     }

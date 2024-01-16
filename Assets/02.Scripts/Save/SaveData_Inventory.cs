@@ -46,6 +46,9 @@ using UnityEngine;
  * 탭별 슬롯제한수의 공유 개념을 도입하면서 
  * 기존에 slotCountLimitDic을 기준으로 저장하였으나 slotCountLimitTap을 기준으로 저장하도록 하였음.
  * 
+ * <v2.3 - 2024_0116_최원준>
+ * 1- SInventory생성자에서 slotCountLimitTab배열 생성시 dicLen만큼 생성하던 것에서 tabLen만큼 생성하도록 수정
+ * 
  * 
  */
 
@@ -112,9 +115,9 @@ namespace DataManagement
             if(initializer== null)
                 throw new Exception("이니셜라이져가 전달되지 않았습니다.");
 
-            // 사전 길이만큼 슬롯배열을 생성합니다.
-            int dicLen = initializer.dicTypes.Length;
-            slotCountLimitTab = new int[dicLen];
+            // 탭의 전체 길이만큼 탭 배열을 생성합니다.
+            int tabLen = (int)TabType.None;
+            slotCountLimitTab = new int[tabLen];
 
             // 새로운 인벤토리를 이니셜라이저를 전달하여 생성 후 SInventory를 초기화합니다.
             Serialize( new Inventory(initializer) );

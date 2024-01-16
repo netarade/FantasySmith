@@ -195,7 +195,7 @@ using CreateManagement;
  * Interactive클래스의 InventoryOpenSwitch메서드를 직접 Inventory_3.cs로 옮긴 관계로
  * 더 이상 interactive에서 isOpen변수를 업데이트 해줄 필요가 없게되었음.
  * 
- * <9.0 -2024_0114_최원준>
+ * <v9.0 -2024_0114_최원준>
  * 1- 자기 트랜스폼 캐싱 inventoryTr변수 추가 및 slotListTr public 삭제, emptyList추가
  * 
  * 2- Awake문에 Inventory_3.cs 관련 변수 초기화를 진행
@@ -213,7 +213,7 @@ using CreateManagement;
  * 
  * 7- IsSlotEnoughIgnoreOverlap메서드 삭제
  * 
- * <9.1 -2024_0115_최원준>
+ * <v9.1 -2024_0115_최원준>
  * 1- interactive 변수 protected에서 public으로 변경
  * 이유는 각 info클래스에서 빠르게 접근하여 actvieTab값을 얻어오기 위함
  * 
@@ -222,6 +222,13 @@ using CreateManagement;
  * 
  * 3- IsSlotEnough 지정슬롯 인덱스를 인자로 받는 오버로딩 메서드명을 IsSlotEnoughCertain로 수정
  * 
+ * <v9.2 - 2024_0115_최원준>
+ * 1- IsSlothEnoughCertain 메서드를 IsSlotEmpty로 변경, IsSlotEnough 주석 보완
+ * 
+ * <v9.3 - 2024_0116_최원준>
+ * 1- UpdateAllItemVisualInfo메서드 내부 for문에서 ItemType 전체만큼 반복하며 i를 직접 집어넣어 사전을 반환받는 코드를
+ * dicLen만큼 반복하여 dicType[i]를 통해 사전을 반환받도록 수정
+ * (=> 기존에는 아이템 종류별 모든 사전을 보유하고 있었으나 설계 수정 후 필요한 사전만 보유하는 형태로 변경하였으므로)
  * 
  * 
  */
@@ -296,7 +303,7 @@ public partial class InventoryInfo : MonoBehaviour
     protected void Start()
     {        
         /** 호출 순서 고정: 로드->인터렉티브스크립트 초기화 및 슬롯생성요청->아이템표현 ***/
-        LoadPlayerData();                   // 저장된 플레이어 데이터를 불러옵니다. 
+        this.LoadPlayerData();              // 저장된 플레이어 데이터를 불러옵니다. 
         interactive.Initialize(this);       // 인터렉티브 스크립트 초기화를 진행합니다.
         this.UpdateAllItemVisualInfo();     // 슬롯에 모든 아이템의 시각화를 진행합니다.        
     }
@@ -360,11 +367,11 @@ public partial class InventoryInfo : MonoBehaviour
     /// </summary>
     protected void UpdateAllItemVisualInfo()
     {   
-        Dictionary<string, List<GameObject>> itemDic;                       // 참조할 아이템 사전을 선언합니다.
+        Dictionary<string, List<GameObject>> itemDic;                           // 참조할 아이템 사전을 선언합니다.
 
-        for(int i=0; i<(int)ItemType.None; i++)                             // 아이템 종류의 숫자만큼 (인벤토리 사전의 갯수만큼) 반복합니다.
+        for(int i=0; i<inventory.dicLen; i++)                                   // 인벤토리 사전의 갯수만큼 반복합니다.
         {
-            itemDic = inventory.GetItemDicIgnoreExsists((ItemType)i);       // 아이템 종류에 따른 인벤토리의 사전을 할당받습니다.
+            itemDic =inventory.GetItemDic( inventory.dicType[i] ); // 아이템 종류에 따른 인벤토리의 사전을 할당받습니다.
                           
 
             if(itemDic.Count==0)   // 아이템 사전에 값이 입력되어있지 않다면 다음 사전을 참조합니다.
@@ -373,7 +380,7 @@ public partial class InventoryInfo : MonoBehaviour
             foreach( List<GameObject> objList in itemDic.Values )           // 인벤토리 사전에서 게임오브젝트 리스트를 하나씩 꺼내어
             {
                 foreach(GameObject itemObj in objList)                      // 리스트의 게임오브젝트를 모두 가져옵니다.
-                    itemObj.GetComponent<ItemInfo>().OnItemAdded(this);   // OnItemChnaged메서드를 호출하며 현재 인벤토리 참조값을 전달합니다.
+                    itemObj.GetComponent<ItemInfo>().OnItemAdded(this);     // OnItemChnaged메서드를 호출하며 현재 인벤토리 참조값을 전달합니다.
             }
 
         }
@@ -450,14 +457,13 @@ public partial class InventoryInfo : MonoBehaviour
 
 
     /// <summary>
-    /// 이 인벤토리의 슬롯에 잡화 아이템을 원하는 수량만큼 생성했을 때,
-    /// 들어갈 자리가 있는지 여부를 반환하는 메서드입니다.<br/>
+    /// 이 인벤토리의 슬롯에 아이템을 원하는 수량만큼 생성했을 때 아무 슬롯에 들어갈 빈 자리가 있는지 여부를 반환합니다.<br/>
     /// 인자로 아이템 이름과 수량인자를 전달해야 합니다. (수량인자의 기본값은 1입니다.)<br/><br/>
     /// 
     /// 비잡화아이템의 경우 수량인자만큼 오브젝트를 갖습니다. (즉, 수량인자가 오브젝트의 개수를 말합니다.)<br/>
     /// 잡화 아이템의 경우 수량인자를 넣어도 최대 중첩수량에 도달하기 전까지는 오브젝트를 1개만 형성합니다. (즉, 수량인자는 중첩수량을 말합니다.)<br/><br/>
     /// </summary>
-    /// <returns>슬롯이 자리가 남는다면 true를, 슬롯에 자리가 없다면 false를 반환합니다.</returns>
+    /// <returns>아이템을 생성가능하다면 true를, 불가능하다면 false를 반환합니다.</returns>
     public bool IsSlotEnough(string itemName, int overlapCount=1)
     {
         ItemType itemType = createManager.GetWorldItemType(itemName);
@@ -469,7 +475,7 @@ public partial class InventoryInfo : MonoBehaviour
     }
 
     /// <summary>
-    /// 해당 아이템이 들어갈 수 있을 지 여부를 반환합니다.<br/>
+    /// 해당 아이템이 아무 슬롯에 들어갈 빈 자리가 있는지 여부를 반환합니다.<br/>
     /// 기본 아이템의 경우 슬롯여부에 따라 성공, 실패를 반환하며,<br/>
     /// 잡화 아이템의 경우 중첩되어서 슬롯이 필요없는 경우 슬롯에 빈자리가 없어도 성공을 반환할 수 있습니다.<br/>
     /// 기존 아이템 정보가 존재해야 합니다.
@@ -485,55 +491,20 @@ public partial class InventoryInfo : MonoBehaviour
             return inventory.IsAbleToAddMisc(itemMisc.Name, itemMisc.OverlapCount);
         }
         else
-            return inventory.IsRemainSlotNearst(itemType);  // 아무자리에 남은 슬롯 칸수가 있는지
+            return inventory.IsRemainSlotIndirect(itemType);  // 아무자리에 남은 슬롯 칸수가 있는지
     }
 
 
 
 
     /// <summary>
-    /// 해당 아이템이 특정 슬롯에 들어갈 수 있을 지 여부를 반환합니다.<br/>
+    /// 해당 아이템이 현재 탭의 특정 슬롯에 들어갈 수 있을 지 여부를 반환합니다.<br/>
     /// 아이템 정보와 슬롯의 지정 인덱스, 전체 탭 여부를 인자로 받습니다.
     /// </summary>
     /// <returns>슬롯에 빈자리가 없는 경우 false를, 빈자리가 있는 경우 true를 반환</returns>
-    public bool IsSlotEnoughCertain(ItemInfo itemInfo, int slotIndex, bool isActiveTabAll)
+    public bool IsSlotEmpty(ItemInfo itemInfo, int slotIndex, bool isActiveTabAll)
     {
-        ItemType itemType = itemInfo.Item.Type;
-
-        // 전체 탭인 경우
-        if( isActiveTabAll )
-        {
-            if(itemType==ItemType.Quest)
-                throw new Exception("퀘스트 아이템은 전체탭에서의 슬롯 인덱스를 가질 수 없습니다.");
-
-            return inventory.IsRemainSlotCertain( ItemType.None, slotIndex );
-        }
-        // 개별 탭인 경우
-        else
-            return inventory.IsRemainSlotCertain( itemType, slotIndex );
-        
-    }
-
-
-
-    /// <summary>
-    /// 해당 종류의 아이템이 특정 슬롯에 들어갈 수 있을 지 여부를 반환합니다.<br/>
-    /// 아이템 정보와 슬롯의 지정 인덱스, 전체 탭 여부를 인자로 받습니다.
-    /// </summary>
-    /// <returns>슬롯에 빈자리가 없는 경우 false를, 빈자리가 있는 경우 true를 반환</returns>
-    public bool IsSlotEnoughCertain(ItemType itemType, int slotIndex, bool isActiveTabAll)
-    {
-        // 전체 탭인 경우
-        if( isActiveTabAll )
-        {
-            if(itemType==ItemType.Quest)
-                throw new Exception("퀘스트 아이템은 전체탭에서의 슬롯 인덱스를 가질 수 없습니다.");
-
-            return inventory.IsRemainSlotCertain( ItemType.None, slotIndex );
-        }
-        // 개별 탭인 경우
-        else
-            return inventory.IsRemainSlotCertain( itemType, slotIndex );
+        return inventory.IsRemainSlotDirect(itemInfo.Item.Type, slotIndex, isActiveTabAll);         
     }
 
 
@@ -560,14 +531,14 @@ public partial class InventoryInfo : MonoBehaviour
     public void UpdateDicItemPosition(ItemType itemType)
     {            
         //인벤토리의 현재 활성화 탭종류와 일치하는 딕셔너리를 참조합니다.
-        Dictionary<string, List<GameObject>> itemDic = inventory.GetItemDicIgnoreExsists(itemType);
+        Dictionary<string, List<GameObject>> itemDic = inventory.GetItemDic(itemType);
 
         foreach( List<GameObject> itemObjList in itemDic.Values )  // 해당 딕셔너리의 오브젝트리스트를 가져옵니다.
         {
             foreach( GameObject itemObj in itemObjList )           // 오브젝트리스트에서 오브젝트를 하나씩 가져옵니다.
             {
                 ItemInfo itemInfo = itemObj.GetComponent<ItemInfo>();  // 아이템 정보를 읽어들입니다.
-                itemInfo.UpdatePositionInSlotList();                   // 활성화 탭 기반으로 해당 종류의 위치정보를 업데이트합니다.
+                itemInfo.UpdatePositionInfo();                   // 활성화 탭 기반으로 해당 종류의 위치정보를 업데이트합니다.
             }
         }
     }

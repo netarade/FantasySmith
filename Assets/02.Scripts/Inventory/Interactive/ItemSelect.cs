@@ -219,7 +219,7 @@ public class ItemSelect : MonoBehaviour
                 }
                 // 검출한 오브젝트의 태그가 슬롯이 아니라면, 다시 원위치로 돌려줍니다.
                 else
-                    itemInfo.UpdatePositionInSlotList();
+                    itemInfo.UpdatePositionInfo();
 
             }
 
@@ -234,7 +234,7 @@ public class ItemSelect : MonoBehaviour
 
             // 현재 인벤토리가 연결상태라면
             if( isInventoryConnect )
-                itemInfo.UpdatePositionInSlotList();    // 원위치로 돌립니다.
+                itemInfo.UpdatePositionInfo();    // 원위치로 돌립니다.
             // 현재 인벤토리가 연결상태가 아니라면
             else                
                 itemInfo.OnItemWorldDrop();             // 인벤토리에서 아이템 드롭을 허용합니다.

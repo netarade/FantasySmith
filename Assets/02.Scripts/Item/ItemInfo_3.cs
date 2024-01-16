@@ -12,6 +12,9 @@ using UnityEngine;
 * OnItemWorldDrop의 setParent형태로 이루어지게 되며, 
 * 다시 자기참조값을 반환하여 메서드를 사용한 다음 한줄에 저장하기 쉽도록 구현
 * 
+* <v1.2 -2024_0116_최원준>
+* 1- PrintDebugInfo메서드 작성
+* 
 */
 
 public partial class ItemInfo : MonoBehaviour
@@ -40,5 +43,19 @@ public partial class ItemInfo : MonoBehaviour
 
         OnItemWorldDrop(equipTr, true);
         return this;
+    }
+
+
+    
+    public void PrintDebugInfo()
+    {
+        string debugInfo = "";
+        
+        debugInfo += string.Format($"이름 : {item.Name}\n" );
+        debugInfo += string.Format($"종류 : {item.Type}\n" );
+        debugInfo += string.Format($"전체 탭 인덱스 : {item.SlotIndexAll}\n" );
+        debugInfo += string.Format($"개별 탭 인덱스 : {item.SlotIndexEach}\n" );
+
+        print(debugInfo);
     }
 }

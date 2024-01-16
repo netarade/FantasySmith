@@ -149,12 +149,32 @@ using WorldItemData;
  * 2- GetSlotCountLimit메서드 삭제
  * Inventory.cs에 GetSlotCountLimitDic과 GetSlotCountLimitTab으로 구분하여 새롭게 작성
  * 
- * <v5.4 - 2024_0115_최원준>
+ * <v6.0 - 2024_0115_최원준>
  * 1- SetItemSlotIndexBothLatest메서드명을 SetItemSlotIndexNearst로 변경
  * SetItemSlotIndex메서드명을 SetItemSlotIndexCertain로 변경후 작성완료
  * (최신슬롯 인덱스를 설정해주는 메서드와 지정슬롯을 설정해주는 메서드로 구분)
  * 
  * 2- AddItem메서드에 지정슬롯에 추가하는 선택인자 추가
+ * 
+ * 3- SetItemSlotIndexNearst메서드 내부의 GetItemSlotIndexNearst메서드 매개변수를 수정하여 호출
+ * 
+ * 4- SetItemSlotIndexCertain메서드 내부의 GetItemSlotIndexNearst메서드 매개변수 수정하여 호출
+ * 
+ * 5- 메서드명 변경 SetItemSlotIndexNearst, SetItemSlotIndexCertain -> SetItemSlotIndexIndirect, SetItemSlotIndexDirect
+ * 
+ * 6- SetItemSlotIndexIndirect메서드에서 IsRemainSlotIndirect 조건에 !를 안붙였던 점 수정
+ * 
+ * 7- GetItemDicIgnoreExsists메서드 주석 수정
+ * (아이템 종류에 해당하는 사전이 없는 경우, 호출 시 예외가 발생하는 메서드이므로)
+ * 
+ * 8- GetItemDicIgnoreExists메서드명을 GetItemDic으로 변경하였으며, GetItemDicInExists메서드, IsContainsItemName메서드를 삭제하였음.
+ * 이유는 이제 선택한 종류의 딕셔너리만 보관하는 방식으로 변경되었기 때문에 없는 딕셔너리를 가져와서는 안되고,
+ * GetItemDicInExists메서드의 경우는 딕셔너리에 아이템이 들어있어야만 반환이 가능한 메서드라 쓰이지 않고 GetItemObjList를 더 많이쓰게된다.
+ * 마찬가지 이유로 IsContainsItemName메서드도 딕셔너리에 아이템 이름이 있는지 검사하는 것보다 바로 ObjList를 반환받는 것이 빠르다.
+ * 
+ * 9- GetItemDic에서 딕셔너리를 찾지 못한 경우 예외를 던지던 부분에서 null값을 반환하도록 수정하였음. (해당부분 주석보완)
+ * 이유는 Serialize메서드에서 반드시 호출시켜야 하기 때문
+ * 
  * 
  */
 
@@ -168,7 +188,7 @@ namespace InventoryManagement
         /// Inventory의 AddItem에서 아이템을 추가하기 전 슬롯정보를 입력 받기위해 사용됩니다.<br/>
         /// *** 슬롯에 빈자리가 없거나, 아이템 정보가 없다면 예외를 발생시킵니다. ***
         /// </summary>
-        public void SetItemSlotIndexNearst( ItemInfo itemInfo )
+        public void SetItemSlotIndexIndirect( ItemInfo itemInfo )
         {        
             // 인자 전달 오류 처리
             if( itemInfo==null )
@@ -179,12 +199,15 @@ namespace InventoryManagement
             ItemType itemType = item.Type;
 
             // 슬롯에 빈공간이 없을 때
-            if( IsRemainSlotNearst(itemType) )     
+            if( !IsRemainSlotIndirect(itemType) )     
                 throw new Exception("아이템이 들어갈 자리가 충분하지 않습니다. 확인하여 주세요.");    
                           
-            // 구한 슬롯 인덱스를 아이템 정보에 입력합니다.
-            item.SlotIndexEach = GetItemSlotIndexNearst(itemType);
-            item.SlotIndexAll = GetItemSlotIndexNearst(ItemType.None);
+            // 개별 슬롯 인덱스 정보를 입력합니다.
+            item.SlotIndexEach = GetItemSlotIndexIndirect(itemType, false);
+            
+            // (퀘스트탭이 아닌 경우) 전체 슬롯 인덱스 정보를 입력합니다.
+            if(itemType!=ItemType.Quest)
+                item.SlotIndexAll = GetItemSlotIndexIndirect(itemType, true);
         }
         
 
@@ -193,7 +216,7 @@ namespace InventoryManagement
         /// 인자로 아이템의 정보와, 어떤 슬롯의 인덱스인지, 전체탭이 활성화되어있는지 여부를 전달받습니다.<br/>
         /// *** 슬롯에 빈자리가 없거나, 아이템 정보가 없다면 예외를 발생시킵니다. ***
         /// </summary>
-        public void SetItemSlotIndexCertain(ItemInfo itemInfo, int slotIndex, bool isActiveTabAll)
+        public void SetItemSlotIndexDirect(ItemInfo itemInfo, int slotIndex, bool isActiveTabAll)
         {
             // 인자 전달 오류 처리
             if( itemInfo==null )
@@ -203,21 +226,21 @@ namespace InventoryManagement
             Item item = itemInfo.Item;
             ItemType itemType = item.Type;
 
-            // 슬롯에 빈공간이 없다면 예외를 발생
-            if( !IsRemainSlotCertain(itemType, slotIndex) )
+            // 특정 슬롯에 빈공간이 없다면 예외를 발생시킵니다
+            if( !IsRemainSlotDirect(itemType, slotIndex, isActiveTabAll) )
                 throw new Exception("슬롯에 자리가 충분하지 않습니다.");
 
             // 전체 탭이 활성화되어 있는 경우
             if(isActiveTabAll)
             {
-                item.SlotIndexAll = slotIndex;                      // 전체 슬롯 인덱스를 지정
-                item.SlotIndexEach = GetItemSlotIndexNearst(itemType);  // 개별 슬롯 인덱스는 가까운 아무곳
+                item.SlotIndexAll = slotIndex;                                  // 전체 슬롯 인덱스를 직접 지정
+                item.SlotIndexEach = GetItemSlotIndexIndirect(itemType, false); // 개별 슬롯 인덱스를 가까운 아무곳 지정
             }
             // 개별 탭이 활성화되어 있는 경우
             else
             {
-                item.SlotIndexAll = GetItemSlotIndexNearst(ItemType.None);  // 전체 슬롯 인덱스는 가까운 아무곳
-                item.SlotIndexEach = slotIndex;                         // 개별 슬롯 인덱스를 지정
+                item.SlotIndexAll = GetItemSlotIndexIndirect(itemType, true);   // 전체 슬롯 인덱스는 가까운 아무곳 지정
+                item.SlotIndexEach = slotIndex;                                 // 개별 슬롯 인덱스를 직접 지정
             }            
 
         }
@@ -279,21 +302,21 @@ namespace InventoryManagement
             if( slotIndex<0 )
             {
                 // 근처의 남은 슬롯이 없다면 실패를 반환합니다.
-                if( !IsRemainSlotNearst(itemType) )            
+                if( !IsRemainSlotIndirect(itemType) )            
                     return false;
                 
                 // 아이템 정보를 가장 가까운 슬롯의 인덱스로 설정합니다.
-                SetItemSlotIndexNearst( itemInfo );
+                SetItemSlotIndexIndirect( itemInfo );
             }         
             // 슬롯 인덱스의 값이 양수로 전달되었다면
             else
             {             
                 // 지정 슬롯에 빈자리가 없다면 실패를 반환합니다.
-                if( !IsRemainSlotCertain( itemType, slotIndex ) )
+                if( !IsRemainSlotDirect( itemType, slotIndex, isActiveTabAll ) )
                     return false;
 
                 // 아이템 정보를 지정 슬롯 인덱스로 설정합니다.
-                SetItemSlotIndexCertain(itemInfo, slotIndex, isActiveTabAll);
+                SetItemSlotIndexDirect(itemInfo, slotIndex, isActiveTabAll);
             }
 
 
@@ -499,19 +522,6 @@ namespace InventoryManagement
 
 
         
-        /// <summary>
-        /// 해당 아이템이름을 기반으로 아이템이 인벤토리의 딕셔너리 목록에서 존재하는지 여부를 반환합니다
-        /// </summary>
-        /// <returns>해당하는 이름의 아이템이 인벤토리 목록에 존재하는 경우 true, 존재하지 않는 경우 false를 반환합니다</returns>
-        public bool IsContainsItemName(string itemName)
-        {
-            for(int i=0; i<dicLen; i++)
-                if(itemDic[i].ContainsKey(itemName))
-                    return true;
-
-            return false;
-        }
-
 
         /// <summary>
         /// 아이템 이름을 기반으로 해당 아이템의 ItemType을 반환합니다<br/>
@@ -540,52 +550,41 @@ namespace InventoryManagement
         }
 
 
+       
+
         
-
         /// <summary>
-        /// 아이템 이름을 기반으로 해당 아이템의 딕셔너리 참조값을 반환합니다<br/>
-        /// 아이템이 딕셔너리 내부에 존재하여야 합니다.<br/>
-        /// *** 해당 하는 이름의 아이템이 인벤토리 내부에 없으면 예외가 발생합니다. ***
-        /// </summary>
-        /// <returns>해당하는 이름의 아이템이 인벤토리 내부에 존재한다면 해당 사전을 반환</returns>
-        public Dictionary<string, List<GameObject>> GetItemDicInExists(string itemName)
-        {
-            for(int i=0; i<dicLen; i++)
-                if(itemDic[i].ContainsKey(itemName))
-                    return itemDic[i];
-
-            throw new Exception("해당 아이템이 인벤토리 내부에 존재하지 않습니다. 확인하여 주세요.");
-        }
-
-        /// <summary>
-        /// 아이템 이름을 기반으로 해당 아이템의 딕셔너리 참조값을 반환합니다<br/>
-        /// 아이템이 현재 인벤토리의 목록에 존재하지 않아도 사전 참조값을 얻을 수 있습니다.<br/><br/>
-        /// ** 해당이름의 아이템이 월드 사전에 없으면 예외가 발생합니다. ** 
+        /// 아이템의 이름을 기반으로 해당 아이템의 딕셔너리 참조값을 반환합니다<br/>
+        /// 아이템 이름에 해당하는 종류의 아이템 사전이 존재하지 않는다면 null을 반환합니다.<br/>
+        /// *** ItemType.None으로 전달 된 경우 예외를 던집니다 *** 
         /// </summary>
         /// <returns>해당 아이템 종류의 사전을 반환</returns>
-        public Dictionary<string, List<GameObject>> GetItemDicIgnoreExsists(string itemName)
+        public Dictionary<string, List<GameObject>> GetItemDic(string itemName)
         {            
             ItemType itemType = createManager.GetWorldItemType(itemName);
 
-            return GetItemDicIgnoreExsists(itemType);
+            return GetItemDic(itemType);
         }
 
 
         /// <summary>
         /// 아이템의 타입을 기반으로 해당 아이템의 딕셔너리 참조값을 반환합니다<br/>
-        /// 아이템이 현재 인벤토리의 목록에 존재하지 않아도 사전 참조값을 얻을 수 있습니다.<br/><br/>
-        /// ** itemType인자가 ItemType.None으로 전달 된 경우 예외를 던집니다 ** 
+        /// 해당 종류의 아이템 사전이 존재하지 않는다면 null을 반환합니다.<br/>
+        /// *** ItemType.None으로 전달 된 경우 예외를 던집니다 *** 
         /// </summary>
         /// <returns>해당 아이템 종류의 사전을 반환</returns>
-        public Dictionary<string, List<GameObject>> GetItemDicIgnoreExsists(ItemType itemType)
+        public Dictionary<string, List<GameObject>> GetItemDic(ItemType itemType)
         {
+            if(itemType == ItemType.None)
+                throw new Exception("정확한 종류의 아이템을 전달해야 합니다.");
+
             for( int i = 0; i<dicLen; i++ )
             {
                 if( dicType[i] == itemType )
                     return itemDic[i];
             }
-
-            throw new Exception("이 인벤토리는 해당 종류의 사전을 보관하고 있지 않습니다.");
+                                    
+            return null;
         }
         
 
@@ -607,7 +606,7 @@ namespace InventoryManagement
             if(isNewIfNotExist)     // 새로 생성하기 옵션이 설정된 경우 
             {                    
                 List<GameObject> itemObjList = new List<GameObject>();        // 오브젝트 리스트를 새로 만듭니다.
-                GetItemDicIgnoreExsists(itemName).Add(itemName, itemObjList); // 인벤토리 사전에 오브젝트 리스트를 집어넣습니다.
+                GetItemDic(itemName).Add(itemName, itemObjList); // 인벤토리 사전에 오브젝트 리스트를 집어넣습니다.
                 return itemObjList;                                           // 생성된 오브젝트 리스트 참조를 반환합니다.
             }
             else                    

@@ -49,6 +49,16 @@ using UnityEngine.UI;
  * 1- AddItem메서드 내부의 FindSlotIdxToNearstSlot을 내부적으로 호출 하던 것을 삭제
  * Inventory클래스에서 밖에 Index를 구할 수 없으므로, Inventory클래스의 AddItem에서 내부적으로 통합하였기 때문
  * 
+ * <V3.2 - 2024_0116_최원준>
+ * 1- 기존 AddItem 메서드 내부의 잡화 아이템, 비잡화아이템을 나눠서 추가하던 로직을 메서드화 하여
+ * AddItemBasic과 AddItemMisc 메서드로 나누었으며, AddItem 내부에 포함 (protected처리)
+ * 
+ * 2- AddItem의 ItemPairs[]를 인자로 받는 오버로딩 메서드 작성
+ * 
+ * 3- AddItemToSlot메서드 작성
+ * (특정 슬롯에 넣기 위해 슬롯 인덱스와 탭상태를 받는 메서드)
+ * 
+ * 
  */
 
 public partial class InventoryInfo : MonoBehaviour
@@ -188,6 +198,20 @@ public partial class InventoryInfo : MonoBehaviour
     /// <returns>인벤토리의 슬롯에 아이템 여러 개를 생성할 공간이 충분하지 않다면 false를 반환, 성공한 경우 true를 반환</returns>
     public bool AddItem(ItemPair[] itemPairs)
     {
+        for( int i = 0; i<itemPairs.Length; i++ )
+        {            
+            // 해당 이름의 아이템을 해당 수량만큼 생성했을 때 슬롯이 충분하다면 반복문이 끝날때까지 계속 검사합니다
+            if( IsSlotEnough( itemPairs[i].itemName, itemPairs[i].overlapCount ) )
+                continue;
+            
+            // 한번이라도 부족하다면 false를 반환합니다.
+            return false;
+        }
+
+        // 모든 아이템을 추가합니다
+        for(int i=0; i<itemPairs.Length; i++)
+            AddItem( itemPairs[i].itemName, itemPairs[i].overlapCount );
+        
         return true;
     }
 
@@ -213,39 +237,65 @@ public partial class InventoryInfo : MonoBehaviour
             return false;
 
         // 아이템의 타입이 잡화종류인 경우 전후수량을 비교하여 처리합니다.
-        if( itemInfo.Item.Type==ItemType.Misc )
-        {
-            ItemMisc itemMisc = (ItemMisc)itemInfo.Item;
-
-            // 추가 이전의 수량 계산
-            int beforeOverlapCount = itemMisc.OverlapCount;
-
-            // 아이템을 내부 인벤토리에 추가합니다.
-            inventory.AddItem( itemInfo );
-
-            // 추가 이후의 수량계산
-            int afterOverlapCount = itemMisc.OverlapCount;
-
-
-            // 수량정보가 변동이 있다면, 기존 아이템과 동일한 이름의 아이템의 수량정보를 업데이트합니다.
-            if( beforeOverlapCount!=afterOverlapCount )
-                UpdateAllOverlapCountInExist( itemMisc.Name );
-
-            // 아이템 수량이 변동이 없거나, 남은 상태라면, 아이템에 최신 정보를 반영합니다. 
-            if( afterOverlapCount!=0 )                              
-                itemInfo.OnItemAdded( this );
-        }
+        if( itemInfo.Item.Type is ItemType.Misc )
+            AddItemMisc(itemInfo);
         // 일반 아이템인 경우 바로 추가합니다.
         else
-        {
-            inventory.AddItem( itemInfo );  // 아이템을 내부 인벤토리에 추가합니다.
-            itemInfo.OnItemAdded(this);     // 아이템에 최신 정보를 반영합니다.
-        }
+            AddItemBasic(itemInfo);
 
-        // 아이템 추가 성공을 반환합니다.
-        return true;       
+
+        // 아이템 추가의 성공을 반환합니다.
+        return true;
     }
 
+    
+
+    /// <summary>
+    /// 일반 아이템(비잡화 아이템)의 경우에 아이템 추가 시 해야할 로직을 모아놓은 메서드입니다.<br/>
+    /// 아이템 추가 후 해당 아이템의 정보를 오브젝트에 반영합니다.<br/>
+    /// 선택인자를 전달하여 특정 슬롯에 추가할 지 여부를 선택할 수 있습니다. 현재 탭상태가 필요합니다.<br/>
+    /// </summary>
+    protected void AddItemBasic(ItemInfo itemInfo, int slotIndex=-1, bool isActiveTabAll=false)
+    {
+        if( itemInfo.Item.Type is ItemType.Misc )
+            throw new Exception("잡화 아이템의 경우 다른 메서드를 호출해야 합니다.");
+
+        inventory.AddItem( itemInfo, slotIndex, isActiveTabAll );  // 아이템을 내부 인벤토리에 추가합니다.
+        itemInfo.OnItemAdded(this);                                // 아이템에 최신 정보를 반영합니다.
+    }
+
+
+    /// <summary>
+    /// 잡화 아이템의 경우 아이템 추가 시 해야 할 로직을 모아놓은 메서드입니다.<br/>
+    /// 전후수량을 비교하여 수량 변동이 생겼다면 동일한 이름의 잡화아이템의 텍스트를 모두 업데이트하고, 
+    /// 해당 아이템의 정보를 오브젝트에 반영합니다.<br/>
+    /// 선택인자를 전달하여 특정 슬롯에 추가할 지 여부를 선택할 수 있습니다. 현재 탭상태가 필요합니다.<br/>
+    /// </summary>
+    protected void AddItemMisc(ItemInfo itemInfo, int slotIndex=-1, bool isActiveTabAll=false)
+    {
+        if( !(itemInfo.Item.Type is ItemType.Misc) )
+            throw new Exception("해당 아이템이 잡화아이템이 아닙니다.");
+
+        ItemMisc itemMisc = (ItemMisc)itemInfo.Item;
+
+        // 추가 이전의 수량 계산
+        int beforeOverlapCount = itemMisc.OverlapCount;
+
+        // 아이템을 내부 인벤토리에 추가합니다.
+        inventory.AddItem( itemInfo, slotIndex, isActiveTabAll );
+
+        // 추가 이후의 수량계산
+        int afterOverlapCount = itemMisc.OverlapCount;
+
+        // 수량정보가 변동이 있다면, 기존 아이템과 동일한 이름의 아이템의 수량정보를 업데이트합니다.
+        if( beforeOverlapCount!=afterOverlapCount )
+            UpdateAllOverlapCountInExist( itemMisc.Name );
+
+        // 아이템 수량이 변동이 없거나, 남은 상태라면, 아이템에 최신 정보를 반영합니다. 
+        if( afterOverlapCount!=0 )                              
+            itemInfo.OnItemAdded( this );
+    }
+     
 
     /// <summary>
     /// 인자로 전달한 이름과 동일한 기존 아이템의 수량을 모두 업데이트 해주는 메서드<br/>
@@ -289,14 +339,19 @@ public partial class InventoryInfo : MonoBehaviour
     {
         if( itemInfo==null )
             throw new Exception( "전달 받은 아이템 참조 값이 존재하지 않습니다." );
-        if( inventory.GetSlotCountLimit(itemInfo.Item.Type) < slotIndex || slotIndex < 0 )
+        if( inventory.GetSlotCountLimitTab(itemInfo.Item.Type, isActiveTabAll) <= slotIndex || slotIndex < 0 )
             throw new Exception( "슬롯 인덱스 정보가 잘못되었습니다." );
 
         // 해당 슬롯에 자리가 없다면, 실패를 반환
-        if( !IsSlotEnoughCertain(itemInfo, slotIndex) )
+        if( !IsSlotEmpty(itemInfo, slotIndex, isActiveTabAll) )
             return false;
         
+        if(itemInfo.Item.Type is ItemType.Misc )
+            AddItemMisc(itemInfo, slotIndex, isActiveTabAll);
+        else
+            AddItemBasic(itemInfo, slotIndex, isActiveTabAll);
 
+        return true;
     }
 
 

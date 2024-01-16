@@ -3,6 +3,7 @@ using UnityEngine.UI;
 using ItemData;
 using System;
 using CreateManagement;
+using InventoryManagement;
 
 /*
  * [작업 사항]
@@ -310,6 +311,24 @@ using CreateManagement;
  *1- 퀘스트탭을 열어놓은 상태에서 아이템을 먹으면 퀘스트 슬롯에 업데이트 되는 문제가 있어서 UpdatePositionInSlotList에
  *퀘스트아이템이 아니고, 개별탭 기준이라면, 포지션 업데이트를 실행하지않도록 조건검사문을 추가
  *
+ *<v13.0 - 2024_0116_최원준>
+ *1- 현재 인터렉티브 스크립트의 탭정보를 저장하는 curActiveTab변수를 추가
+ *탭변동이 일어날때, 아이템 Add가 일어날때 탭정보가 업데이트 되어야 하며,
+ *UpdatePositionInSlot 메서드가 호출 될 때 현재 탭 상태에 따라서 위치가 업데이트 되어야 한다.
+ *(즉, 현재 탭에 해당하는 아이템이 아닌 경우 빈리스트로 이동하는 것이 있어야 한다.)
+ *
+ *2- curActiveTab변수를 새롭게 선언하여 아이템이 현재 활성화 탭정보를 가지고 있도록 하였음. (포지션 업데이트 시 필요하므로)
+ *
+ *3- UpdateActiveTabInfo메서드에서 활성화탭 정보 업데이트 시 매개인자로 curActiveTab추가
+ *
+ *4- UpdateActiveTabInfo 매개변수 없는 오버로딩 메서드 추가하여
+ *아이템 쪽에서 OnItemAdded에서 활성화탭정보를 인터렉티브 스크립트로부터 수동으로 받아 업데이트 할 수 있게 하였음.
+ *
+ *5- UpdatePositionInSlotList메서드명 변경 -> UpdatePositionInfo
+ *
+ *6- 신규 메서드 MoveToEmptyList를 만들고, UpdatePositionInfo메서드의 기존 일부 코드를 MoveToSlot으로 만든 후
+ *curActiveTab에 따라서 조건 분기하여 포지션 업데이트를 실행하도록 구현
+ *
  *
  */
 
@@ -347,30 +366,31 @@ public partial class ItemInfo : MonoBehaviour
     /*** 아이템 변동 정보 ***/
 
     /*** Locate2DToWorld 또는 Locate3DToWorld 메서드 호출 시 변동***/
-    private bool isWorldPositioned;         // 아이템이 월드에 나와있는지 여부
+    bool isWorldPositioned;         // 아이템이 월드에 나와있는지 여부
 
     /**** InventoryInfoChange 메서드 호출 시 변동 ****/
-    private Transform inventoryTr;              // 현재 아이템이 들어있는 인벤토리의 계층정보를 참조합니다.
-    private Transform slotListTr;               // 현재 아이템이 담겨있는 슬롯리스트 트랜스폼 정보
-    private Transform emptyListTr;              // 아이템을 임시로 이동 시킬 빈공간 리스트
+    Transform inventoryTr;              // 현재 아이템이 들어있는 인벤토리의 계층정보를 참조합니다.
+    Transform slotListTr;               // 현재 아이템이 담겨있는 슬롯리스트 트랜스폼 정보
+    Transform emptyListTr;              // 아이템을 임시로 이동 시킬 빈공간 리스트
 
-    private InventoryInfo inventoryInfo;                // 현재 아이템이 참조 할 인벤토리정보 스크립트
-    private InventoryInteractive inventoryInteractive;  // 현재 아이템이 참조 할 인벤토리 인터렉티브 스크립트
-    private StatusWindowInteractive statusInteractive;  // 현재 아이템이 참조 할 상태창 인터렉티브 스크립트
+    InventoryInfo inventoryInfo;                // 현재 아이템이 참조 할 인벤토리정보 스크립트
+    InventoryInteractive inventoryInteractive;  // 현재 아이템이 참조 할 인벤토리 인터렉티브 스크립트
+    StatusWindowInteractive statusInteractive;  // 현재 아이템이 참조 할 상태창 인터렉티브 스크립트
 
-    private Transform playerTr;                 // 현재 아이템을 소유하고 있는 플레이어 캐릭터 정보 참조
-    private Transform baseDropTr;               // 아이템이 떨어질 기본 드랍 위치
-    private bool isBaseDropSetParent;      // 기본 드랍위치에 부모설정 옵션이 걸려있는지 여부
+    Transform playerTr;                 // 현재 아이템을 소유하고 있는 플레이어 캐릭터 정보 참조
+    Transform baseDropTr;               // 아이템이 떨어질 기본 드랍 위치
+    bool isBaseDropSetParent;      // 기본 드랍위치에 부모설정 옵션이 걸려있는지 여부
 
 
     /**** InventoryInfoChange 메서드 호출시 변동 ****/
     /**** inveractive에서 변동일어 날 때마다 변동*****/
-    private bool isActiveTabAll;                // 현재 아이템이 담겨있는 인벤토리의 활성화 탭의 기준이 전체인지, 개별인지 여부
+    bool isActiveTabAll;                // 현재 아이템이 담겨있는 인벤토리의 활성화 탭의 기준이 전체인지, 개별인지 여부
+    TabType curActiveTab;               // 현재 아이템이 담겨있는 인벤토리의 활성화 탭 정보
 
     
     /**** InventoryInfoChange 메서드 호출시 변동 ****/
     /**** OnItemSlotDrop 이벤트 호출 시 변동 ****/
-    private Transform prevDropSlotTr;    // 드랍이벤트가 발생할 때 이전의 드랍이벤트 호출자를 기억하기 위한 참조 변수 
+    Transform prevDropSlotTr;    // 드랍이벤트가 발생할 때 이전의 드랍이벤트 호출자를 기억하기 위한 참조 변수 
 
 
 
@@ -464,8 +484,8 @@ public partial class ItemInfo : MonoBehaviour
         // 인벤토리 정보를 최신화합니다
         UpdateInventoryInfo(inventoryInfo); 
 
-        // 슬롯 위치 최신화합니다
-        UpdatePositionInSlotList();        
+        // 슬롯 위치 정보를 최신화합니다
+        UpdatePositionInfo();
     }
         
 
@@ -534,12 +554,8 @@ public partial class ItemInfo : MonoBehaviour
     /// 슬롯 인덱스가 잘못되어 있다면 다른 위치로 이동 할 수 있습니다.<br/><br/>
     /// ** 아이템이 월드 상에 있거나 슬롯 참조가 안 잡힌 경우 예외를 던집니다. **<br/>
     /// </summary>
-    public void UpdatePositionInSlotList()
+    public void UpdatePositionInfo()
     {
-        // 아이템이 월드상에 나와있거나 참조가 잡히지 않았다면, 예외를 던집니다.
-        if( isWorldPositioned && slotListTr == null )   
-            throw new Exception("아이템 정보를 업데이트 할 수 있는 상황이 아닙니다. 확인하여 주세요.");
-
         // 슬롯 리스트에 슬롯이 생성되어있지 않다면 하위로직을 실행하지 않습니다.
         if( slotListTr.childCount==0 )
         {
@@ -547,20 +563,66 @@ public partial class ItemInfo : MonoBehaviour
             return;
         }
 
-        
-        // 아이템 종류가 퀘스트아이템인 경우, 전체탭 기준이라면 포지션 업데이트를 실행하지 않습니다. (현재 프로젝트 특성에 맞춤화 코드)
-        if( item.Type == ItemType.Quest && isActiveTabAll )
-            return;
-        
-        // 아이템 종류가 퀘스트아이템이 아니고, 개별탭 기준이라면, 포지션 업데이트를 실행하지 않습니다. (현재 프로젝트 특성에 맞춤화 코드)
-        if( item.Type != ItemType.Quest && !isActiveTabAll )
-            return;
+        // 아이템의 타입을 받아옵니다.
+        ItemType itemType = item.Type;
 
-        
+
+        /**** 아이템을 탭에 표시 하지 않을 조건 ****/
+        // 1. 전체탭의 경우 퀘스트 아이템을 제외하고 표시합니다.
+        // 2. 전체탭이 아니라면 현재활성화 탭과 아이템이 속한 탭이 일치해야 표시합니다.
+
+        // 현재 활성화탭이 전체 탭인경우
+        if(curActiveTab == TabType.All)
+        {
+            // 퀘스트 아이템이라면, EmptyList로 이동합니다.
+            if( itemType==ItemType.Quest )
+            {
+                MoveToEmptyList(); // 이 아이템을 빈 리스트로 이동시킵니다.
+                return;
+            }
+        }
+        // 아이템이 전체탭이 아닌 경우, 아이템의 탭타입이 현재활성화 탭이 아니라면
+        else if( Inventory.ConvertItemTypeToTabType( item.Type )!=curActiveTab )
+        {
+            MoveToEmptyList();      // 이 아이템을 빈 리스트로 이동시킵니다.
+            return;
+        }
+
+
+        MoveToSlot();   // 아이템을 슬롯으로 이동시킵니다.
+    }
+
+
+    
+    /// <summary>
+    /// 아이템을 일시적으로 빈리스트로 이동시키는 메서드입니다.<br/>
+    /// 아이템 생성 시 내부적으로 사용됩니다.
+    /// </summary>
+    /// <exception cref="Exception"></exception>
+    private void MoveToEmptyList()
+    {
+        if(isWorldPositioned)
+            throw new Exception("월드 상태일 때는 슬롯으로 이동할 수 없습니다.");
+        if(emptyListTr==null)
+            throw new Exception("슬롯 참조가 잡혀있지 않습니다. 확인하여 주세요.");
+
+        itemRectTr.SetParent(emptyListTr, false);
+    }
+
+    /// <summary>
+    /// 아이템의 인덱스 정보를 참조하여 해당되는 슬롯으로 이동시켜주는 메서드입니다.<br/>
+    /// 현재 활성화 중인 탭 정보에 따라 이동시켜야 하므로 유의해서 사용해야 합니다.<br/>
+    /// </summary>
+    private void MoveToSlot()
+    {
+        if(isWorldPositioned)
+            throw new Exception("월드 상태일 때는 슬롯으로 이동할 수 없습니다.");
+        if(slotListTr==null)
+            throw new Exception("슬롯 참조가 잡혀있지 않습니다. 확인하여 주세요.");
+
         // 현재 활성화 중인 탭을 기반으로 어떤 인덱스를 참조할지 설정합니다.
         int activeIndex = isActiveTabAll? item.SlotIndexAll : item.SlotIndexEach;
         
-
         // 아이템의 크기를 슬롯리스트의 cell크기와 동일하게 맞춥니다.(슬롯의 크기와 동일하게 맞춥니다.)
         itemRectTr.sizeDelta = slotListTr.GetComponent<GridLayoutGroup>().cellSize;
 
@@ -571,6 +633,13 @@ public partial class ItemInfo : MonoBehaviour
         itemRectTr.localPosition = Vector3.zero;
         itemRectTr.rotation = Quaternion.identity;
     }
+
+
+
+
+
+
+
 
 
     /// <summary>
@@ -612,31 +681,41 @@ public partial class ItemInfo : MonoBehaviour
             playerTr = inventoryTr.parent.parent;                   // 플레이어 위치 참조 (아직 미사용)
                         
             baseDropTr = inventoryInfo.baseDropTr;                  // 기본 드랍위치와 부모설정을 인벤토리로부터 참조
-            isBaseDropSetParent = inventoryInfo.isBaseDropSetParent;                                        
+            isBaseDropSetParent = inventoryInfo.isBaseDropSetParent;      
+            prevDropSlotTr = slotListTr.GetChild(item.SlotIndexEach);   // 이전 드롭이벤트 호출자를 현재 들어있는 슬롯으로 최신화                                  
 
-            isActiveTabAll = inventoryInteractive.IsActiveTabAll;   // 액티브 탭 정보 최신화   
-            prevDropSlotTr = slotListTr.GetChild(item.SlotIndexEach);   // 이전 드롭이벤트 호출자를 현재 들어있는 슬롯으로 최신화
+            UpdateActiveTabInfo();                                  // 액티브 탭 정보 최신화   
+            
         }      
     }
 
     /// <summary>
-    /// 아이템 외부 스크립트인 인벤토리의 interactive스크립트에서 활성화 탭의 변경이 시도되었을 때
+    /// 아이템이 현재 속한 인벤토리의 활성화 탭 정보를 업데이트합니다.<br/>
+    /// InventoryInteractive스크립트에서 활성화 탭의 변경이 시도되었을 때 인터렉티브 스크립트 쪽에서 현재 들어있는 모든 아이템의
     /// 활성화 탭 정보를 최신화 하기 위해 호출하는 메서드입니다.<br/><br/>
     /// 다른 인벤토리로의 정보의 변동이 있을때, 혹은 같은 인벤토리 내에서 탭정보의 변동이 있을 때 호출을 진행합니다.<br/><br/>
-    /// ** 현재 아이템이 속한 인벤토리의 Interactive 스크립트에서만 호출가능합니다. **<br/>
+    /// ** 현재 아이템이 속한 인벤토리의 Interactive 스크립트가 아니라면 예외가 발생합니다. **<br/>
     /// </summary>
-    public void UpdateActiveTabInfo(InventoryInteractive caller, bool isActiveTabAll)
+    public void UpdateActiveTabInfo(InventoryInteractive caller, TabType curActiveTab, bool isActiveTabAll)
     {
         if(caller != inventoryInteractive)
             throw new Exception("변경 불가능한 호출자입니다. 확인하여주세요.");
-
-
+                
+        this.curActiveTab = curActiveTab;
         this.isActiveTabAll = isActiveTabAll; 
     }
 
+    /// <summary>
+    /// 아이템이 현재 속한 인벤토리의 활성화 탭 정보를 업데이트합니다.<br/>
+    /// 아이템이 새롭게 추가되었을 때 아이템쪽에서 수동으로 Interactive스크립트에게서 값을 할당받습니다.<br/>
+    /// </summary>
+    private void UpdateActiveTabInfo()
+    {
+        curActiveTab = inventoryInteractive.CurActiveTab;
+        isActiveTabAll = inventoryInteractive.IsActiveTabAll;
+    }
+
      
-
-
 
 
 

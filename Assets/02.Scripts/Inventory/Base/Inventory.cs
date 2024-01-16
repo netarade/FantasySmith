@@ -2,7 +2,9 @@ using CreateManagement;
 using ItemData;
 using System;
 using System.Collections.Generic;
+using Unity.VisualScripting.FullSerializer;
 using UnityEngine;
+using UnityEngine.Assertions.Must;
 
 /*
  * [파일 목적]
@@ -240,6 +242,16 @@ using UnityEngine;
  * 1- GetCurRemainSlotCount메서드 주석 일부 수정 
  * (ItemType.None전달시 예외-> 전체탭반환)
  * 
+ * <v10.3 -2024_0116_최원준>
+ * 1- GetSlotCountLimitTab메서드에서 ItemType.None전달시 예외를 처리하도록 하고, 전체탭 상태를 두번째 인자로 받도록 설정
+ * 메서드의 호출 시 코드가 틀려지는 부분이 있어서 통일성을 주기 위함
+ * 
+ * 2- GetCurRemainSlotCount메서드에서 ItemType.None전달시 예외를 처리
+ * (전체탭의 남은 슬롯은 확인할 필요가 없으므로)
+ * 
+ * 3- 인벤토리의 생성자에서 InitSlotCountLimitTab 신규 메서드를 이용한 초기화를 진행
+ * 이유는 개별 탭의 제한 수 설정 시 전체 탭도 같이 수정되어야 하기 때문
+ * 
  * 
  */
 
@@ -276,7 +288,7 @@ namespace InventoryManagement
 
 
 
-        /**** 자동으로 지정되는 고정 속성들 ****/    
+        /**** 자동으로 지정되는 고정 속성들 ****/ 
 
         /// <summary>
         /// 인벤토리가 현재 보유하고 있는 사전의 길이를 반환합니다
@@ -357,7 +369,7 @@ namespace InventoryManagement
             int toatlCount = 0;
 
             // 아이템 타입을 기반으로 딕셔너리를 구합니다.
-            Dictionary<string, List<GameObject>> itemDic = GetItemDicIgnoreExsists(itemType);
+            Dictionary<string, List<GameObject>> itemDic = GetItemDic(itemType);
 
             // 해당 인벤토리 딕셔너리에 들어있는 리스트가 하나도 없다면, 바로 0을 반환합니다.
             if(itemDic.Count==0)        
@@ -395,7 +407,7 @@ namespace InventoryManagement
             return totalCount;
         }
 
-
+        
 
 
 
@@ -428,17 +440,53 @@ namespace InventoryManagement
 
 
 
+        /// <summary>
+        /// 아이템 종류에 해당하는 탭 별 슬롯의 제한 수를 초기화합니다.<br/>
+        /// 아이템의 해당하는 탭의 제한수를 증가시키며, 퀘스트아이템이 아닌 경우 전체탭 제한을 누적 시켜줍니다.<br/><br/>
+        /// *** 각탭의 제한 수 설정 시, 기존의 전체 탭 제한수를 읽어들여 누적시키므로 유의해야합니다. ***<br/>
+        /// *** ItemType.None 전달 시 예외가 발생합니다. ***<br/>
+        /// </summary>
+        /// <returns></returns>
+        public void InitSlotCountLimitTab(ItemType itemType, int slotCountLimit)
+        {
+            if(itemType==ItemType.None)
+                throw new Exception("아이템 타입이 정확하지 않습니다.");
+            
+            // 아이템 종류에 해당하는 탭타입 인덱스를 구합니다.
+            int tabIdx = GetTabIndex(itemType);
+
+            // 개별 딕셔너리 제한수를 들어온 값으로 설정합니다.
+            slotCountLimitTab[tabIdx] = slotCountLimit;
+
+            // (퀘스트 아이템이 아닌 경우에만) 전체 탭의 제한수에 들어온 값을 누적시킵니다.
+            if(itemType !=ItemType.Quest)
+                slotCountLimitTab[(int)TabType.All] += slotCountLimit;
+        }
+
+
 
 
 
         /// <summary>
-        /// 아이템 종류에 해당하는 탭별 슬롯의 제한 수를 반환합니다.<br/>
-        /// ItemType을 인자로 전달받으며, 
-        /// ItemType.None 전달 시 전체탭의 슬롯 제한 수를 반환합니다<br/>
+        /// 아이템 종류에 해당하는 탭 별 슬롯의 제한 수를 반환합니다.<br/>
+        /// 두번째 인자로 전체탭 상태가 전달되었다면, 전체탭의 슬롯 제한 수를 반환합니다.<br/><br/>
+        /// *** ItemType.None 전달 시 예외가 발생합니다. ***<br/>
+        /// *** 전체탭에서 퀘스트 아이템의 슬롯제한수를 구하려 하는 경우 예외가 발생합니다. ***
         /// </summary>
         /// <returns></returns>
-        public int GetSlotCountLimitTab(ItemType itemType)
+        public int GetSlotCountLimitTab(ItemType itemType, bool isActiveTabAll)
         {
+            // 전체 탭 상태인 경우
+            if(isActiveTabAll)
+            {
+                // 퀘스트 아이템은 전체탭 제한 수를 확인할 필요가 없음
+                if(itemType==ItemType.Quest)
+                    throw new Exception("퀘스트 아이템의 경우 전체 슬롯을 할당 받을 수 없습니다.");
+
+                return slotCountLimitTab[(int)TabType.All];
+            }
+
+            // 개별 탭 상태인 경우
             return slotCountLimitTab[GetTabIndex(itemType)];
         }
 
@@ -446,8 +494,8 @@ namespace InventoryManagement
 
 
         /// <summary>
-        /// 현재 인벤토리의 아이템 종류에 해당 하는 탭의 남아있는 슬롯 갯수를 반환합니다.<br/>
-        /// 아이템의 종류로 ItemType.None이 전달되었다면 전체탭의 남은 슬롯 수를 반환합니다.
+        /// 현재 인벤토리의 아이템 종류에 해당 하는 개별 탭의 남아있는 슬롯 갯수를 반환합니다.<br/>
+        /// *** 아이템의 종류로 ItemType.None이 전달되었다면 예외가 발생합니다. ***
         /// </summary>
         /// <returns>남아있는 슬롯이 없으면 0, 남아있는 슬롯이 있다면 해당 슬롯의 갯수</returns>
         public int GetCurRemainSlotCount(ItemType itemType)
@@ -456,7 +504,7 @@ namespace InventoryManagement
                 throw new Exception("잘못된 유형의 아이템 종류입니다.");
 
             // 아이템 종류에 해당하는 탭의 (최대 슬롯제한수-현재 오브젝트수)
-            return GetSlotCountLimitTab(itemType) - tabItemObjCount[GetTabIndex(itemType)];
+            return GetSlotCountLimitTab(itemType,false) - tabItemObjCount[GetTabIndex(itemType)];
         }
 
 
@@ -488,7 +536,7 @@ namespace InventoryManagement
             itemType = TypeMatchingItemClassToItemType<T>();
 
             // 변환한 itemType을 바탕으로 어떤 딕셔너리를 참조할 지 결정합니다.
-            itemDic = GetItemDicIgnoreExsists(itemType);
+            itemDic = GetItemDic(itemType);
 
             // 아이템 딕셔너리가 할당되어있지 않거나 갯수가 0이라면, null을 반환합니다.
             if( itemDic==null || itemDic.Count==0 )
@@ -612,6 +660,7 @@ namespace InventoryManagement
             itemDic=new Dictionary<string, List<GameObject>>[dicLen];
             dicType=new ItemType[dicLen];
 
+
             // 배열의 개별 요소를 할당합니다.
             for( int i = 0; i<dicLen; i++ )
             {
@@ -619,12 +668,13 @@ namespace InventoryManagement
                 dicType[i] = dicTypes[i].itemType;                          // 개별 타입을 이니셜라이저의 타입으로 설정
                 
 
-                // 아이템 종류에 해당하는 탭타입 인덱스를 구합니다.
-                int tabIdx = GetTabIndex(dicType[i]);
-
-                // 개별 딕셔너리 제한수를 해당 탭의 제한수에 누적시킵니다.
-                slotCountLimitTab[tabIdx] += dicTypes[i].slotLimit;
+                // 슬롯 제한수를 초기화합니다.
+                InitSlotCountLimitTab( dicType[i], dicTypes[i].slotLimit );
             }
+
+
+
+
 
         }
 

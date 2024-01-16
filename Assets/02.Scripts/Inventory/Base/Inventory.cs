@@ -252,6 +252,13 @@ using UnityEngine.Assertions.Must;
  * 3- 인벤토리의 생성자에서 InitSlotCountLimitTab 신규 메서드를 이용한 초기화를 진행
  * 이유는 개별 탭의 제한 수 설정 시 전체 탭도 같이 수정되어야 하기 때문
  * 
+ * <v10.4 - 2024_0116_최원준>
+ * 1- InitCurDicItemObjCount메서드에서 GetItemDic관련 null검사문 추가
+ * 
+ * 2- GetSlotCountLimitTab메서드 내부에 퀘스트 아이템의 경우 예외가 아니라 0값을 반환하도록 수정.
+ * (전체탭 상태에서 퀘스트 아이템의 할당이 들어오는 경우 예외가 아니라 실패처리로 가야 하므로)
+ * 
+ * 
  * 
  */
 
@@ -371,8 +378,8 @@ namespace InventoryManagement
             // 아이템 타입을 기반으로 딕셔너리를 구합니다.
             Dictionary<string, List<GameObject>> itemDic = GetItemDic(itemType);
 
-            // 해당 인벤토리 딕셔너리에 들어있는 리스트가 하나도 없다면, 바로 0을 반환합니다.
-            if(itemDic.Count==0)        
+            // 해당 사전이 없거나 인벤토리 사전에 들어있는 리스트가 하나도 없다면, 바로 0을 반환합니다.
+            if(itemDic==null || itemDic.Count==0)        
                 return 0;
 
             // 해당 딕셔너리에서 게임오브젝트 리스트를 꺼내고 리스트의 Count 프로퍼티를 통해 게임오브젝트 숫자를 누적시킵니다.
@@ -471,7 +478,6 @@ namespace InventoryManagement
         /// 아이템 종류에 해당하는 탭 별 슬롯의 제한 수를 반환합니다.<br/>
         /// 두번째 인자로 전체탭 상태가 전달되었다면, 전체탭의 슬롯 제한 수를 반환합니다.<br/><br/>
         /// *** ItemType.None 전달 시 예외가 발생합니다. ***<br/>
-        /// *** 전체탭에서 퀘스트 아이템의 슬롯제한수를 구하려 하는 경우 예외가 발생합니다. ***
         /// </summary>
         /// <returns></returns>
         public int GetSlotCountLimitTab(ItemType itemType, bool isActiveTabAll)
@@ -479,9 +485,9 @@ namespace InventoryManagement
             // 전체 탭 상태인 경우
             if(isActiveTabAll)
             {
-                // 퀘스트 아이템은 전체탭 제한 수를 확인할 필요가 없음
+                // 퀘스트 아이템은 전체탭에 할당되지 못하므로 무조건 0을 반환
                 if(itemType==ItemType.Quest)
-                    throw new Exception("퀘스트 아이템의 경우 전체 슬롯을 할당 받을 수 없습니다.");
+                    return 0;
 
                 return slotCountLimitTab[(int)TabType.All];
             }

@@ -58,6 +58,10 @@ using UnityEngine.UI;
  * 3- AddItemToSlot메서드 작성
  * (특정 슬롯에 넣기 위해 슬롯 인덱스와 탭상태를 받는 메서드)
  * 
+ * <v3.3 - 2024_0116_최원준>
+ * 1- AddItemToSlot메서드에서 slotIndex를 예외처리하던 부분삭제
+ * (IsSlotEnough에서 진행하므로 필요없음)
+ * 
  * 
  */
 
@@ -236,6 +240,7 @@ public partial class InventoryInfo : MonoBehaviour
         if( !IsSlotEnough( itemInfo ) )
             return false;
 
+
         // 아이템의 타입이 잡화종류인 경우 전후수량을 비교하여 처리합니다.
         if( itemInfo.Item.Type is ItemType.Misc )
             AddItemMisc(itemInfo);
@@ -339,8 +344,6 @@ public partial class InventoryInfo : MonoBehaviour
     {
         if( itemInfo==null )
             throw new Exception( "전달 받은 아이템 참조 값이 존재하지 않습니다." );
-        if( inventory.GetSlotCountLimitTab(itemInfo.Item.Type, isActiveTabAll) <= slotIndex || slotIndex < 0 )
-            throw new Exception( "슬롯 인덱스 정보가 잘못되었습니다." );
 
         // 해당 슬롯에 자리가 없다면, 실패를 반환
         if( !IsSlotEmpty(itemInfo, slotIndex, isActiveTabAll) )

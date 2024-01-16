@@ -329,6 +329,12 @@ using InventoryManagement;
  *6- 신규 메서드 MoveToEmptyList를 만들고, UpdatePositionInfo메서드의 기존 일부 코드를 MoveToSlot으로 만든 후
  *curActiveTab에 따라서 조건 분기하여 포지션 업데이트를 실행하도록 구현
  *
+ *<v13.1 - 2024_0116_최원준>
+ *1- 아이템이 현재 속해있는 탭을 반환하는 CurActiveTab 읽기전용 프로퍼티 추가
+ *(다른 인벤토리에 슬롯 드랍시 현재 아이템이 어떤 탭에 속해있었는지 확인 한 다음, 
+ *전송할 인벤토리의 탭이 일치하지 않을때 실패처리하지 않으면 아이템이 사라진것 처럼 보이게 되기 때문)
+ *
+ *
  *
  */
 
@@ -408,11 +414,14 @@ public partial class ItemInfo : MonoBehaviour
     public InventoryInfo InventoryInfo { get {return inventoryInfo;} }
 
     /// <summary>
-    /// 현재 아이템이 담겨있는 슬롯리스트의 Transform을 반환합니다.<br/>
+    /// 현재 아이템이 담겨있는 슬롯리스트의 Transform을 반환합니다.
     /// </summary>
     public Transform SlotListTr { get {return slotListTr;} }
 
-
+    /// <summary>
+    /// 현재 아이템이 속해있는 슬롯의 탭을 반환합니다.
+    /// </summary>
+    public TabType CurActiveTab { get { return curActiveTab;} }
 
 
 

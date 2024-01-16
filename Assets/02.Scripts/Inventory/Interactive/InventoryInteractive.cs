@@ -212,6 +212,10 @@ using System;
 * 
 * 8- CurActiveTab프로퍼티를 선언하여, ItemInfo에서 AddItem이 이루어질 때 최신탭정보를 개별적으로 수정하도록 하였음.
 * 
+* <v9.2- 2024_0116_최원준>
+* 1- UpdateAllItemActiveTabInfo메서드 내부 GetItemDic관련 null검사문 추가
+* 
+* 
 */
 
 
@@ -496,7 +500,7 @@ public class InventoryInteractive : MonoBehaviour
 
 
     /// <summary>
-    /// 모든 아이템에 활성화탭 정보를 반영합니다.<br/>
+    /// 인벤토리가 현재 보유하고 있는 모든 사전의 아이템에 활성화탭 정보를 반영합니다.<br/>
     /// </summary>
     private void UpdateAllItemActiveTabInfo()
     {
@@ -506,6 +510,10 @@ public class InventoryInteractive : MonoBehaviour
         for( int i = 0; i<inventory.dicLen; i++ )
         {
             itemDic=inventory.GetItemDic( inventory.dicType[i] );          // CurDicLen 갯수만큼 딕셔너리를 하나씩 변경합니다.
+
+            // 아이템사전이 존재하지 않거나 내부 리스트가 존재하지 않는다면 다음 사전을 찾습니다
+            if(itemDic == null || itemDic.Count==0)
+                continue;
 
             foreach( List<GameObject> itemObjList in itemDic.Values )      // 해당 딕셔너리의 오브젝트리스트를 가져옵니다.
             {

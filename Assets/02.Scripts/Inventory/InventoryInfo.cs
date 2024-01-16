@@ -230,6 +230,9 @@ using CreateManagement;
  * dicLen만큼 반복하여 dicType[i]를 통해 사전을 반환받도록 수정
  * (=> 기존에는 아이템 종류별 모든 사전을 보유하고 있었으나 설계 수정 후 필요한 사전만 보유하는 형태로 변경하였으므로)
  * 
+ * <v9.4 - 2024_0116_최원준>
+ * 1- UpdateDicItemPosition메서드에서 GetItemDic관련 null값 검사문 추가
+ * 2- UpdateAllItemVisualInfo메서드에서 GetItemDic관련 null값 검사문 추가
  * 
  */
 
@@ -361,20 +364,20 @@ public partial class InventoryInfo : MonoBehaviour
 
 
     /// <summary>
-    /// 이 인벤토리를 아이템을 로드하였을 때, 해당 인벤토리 내부의 모든 아이템에 인벤토리 정보를 전달하여 
-    /// 이미지나 위치 정보 등을 최신화하기 위한 메서드입니다.<br/>
-    /// 내부적으로 모든 아이템에 OnItemCreated 메서드를 호출하여 새롭게 생성되었을 때의 정보를 입력합니다.<br/>
+    /// 인벤토리가 보유하고 있는 모든 사전의 아이템에 인벤토리 정보를 전달합니다.
+    /// 게임 로드 시 기존 아이템의 이미지나 위치 정보 등을 최신화하기 위한 메서드입니다.<br/>
+    /// 내부적으로 모든 아이템에 OnItemAdded 메서드를 호출하여 새롭게 생성되었을 때의 정보를 입력합니다.<br/>
     /// </summary>
     protected void UpdateAllItemVisualInfo()
     {   
-        Dictionary<string, List<GameObject>> itemDic;                           // 참조할 아이템 사전을 선언합니다.
-
-        for(int i=0; i<inventory.dicLen; i++)                                   // 인벤토리 사전의 갯수만큼 반복합니다.
+        Dictionary<string, List<GameObject>> itemDic;                       // 참조할 아이템 사전을 선언합니다.
+            
+        for(int i=0; i<inventory.dicLen; i++)                               // 인벤토리 사전의 갯수만큼 반복합니다.
         {
             itemDic =inventory.GetItemDic( inventory.dicType[i] ); // 아이템 종류에 따른 인벤토리의 사전을 할당받습니다.
                           
-
-            if(itemDic.Count==0)   // 아이템 사전에 값이 입력되어있지 않다면 다음 사전을 참조합니다.
+            // 아이템 사전이 없거나 리스트가 존재하지 않는다면 다음 사전을 참조합니다.
+            if(itemDic==null || itemDic.Count==0)   
                 continue;
 
             foreach( List<GameObject> objList in itemDic.Values )           // 인벤토리 사전에서 게임오브젝트 리스트를 하나씩 꺼내어
@@ -530,8 +533,13 @@ public partial class InventoryInfo : MonoBehaviour
     /// <param name="itemType"></param>
     public void UpdateDicItemPosition(ItemType itemType)
     {            
-        //인벤토리의 현재 활성화 탭종류와 일치하는 딕셔너리를 참조합니다.
+        // 인벤토리의 현재 활성화 탭종류와 일치하는 딕셔너리를 참조합니다.
         Dictionary<string, List<GameObject>> itemDic = inventory.GetItemDic(itemType);
+
+        // 해당 종류의 사전이 존재하지 않거나 리스트가 존재하지 않는다면 바로 종료합니다. 
+        if(itemDic==null || itemDic.Count==0)
+            return;
+
 
         foreach( List<GameObject> itemObjList in itemDic.Values )  // 해당 딕셔너리의 오브젝트리스트를 가져옵니다.
         {

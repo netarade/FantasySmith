@@ -144,6 +144,12 @@ using UnityEngine;
  * 3- GetSlotIndexList메서드에서 isActiveAll에 따라서 tabType을 전체탭으로 구해야했으나
  * 계속해서 개별탭으로 구함으로서 인덱스리스트가 개별 인덱스만 받아오던 점 수정
  * 
+ * <v5.1 - 2024_0116_최원준>
+ * 1- GetSlotIndexList메서드에서 GetItemDic관련 null검사문 추가
+ * 2- IsRemainSlotDirect메서드 내부 다른 메서드들 예외처리문 추가
+ * 3- IsRemainSlotDirect메서드에서 슬롯인덱스가 슬롯제한수를 넘어가는 경우 예외를 처리하던 부분을
+ * false를 반환하도록 수정
+ * ( 인덱스를 제한 수 이상으로 할당하려하는 경우 실패처리 )
  * 
  */
 
@@ -213,18 +219,25 @@ namespace InventoryManagement
         {
             if(itemType==ItemType.None)
                 throw new Exception("정확한 아이템 타입이 필요합니다.");
-            if(slotIndex<0 || slotIndex >= GetSlotCountLimitTab(itemType, isActiveTabAll) )
-                throw new Exception("슬롯 인덱스가 정확하지 않습니다. 0이하거나 슬롯 제한수를 초과했습니다.");
+            if(slotIndex<0)
+                throw new Exception("슬롯 인덱스가 정확하지 않습니다. 0이하가 전달되었습니다.");
+            if(indexList==null)
+                throw new Exception("참조 리스트가 존재하지 않습니다.");  
+
+            // 넣을 슬롯 인덱스가 제한수에 도달한 경우 자리가 없으므로 false를 반환
+            if(slotIndex >= GetSlotCountLimitTab(itemType, isActiveTabAll))
+                return false;
+
 
             // 인덱스 리스트를 전달하여, 해당하는 아이템 종류의 슬롯 인덱스 리스트를 구합니다.
             GetSlotIndexList( ref indexList, itemType, isActiveTabAll );
+                        
+            // 구한 인덱스 리스트에 아무것도 없는 경우 자리가 있으므로 바로 true를 반환합니다
+            if( indexList.Count==0 )    
+                return true;
 
             // 오름차순으로 정렬합니다.
             indexList.Sort();
-
-            // 인덱스 리스트에 아무것도 없는 경우 true를 반환
-            if( indexList.Count==0 )
-                return true;
 
             int idx;
 
@@ -266,7 +279,8 @@ namespace InventoryManagement
         {
             if(itemType == ItemType.None )
                 throw new Exception("정확한 아이템 타입이 필요합니다.");
-
+            if(indexList==null)
+                throw new Exception("참조 리스트가 존재하지 않습니다."); 
 
             // 기존의 인덱스 리스트를 초기화합니다.
             indexList.Clear();   
@@ -294,6 +308,10 @@ namespace InventoryManagement
             {
                 // 아이템 종류 별 사전을 하나씩 가져옵니다.
                 itemDic = GetItemDic( tabKindList[i] );
+                
+                // 딕셔너리에 아무 아이템이 들어있지 않다면 다음으로 넘어갑니다.
+                if(itemDic==null || itemDic.Count==0)
+                    continue;
 
                 // 오브젝트를 하나씩 읽어들여서 아이템 인덱스를 인덱스 리스트에 집어넣습니다.
                 ReadSlotIndexFromItemDic(ref indexList, itemDic, isActiveTabAll );
@@ -308,9 +326,8 @@ namespace InventoryManagement
         /// </summary>
         private void ReadSlotIndexFromItemDic(ref List<int> indexList, Dictionary<string, List<GameObject>> itemDic, bool isActiveTabAll )
         {   
-            // 딕셔너리에 아무 아이템이 들어있지 않다면 바로 종료합니다.
-            if( itemDic==null || itemDic.Count==0)
-                return;
+            if( indexList==null || itemDic==null )
+                throw new Exception("리스트 혹은 딕셔너리 참조값이 존재하지 않습니다.");
                 
 
             // 해당 사전에서 아이템 정보를 하나씩 읽어옵니다.

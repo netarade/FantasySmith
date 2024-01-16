@@ -296,8 +296,7 @@ namespace InventoryManagement
             // 아이템 이름과 종류를 참조합니다.
             string itemName = itemInfo.Item.Name;
             ItemType itemType = itemInfo.Item.Type;
-
-            
+                        
             // 슬롯 인덱스 값이 음수로 전달되었다면,(인자를 따로 주지 않았다면)
             if( slotIndex<0 )
             {

@@ -31,16 +31,36 @@ using UnityEngine.UI;
  * [이슈]
  * 슬롯드롭 튜닝 - isItemPlaced true 설정
  * 
+ * 
+ * <v2.0 - 2024_0117_최원준>
+ * 1- EquipmentTransform클래스 헤더 어트리뷰트 설정
+ * 2- 변수명 weaponTypes에서 equipWeaponType로 변경
+ * 3- Start문에서 더미를 각 슬롯에 놓아두던 것을 emptyList에 놓아두는 것으로 변경
+ * 이유는 아이템을 장착할 때 더미가 슬롯에 자리해야하기 때문
+ * 
+ * 
+ *  
  */
 
 
 [Serializable]
 public class EquipmentTransform
 {
+    [Header("아이템을 장착할 위치정보")]
+
+    [Header("도끼")]
     public Transform axeTr;
+
+    [Header("둔기")]
     public Transform bluntTr;
+    
+    [Header("창")]
     public Transform spearTr;
+    
+    [Header("검")]
     public Transform swordTr;
+    
+    [Header("활")]
     public Transform bowTr;        
 }
 
@@ -50,7 +70,7 @@ public class EquipmentTransform
 public class QuickSlot : InventoryInfo
 {
     
-    [SerializeField] WeaponType[] weaponTypes;      // 고정 무기 슬롯
+    [SerializeField] WeaponType[] equipWeaponType;  // 고정 무기 슬롯
     [SerializeField] EquipmentTransform equipTr;    // 장비를 장착할 트랜스폼 정보
 
 
@@ -66,12 +86,20 @@ public class QuickSlot : InventoryInfo
     /// <summary>
     /// 아이템이 해당 인덱스의 슬롯에 자리했는지 여부를 반환합니다.
     /// </summary>
-    public bool[] isItemPlaced;
+    bool[] isItemPlaced;
 
+    bool[] isItemEquipped;
+    
     /// <summary>
     /// 해당 슬롯의 아이템이 장착상태 인지를 반환합니다.
     /// </summary>
-    public bool[] isItemEquipped;
+    public bool[] IsItemEquipped { get { return isItemEquipped; } }
+
+
+
+
+
+
 
     void Awake()
     {
@@ -88,11 +116,11 @@ public class QuickSlot : InventoryInfo
         if( initializer.dicTypes[0].itemType != ItemType.Weapon )
             throw new Exception("전용 퀵슬롯이 무기 종류가 아닙니다.");
         
-        if( weaponTypes.Length != initializer.dicTypes.Length )
+        if( equipWeaponType.Length != initializer.dicTypes.Length )
             throw new Exception("인스펙터 창에서 고정 무기를 모두 지정하지 않았습니다.");
         
         // 슬롯 길이 설정
-        slotLen = weaponTypes.Length;
+        slotLen = equipWeaponType.Length;
 
         // 설정한 길이만큼 배열을 생성합니다.
         dummyTr = new Transform[slotLen];
@@ -103,10 +131,11 @@ public class QuickSlot : InventoryInfo
         
         for( int i = 0; i<slotLen; i++ )
         {
-            // 더미오브젝트를 만들고 이미지 컴포넌트를 만들어서 각 슬롯에 배치합니다.
+            // 더미오브젝트를 만들고 이미지 컴포넌트를 만든 후 emptyList에 배치합니다.
             dummyTr[i] = new GameObject( "dummy"+ i.ToString() ).transform;
-            dummyTr[i].SetParent( slotListTr.GetChild( i ) );
+            dummyTr[i].SetParent( emptyListTr );
             dummyImg[i] = dummyTr[i].gameObject.AddComponent<Image>();
+            
 
             // 슬롯 장착 상태 및 아이템 착용 상태 초기화
             isItemPlaced[i] = false;
@@ -116,6 +145,12 @@ public class QuickSlot : InventoryInfo
 
     }
 
+
+    /// <summary>
+    /// 슬롯을 작동할 때 호출해줘야할 메서드입니다.<br/>
+    /// 장비를 착용시켜줌과 동시에 더미 이미지를 슬롯에 보여줘서 
+    /// 기존 슬롯에 아이템이 그대로 있는 것 처럼 보이게 합니다.<br/>
+    /// </summary>
     public void SlotActivate(int slotNo)
     {
         // 아이템이 자리하지 않았거나, 아이템을 장착중이라면 더 이상 실행하지 않습니다.
@@ -137,23 +172,29 @@ public class QuickSlot : InventoryInfo
         // 더미 이미지를 보여줍니다.
         dummyImg[slotNo].sprite = slotItemInfo[slotNo].innerSprite;
         
-        // 아이템 장착상태 설정
-        isItemEquipped[slotNo] = !isItemEquipped[slotNo];
+        // 아이템 장착상태 활성화
+        isItemEquipped[slotNo] = true;
     }
 
 
 
-
+    /// <summary>
+    /// 슬롯을 작동해제할 때 호출해줘야할 메서드입니다.<br/>
+    /// 슬롯에 보여지고 있던 더미 이미지를 빈리스트로 보낸 후,
+    /// 착용되어있던 장비를 해제하여 슬롯에 놓아주는 역할을 합니다.<br/>
+    /// </summary>
     public void SlotDeactivate(int slotNo)
     {
         // 아이템이 장착중이지 않은 상태라면 실행하지 않습니다.
         if( !isItemEquipped[slotNo] )
             return;
+        
+        // 더미를 다시 빈리스트로 보냅니다
+        dummyTr[slotNo].SetParent(emptyListTr);
 
         // 지정 슬롯에 추가합니다.
-        AddItem(slotItemInfo[slotNo]);
-
-
+        AddItemToSlot(slotItemInfo[slotNo], slotNo, interactive.IsActiveTabAll);
+                
         // 아이템 장착상태 해제
         isItemEquipped[slotNo] = false;
     }
@@ -198,6 +239,38 @@ public class QuickSlot : InventoryInfo
     }
 
 
+
+
+    /// <summary>
+    /// 슬롯 드롭이벤트가 일어날 때 드롭을 발생시키는 쪽에서 호출해줘야 할 메서드입니다.<br/>
+    /// 드롭이 일어나는 슬롯정보를 전달해줘야 합니다.
+    /// </summary>
+    public void OnSlotDropped( ItemInfo droppedItemInfo, int slotNo )
+    {
+        // 슬롯 장착상태 활성화
+        isItemPlaced[slotNo] = true;
+
+        // 슬롯 아이템 정보 활성화
+        slotItemInfo[slotNo] = droppedItemInfo;
+
+
+    }
+
+    /// <summary>
+    /// 더미 아이템이 셀렉트 될 때 더미 쪽에서 호출해줘야 할 메서드입니다.<br/>
+    /// 드롭이 일어나는 슬롯정보를 전달해줘야 합니다.
+    /// </summary>
+    public void OnDummySelected(int slotNo )
+    {
+        // 슬롯 장착상태 해제
+        isItemPlaced[slotNo] = false;
+
+        // 슬롯아이템 정보 해제
+        slotItemInfo[slotNo] = null;
+
+        // 더미를 잡고 있다. 
+
+    }
 
 
 

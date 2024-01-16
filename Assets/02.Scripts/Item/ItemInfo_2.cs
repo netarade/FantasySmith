@@ -42,6 +42,12 @@ public partial class ItemInfo : MonoBehaviour, IPointerEnterHandler, IPointerExi
      * 1- MoveSlotToAnotherListSlot메서드 내부에
      * 슬롯 충분 여부 검사 메서드를 IsSlotEnough를 IsSlotEnoughCertain으로 변경
      * 
+     * <v2.5 - 2024_0116_최원준>
+     * 1- MoveSlotToAnotherListSlot메서드에서 
+     * 아이템의 이전인벤토리의 탭정보와 옮길 인벤토리의 탭정보가 일치하지 않으면 실패하도록 처리
+     * 
+     * 2- MoveSlotToAnotherListSlot메서드에서 지정 슬롯에 드랍되도록 AddItem메서드를 AddItemToSlot으로 변경
+     * 
      */
 
     string strItemDropSpace = "ItemDropSpace";
@@ -196,19 +202,25 @@ public partial class ItemInfo : MonoBehaviour, IPointerEnterHandler, IPointerExi
         // 새로운 인벤토리 슬롯에 남는 자리가 있는 경우
         if( nextInventoryInfo.IsSlotEmpty(this,childIdxNext,isActiveTabAllNext) )
         {
-            inventoryInfo.RemoveItem(this);         // 이전 인벤토리에서 아이템을 제거해야 합니다.
-            
-            nextInventoryInfo.AddItem(this);        // 현재 아이템을 새로운 아이템에 추가합니다.
-                                                    // (AddItem내부적으로 UpdateInventoryInfo가 들어가기 때문에 prevDropSlot 정보도 들어감)
 
-            return true;                            // 성공을 반환합니다.
+            // 아이템이 속해있던 활성탭과 현재 인벤토리의 활성탭이 일치하는 경우에만 AddItem을 허락합니다.
+            if( curActiveTab==nextInventoryInfo.interactive.CurActiveTab )
+            {
+                 // 이전 인벤토리에서 아이템을 제거합니다.
+                inventoryInfo.RemoveItem( this );  
+                                                    
+                // 현재 아이템을 새로운 인벤토리의 해당 슬롯에 추가합니다.
+                nextInventoryInfo.AddItemToSlot( this, childIdxNext, isActiveTabAllNext );  
+
+                // 성공을 반환합니다.
+                return true;                        
+            }
         }
-        // 새로운 인벤토리 슬롯에 남는 자리가 없는 경우
-        else
-        {
-            UpdatePositionInfo();     // 원위치로 되돌리고 실패를 반환합니다.
-            return false;
-        }
+
+        // 새로운 인벤토리 슬롯에 남는 자리가 없거나, 탭이 일치하지 않는다면,
+        // 원위치로 되돌리고 실패를 반환합니다.        
+        UpdatePositionInfo();     
+        return false;
     }
 
 

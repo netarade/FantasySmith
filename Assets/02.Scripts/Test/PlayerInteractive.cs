@@ -6,37 +6,40 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
-public class PlayerItemGain : MonoBehaviour
+/*
+ * [작업 사항]
+ * 
+ * <v1.0>
+ * 1- 플레이어 테스트용 스크립트 작성
+ * 
+ * <v2.0>
+ * 1- E키를 사용하여 인벤토리를 여는 코드 테스트
+ * 
+ * <v3.0 - 2024_0117_최원준>
+ * 1- 숫자키패드를 사용하여 퀵슬롯을 여는 코드 테스트
+ * 2- 스크립트명 PlayerInteractive로 변경
+ * 
+ */
+
+
+
+
+public class PlayerInteractive : MonoBehaviour
 {
 
 
-
-
-
-
     InventoryInfo playerInventory;
-    InventoryInteractive inventoryInteractive;
+    QuickSlot quickSlot;
 
     Animator animator;
     bool bMouseCoolTime = true;
     
-    GraphicRaycaster gRaycaster;                // 인벤토리 캔버스의 그래픽레이캐스터
-    PointerEventData pEventData;                // 그래픽 레이캐스팅 시 전달 할 포인터 이벤트
-    List<RaycastResult> raycastResults;         // 그래픽 레이캐스팅 결과를 받을 리스트
-
-    GraphicRaycaster otherRaycaster;
-    List<RaycastResult> otherRaycastResults;
     void Start()
     {
-
-        playerInventory = GetComponentInChildren<InventoryInfo>();
-        inventoryInteractive = GetComponentInChildren<InventoryInteractive>();
-
+        int childIdx = transform.childCount-1;
+        playerInventory = transform.GetChild(childIdx).GetChild(0).GetComponent<InventoryInfo>();
+        quickSlot = transform.GetChild(childIdx).GetChild(1).GetComponent<QuickSlot>();
         animator = GetComponent<Animator>();
-
-        gRaycaster = transform.GetChild(4).GetChild(0).GetComponentInChildren<GraphicRaycaster>();
-        raycastResults = new List<RaycastResult>();
-        otherRaycastResults = new List<RaycastResult>();
     }
 
     private void Update()
@@ -73,6 +76,22 @@ public class PlayerItemGain : MonoBehaviour
                 }
             }
         }
+
+
+        if(Input.GetKeyDown(KeyCode.Alpha1))
+        {
+            print("키패드1");
+            quickSlot.ItemEquipSwitch(1);
+
+        }
+
+        if(Input.GetKeyDown(KeyCode.Alpha2))
+        {
+            print("키패드2");
+            quickSlot.ItemEquipSwitch(2);
+        }
+
+
 
 
     }

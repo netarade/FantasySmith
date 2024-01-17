@@ -12,6 +12,10 @@ using System;
  * 1- ItemEquip 신규 클래스 작성
  * 이유는 방어구 등 착용가능한 아이템 클래스를 공통만 따로 선별하기 위함
  * 
+ * 
+ * <v1.2 - 2024_1117_최원준>
+ * 1- ItemBuilding의 hp를 public변수로 변경(수정가능해야 하므로), 변수명 Hp로 변경 
+ * 
  */
 
 
@@ -55,13 +59,14 @@ namespace ItemData
     [Serializable]
     public class ItemBuilding : ItemMisc
     {
-        [JsonProperty] int hp;
+        [JsonProperty] public int Hp;
 
 
-        public ItemBuilding( ItemType mainType, string No, string name, VisualReferenceIndex visualRefIndex, MiscType subType, int hp, string desc )
+        public ItemBuilding( ItemType mainType, string No, string name, VisualReferenceIndex visualRefIndex
+            , MiscType subType, int Hp, string desc )
             : base(mainType, No, name, visualRefIndex, subType, desc)
         {
-            this.hp = hp;
+            this.Hp = Hp;
         }
 
     }

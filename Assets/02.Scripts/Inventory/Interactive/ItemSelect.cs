@@ -72,6 +72,15 @@ using UnityEngine.UI;
  * 
  * 3- IEnumerator 주석추가 및 OnBeginDrag 주석 삭제
  * 
+ * <v7.0 - 2024_0117_최원준>
+ * 1- OnDeselect에서 주석처리되어있던 디버그용 코드를 PrintDebugInfo메서드를 만들어 넣어두었음
+ * 
+ * 2- DummyItemSelect스크립트 파일의 상속과 오버라이딩을 위해 protected 및 virtual 처리
+ * 
+ * 3- 내부 코드를 기능 단위별로 메서드화하여 상속 후 재사용성을 도모
+ * 
+ * 4- 변수명 prevParentTr을 prevParentSlotTr로 변경, movingParentTr을 selectingParentTr로 변경
+ * 
  */
 
 
@@ -80,103 +89,181 @@ using UnityEngine.UI;
 /// 아이템 오브젝트의 드래그를 가능하게 해줍니다.
 /// </summary>
 public class ItemSelect : MonoBehaviour
-    //, IDragHandler, IBeginDragHandler, IEndDragHandler            // 드래그 방식
     , IUpdateSelectedHandler, ISelectHandler, IDeselectHandler      // 셀렉트 방식
 {
-    private RectTransform itemRectTr;      // 자신 transform 캐싱
-    private CanvasGroup itemCG;            // 자신의 캔버스 그룹 캐싱
-    private ItemInfo itemInfo;             // 자신의 ItemInfo 캐싱
+    protected RectTransform itemRectTr;     // 자신 transform 캐싱
+    protected CanvasGroup itemCG;           // 자신의 캔버스 그룹 캐싱
+    protected ItemInfo itemInfo;            // 자신의 ItemInfo 캐싱
     
-    public Transform prevParentTr;          // 아이템을 옮기기 이전의 부모 (슬롯)
-    public Transform movingParentTr;        // 아이템을 옮기는 도중의 부모 (캔버스)
+    protected Transform prevParentSlotTr;   // 아이템을 옮기기 이전의 부모 (슬롯)
+    protected Transform selectingParentTr;  // 아이템을 옮기는 도중의 부모 (캔버스)
 
-    public Vector3 moveVecToCenter;
+    protected Vector3 moveVecToCenter;      // 아이템 셀렉팅을 시작할 때 인벤토리를 원점으로 되돌릴 수 있는 벡터
         
-    IReadOnlyList<InventoryInfo> clientList;    // 서버 인벤토리의 연결된 클라이언트 인벤토리참조
-    PointerEventData pEventData;                // 그래픽 레이캐스팅 시 전달 할 포인터 이벤트
-    List<RaycastResult> raycastResults;         // 그래픽 레이캐스팅 결과를 받을 리스트
-    bool isInventoryConnect;                    // 셀렉팅 중인 아이템의 인벤토리가 연결 상태인 지 여부
+    protected IReadOnlyList<InventoryInfo> clientList;    // 서버 인벤토리의 연결된 클라이언트 인벤토리참조
+    protected PointerEventData pEventData;                // 그래픽 레이캐스팅 시 전달 할 포인터 이벤트
+    protected List<RaycastResult> raycastResults;         // 그래픽 레이캐스팅 결과를 받을 리스트
+    protected bool isInventoryConnect;                    // 셀렉팅 중인 아이템의 인벤토리가 연결 상태인 지 여부
 
-    InventoryInteractive interactive;           // 전체 아이템 셀렉팅 여부 참조를 위한 인터렉티브 스크립트 참조
-    bool isMyItemSelecting = false;             // 현재 아이템이 선택 중인지 여부
-    bool isFirstSelectDelay = false;            // 처음 셀렉팅 후 딜레이 시간이 지났는지 여부
-    Button itemSelectBtn;                       // 버튼의 셀렉트를 해제하기 위한 참조
-    string strItemDropSpace = "ItemDropSpace";  // 아이템을 드롭할 수 있는 태그 설정(슬롯의 태그)
+    protected InventoryInteractive interactive;           // 전체 아이템 셀렉팅 여부 참조를 위한 인터렉티브 스크립트 참조
+    protected bool isMyItemSelecting = false;             // 현재 아이템이 선택 중인지 여부
+    protected bool isFirstSelectDelay = false;            // 처음 셀렉팅 후 딜레이 시간이 지났는지 여부
+    protected Button itemSelectBtn;                       // 버튼의 셀렉트를 해제하기 위한 참조
+    protected string strItemDropSpace = "ItemDropSpace";  // 아이템을 드롭할 수 있는 태그 설정(슬롯의 태그)
 
 
-    void Start()
+    protected virtual void Start()
     {
         itemRectTr = GetComponent<RectTransform>();     
         itemCG = GetComponent<CanvasGroup>();     
         itemInfo = GetComponent<ItemInfo>();
         itemSelectBtn = GetComponent<Button>(); 
               
-        pEventData=new PointerEventData( EventSystem.current ); // 이벤트 시스템을 설정합니다.
-        raycastResults = new List<RaycastResult>();  
+        pEventData=new PointerEventData( EventSystem.current ); // 포인터 이벤트 데이터의 이벤트 시스템을 설정합니다.
+        raycastResults = new List<RaycastResult>();             // 레이캐스팅 리스트를 초기화합니다.
+    }
+
+
+
+    
+
+    // 셀렉트 진행 중의 처리
+    public virtual void OnUpdateSelected( BaseEventData eventData )
+    {        
+        if( OnUpdateSelectedFailCondition() )   // 실패조건이 성사되면 실행하지 않습니다.
+            return;
+        
+        MatchItemPositionWithCursor();          // 마우스 위치를 커서클릭 지점으로 맞춥니다.
+
+
+        // 이미 선택되어있는 상태에서 한번 더 선택을 못하도록 종료시킵니다.
+        if( Input.GetMouseButton( 0 ) && isFirstSelectDelay )
+            FinishSelecting(eventData);
     }
 
     
-    // 셀렉트 진행 중의 처리
-    public void OnUpdateSelected( BaseEventData eventData )
-    {
-        // 내 아이템 선택상태가 아니라면 실행하지 않습니다. (아이템 1개만 실행합니다.)
-        if( !isMyItemSelecting )
+
+    // 셀렉트 시작 시
+    public virtual void OnSelect( BaseEventData eventData )
+    {        
+        if( OnSelectFailCondition() )   // 실패조건이 성사되면 실행하지 않습니다.
             return;
-            
+                
+        InitOnSelect();                 // 셀렉팅 실행 전 값의 초기화를 진행합니다.    
+    }
+           
+    
 
-        // 아이템 위치를 마우스 위치와 일치시면 원점이 마우스 위치로 끌려오므로, 다시 원점위치로 보내서 해당 위치를 기준으로 움직이도록 해줍니다.
-        itemRectTr.position = Input.mousePosition + moveVecToCenter;
+    // 셀렉트 종료 시
+    public virtual void OnDeselect( BaseEventData eventData )
+    {
+        InitFirstOnDeselect();              // 셀릭팅이 끝난 후 초기화를 진행합니다.
 
-        // 선택 중에 마우스 버튼을 클릭한 경우 - 반드시 선택 종료 (첫클릭에는 적용하지 않음)
-        if( Input.GetMouseButton( 0 ) && isFirstSelectDelay )
-        {
-            itemSelectBtn.OnDeselect( eventData );              // 버튼을 Deselect상태로 만듭니다.
-            EventSystem.current.SetSelectedGameObject( null );  // 이벤트 시스템의 셀렉트 상태를 null로 만듭니다.
+        RaycastAllToConnectedInventory();   // 연결된 모든 인벤토리에게 레이케스팅 동작을 실행합니다.
 
-        }
+        PrintDebugInfo(raycastResults);
+
+        DropItemWithRaycastResults();       // 레이캐스팅된 결과를 토대로 아이템을 이동시킵니다.      
+
+        InitLastOnDeselect();               // 레이캐스팅이 끝난 후 초기화를 진행합니다.
     }
 
 
 
-    // 셀렉트 시작 시
-    public void OnSelect( BaseEventData eventData )
-    {        
+
+
+
+
+
+
+    /// <summary>
+    /// OnUpdateSelected 콜백 이벤트가 실행되지 않기 위한 조건을 반환합니다.
+    /// </summary>
+    /// <returns>실패조건이 충족되었다면 true, 실행해야 한다면 false를 반환</returns>
+    protected bool OnUpdateSelectedFailCondition()
+    {
+        // 내 아이템 선택상태가 아니라면 실행하지 않습니다. (아이템 1개만 실행합니다.)
+        if( !isMyItemSelecting )
+            return true;
+        else
+            return false;
+    }
+
+
+    /// <summary>
+    /// 아이템 위치를 마우스가 클릭한 지점 맞춰주는 메서드입니다.<br/>
+    /// 원점 앵커를 다시 이전 원점위치로 돌려보내 클릭지점을 맞추는 기능을 가지고 있습니다.
+    /// </summary>
+    protected void MatchItemPositionWithCursor()
+    {
+        // 아이템 위치를 마우스 위치로 해버리면 원점이 마우스 위치로 끌려오므로,
+        // 다시 원점위치로 보내서 해당 위치를 기준으로 움직이도록 해줍니다.
+        itemRectTr.position = Input.mousePosition + moveVecToCenter;               
+    }
+
+
+    protected void FinishSelecting(BaseEventData eventData)
+    {
+        itemSelectBtn.OnDeselect( eventData );              // 버튼을 Deselect상태로 만듭니다.
+        EventSystem.current.SetSelectedGameObject( null );  // 이벤트 시스템의 셀렉트 상태를 null로 만듭니다.
+    }
+
+
+
+
+
+
+
+
+
+
+
+    protected bool OnSelectFailCondition()
+    {
         // Select를 시작하면 현재 아이템의 인벤토리 정보를 최신화하여 가져옵니다. 
         interactive = itemInfo.InventoryInfo.gameObject.GetComponent<InventoryInteractive>();
 
         // 아이템 셀렉팅이 하나라도 활성화되어 있다면 다른 아이템의 셀렉팅을 완전히 차단합니다.
         // 자신의 셀렉팅이 진행중이거나, 셀렉팅이 완료되지 않았다면 실행하지 않습니다.
         if( interactive.IsItemSelecting && isMyItemSelecting )
-            return;
-                
-        interactive.IsItemSelecting = true;     // 전체 아이템에 적용하는 선택 상태를 활성화 합니다.
-        isMyItemSelecting = true;               // 내 아이템 선택 진행 상태를 활성화 합니다.
-                
-        StartCoroutine( FirstSelectDelayTime(0.1f) );   // OnUpdateSelected 동시 호출을 방지하기 위해 딜레이를 줘서 상태변수를 활성화시킵니다.
-                
-        
-        // 이전 부모 위치 (슬롯리스트와 개별 슬롯)을 저장합니다.
-        prevParentTr=itemRectTr.parent;
-        movingParentTr = interactive.gameObject.transform.parent;      // 인벤토리의 부모 캔버스 참조
+            return true;
+        else 
+            return false;
+    }
 
-        itemRectTr.SetParent( movingParentTr );                 // 부모를 일시적으로 인벤토리의 부모인 캔버스로 잡아서 이미지 우선순위를 높입니다.
+
+    protected void InitOnSelect()
+    {
+        interactive.IsItemSelecting=true;     // 전체 아이템에 적용하는 선택 상태를 활성화 합니다.
+        isMyItemSelecting=true;               // 내 아이템 선택 진행 상태를 활성화 합니다.
+
+        // OnUpdateSelected 동시 호출을 방지하기 위해 딜레이를 줘서 상태변수를 활성화시킵니다.
+        StartCoroutine( FirstSelectDelayTime( 0.1f ) );
+
+
+
+
+
+        // 이전 부모 위치 (슬롯리스트와 개별 슬롯)을 저장합니다.
+        prevParentSlotTr=itemRectTr.parent;
+        selectingParentTr=interactive.gameObject.transform.parent; // 인벤토리의 부모 캔버스 참조
+
+        itemRectTr.SetParent( selectingParentTr );                 // 부모를 일시적으로 인벤토리의 부모인 캔버스로 잡아서 이미지 우선순위를 높입니다.
         itemCG.blocksRaycasts=false;                            // 드래그 이벤트 이외에는 받지 않습니다.
 
         // 원점 이동 벡터를 구합니다.
         // (현재 인벤토리 원점 위치-마우스 이벤트가 발생한 위치 => 마우스 이벤트 위치에서 인벤토리 원점으로 이동할 수 있는 이동벡터)
         moveVecToCenter=itemRectTr.position-Input.mousePosition;
-                
 
-
-
+        
 
 
 
         // 연결된 모든 인벤토리의 그래픽 레이캐스터를 얻기 위한 인벤토리 참조를 서버 인벤토리를 통해 얻습니다.
-        clientList = itemInfo.InventoryInfo.ServerInfo.ClientInfo;
+        clientList=itemInfo.InventoryInfo.ServerInfo.ClientInfo;
 
         // 현재 아이템이 속한 인벤토리가 연결상태인지를 확인합니다.
-        isInventoryConnect = itemInfo.InventoryInfo.IsConnect;
+        isInventoryConnect=itemInfo.InventoryInfo.IsConnect;
 
         // 레이캐스트 결과리스트를 초기화합니다.
         raycastResults.Clear();
@@ -184,74 +271,112 @@ public class ItemSelect : MonoBehaviour
 
 
 
-    // 셀렉트 종료 시
-    public void OnDeselect( BaseEventData eventData )
-    {        
-        isMyItemSelecting=false;            // 내 아이템 선택 상태를 바로 비활성화합니다.
-        isFirstSelectDelay=false;           // 처음 클릭 상태를 비활성화 합니다.
 
+
+
+
+
+
+
+    /// <summary>
+    /// OnDeselect 동작이 일어날 때 최초로 초기화를 해줘야 하는 메서드입니다.
+    /// </summary>
+    protected void InitFirstOnDeselect()
+    {
+        isMyItemSelecting=false;        // 내 아이템 선택 상태를 바로 비활성화합니다.
+        isFirstSelectDelay=false;       // 처음 클릭 상태를 비활성화 합니다.
+    }
+
+
+    
+    /// <summary>
+    /// OnDeselect 동작이 일어날 때 (중간 동작 이후) 마지막에 초기화 해 줘야 하는 메서드입니다.<br/>
+    /// OnDeselect에서 중간 레이캐스팅이 끝난 후 호출해주고 있습니다.
+    /// </summary>
+    protected void InitLastOnDeselect()
+    {        
+        // 아이템 셀렉팅 상태를 딜레이 시간을 줘서 비활성화시킵니다.
+        StartCoroutine( SelectDoneDelayTime( 0.03f ) );
+    }
+
+
+    /// <summary>
+    /// 연결된 모든 인벤토리를 향해 레이캐스팅을 시전합니다.<br/>
+    /// </summary>
+    protected void RaycastAllToConnectedInventory()
+    {
         // 이벤트가 일어날 포지션을 마우스를 다시 클릭했을 때의 지점으로 설정합니다.
-        pEventData.position=Input.mousePosition;
+        pEventData.position = Input.mousePosition;
 
         // 연결된 모든 인벤토리에게 그래픽 레이캐스팅을 시전하고 결과를 받습니다.
-        for(int i=0; i<clientList.Count; i++)
+        for( int i = 0; i<clientList.Count; i++ )
             clientList[i].gRaycaster.Raycast( pEventData, raycastResults );
+    }
 
 
+
+    /// <summary>
+    /// 레이캐스팅 결과의 조건에 따라 아이템에게 일어나는 동작을 모아둔 메서드입니다. 
+    /// </summary>
+    protected void DropItemWithRaycastResults()
+    {
         // 레이캐스팅에 성공한 경우(검출한 오브젝트가 있는 경우)
         if( raycastResults.Count>0 )
         {
-            //string objNames = "";
-            //for( int i = 0; i<raycastResults.Count; i++ )
-            //    objNames+=raycastResults[i].gameObject.name+" ";
-            //print( "[검출되었습니다!]"+objNames );
-
-
             // 모든 레이캐스팅 결과를 하나씩 열어봅니다.
-            foreach(RaycastResult raycastResult in raycastResults)
+            foreach( RaycastResult raycastResult in raycastResults )
             {
                 Transform resultTr = raycastResult.gameObject.transform;
-                
+
                 // 검출한 오브젝트의 태그가 슬롯이라면,
-                if(resultTr.tag == strItemDropSpace)
+                if( resultTr.tag==strItemDropSpace )
                 {
                     itemInfo.OnItemSlotDrop( resultTr );
                 }
                 // 검출한 오브젝트의 태그가 슬롯이 아니라면, 다시 원위치로 돌려줍니다.
                 else
                     itemInfo.UpdatePositionInfo();
-
             }
 
-            // 아이템 셀렉팅 상태를 딜레이 시간을 줘서 비활성화시킵니다.
-            StartCoroutine( SelectDoneDelayTime( 0.03f ) );
         }
         // 레이캐스팅의 검출이 없으면서, 부모의 이동이 발생하지 않았다면,(슬롯의 드랍에 실패했다면)
-        else if( raycastResults.Count==0 && itemRectTr.parent==movingParentTr )
+        else if( raycastResults.Count==0 && itemRectTr.parent==selectingParentTr )
         {
             //print( "[검출되지 않았습니다]" );
-
 
             // 현재 인벤토리가 연결상태라면
             if( isInventoryConnect )
                 itemInfo.UpdatePositionInfo();    // 원위치로 돌립니다.
             // 현재 인벤토리가 연결상태가 아니라면
-            else                
-                itemInfo.OnItemWorldDrop();             // 인벤토리에서 아이템 드롭을 허용합니다.
-                        
-            // 아이템 셀렉팅 상태를 딜레이 시간을 주지 않고 비활성화시킵니다.
-            StartCoroutine( SelectDoneDelayTime( 0f ) );
+            else
+                itemInfo.OnItemWorldDrop();       // 인벤토리에서 아이템 드롭을 허용합니다.
         }
         else
             throw new System.Exception( "드랍 이상이 발생하였습니다. 확인하여 주세요." );
-
     }
 
-    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     /// <summary>
     /// 처음 셀렉트하기 위해 클릭할 때 바로 셀렉트 종료의 호출이 일어나는 것을 막기 위한 딜레이 메서드
     /// </summary>
-    IEnumerator FirstSelectDelayTime(float time)
+    protected IEnumerator FirstSelectDelayTime(float time)
     {
         yield return new WaitForSeconds(time);
         isFirstSelectDelay = true;
@@ -260,7 +385,7 @@ public class ItemSelect : MonoBehaviour
     /// <summary>
     /// 셀렉팅이 끝났을 때 딜레이를 줘서 초기화 해줘야할 참조 값을 모아놓은 메서드
     /// </summary>
-    IEnumerator SelectDoneDelayTime(float time)
+    protected IEnumerator SelectDoneDelayTime(float time)
     {
         yield return new WaitForSeconds(time);
         interactive.IsItemSelecting = false;
@@ -268,6 +393,19 @@ public class ItemSelect : MonoBehaviour
     }
     
 
+
+    /// <summary>
+    /// 레이캐스팅된 결과의 모든 오브젝트 이름 정보를 출력합니다.
+    /// </summary>
+    protected void PrintDebugInfo(List<RaycastResult> raycastResults)
+    {
+        string objNames = "";
+
+        for( int i = 0; i<raycastResults.Count; i++ )
+            objNames+=raycastResults[i].gameObject.name+" ";
+
+        print( "[검출되었습니다!]"+objNames );
+    }
 
 
 

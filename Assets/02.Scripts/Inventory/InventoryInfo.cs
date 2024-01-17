@@ -274,7 +274,7 @@ public partial class InventoryInfo : MonoBehaviour
 
 
 
-    protected void Awake()
+    protected virtual void Awake()
     {         
         inventoryTr = transform; 
         slotListTr = inventoryTr.GetChild(0).GetChild(0).GetChild(0);
@@ -300,15 +300,17 @@ public partial class InventoryInfo : MonoBehaviour
             clientInfo.Add(this);                   // 연결 인벤토리 정보에 자신을 등록합니다.
             serverInfo = this;                      // 자기자신을 서버로 등록합니다.
         }
+
+        
     }
 
     // dataManager와 createManager의 초기화가 이루어진 이후 로드해야함.
-    protected void Start()
+    protected virtual void Start()
     {        
         /** 호출 순서 고정: 로드->인터렉티브스크립트 초기화 및 슬롯생성요청->아이템표현 ***/
         this.LoadPlayerData();              // 저장된 플레이어 데이터를 불러옵니다. 
         interactive.Initialize(this);       // 인터렉티브 스크립트 초기화를 진행합니다.
-        this.UpdateAllItemVisualInfo();     // 슬롯에 모든 아이템의 시각화를 진행합니다.        
+        this.UpdateAllItemVisualInfo();     // 슬롯에 모든 아이템의 시각화를 진행합니다.   
     }
 
 
@@ -317,7 +319,7 @@ public partial class InventoryInfo : MonoBehaviour
     /// <summary>
     /// 게임 종료시 저장합니다.
     /// </summary>
-    protected void OnApplicationQuit()
+    protected virtual void OnApplicationQuit()
     {
         SavePlayerData(); // 플레이어 데이터 저장
     }

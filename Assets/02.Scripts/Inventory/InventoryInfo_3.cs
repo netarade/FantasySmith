@@ -196,8 +196,8 @@ public partial class InventoryInfo : MonoBehaviour
             return true;
         }
 
-
-        throw new Exception("서버끼리 연결할 수 없으며, 클라이언트끼리 연결 할 수 없습니다.");
+        
+        throw new Exception("서버-클라이언트 관계가 아닙니다. 서버끼리 연결할 수 없으며, 클라이언트끼리 연결 할 수 없습니다.");
     }
 
 
@@ -253,6 +253,33 @@ public partial class InventoryInfo : MonoBehaviour
     }
 
 
+
+    /// <summary>
+    /// 게임 시작 시 해당 인벤토리를 다른 인벤토리의 링크로 등록만하는 메서드입니다.<br/>
+    /// 플레이어 인벤토리, 퀵슬롯의 연결에 사용됩니다.
+    /// </summary>
+    protected void RegisterInventoryLink(InventoryInfo otherInfo)
+    {
+        if(otherInfo==null || otherInfo==this )
+            throw new Exception("인벤토리 참조가 정확하지 않습니다. 다른 인벤토리의 참조값이 필요합니다.");
+
+        // 자신이 서버이고 상대가 클라이언트라면
+        if( this.isServer && !otherInfo.isServer )
+        {            
+            this.clientInfo.Add(otherInfo); // 자신의 클라이언트 정보에 인자로 들어온 인벤토리를 등록합니다.
+            otherInfo.serverInfo = this;    // 인자로 들어온 인벤토리의 서버 정보에 자신을 등록합니다.
+            otherInfo.isConnect = true;     // 클라이언트쪽만 연결상태로 만듭니다.
+        }
+        // 자신이 클라이언트이고 상대가 서버라면
+        else if( !this.isServer && otherInfo.isServer )
+        {
+            this.isConnect = true;              // 클라이언트쪽만 연결상태로 만듭니다.
+            this.serverInfo = otherInfo;    // 자신의 서버정보에 인자로 들어온 인벤토리를 등록합니다.
+            otherInfo.clientInfo.Add(this); // 인자로 들어온 인벤토리의 클라이언트 정보에 자신을 등록합니다.
+        }
+        else
+            throw new Exception("서버-클라이언트 관계가 아닙니다. 서버끼리 연결할 수 없으며, 클라이언트끼리 연결 할 수 없습니다.");
+    }
 
 
 

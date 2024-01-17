@@ -55,14 +55,16 @@ using UnityEngine;
  * 1- ItemWeapon클래스의 부모를 Item이 아니라 ItemEquip으로 수정
  * 이유는 방어구 등 착용가능한 아이템 클래스만 따로 선별하기 위함
  * 
+ * <V5.2 - 2024_0117_최원준>
+ * 1- WeaponType에 PICKAX와 NONE 추가
+ * 
  */
 namespace ItemData
 {    
     /// <summary>
-    /// 무기 아이템의 상세 분류
+    /// 무기 아이템의 상세 분류 (손, 검, 창, 도끼, 둔기, 활, 곡괭이, 기타, 없음)
     /// </summary>
-    public enum WeaponType { Sword, Spear, Axe, Blunt, Bow, ETC } // 손, 검, 창, 도끼, 둔기, 활, 기타 
-
+    public enum WeaponType { Sword, Spear, Axe, Blunt, Bow, PICKAX, ETC, NONE } 
 
     /// <summary>
     /// 일반 무기 아이템

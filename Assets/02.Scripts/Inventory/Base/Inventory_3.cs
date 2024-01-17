@@ -162,6 +162,7 @@ namespace InventoryManagement
     /// 인벤토리 메서드의 전달인자로 사용되며,<br/>
     /// 해당 아이템의 이름이 인벤토리에 존재하는 지, 아이템 수량은 충분한 지 확인하는 용도로 사용됩니다.
     /// </summary>
+    [Serializable]
     public struct ItemPair
     {
         public string itemName;
@@ -172,6 +173,7 @@ namespace InventoryManagement
             this.itemName = itemName;
             this.overlapCount = overlapCount;
         }
+
     }
 
 

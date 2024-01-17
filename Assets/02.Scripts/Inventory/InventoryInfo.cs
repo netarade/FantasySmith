@@ -270,7 +270,7 @@ public partial class InventoryInfo : MonoBehaviour
     
     protected string saveFileName;                // 저장파일 이름 설정
 
-
+    
 
 
 

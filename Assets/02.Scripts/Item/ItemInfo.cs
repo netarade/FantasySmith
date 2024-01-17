@@ -334,6 +334,16 @@ using InventoryManagement;
  *(다른 인벤토리에 슬롯 드랍시 현재 아이템이 어떤 탭에 속해있었는지 확인 한 다음, 
  *전송할 인벤토리의 탭이 일치하지 않을때 실패처리하지 않으면 아이템이 사라진것 처럼 보이게 되기 때문)
  *
+ *<v13.2 - 2024_0117_최원준>
+ *1- UpdateCountTxt메서드를 UpdateTextInfo로 변경하였으며, 
+ *일부 코드를 InitCountTxt메서드로 분리하여 OnItemCreated메서드에서 한번만 호출하도록 변경
+ *
+ *수량 변동 뿐만 아니라 상태창의 spec 텍스트까지 변경사항이 있다면 반영해야 하므로,
+ *ItemMisc뿐만 아니라 모든 아이템이 OnItemAdded될 때 호출하도록 변경
+ *(관련 변수들 ItemInfo_4.cs에 선언 및 활용)
+ *
+ *2- SlotIndex 프로퍼티명 SlotIndexEach로 변경
+ *
  *
  *
  */
@@ -432,7 +442,7 @@ public partial class ItemInfo : MonoBehaviour
     /// <summary>
     /// 아이템 오브젝트가 해당하는 탭에서 몇번 째 슬롯에 들어있는 지 인덱스를 반환하거나 설정합니다.
     /// </summary>
-    public int SlotIndex { get{return item.SlotIndexEach;} set{ item.SlotIndexEach=value;} }
+    public int SlotIndexEach { get{return item.SlotIndexEach;} set{ item.SlotIndexEach=value;} }
 
     
     /// <summary>
@@ -485,10 +495,9 @@ public partial class ItemInfo : MonoBehaviour
         // 월드 상에서 추가되었다면 아이템 구조를 변경합니다
         if(isWorldPositioned)
             DimensionShift(false);
-
-        // 잡화아이템인 경우 추가되기 전 수량변동 가능성이 있으므로 중첩 수량 정보를 최신화합니다
-        if(item.Type == ItemType.Misc)
-            UpdateCountTxt();              
+        
+        // 텍스트 정보를 최신화 합니다.     
+        UpdateTextInfo();              
 
         // 인벤토리 정보를 최신화합니다
         UpdateInventoryInfo(inventoryInfo); 
@@ -512,10 +521,15 @@ public partial class ItemInfo : MonoBehaviour
         // 2D오브젝트와 분리되어서 생성된 3D 오브젝트의 계층 정보를 참조합니다
         // (2D오브젝트 상위에 Canvas를 둘 때 한 번더 수정될 가능성 있음!)
         itemTr = transform.parent;
+        
+        // 아이템의 중첩수량 텍스트를 초기화합니다.
+        InitCountTxt();
 
         // 아이템 오브젝트의 고유 정보를 읽어 들여 2D 오브젝트에 반영합니다
-        UpdateImage();                      
-        UpdateCountTxt();                   
+        UpdateImage();          
+
+        // 텍스트 정보를 최신화 합니다.
+        UpdateTextInfo();                   
                 
         // 인벤토리 정보를 초기화합니다
         UpdateInventoryInfo(null);          
@@ -545,18 +559,37 @@ public partial class ItemInfo : MonoBehaviour
 
 
     /// <summary>
-    /// 잡화 아이템의 중첩횟수를 동적으로 수정합니다. 잡화 아이템의 수량이 변경될 때 마다 호출해 주십시오.
+    /// 아이템의 텍스트 정보를 업데이트 합니다.<br/>
+    /// 아이템의 내부 수치를 수정했을 때 자동으로 호출해주기 위한 메서드입니다.
     /// </summary>
-    public void UpdateCountTxt()
-    {
-        if( Item.Type==ItemType.Misc )                // 잡화 아이템의 중첩 갯수를 표시합니다.
-        {
-            countTxt.enabled=true;
-            countTxt.text = ((ItemMisc)Item).OverlapCount.ToString();
-        }
-        else
-            countTxt.enabled = false;                // 잡화아이템이 아니라면 중첩 텍스트를 비활성화합니다.
+    public void UpdateTextInfo()
+    {        
+        // 상태창에 표시될 스펙정보를 최신화 합니다.
+        strSpec = GetItemSpec();
+
+        // 잡화 아이템이라면 중첩 수량정보를 최신화합니다.
+        ItemMisc itemMisc = item as ItemMisc;
+        if(itemMisc!=null)
+            countTxt.text = itemMisc.OverlapCount.ToString();
     }
+
+
+    /// <summary>
+    /// 아이템의 중첩 수량표시를 초기화합니다.<br/>
+    /// 잡화 아이템 종류는 수량 표시를 활성화하고, 비잡화 아이템의 경우 수량표시를 비활성화합니다.
+    /// </summary>
+    private void InitCountTxt()
+    {
+        if(item.Type is ItemType.Misc)
+            countTxt.enabled = true;
+        else
+            countTxt.enabled = false;
+    }
+
+
+
+
+
         
     /// <summary>
     /// 현재 아이템이 슬롯 리스트에 속해있다면 위치를 슬롯 인덱스에 맞게 최신화시켜줍니다.<br/>
@@ -628,6 +661,8 @@ public partial class ItemInfo : MonoBehaviour
             throw new Exception("월드 상태일 때는 슬롯으로 이동할 수 없습니다.");
         if(slotListTr==null)
             throw new Exception("슬롯 참조가 잡혀있지 않습니다. 확인하여 주세요.");
+
+        
 
         // 현재 활성화 중인 탭을 기반으로 어떤 인덱스를 참조할지 설정합니다.
         int activeIndex = isActiveTabAll? item.SlotIndexAll : item.SlotIndexEach;

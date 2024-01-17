@@ -82,6 +82,10 @@ using System;
  * <v7.1 - 2024_0111_최원준>
  * 1- 퀘스트아이템을 수량을 두지 않는 키아이템으로 변경하였기 때문에 새로운 파일ItemQuest로 이전
  * 
+ * <v7.2 - 2024_0118_최원준>
+ * 1- MiscType에서 Essential을 삭제하고 None을 추가
+ * 2- MaxOverlapCount를 (서바이벌 프로젝트에 맞게) 10으로 변경 
+ * 
  */
 
 
@@ -89,9 +93,9 @@ namespace ItemData
 {   
     
     /// <summary>
-    /// 잡화 아이템의 상세 분류
+    /// 잡화 아이템의 상세 분류로서 기본, 제작, 건설, 도구, 포션 등이 있습니다.
     /// </summary>
-    public enum MiscType { Basic, Essential, Craft, Building, Tool, Potion } // 기본, 필수, 제작, 건설, 도구, 포션
+    public enum MiscType { Basic, Craft, Building, Tool, Potion, None } 
         
 
     /// <summary>
@@ -103,7 +107,7 @@ namespace ItemData
         [JsonProperty] private int iOverlapCount = 0;   // 인벤토리 중첩 횟수        
         [JsonProperty] MiscType eMiscType;              // 서브타입 (잡화 소분류 타입)
 
-        [JsonIgnore] public readonly int MaxOverlapCount = 99; // 잡화 아이템 최대 갯수
+        [JsonIgnore] public readonly int MaxOverlapCount = 10; // 잡화 아이템 최대 갯수
 
 
         /// <summary>

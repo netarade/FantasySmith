@@ -15,10 +15,63 @@ using UnityEngine;
 * <v1.2 -2024_0116_최원준>
 * 1- PrintDebugInfo메서드 작성
 * 
+* <v2.0 - 2024_0118_최원준>
+* 1- CheckToDestroy메서드를 작성
+* Info클래스에서 외부 사용자가 아이템 정보를 변동시키게 만들 예정이므로,
+* 아이템 내부정보가 바뀔 때마다 파괴여부를 체크해서 자동으로 파괴시켜버리도록 하기위함.
+* 
 */
 
 public partial class ItemInfo : MonoBehaviour
 {    
+    
+    /// <summary>
+    /// 아이템의 정보 변동으로 인한 파괴여부를 체크합니다.
+    /// </summary>
+    public void CheckDestroyInfo()
+    {
+        bool isRemove = false;
+        ItemWeapon itemWeapon = item as ItemWeapon;
+        ItemBuilding itemBuilding = item as ItemBuilding;
+        ItemMisc itemMisc = item as ItemMisc;
+
+        // 무기와 건설재료아이템의 경우 내구도를 체크합니다.
+        if( itemWeapon!=null )
+        {
+            if( itemWeapon.Durability<=0 )
+                isRemove=true;
+        }
+        else if( itemBuilding!=null )
+        {
+            if( itemBuilding.Durability<=0 )
+                isRemove=true;
+        }
+        
+        // 잡화아이템의 경우 중첩수량을 체크합니다.
+        if( itemMisc!=null )
+        {
+            if( itemMisc.OverlapCount<=0 )
+                isRemove = true;
+        }
+
+        // 파괴여부가 활성화된 경우
+        if( isRemove )
+        {
+            // 인벤토리가 있다면 목록에서 제거
+            if( inventoryInfo!=null )
+                inventoryInfo.RemoveItem( this );   
+            
+            // 아이템 파괴
+            Destroy( this.gameObject );     
+        }
+    }
+
+
+
+
+
+
+
     public void OnItemUse()
     {
         
@@ -46,7 +99,17 @@ public partial class ItemInfo : MonoBehaviour
     }
 
 
-    
+
+
+
+
+
+
+
+
+
+
+
     public void PrintDebugInfo()
     {
         string debugInfo = "";
@@ -58,4 +121,10 @@ public partial class ItemInfo : MonoBehaviour
 
         print(debugInfo);
     }
+
+
+
+
+
+
 }

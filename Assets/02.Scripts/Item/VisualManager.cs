@@ -36,6 +36,15 @@ using WorldItemData;
  * IVCType과 ivcNum수정
  * GetIVCIndex메서드 내부 퀘스트 타입 추가
  * 
+ * <v2.1 - 2024_0118_최원준>
+ * 1- ItemType열거형의 Item.Weapon을 Item.Equip으로 변경하면서
+ * GetIVCIndex메서드에서 ItemEquip의 케이스문에 ItemWeapon을 한번 더 검사할 수 있도록 하였음.
+ * (취소 - Item.Equip을 다시 Item.Weapon으로 돌림 이유는 무기와 방어구를 같이 저장할 수 없기 때문)
+ * 
+ * 2- GetIVCIndex메서드내부 MiscType의 switch문을 삭제하고 if문으로 변경
+ * (switch문에서 default에서 예외처리를 던지던 부분 삭제 - 
+ * 현재 IVC가 Basic오브젝트 밖에 없으므로, Craft등의 서브타입이 생성되면 에러 발생)
+ * 
  * 
  */
 namespace CreateManagement
@@ -86,30 +95,25 @@ namespace CreateManagement
             // 인스펙터 뷰에서 참조할 인덱스를 현재 들어온 아이템의 기본타입 및 서브타입에 따라서 구합니다. 
             switch( itemType )        
             {
-                case ItemType.Quest:
-                    ivcIdx=(int)IVCType.Quest;
-                    break;
-
                 case ItemType.Weapon:
                     ivcIdx=(int)IVCType.Weapon;
+                    break;
+
+                case ItemType.Quest:
+                    ivcIdx=(int)IVCType.Quest;
                     break;
 
                 case ItemType.Misc:
                     ItemMisc miscItem = (ItemMisc)item;
 
-                    switch( miscItem.MiscType )
-                    {
-                        case MiscType.Basic:           // 서브타입이 기본 재료라면,
-                            ivcIdx=(int)IVCType.MiscBasic;
-                            break;
-                        case MiscType.Building:        // 서브타입이 추가 재료라면,
-                            ivcIdx=(int)IVCType.MiscBuilding;
-                            break;
-                        default:                       // 서브타입이 기타 재료라면,
-                            throw new Exception("현재 ItemVisualCollection 인덱스가 설정되어있지 않습니다.");
-                            
-                    }
+                    if(miscItem.MiscType==MiscType.Building)
+                        ivcIdx=(int)IVCType.MiscBuilding;       // 빌딩 재료
+                    else
+                        ivcIdx=(int)IVCType.MiscBasic;          // 나머지 기본 재료
+
                     break;
+
+                    
             }
 
             // 참조할 인덱스가 수정되지 않았다면, 예외를 던지며 수정되었다면 반환합니다.

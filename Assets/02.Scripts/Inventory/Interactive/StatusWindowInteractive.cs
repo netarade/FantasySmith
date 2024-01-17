@@ -93,6 +93,7 @@ public class StatusWindowInteractive : MonoBehaviour
     Image statusImage;          // 상태창의 아이템 이미지
     Text txtName;               // 상태창의 아이템 이름
     Text txtDesc;               // 상태창의 아이템 설명
+    Text txtSpec;               // 상태창의 아이템 고유 수치
 
     RectTransform inventoryRectTr;                  // 자기자신 렉트 트랜스폼
     InventoryInteractive inventoryInteractive;      // 아이템 셀렉팅 상태를 확인할 스크립트 참조
@@ -107,8 +108,9 @@ public class StatusWindowInteractive : MonoBehaviour
 
         // 상태창 및 하위 컴포넌트 참조 설정
         statusImage = statusRectTr.GetChild(0).GetChild(0).GetComponent<Image>();
-        txtName = statusRectTr.GetChild(2).GetComponent<Text>();
-        txtDesc = statusRectTr.GetChild(3).GetComponent<Text>();
+        txtName = statusRectTr.GetChild(1).GetComponent<Text>();
+        txtDesc = statusRectTr.GetChild(2).GetComponent<Text>();
+        txtSpec = statusRectTr.GetChild(3).GetComponent<Text>();
                       
         // 게임 시작 시 상태창을 꺼둡니다.
         statusRectTr.gameObject.SetActive(false);
@@ -150,12 +152,17 @@ public class StatusWindowInteractive : MonoBehaviour
             statusRectTr.position=itemRectTr.position+rightPadding+upPadding;
 
         statusImage.sprite=itemInfo.statusSprite;         // 이미지에 등록한 statusSprite 이미지를 보여준다.
-        txtName.text=item.Name;                           // 이름 텍스트에 아이템 이름을 보여준다.
-        txtDesc.text=item.Desc;                           // 설명 텍스트에 아이템 설명을 보여준다.
+        txtName.text = item.Name;                         // 이름 텍스트에 아이템 이름을 보여준다.
+        txtDesc.text = item.Desc;                         // 설명 텍스트에 아이템 설명을 보여준다.
+        txtSpec.text = itemInfo.Spec;
     }
 
 
 
+
+
+
+    
 
 
 

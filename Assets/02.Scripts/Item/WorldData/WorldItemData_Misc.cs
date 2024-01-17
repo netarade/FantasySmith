@@ -23,6 +23,10 @@ public partial class WorldItem
         {           
             { 
                 "장작", new ItemMisc( ItemType.Misc, "1000", "장작", new VisualReferenceIndex(0),
+                MiscType.Craft, "~~하는용도로 사용") 
+            },
+            { 
+                "실", new ItemMisc( ItemType.Misc, "1001", "실", new VisualReferenceIndex(1),
                 MiscType.Basic, "~~하는용도로 사용") 
             },
         };

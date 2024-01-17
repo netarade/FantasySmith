@@ -312,8 +312,6 @@ public class InventoryInteractive : MonoBehaviour
         // 내부 인벤토리에서 탭제한 수를 참조하기 위해 전체탭의 인덱스를 계산합니다.
         int allTabIdx = inventory.GetTabIndex(ItemType.None);
 
-        print("전체 탭 갯수 " +caller.inventory.slotCountLimitTab[allTabIdx] );
-
         // 플레이어 인벤토리 정보(전체 탭 슬롯 칸수)를 참조하여 슬롯을 동적으로 생성
         // 현재 인벤토리에 슬롯이 한 개 들어있으므로 하나를 감하고 생성
         for( int i = 0; i<caller.inventory.slotCountLimitTab[allTabIdx]-1; i++ )
@@ -368,7 +366,7 @@ public class InventoryInteractive : MonoBehaviour
         // 탭을 정의하였다면, 첫 시작 시 항상 첫번째 탭을 기준으로 Select로 표시해줍니다.
         else
         {            
-            isActiveTabAll = showTabType[0] == TabType.All? true : false;
+            isActiveTabAll = (showTabType[0]==TabType.All) ? true : false;
             curActiveTab = showTabType[0];
             btnTap[0].Select();
         }
@@ -416,7 +414,7 @@ public class InventoryInteractive : MonoBehaviour
         else if(tabType==TabType.Misc)   
             name = "ActiveTab-Misc";
         else if(tabType==TabType.Equip)
-            name = "ActiveTab-Equip";
+            name = "ActiveTab-Weapon";
         else
             throw new Exception("탭 오브젝트명이 설정되지 않았습니다.");
 

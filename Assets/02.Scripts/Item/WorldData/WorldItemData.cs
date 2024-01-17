@@ -11,6 +11,10 @@ using UnityEngine;
  * <v2.0 - 2024_0110_최원준>
  * 1- InitDic메서드를 만들고 인자로 ItemType을 넣으면 해당 타입의 사전메서드를 호출해주도록 변경
  * 
+ * <v2.1 - 2024_0118_최원준>
+ * 1- InitDic메서드 내부에 빌딩아이템의 사전을 추가로 반환하도록 설정
+ * 2- 주석 보완
+ * 
  */
 
 namespace WorldItemData
@@ -31,7 +35,7 @@ namespace WorldItemData
         public readonly ItemType[] dicType;
         
         /// <summary>
-        /// 사전 배열의 길이
+        /// 월드 사전 배열의 길이
         /// </summary>
         public readonly int worldDicLen;
 
@@ -53,19 +57,42 @@ namespace WorldItemData
 
 
         
+
+
+        /// <summary>
+        /// ItemType에 해당하는 모든 아이템 정보가 담긴 월드 아이템 딕셔너리를 반환합니다.<br/>
+        /// </summary>
+        /// <returns>ItemType에 해당하는 월드 아이템 딕셔너리를 반환</returns>
         private Dictionary<string, Item> InitDic(ItemType itemType)
-        {
+        {            
+            Dictionary<string, Item> itemDic;       // 반환할 클래스의 사전
+            Dictionary<string, Item> itemDicSub;    // 자식 클래스 사전
+            
             switch(itemType)
             {
                 case ItemType.Misc:
-                    return InitDic_Misc();
-                case ItemType.Weapon:
-                    return InitDic_Weapon();
+                    itemDic = InitDic_Misc();
+                    itemDicSub = InitDic_Building();    //자식사전을 추가로 할당받습니다.
+
+                    // 자식 사전의 아이템을 하나씩 꺼내어 저장합니다.
+                    foreach(KeyValuePair<string, Item> item in itemDicSub)
+                        itemDic.Add(item.Key, item.Value);
+                                        
+                    break;
+
+                case ItemType.Weapon:                
+                    itemDic = InitDic_Weapon();
+                    break;
+
                 case ItemType.Quest:
-                    return InitDic_Quest();
+                    itemDic = InitDic_Quest();
+                    break;
+
                 default:
                     throw new System.Exception("해당 사전이 존재하지 않습니다.");
             }
+
+            return itemDic;
         }
 
 

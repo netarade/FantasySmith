@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 
 /*
- * <v1.0 - 2023_1231_최원준>
+ * <v1.0 - 2024_0115_최원준>
  * 1- 탭을 정의하는 열거형과 메서드를 Interactive클래스에서 옮겨왔으며, 메서드를 static 처리하여 접근성을 높임.
  * 이유는 Inventory클래스 내부적으로 어떤 탭에 따라서 AddItem 및 SlotIndex를 계산하는 것이 달라질 수 있기 때문. 
  * 
@@ -11,6 +11,11 @@ using System.Collections.Generic;
  * 이유는 마지막 길이로 인식하여 계산하기 위함.
  * 
  * 3- ConvertTabTypeToItemTypeList메서드 내부 TabType.None 전달에 대한 예외처리 추가 
+ * 
+ * <v1.1 - 2024_0118_최원준>
+ * 1- ConvertItemTypeToTabType메서드내부의 모든 아이템 종류 검사를 ==으로 대체
+ * (is문을 사용했으나 열거형은 폴리모핑이 안되므로)
+ * 
  * 
  */
 
@@ -41,9 +46,9 @@ namespace InventoryManagement
                 return TabType.All;
             else if(itemType == ItemType.Quest)
                 return TabType.Quest;
-            else if(itemType is ItemType.Misc)          //빌딩재료, 요리재료등 모두 잡화로 인식
+            else if(itemType == ItemType.Misc)          //빌딩재료, 요리재료등 모두 잡화로 인식
                 return TabType.Misc;
-            else if(itemType is ItemType.Weapon)
+            else if(itemType == ItemType.Weapon)
                 return TabType.Equip;
             else
                 throw new Exception("해당 아이템 종류로 설정된 탭타입이 존재하지 않습니다.");        

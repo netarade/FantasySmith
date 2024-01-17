@@ -28,7 +28,7 @@ public class InventoryInitializer : MonoBehaviour
     
     [Header("활성화 할 액티브탭의 종류를 지정")]
     [Header("(길이가 0이면 탭표시 안함 - 전체탭으로 작동)")]
-    [Header("(표시탭 종류 All-전체, Quest-퀘스트, Misc-잡화, Equip-장비)")]
+    [Header("(표시탭 종류 All-전체, Quest-퀘스트, Misc-잡화, Weapon-장비)")]
     public TabType[] showTabType;
 
 

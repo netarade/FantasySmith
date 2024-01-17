@@ -313,7 +313,7 @@ public partial class InventoryInfo : MonoBehaviour
 
         foreach(GameObject itemObj in itemObjList )
         {
-            itemObj.GetComponent<ItemInfo>().UpdateCountTxt();
+            itemObj.GetComponent<ItemInfo>().UpdateTextInfo();
         }
 
     }

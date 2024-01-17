@@ -19,6 +19,9 @@ using UnityEngine.UI;
  * 1- 숫자키패드를 사용하여 퀵슬롯을 여는 코드 테스트
  * 2- 스크립트명 PlayerInteractive로 변경
  * 
+ * <v3.1 - 2024_0118_최원준>
+ * 1- 퀵슬롯과 플레이어인벤토리 계층참조 (퀵슬롯을 먼저찾은 후 퀵슬롯을 토대로 찾는 형태로) 수정
+ *
  */
 
 
@@ -36,9 +39,8 @@ public class PlayerInteractive : MonoBehaviour
     
     void Start()
     {
-        int childIdx = transform.childCount-1;
-        playerInventory = transform.GetChild(childIdx).GetChild(0).GetComponent<InventoryInfo>();
-        quickSlot = transform.GetChild(childIdx).GetChild(1).GetComponent<QuickSlot>();
+        quickSlot = GetComponentInChildren<QuickSlot>();
+        playerInventory = quickSlot.transform.parent.GetChild(0).GetComponent<InventoryInfo>();
         animator = GetComponent<Animator>();
     }
 
@@ -79,18 +81,19 @@ public class PlayerInteractive : MonoBehaviour
 
 
         if(Input.GetKeyDown(KeyCode.Alpha1))
-        {
-            print("키패드1");
             quickSlot.ItemEquipSwitch(1);
 
-        }
-
         if(Input.GetKeyDown(KeyCode.Alpha2))
-        {
-            print("키패드2");
             quickSlot.ItemEquipSwitch(2);
-        }
 
+        if(Input.GetKeyDown(KeyCode.Alpha3))
+            quickSlot.ItemEquipSwitch(3);
+        
+        if(Input.GetKeyDown(KeyCode.Alpha4))
+            quickSlot.ItemEquipSwitch(4);
+
+        if(Input.GetKeyDown(KeyCode.Alpha5))
+            quickSlot.ItemEquipSwitch(5);
 
 
 

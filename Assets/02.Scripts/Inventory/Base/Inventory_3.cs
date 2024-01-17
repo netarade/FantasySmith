@@ -151,6 +151,9 @@ using UnityEngine;
  * false를 반환하도록 수정
  * ( 인덱스를 제한 수 이상으로 할당하려하는 경우 실패처리 )
  * 
+ * <v5.2 - 2024_0118_최원준>
+ * 1- GetItemSlotIndexIndirect메서드 내부 printDebugInfo주석처리
+ * 
  */
 
 
@@ -389,11 +392,12 @@ namespace InventoryManagement
             // 인자로 전달한 아이템의 종류에 해당하는 탭의 슬롯의 칸 제한 수를 구합니다.
             int slotCountLimitTab = GetSlotCountLimitTab(itemType, isActiveTabAll); 
 
-            string debugInfo= "";
-            debugInfo += string.Format($"아이템 종류 : {itemType}\n");
-            debugInfo += string.Format($"전체 탭 여부 : {isActiveTabAll}\n");
-            debugInfo += string.Format($"탭 제한 수 : {slotCountLimitTab}\n");
-            Debug.Log(debugInfo);
+            //string debugInfo= "";
+            //debugInfo += string.Format($"아이템 종류 : {itemType}\n");
+            //debugInfo += string.Format($"전체 탭 여부 : {isActiveTabAll}\n");
+            //debugInfo += string.Format($"탭 제한 수 : {slotCountLimitTab}\n");
+            //Debug.Log(debugInfo);
+
             // 정렬 인덱스 예시 
             // 0, 1, 2, 3, 4
             // 0, 1, 4, 6, 9
@@ -538,7 +542,7 @@ namespace InventoryManagement
                 remainCount=itemMisc.SetOverlapCount( remainCount );
 
                 // 수정이 끝난 오브젝트의 중첩 텍스트를 수정합니다.
-                itemInfo.UpdateCountTxt();
+                itemInfo.UpdateTextInfo();
 
                 // 변경한 아이템의 수량이 0이 된 경우에는 삭제 리스트에 담습니다.
                 // 바로 제거하지 않고 따로 담는 이유는 중간에 리스트의 Count 변동이 생기기 때문입니다.

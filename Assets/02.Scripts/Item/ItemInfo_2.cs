@@ -50,7 +50,9 @@ public partial class ItemInfo : MonoBehaviour, IPointerEnterHandler, IPointerExi
      * 
      */
 
-    string strItemDropSpace = "ItemDropSpace";
+    string strItemDropSpace = "ItemDropSpace";  // 슬롯이 가지고 있는 태그    
+
+
     
     /// <summary>
     /// 아이템에서 커서를 대는 순간 자동으로 아이템 스테이터스 창을 띄워줍니다.
@@ -158,7 +160,7 @@ public partial class ItemInfo : MonoBehaviour, IPointerEnterHandler, IPointerExi
             }
             else
             {
-                switchItemInfo.SlotIndex = item.SlotIndexEach;          
+                switchItemInfo.SlotIndexEach = item.SlotIndexEach;          
                 item.SlotIndexEach = nextSlotIdx;
             }
             

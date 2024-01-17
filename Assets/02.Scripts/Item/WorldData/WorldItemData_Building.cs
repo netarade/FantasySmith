@@ -24,8 +24,8 @@ public partial class WorldItem
         return new Dictionary<string, Item>()
         {           
             { 
-                "장작", new ItemBuilding( ItemType.Misc, "5000", "장작", new VisualReferenceIndex(0),
-                MiscType.Building, 10, "~~하는용도로 사용")    // 세부타입, HP, 아이템설명
+                "벽", new ItemBuilding( ItemType.Misc, "5000", "벽", new VisualReferenceIndex(0),
+                MiscType.Building, 10, "~~하는용도로 사용")    // 세부타입, 내구도, 아이템설명
             },
             { 
                 "점토", new ItemBuilding( ItemType.Misc, "5001", "점토", new VisualReferenceIndex(1),

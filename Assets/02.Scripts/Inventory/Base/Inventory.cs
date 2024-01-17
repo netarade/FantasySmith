@@ -258,6 +258,11 @@ using UnityEngine.Assertions.Must;
  * 2- GetSlotCountLimitTab메서드 내부에 퀘스트 아이템의 경우 예외가 아니라 0값을 반환하도록 수정.
  * (전체탭 상태에서 퀘스트 아이템의 할당이 들어오는 경우 예외가 아니라 실패처리로 가야 하므로)
  * 
+ * 3- DeserializeItemListToDic메서드에서 단순 AddItem메서드를 호출하고 있었는데,
+ * 이는 내부적으로 slotIndex를 다시 새롭게 순서대로 할당해버리는 로직을 포함하고 있었음.
+ * 
+ * 이를 지정 슬롯에 추가하는 방식으로 변경하기위해, 이니셜라이저에서 초기 활성탭정보를 받아들여서
+ * 해당 정보를 토대로 AddItem해주는 방식으로 변경하였음.
  * 
  * 
  */
@@ -317,7 +322,7 @@ namespace InventoryManagement
 
         List<ItemType> tabKindList = new List<ItemType>();  // 탭종류와 일치하는 아이템타입을 담는 리스트
 
-
+        bool isInitializerIndexAll;                 // 초기 이니셜라이저를 통해 받은 탭정보가 전체탭인지
 
 
 
@@ -601,13 +606,17 @@ namespace InventoryManagement
             if(itemList==null)  // 리스트에 null 전달되었다면 종료합니다.
                 return;
 
+
             foreach(Item item in itemList) // 아이템 리스트에서 개념 아이템 정보를 하나씩 꺼내옵니다.
             { 
                 // 월드에 오브젝트를 만들고 ItemInfo 참조값을 받습니다.
                 ItemInfo itemInfo = createManager.CreateWorldItem(item);
-                                
-                // 인벤토리 내부에 추가합니다.
-                AddItem(itemInfo);
+                                               
+                // 초기 활성탭에 따라 슬롯인덱스를 결정합니다.
+                int slotIndexTab = isInitializerIndexAll ? item.SlotIndexAll : item.SlotIndexEach;
+
+                // 인벤토리 내부에 슬롯을 지정하여 추가합니다.
+                AddItem(itemInfo, slotIndexTab, isInitializerIndexAll);
             }
 
 
@@ -679,7 +688,12 @@ namespace InventoryManagement
             }
 
 
-
+            // 활성화 탭타입의 길이가 0이 아닌 경우 탭타입이 전체로 선택되어있는지 검사
+            if(initializer.showTabType.Length != 0)
+                isInitializerIndexAll = initializer.showTabType[0]==TabType.All? true : false;
+            // 활성화 탭타입의 길이가 0인 경우 전체로 간주
+            else
+                isInitializerIndexAll = true;
 
 
         }

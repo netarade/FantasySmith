@@ -32,7 +32,7 @@ public partial class WorldItem
             /*** 검 ***/
             { 
                 "손도끼", new ItemWeapon( ItemType.Weapon, "2000", "손도끼", new VisualReferenceIndex(0),
-                WeaponType.Sword, 10, 100, "아이템 설명넣기" )
+                WeaponType.Axe, 10, 100, "아이템 설명넣기" )
             },
         };    
     }

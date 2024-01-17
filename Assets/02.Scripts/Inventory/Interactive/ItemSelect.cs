@@ -81,6 +81,10 @@ using UnityEngine.UI;
  * 
  * 4- 변수명 prevParentTr을 prevParentSlotTr로 변경, movingParentTr을 selectingParentTr로 변경
  * 
+ * <v7.1 - 2024_0118_최원준>
+ * 1- DropItemWithRaycastResults메서드에서  
+ * 슬롯의 계층 상위 부모 인벤토리가 퀵슬롯이라면 퀵슬롯의 드롭메서드까지 호출해주도록 변경
+ * 
  */
 
 
@@ -332,6 +336,12 @@ public class ItemSelect : MonoBehaviour
                 if( resultTr.tag==strItemDropSpace )
                 {
                     itemInfo.OnItemSlotDrop( resultTr );
+
+                    // 슬롯의 계층 상위 부모 인벤토리가 퀵슬롯이라면 퀵슬롯 드롭메서드 또한 호출해줍니다.
+                    QuickSlot quickSlot = resultTr.parent.parent.parent.parent.GetComponent<QuickSlot>();
+                    
+                    if(quickSlot != null )
+                        quickSlot.OnQuickSlotDrop(itemInfo, resultTr);
                 }
                 // 검출한 오브젝트의 태그가 슬롯이 아니라면, 다시 원위치로 돌려줍니다.
                 else

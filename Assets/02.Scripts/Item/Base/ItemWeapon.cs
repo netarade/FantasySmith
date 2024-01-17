@@ -58,13 +58,23 @@ using UnityEngine;
  * <V5.2 - 2024_0117_최원준>
  * 1- WeaponType에 PICKAX와 NONE 추가
  * 
+ * <v5.3 - 2024_0118_최원준>
+ * 1- WeaponType의 PICKAX와 NONE 변수명 Pickax, None으로 변경 및 주석 수정
+ * 2- 프로퍼티 Power와 Durability를 수정가능하도록 변경하였음. 
+ * 이유는 Info클래스에서 접근 가능해야 하므로
+ * 
+ * (수정예정)
+ * 1- Pickax를 삭제하고 Production 또는 Tool으로 변경할 예정 (생산계열 또는 도구 아이템이므로)
+ * (ItemInfo_4.cs의 weaponTypeString도 수정해야함)
+ * 
  */
 namespace ItemData
 {    
     /// <summary>
-    /// 무기 아이템의 상세 분류 (손, 검, 창, 도끼, 둔기, 활, 곡괭이, 기타, 없음)
+    /// 무기 아이템의 상세 분류 (검, 창, 도끼, 둔기, 활, 곡괭이, 기타, 없음)
     /// </summary>
-    public enum WeaponType { Sword, Spear, Axe, Blunt, Bow, PICKAX, ETC, NONE } 
+    public enum WeaponType { Sword, Spear, Axe, Blunt, Bow, Pickax, Etc, None } 
+
 
     /// <summary>
     /// 일반 무기 아이템
@@ -93,9 +103,23 @@ namespace ItemData
         [JsonIgnore] public float PowerMult { get{ return fPowerMult; } set{ fPowerMult=value; } }
 
         
-        [JsonIgnore] public int Power { get{return (int)Mathf.Round(iPower*PowerMult);} }
-        [JsonIgnore] public int Durability { get{return iDurability;} }
+        /// <summary>
+        /// 아이템의 공격력입니다. 수정가능한 변수입니다.
+        /// </summary>
+        [JsonIgnore] public int Power { 
+                get { return (int)Mathf.Round(iPower*PowerMult); }  
+                set { iPower=value; } 
+            }
 
+        /// <summary>
+        /// 아이템의 내구도 입니다. 수정가능한 변수입니다.
+        /// </summary>
+        [JsonIgnore] public int Durability { 
+                get { return iDurability; }
+                set { iDurability=value; }
+            }
+        
+        
 
         /// <summary>
         /// 무기 아이템의 최초 생성을 위한 생성자 옵션

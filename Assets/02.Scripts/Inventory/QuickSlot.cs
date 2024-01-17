@@ -64,7 +64,12 @@ using UnityEngine.UI;
  * (장착할 아이템이 하나밖에 없으므로 가능하지만 추후에 여러 아이템 장착시 해당 파츠에 대한 장착정보를 따로 저장해야함)
  * 로드 시 isEquipped 정보를 true로 만들어주기
  * 
+ * <v3.0 - 2024_0118_최원준>
+ * 1- slotLen을 equipWeaponType의 길이에서 initializer.dicTypes[0]의 길이로 변경
+ * 슬롯의 갯수에 정확히 맞춰서해야 IsItemPlaced[]의 각 상태를 슬롯별로 설정할 수 있음
  * 
+ * 2- dummyTr을 dummyRectTr로 변경, cell사이즈를 변경하기 위함. 
+ * (이미지 사이즈를 슬롯의 셀사이즈에 맞게 축소시켜야 하므로,)
  * 
  */
 
@@ -99,9 +104,9 @@ public class QuickSlot : InventoryInfo
     [SerializeField] EquipmentTransform equipTr;    // 장비를 장착할 트랜스폼 정보
 
 
-    Transform[] dummyTr;        // 더미용 오브젝트의 Transform
-    Image[] dummyImg;           // 더미용 이미지
-    ItemInfo[] slotItemInfo;    // 슬롯에 자리한 아이템의 정보
+    RectTransform[] dummyRectTr;    // 더미용 오브젝트의 RectTransform
+    Image[] dummyImg;               // 더미용 이미지
+    ItemInfo[] slotItemInfo;        // 슬롯에 자리한 아이템의 정보
 
     /// <summary>
     /// 슬롯의 길이를 반환합니다.
@@ -124,7 +129,8 @@ public class QuickSlot : InventoryInfo
 
 
 
-    InventoryInfo playerInventory;
+    InventoryInfo playerInventory;  // 플레이어 인벤토리
+
 
 
 
@@ -148,24 +154,25 @@ public class QuickSlot : InventoryInfo
         //if( equipWeaponType.Length != initializer.dicTypes.Length )
         //    throw new Exception("인스펙터 창에서 고정 무기를 모두 지정하지 않았습니다.");
         
-        // 슬롯 길이 설정
-        slotLen = equipWeaponType.Length;
+        
+        // 슬롯 길이 설정 (딕셔너리의 슬롯제한 수)
+        slotLen = initializer.dicTypes[0].slotLimit;
 
         // 설정한 길이만큼 배열을 생성합니다.
-        dummyTr = new Transform[slotLen];
+        dummyRectTr = new RectTransform[slotLen];
         dummyImg = new Image[slotLen];
         isItemPlaced = new bool[slotLen];
         slotItemInfo = new ItemInfo[slotLen];
 
 
         // 미리 만들어진 더미 하나의 Transform을 참조합니다.
-        dummyTr[0] = emptyListTr.GetChild(0);
+        dummyRectTr[0] = emptyListTr.GetChild(0).GetComponent<RectTransform>();
 
         for( int i = 0; i<slotLen; i++ )
         {
             // 더미오브젝트를 복제하여 emptyList에 배치하고, 참조값을 저장합니다.
-            dummyTr[i] = Instantiate( dummyTr[0].gameObject, emptyListTr ).transform;            
-            dummyImg[i] = dummyTr[i].GetComponent<Image>();            
+            dummyRectTr[i] = Instantiate( dummyRectTr[0].gameObject, emptyListTr ).GetComponent<RectTransform>();            
+            dummyImg[i] = dummyRectTr[i].GetComponent<Image>();            
         }       
         
         // 아이템 착용 상태 초기화
@@ -256,7 +263,10 @@ public class QuickSlot : InventoryInfo
         dummyImg[slotIndex].sprite = slotItemInfo[slotIndex].innerSprite;
 
         // 더미 오브젝트를 해당 슬롯으로 보냅니다.
-        dummyTr[slotIndex].SetParent( slotListTr.GetChild(slotIndex), false );
+        dummyRectTr[slotIndex].SetParent( slotListTr.GetChild(slotIndex), false );
+
+        // 더미오브젝트의 크기를 슬롯리스트의 cell크기와 동일하게 맞춥니다.(슬롯의 크기와 동일하게 맞춥니다.)
+        dummyRectTr[slotIndex].sizeDelta = slotListTr.GetComponent<GridLayoutGroup>().cellSize;
 
         
         // 아이템 장착상태 활성화
@@ -280,7 +290,7 @@ public class QuickSlot : InventoryInfo
             return false;
         
         // 자리한 더미를 다시 빈리스트로 보냅니다
-        dummyTr[equipSlotIndex].SetParent(emptyListTr, false);
+        dummyRectTr[equipSlotIndex].SetParent(emptyListTr, false);
 
         // 장착한 아이템을 지정 슬롯에 다시 추가합니다.
         AddItemToSlot( slotItemInfo[equipSlotIndex], equipSlotIndex, interactive.IsActiveTabAll );
@@ -311,13 +321,13 @@ public class QuickSlot : InventoryInfo
         if( itemType==ItemType.Weapon )
         {
             WeaponType weaponType = ( (ItemWeapon)itemInfo.Item ).WeaponType;
-
+            
             switch(weaponType)
             {
                 case WeaponType.Axe:
                     return equipTr.axeTr;
 
-                case WeaponType.PICKAX:
+                case WeaponType.Pickax:
                     return equipTr.pickaxTr;
 
                 case WeaponType.Spear:
@@ -327,7 +337,6 @@ public class QuickSlot : InventoryInfo
                     return equipTr.bowTr;                    
             }
         }
-
         throw new Exception("착용위치 정보가 맵핑되지 않았습니다.");
     }
 

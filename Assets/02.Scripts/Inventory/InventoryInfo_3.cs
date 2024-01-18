@@ -1,7 +1,7 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 /*
@@ -281,6 +281,34 @@ public partial class InventoryInfo : MonoBehaviour
             throw new Exception("서버-클라이언트 관계가 아닙니다. 서버끼리 연결할 수 없으며, 클라이언트끼리 연결 할 수 없습니다.");
     }
 
+    
 
+
+
+
+    PointerEventData pEventData = new PointerEventData(EventSystem.current);
+    List<RaycastResult> raycastResults = new List<RaycastResult>();
+
+    /// <summary>
+    /// 레이캐스팅 결과를 반환합니다.
+    /// </summary>
+    public IReadOnlyList<RaycastResult> RaycastResults { get { return raycastResults; } }
+
+
+    /// <summary>
+    /// 연결된 모든 인벤토리를 향해 레이캐스팅을 시전합니다.<br/>
+    /// </summary>
+    protected void RaycastAllToConnectedInventory()
+    {         
+        raycastResults.Clear();
+
+        // 이벤트가 일어날 포지션을 마우스를 다시 클릭했을 때의 지점으로 설정합니다.
+        pEventData.position = Input.mousePosition;
+
+        // 연결된 모든 인벤토리에게 그래픽 레이캐스팅을 시전하고 결과를 받습니다.
+        for( int i = 0; i<clientInfo.Count; i++ )
+            clientInfo[i].gRaycaster.Raycast( pEventData, raycastResults );
+
+    }
 
 }

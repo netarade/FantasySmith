@@ -86,6 +86,9 @@ using System;
  * 1- MiscType에서 Essential을 삭제하고 None을 추가
  * 2- MaxOverlapCount를 (서바이벌 프로젝트에 맞게) 10으로 변경 
  * 
+ * <v7.3 - 2024_0118_최원준>
+ * 1- MiscType의 Potion을 기획에 맞게 Food로 변경
+ * 
  */
 
 
@@ -93,9 +96,9 @@ namespace ItemData
 {   
     
     /// <summary>
-    /// 잡화 아이템의 상세 분류로서 기본, 제작, 건설, 도구, 포션 등이 있습니다.
+    /// 잡화 아이템의 상세 분류로서 기본, 제작, 건설, 도구, 요리 등이 있습니다.
     /// </summary>
-    public enum MiscType { Basic, Craft, Building, Tool, Potion, None } 
+    public enum MiscType { Basic, Craft, Building, Tool, Food, None } 
         
 
     /// <summary>

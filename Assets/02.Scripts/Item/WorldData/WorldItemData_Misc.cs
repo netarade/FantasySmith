@@ -21,13 +21,53 @@ public partial class WorldItem
     {        
         return new Dictionary<string, Item>()
         {           
-            { 
-                "장작", new ItemMisc( ItemType.Misc, "1000", "장작", new VisualReferenceIndex(0),
-                MiscType.Craft, "~~하는용도로 사용") 
+            {
+                "Mud", new ItemMisc( ItemType.Misc, "0000", "Mud", new VisualReferenceIndex(0),
+                MiscType.Basic, "Soil mixed with water.")
             },
-            { 
-                "실", new ItemMisc( ItemType.Misc, "1001", "실", new VisualReferenceIndex(1),
-                MiscType.Basic, "~~하는용도로 사용") 
+            {
+                "Thread", new ItemMisc( ItemType.Misc, "0001", "Thread", new VisualReferenceIndex(1),
+                MiscType.Basic, "Materials can be bundled")
+            },
+            {
+                "Vine", new ItemMisc( ItemType.Misc, "0002", "Vine", new VisualReferenceIndex(2),
+                MiscType.Basic, "A primitive material that can be used to weave materials.")
+            },
+            {
+                "Stone", new ItemMisc( ItemType.Misc, "0003", "Stone", new VisualReferenceIndex(3),
+                MiscType.Basic, "The most primitive material you can pick up from the ground.")
+            },
+            {
+                "Log", new ItemMisc( ItemType.Misc, "0004", "Log", new VisualReferenceIndex(4),
+                MiscType.Basic, "Tree trimmed for use.")
+            },
+            {
+                "Bone", new ItemMisc( ItemType.Misc, "0005", "Bone", new VisualReferenceIndex(5),
+                MiscType.Basic, "The animal bones here seem much harder than stones.")
+            },
+            {
+                "Meat", new ItemMisc( ItemType.Misc, "0006", "Meat", new VisualReferenceIndex(6),
+                MiscType.Basic, "Cooking ingredients obtained by hunting animals.")
+            },
+            {
+                "GrilledMeat", new ItemMisc( ItemType.Misc, "0007", "GrilledMeat", new VisualReferenceIndex(7),
+                MiscType.Basic, "Meat cooked to be eaten.")
+            },
+            {
+                "Berry", new ItemMisc( ItemType.Misc, "0008", "Berry", new VisualReferenceIndex(8),
+                MiscType.Basic, "A basic source of nutrition obtained by gathering plants.")
+            },
+            {
+                "Mushroom", new ItemMisc( ItemType.Misc, "0009", "Mushroom", new VisualReferenceIndex(9),
+                MiscType.Basic, "It is an umbrella-like fungus that can be eaten.")
+            },
+            {
+                "Leather", new ItemMisc( ItemType.Misc, "0010", "Leather", new VisualReferenceIndex(10),
+                MiscType.Basic, "I think this can prevent dangerous rain.")
+            },            
+            {
+                "Rope", new ItemMisc( ItemType.Misc, "0011", "Rope", new VisualReferenceIndex(11),
+                MiscType.Basic, "It is a product made by weaving several threads.")
             },
         };
 

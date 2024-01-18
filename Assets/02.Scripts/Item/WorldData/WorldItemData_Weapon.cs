@@ -17,6 +17,9 @@ using ItemData;
 * <v1.3 - 2023_1231_최원준>
 * 1- 변수명 weaponDic을 weapDic으로 변경
 * 
+* <v2.0 - 2024_0118_최원준>
+* 1- 크래프팅 서바이벌 전용 데이터를 받아서 붙여넣은 후, WeaponType 수정
+* 
 */
 
 
@@ -29,10 +32,58 @@ public partial class WorldItem
     {        
         return new Dictionary<string, Item>()
         {
-            /*** 검 ***/
-            { 
-                "손도끼", new ItemWeapon( ItemType.Weapon, "2000", "손도끼", new VisualReferenceIndex(0),
-                WeaponType.Axe, 10, 100, "아이템 설명넣기" )
+            //키 값, (아이템 타입, 넘버링, 스트링 네임, 아이템 비주얼 그래픽 배열, 무기 타입, 공격력, 내구도, "아이템 설명") 
+            {
+                "StoneAxe", new ItemWeapon( ItemType.Weapon, "0000", "StoneAxe", new VisualReferenceIndex(0),
+                WeaponType.Axe, 50, 100, "It is the most basic Axe made of stone." )
+            },
+            {
+                "StonePickaxe", new ItemWeapon( ItemType.Weapon, "0001", "StonePickaxe", new VisualReferenceIndex(1),
+                WeaponType.Pickax, 50, 100, "It is the most basic Pickaxe made of stone." )
+            },
+            {
+                "StoneSpear", new ItemWeapon( ItemType.Weapon, "0002", "StoneSpear", new VisualReferenceIndex(2),
+                WeaponType.Spear, 120, 100, "The most basic weapon to protect your body." )
+            },
+            {
+                "WoodenBow", new ItemWeapon( ItemType.Weapon, "0003", "WoodenBow", new VisualReferenceIndex(3),
+                WeaponType.Bow, 100, 100, "It is a weapon for hunting fast animals." )
+            },
+            {
+                "StoneKnife", new ItemWeapon( ItemType.Weapon, "0004", "StoneKnife", new VisualReferenceIndex(4),
+                WeaponType.Sword, 0, 100, "A tool for collecting plants." )
+            },
+            {
+                "WoodBottle", new ItemWeapon( ItemType.Weapon, "0005", "WoodBottle", new VisualReferenceIndex(5),
+                WeaponType.Tool, 0, 100, "It is a tool for holding water and drinking it." )
+            },
+            {
+                "WoodBottleFilledWithWater", new ItemWeapon( ItemType.Weapon, "0006", "WoodBottleFilledWithWater", new VisualReferenceIndex(6),
+                WeaponType.Tool, 0, 100, "Can drink water." )
+            },
+            {
+                "BuildingHammer", new ItemWeapon( ItemType.Weapon, "0007", "BuildingHammer", new VisualReferenceIndex(7),
+                WeaponType.Blunt, 0, 100, "It is a construction tool." )
+            },
+            {
+                "BoneAxe", new ItemWeapon( ItemType.Weapon, "0008", "BoneAxe", new VisualReferenceIndex(8),
+                WeaponType.Axe, 50, 100, "It is the most basic Axe made of bone." )
+            },
+            {
+                "BonePickaxe", new ItemWeapon( ItemType.Weapon, "0009", "BonePickaxe", new VisualReferenceIndex(9),
+                WeaponType.Pickax, 50, 100, "It is the most basic Pickaxe made of bone." )
+            },
+            {
+                "BoneSpear", new ItemWeapon( ItemType.Weapon, "0010", "BoneSpear", new VisualReferenceIndex(10),
+                WeaponType.Spear, 150, 100, "A stronger weapon to protect my body." )
+            },
+            {
+                "BoneKnife", new ItemWeapon( ItemType.Weapon, "0011", "BoneKnife", new VisualReferenceIndex(11),
+                WeaponType.Sword, 0, 100, "A tool to collect plants faster." )
+            },
+            {
+                "BoneBow", new ItemWeapon( ItemType.Weapon, "0012", "BoneBow", new VisualReferenceIndex(12),
+                WeaponType.Bow, 0, 100, "It is the most basic Bow made of bone." )
             },
         };    
     }

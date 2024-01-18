@@ -70,10 +70,11 @@ using UnityEngine;
  */
 namespace ItemData
 {    
+    // ItemInfo_4.cs의 weaponTypeString도 수정할것!
     /// <summary>
-    /// 무기 아이템의 상세 분류 (검, 창, 도끼, 둔기, 활, 곡괭이, 기타, 없음)
+    /// 무기 아이템의 상세 분류 (검, 창, 도끼, 둔기, 활, 곡괭이, 생산, 도구, 기타, 없음)
     /// </summary>
-    public enum WeaponType { Sword, Spear, Axe, Blunt, Bow, Pickax, Etc, None } 
+    public enum WeaponType { Sword, Spear, Axe, Blunt, Bow, Pickax, Production, Tool, Etc, None } 
 
 
     /// <summary>

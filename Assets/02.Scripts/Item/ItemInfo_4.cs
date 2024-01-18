@@ -10,6 +10,9 @@ using UnityEngine;
 * 내부 item을 직접 건드리도록하지 않고 Info클래스에서 건드리도록 함과 동시에, 
 * 필요 시 관련 메서드 호출을 자동으로 이룰수 있게 하기 위함.
 * 
+* <v1.1 - 2024_0118_최원준>
+* 1- Durability프로퍼티 내부에 itemBuilding이후에 itemWeapon의 Durability를 수정하고 있어서 null값 오류가 뜨는 부분 수정
+* 
 * 
 */
 public partial class ItemInfo : MonoBehaviour
@@ -150,7 +153,7 @@ public partial class ItemInfo : MonoBehaviour
             }
             else if(itemBuilding != null)
             {
-                itemWeapon.Durability=value;
+                itemBuilding.Durability=value;
                 UpdateTextInfo();   // 텍스트 정보를 수정합니다.
                 CheckDestroyInfo(); // 파괴 여부를 체크합니다.
             }

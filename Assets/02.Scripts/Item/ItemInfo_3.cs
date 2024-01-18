@@ -20,6 +20,9 @@ using UnityEngine;
 * Info클래스에서 외부 사용자가 아이템 정보를 변동시키게 만들 예정이므로,
 * 아이템 내부정보가 바뀔 때마다 파괴여부를 체크해서 자동으로 파괴시켜버리도록 하기위함.
 * 
+* <v2.1 - 2024_0118_최원준>
+* 1- CheckDestroyInfo메서드에서 2D 상태일 때는 2D 오브젝트를 파괴해야하고, 3D 상태일때는 3D오브젝트를 파괴하도록 수정
+* 
 */
 
 public partial class ItemInfo : MonoBehaviour
@@ -61,8 +64,11 @@ public partial class ItemInfo : MonoBehaviour
             if( inventoryInfo!=null )
                 inventoryInfo.RemoveItem( this );   
             
-            // 아이템 파괴
-            Destroy( this.gameObject );     
+            /*** 월드 상태에 따라서 아이템 파괴 ***/
+            if(isWorldPositioned)
+                Destroy( transform.parent.gameObject );     // 부모 3D 아이템 오브젝트를 파괴합니다.  
+            else
+                Destroy( this.gameObject );                 // 2D 아이템 오브젝트를 파괴합니다.
         }
     }
 

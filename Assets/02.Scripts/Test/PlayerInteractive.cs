@@ -1,4 +1,5 @@
 using CreateManagement;
+using ItemData;
 using System.Collections;
 using System.Collections.Generic;
 using Unity.VisualScripting;
@@ -37,6 +38,10 @@ public class PlayerInteractive : MonoBehaviour
     Animator animator;
     bool bMouseCoolTime = true;
     
+    float playerHp = 100f;
+    float playerHunger = 10f;
+    float playerThirsty = 10f;
+        
     void Start()
     {
         quickSlot = GetComponentInChildren<QuickSlot>();
@@ -80,6 +85,7 @@ public class PlayerInteractive : MonoBehaviour
         }
 
 
+        // 퀵슬롯 버튼을 누르는 상황
         if(Input.GetKeyDown(KeyCode.Alpha1))
             quickSlot.ItemEquipSwitch(1);
 
@@ -95,14 +101,37 @@ public class PlayerInteractive : MonoBehaviour
         if(Input.GetKeyDown(KeyCode.Alpha5))
             quickSlot.ItemEquipSwitch(5);
 
+        if(Input.GetKeyDown(KeyCode.Keypad0))
+            quickSlot.ItemEquipSwitch(5);
 
+        // 마우스 우클릭을 누르는 상황
+        // if(Input.GetMouseButtonDown(1))
+        //    playerInventory.
 
     }
 
 
+    /// <summary>
+    /// itemStatus가 보유한 수치만큼 플레이어의 스테이터스 수치를 증감시키는 메서드입니다.<br/>
+    /// 아이템 쪽에서 호출되는 용도로 사용
+    /// </summary>
+    public void VaryPlayerStatus(ItemStatus status)
+    {
+        playerHp += status.hp;
+        playerHunger += status.hunger;
+        playerThirsty += status.thirsty;
+    }
 
+    public void PrintDebugInfo()
+    {
+        string debugStr = string.Format(
+            $"체력 : {playerHp}" +
+            $"허기 : {playerHunger}" +
+            $"갈증 : {playerThirsty}"
+            );
 
-
+        Debug.Log( debugStr );
+    }
 
 
 

@@ -20,6 +20,7 @@ using System;
  * 1- ItemBuilding의 Hp를 Durability로 변경하였음.
  * 이유는 ItemInfo클래스에서 무기와 동일하게 Durability로 접근할 수 있게 하기 위함.
  * 
+ * 2- ItemFood를 정의하고 스테이터스 수치를 증감시키는 ItemStatus 구조체를 갖도록 하였음.
  * 
  */
 
@@ -74,5 +75,67 @@ namespace ItemData
         }
 
     }
+
+
+
+
+
+    [Serializable]
+    public class ItemFood : ItemMisc
+    {
+        public ItemStatus status;
+
+        public ItemFood( ItemType mainType, string No, string name, VisualReferenceIndex visualRefIndex
+            , MiscType subType, ItemStatus status, string desc )
+            : base(mainType, No, name, visualRefIndex, subType, desc)
+        {
+            this.status = status;
+        }
+    }
+
+
+
+    /// <summary>
+    /// 아이템이 보유하고 있는 스테이터스 수치를 나타내는 구조체입니다.<br/>
+    /// 체력, 허기, 갈증, 체온 4가지 종류가 있습니다.<br/>
+    /// 음의 값을 가지면 해당 수치만큼 플레이어의 스테이터스를 감소시키며, 양의 값을 가지면 증가시킵니다.
+    /// </summary>
+    [Serializable]
+    public struct ItemStatus
+    {
+        /// <summary>
+        /// 체력
+        /// </summary>
+        public float hp;            
+        
+        /// <summary>
+        /// 허기
+        /// </summary>
+        public float hunger;        
+
+        /// <summary>
+        /// 갈증
+        /// </summary>
+        public float thirsty;       
+
+        /// <summary>
+        /// 체온
+        /// </summary>
+        public float temparature;   
+        
+        public ItemStatus(float hp, float hunger, float thirsty, float temparature=0f)
+        {
+            this.hp = hp;
+            this.hunger = hunger;
+            this.thirsty = thirsty;
+            this.temparature = temparature;
+        }
+    }
+
+
+
+
+
+
 
 }

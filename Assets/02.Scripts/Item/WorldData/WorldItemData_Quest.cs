@@ -18,9 +18,29 @@ public partial class WorldItem
     {        
         return new Dictionary<string, Item>()
         {            
-            { 
-                "키", new ItemQuest( ItemType.Quest, "0000", "키", new VisualReferenceIndex(0),
-                "챕터1을 클리어하기 위한 퀘스트용 아이템." ) 
+            {
+                "LeatherHood", new ItemQuest( ItemType.Quest, "0000", "Leatherhood", new VisualReferenceIndex(0),
+                "Raincoat made of leather." )
+            },
+            {
+                "MysteriousStone", new ItemQuest( ItemType.Quest, "0002", "MysteriousStone", new VisualReferenceIndex(2),
+                "A stone that doesn't fall to the ground." )
+            },
+            {
+                "LeatherMap", new ItemQuest( ItemType.Quest, "0001", "LeatherMap", new VisualReferenceIndex(1),
+                "Map made of leather." )
+            },
+            {
+                "BrokenDevice", new ItemQuest( ItemType.Quest, "0004", "BrokenDevice", new VisualReferenceIndex(4),
+                "A compass that keeps spinning like it's broken." )
+            },
+            {
+                "MonsterEye", new ItemQuest( ItemType.Quest, "0003", "MonsterEye", new VisualReferenceIndex(3),
+                "By-products obtained from hunting strange monsters" )
+            },
+            {
+                "Glider", new ItemQuest( ItemType.Quest, "0005", "Glider", new VisualReferenceIndex(5),
+                "I think I can escape from here if I use this." )
             },
         };        
     }

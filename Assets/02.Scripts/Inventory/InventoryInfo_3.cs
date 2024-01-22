@@ -43,7 +43,8 @@ using UnityEngine.UI;
  * (ItemSelect 스크립트에서 아이템을 선택할 때 뿐만 아니라, 포션의 사용 등으로 인해
  * 플레이어가 인벤토리 창이 열린상태로 우클릭할 때도 레이캐스팅이 시전해야 하는 경우가 생김.)  
  * 
- * 
+ * <v2.3 - 2024_0123_최원준>
+ * 1- RaycastAllToConnectedInventory메서드에서 클라이언트 인경우 서버의 레이캐스팅을 재호출 해주도록 수정
  * 
  */
 
@@ -305,7 +306,17 @@ public partial class InventoryInfo : MonoBehaviour
     /// 선택 옵션으로 맞은 결과의 오브젝트 이름을 출력하도록 설정할 수 있습니다.
     /// </summary>
     public IReadOnlyList<RaycastResult> RaycastAllToConnectedInventory(bool isPrintDebugInfo=false)
-    {                 
+    {
+        // 서버가 아니라면 서버의 레이캐스팅을 시전합니다.
+        if( !isServer )
+        {
+            if(!isConnect)
+                throw new Exception("인벤토리가 서버와 연결되어 있지 않습니다.");
+
+            return serverInfo.RaycastAllToConnectedInventory();
+        }
+
+
         // 레이캐스트 결과리스트를 초기화합니다.
         raycastResults.Clear();
 

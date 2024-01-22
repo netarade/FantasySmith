@@ -34,6 +34,7 @@ public class ButtonPlayTest : MonoBehaviour
         inventoryInfo.AddItem( "Mud", 1 );
         inventoryInfo.AddItem( "Thread", 1 );
         inventoryInfo.AddItem( "Vine", 1 );
+        inventoryInfo.AddItem( "StoneAxe", 1 );
 
         if(inventoryInfo.IsItemEnough("Mud",2) )
             Debug.Log($"Mud 2°³ ÃÊ°ú");

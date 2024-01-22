@@ -95,6 +95,9 @@ using UnityEngine.UI;
  * b- DropItemWithRaycastResults메서드 DropItemWithRaycast으로 이름 변경
  * 내부에 inventoryInfo의 레이캐스팅을 호출하여 결과를 받도록 코드변경
  * 
+ * <v7.3 - 2024_0123_최원준>
+ * 1- FinishSelecting 매개변수 없는 오버로딩 메서드 추가선언
+ * ItemInfo에서 호출하여 슬롯 드롭시 강제로 셀렉팅 종료를 하기 위함 
  * 
  */
 
@@ -129,7 +132,7 @@ public class ItemSelect : MonoBehaviour
         itemRectTr = GetComponent<RectTransform>();     
         itemCG = GetComponent<CanvasGroup>();     
         itemInfo = GetComponent<ItemInfo>();
-        itemSelectBtn = GetComponent<Button>();        
+        itemSelectBtn = GetComponent<Button>();  
     }
 
 
@@ -206,17 +209,15 @@ public class ItemSelect : MonoBehaviour
         itemRectTr.position = Input.mousePosition + moveVecToCenter;               
     }
 
-
+    
+    /// <summary>
+    /// 아이템 셀렉팅을 강제로 종료합니다. 
+    /// </summary>
     protected void FinishSelecting(BaseEventData eventData)
     {
         itemSelectBtn.OnDeselect( eventData );              // 버튼을 Deselect상태로 만듭니다.
         EventSystem.current.SetSelectedGameObject( null );  // 이벤트 시스템의 셀렉트 상태를 null로 만듭니다.
     }
-
-
-
-
-
 
 
 
@@ -281,7 +282,7 @@ public class ItemSelect : MonoBehaviour
     protected void InitLastOnDeselect()
     {        
         // 아이템 셀렉팅 상태를 딜레이 시간을 줘서 비활성화시킵니다.
-        StartCoroutine( SelectDoneDelayTime( 0.03f ) );
+        StartCoroutine( SelectDoneDelayTime( 0.15f ) );
     }
 
 

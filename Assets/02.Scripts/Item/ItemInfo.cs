@@ -345,7 +345,6 @@ using InventoryManagement;
  *2- SlotIndex 프로퍼티명 SlotIndexEach로 변경
  *
  *
- *
  */
 
 
@@ -365,19 +364,18 @@ using InventoryManagement;
 public partial class ItemInfo : MonoBehaviour
 {
     /**** 아이템 고유 정보 ****/
-    private Item item;             // 아이템의 실제 정보가 담긴 변수
+    Item item;              // 아이템의 실제 정보가 담긴 변수
     
-    VisualManager visualManager;            // 아이템의 Sprite이미지를 전달받기 위한 아이템 비쥬얼 관리 클래스 참조
-    private Image itemImage;       // 아이템이 인벤토리에서 2D상에서 보여질 이미지 컴포넌트 참조  
-    public Sprite innerSprite;     // 아이템이 인벤토리에서 보여질 이미지 스프라이트
-    public Sprite statusSprite;    // 아이템이 상태창에서 보여질 이미지 스프라이트 (상태창 스크립트에서 참조를 하게 됩니다.)
-    private Text countTxt;         // 잡화 아이템의 수량을 반영할 텍스트
+    VisualManager visualManager;    // 아이템의 Sprite이미지를 전달받기 위한 아이템 비쥬얼 관리 클래스 참조
+    Image itemImage;                // 아이템이 인벤토리에서 2D상에서 보여질 이미지 컴포넌트 참조  
+    public Sprite innerSprite;      // 아이템이 인벤토리에서 보여질 이미지 스프라이트
+    public Sprite statusSprite;     // 아이템이 상태창에서 보여질 이미지 스프라이트 (상태창 스크립트에서 참조를 하게 됩니다.)
+    Text countTxt;                  // 잡화 아이템의 수량을 반영할 텍스트
             
-    private RectTransform itemRectTr;       // 자기자신 2D 트랜스폼 참조(초기 계층 - 상위 부모)
-    private Transform itemTr;               // 자기자신 3D 트랜스폼 참조(초기 계층 - 하위 마지막 자식)
-    private CanvasGroup itemCG;             // 아이템의 캔버스 그룹 컴포넌트 (아이템이 월드로 나갔을 때 2D이벤트를 막기위한 용도) 
+    RectTransform itemRectTr;       // 자기자신 2D 트랜스폼 참조(초기 계층 - 상위 부모)
+    Transform itemTr;               // 자기자신 3D 트랜스폼 참조(초기 계층 - 하위 마지막 자식)
+    CanvasGroup itemCG;             // 아이템의 캔버스 그룹 컴포넌트 (아이템이 월드로 나갔을 때 2D이벤트를 막기위한 용도) 
     
-   
 
     /*** 아이템 변동 정보 ***/
 
@@ -473,9 +471,10 @@ public partial class ItemInfo : MonoBehaviour
 
         itemImage = GetComponent<Image>();
         countTxt = GetComponentInChildren<Text>();
-                        
+        
         itemCG = GetComponent<CanvasGroup>();
         visualManager = GameObject.FindWithTag("GameController").GetComponent<VisualManager>();
+    
     }
 
 

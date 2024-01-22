@@ -160,6 +160,17 @@ using UnityEngine;
  * (=> 먼저 count를 넣지 않고 존재하는지 검사 한 후에 
  * 잡화아이템의 경우 IsEnoughOverlaCount를, 비잡화의 경우 IsExist에 count넣어서 한 번 더 검사들어가도록 수정)
  * 
+ * <v5.4 - 2024_0123_최원준>
+ * 1- IsEnough, IsEnoughOverlapCount, SetOverlapCount에서
+ * GetItemTypeInExists메서드를 GetItemTypeIgnoreExists로 변경
+ * 
+ * 이름을 기반으로 타입을 찾을 때는 InExists가 필요없는데 이는
+ * 아이템을 Add할 때 기존 아이템이 있는지 여부가 중요하지 않으며,
+ * 해당 이름의 아이템 종류에 따라 조건검사문을 들어가는 경우가 많기 때문.
+ * 
+ * 2- IsEnoughOverlapCount에서 itemObjList의 null값 검사를 예외로 처리하고 있었는데
+ * 이는 실패조건이지 예외처리 조건이 아니었음. 따라서 false처리
+ * (해당 이름의 아이템이 없는 상태에서 이 메서드 발동 시 예외가 발생했을 가능성이 큼)
  * 
  */
 
@@ -479,12 +490,12 @@ namespace InventoryManagement
         public int SetOverlapCount(string itemName, int inCount, bool isLatestModify=true, List<ItemInfo> removeList=null)
         {
             List<GameObject> itemObjList = GetItemObjectList(itemName);     // 인벤토리의 아이템 오브젝트 리스트 참조
-            ItemType itemType = GetItemTypeInExists(itemName);              // 아이템 종류 참조
+            ItemType itemType = GetItemTypeIgnoreExists(itemName);              // 아이템 종류 참조
                         
-            // 해당 아이템 이름으로 인벤토리 사전이 존재하지 않는 경우, 아이템의 종류가 잡화아이템이 아닌 경우 예외처리
+            // 해당 이름의 아이템 오브젝트가 존재하지 않는 경우, 아이템의 종류가 잡화아이템이 아닌 경우 예외처리
             if(itemObjList==null)
                 throw new Exception("아이템이 이 인벤토리에 존재하지 않습니다.");
-            else if(itemType != ItemType.Misc)
+            if(itemType != ItemType.Misc)
                 throw new Exception("잡화 아이템이 아닙니다.");
             
 
@@ -578,17 +589,21 @@ namespace InventoryManagement
         /// <returns>아이템 중첩수량이 충분하면 true를, 충분하지 않으면 false를 반환</returns>
         public bool IsEnoughOverlapCount(string itemName, int overlapCount=1, bool isReduce=false, bool isLatestModify=true)
         {           
-            ItemType itemType = GetItemTypeInExists(itemName);              // 이름을 통한 아이템의 종류 구분
-            List<GameObject> itemObjList = GetItemObjectList(itemName);     // 이름을 통한 아이템 오브젝트 리스트 참조
-
-            // 해당 아이템 이름으로 인벤토리 사전이 존재하지 않는 경우, 아이템의 종류가 잡화아이템이 아닌 경우 예외처리
-            if( itemObjList == null )
-                throw new Exception("해당 아이템이 인벤토리에 존재하지 않습니다.");
-            else if( itemType != ItemType.Misc)
+            ItemType itemType = GetItemTypeIgnoreExists(itemName);              // 이름을 통한 아이템의 종류 구분
+            
+            
+            if( itemType != ItemType.Misc)
                 throw new Exception("해당 아이템이 잡화아이템이 아닙니다.");
             else if( overlapCount<=0 )
                 throw new Exception("수량 전달인자는 1이상이어야 합니다.");
-                                    
+            
+
+            List<GameObject> itemObjList = GetItemObjectList(itemName);     // 이름을 통한 아이템 오브젝트 리스트 참조
+
+            // 해당 아이템 이름으로 오브젝트 리스트가 존재하지 않거나, 키값이 있지만 비었다면 실패처리
+            if( itemObjList == null || itemObjList.Count==0 )
+                return false;
+                        
                                     
             int totalCount = 0;                         // 중첩수량을 누적 시키기 위한 변수 설정
             bool isTotalEnough = false;                 // 중첩수량이 충분한지 확인하기 위한 변수
@@ -675,7 +690,7 @@ namespace InventoryManagement
             if( IsExist( itemName ) )
             {
                 // 아이템 종류를 확인합니다.
-                ItemType itemType = GetItemTypeInExists( itemName );
+                ItemType itemType = GetItemTypeIgnoreExists( itemName );
 
                 // 잡화 아이템이라면
                 if( itemType==ItemType.Misc )

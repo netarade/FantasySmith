@@ -65,6 +65,9 @@ using UnityEngine.UI;
  * <v3.4 - 2024_0122_최원준>
  * 1- 메서드명 UpdateAllOVerlapCountInExist를 UpdateTextInfoSameItemName으로 변경
  * 
+ * <v3.5 - 2024_0123_최원준>
+ * 1- UpdateTextInfoSameItemName에서 GetItemObjectList메서드를 사용하는 구문 조건검사 추가
+ * 
  */
 
 public partial class InventoryInfo : MonoBehaviour
@@ -313,10 +316,11 @@ public partial class InventoryInfo : MonoBehaviour
     {
         List<GameObject> itemObjList = inventory.GetItemObjectList(itemName);
 
+        if(itemObjList == null || itemObjList.Count==0 )
+            return;
+
         foreach(GameObject itemObj in itemObjList )
-        {
             itemObj.GetComponent<ItemInfo>().UpdateTextInfo();
-        }
 
     }
 

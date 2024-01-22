@@ -175,6 +175,26 @@ using WorldItemData;
  * 9- GetItemDic에서 딕셔너리를 찾지 못한 경우 예외를 던지던 부분에서 null값을 반환하도록 수정하였음. (해당부분 주석보완)
  * 이유는 Serialize메서드에서 반드시 호출시켜야 하기 때문
  * 
+ * <v6.1 - 2024_0122_최원준>
+ * 1- GetItemTypeInExists메서드를 삭제
+ * 
+ * 이름을 기반으로 타입을 찾을 때는 InExists가 필요없는데 이는
+ * 아이템을 Add할 때 기존 아이템이 있는지 여부가 중요하지 않으며,
+ * 해당 이름의 아이템 종류에 따라 조건검사문을 들어가는 경우가 많기 때문.
+ * 
+ * 2- GetItemDic메서드를 Inventory.cs의 GetDicIndex메서드를 이용하는 형태로 구현
+ * (유지보수성을 높이기 위해)
+ *
+ * 3- GetItemObjectList메서드의 코드를 바로 딕셔너리에 이름으로 접근해서 검사 후 반환하는 방식에서 
+ * 이름을 기반으로 GetDicIndex를 먼저 구해서 검사하는 방식으로 변경
+ * 
+ * (이유는 해당이름의 아이템 사전이 아예 없을 때 예외를 던져 실수를 방지 할 수 있기 때문,
+ * 새로 생성하기 옵션의 코드에서도 재사용할 수 있기 때문)
+ * 
+ * 4- RemoveItem의 string itemName을 인자로 받는 메서드에서
+ * itemObjList가 null일 때 실패하여 null을 반환하던 것을 예외처리하도록 변경
+ * ItemInfo오버로딩 메서드의 예외처리와 일치시킴
+ * (이유는 IsItemEnough를 검사하지 않고 RemoveItem호출한 후 다른 메서드를 연계하는 것을 방지하기 위해)
  * 
  */
 
@@ -489,9 +509,9 @@ namespace InventoryManagement
             // 딕셔너리에서 오브젝트 리스트를 받습니다
             List<GameObject> itemObjList = GetItemObjectList(itemName); 
 
-            // 오브젝트 리스트가 존재하지 않는거나, 오브젝트 리스트의 갯수가 0이라면 null을 반환합니다.
+            // 오브젝트 리스트가 존재하지 않거나, 오브젝트 리스트의 갯수가 0이라면 삭제를 못하므로 예외처리
             if(itemObjList==null || itemObjList.Count==0)
-                return null;
+                throw new Exception("해당 아이템이 인벤토리 내부에 존재하지 않습니다. 확인하여 주세요.");
 
 
             // 해당 오브젝트 리스트를 참고하여 아이템의 타입을 미리 얻습니다
@@ -521,22 +541,6 @@ namespace InventoryManagement
 
 
         
-
-        /// <summary>
-        /// 아이템 이름을 기반으로 해당 아이템의 ItemType을 반환합니다<br/>
-        /// 아이템 이름이 이 인벤토리의 딕셔너리 내부에 존재하여야 합니다.
-        /// </summary>
-        /// <returns>해당하는 이름의 아이템이 현재 인벤토리 목록에 존재하지 않는 경우 ItemType.None을 반환합니다</returns>
-        public ItemType GetItemTypeInExists(string itemName)
-        {
-            for(int i=0; i<dicLen; i++)
-                if(itemDic[i].ContainsKey(itemName))
-                    return dicType[i];
-                       
-            return ItemType.None;
-        }
-
-
         /// <summary>
         /// 아이템 이름을 기반으로 해당 아이템의 ItemType 값을 반환합니다<br/>
         /// 아이템이 현재 인벤토리의 목록에 존재하지 않아도 ItemType 값을 얻을 수 있습니다.<br/><br/>
@@ -548,14 +552,11 @@ namespace InventoryManagement
             return createManager.GetWorldItemType(itemName);
         }
 
-
-       
-
         
         /// <summary>
         /// 아이템의 이름을 기반으로 해당 아이템의 딕셔너리 참조값을 반환합니다<br/>
         /// 아이템 이름에 해당하는 종류의 아이템 사전이 존재하지 않는다면 null을 반환합니다.<br/>
-        /// *** ItemType.None으로 전달 된 경우 예외를 던집니다 *** 
+        /// ** 해당하는 이름의 아이템이 월드 아이템 목록에 존재하지 않는 경우 예외 발생 **
         /// </summary>
         /// <returns>해당 아이템 종류의 사전을 반환</returns>
         public Dictionary<string, List<GameObject>> GetItemDic(string itemName)
@@ -577,37 +578,49 @@ namespace InventoryManagement
             if(itemType == ItemType.None)
                 throw new Exception("정확한 종류의 아이템을 전달해야 합니다.");
 
-            for( int i = 0; i<dicLen; i++ )
-            {
-                if( dicType[i] == itemType )
-                    return itemDic[i];
-            }
-                                    
-            return null;
+            int dicIdx = GetDicIndex(itemType);
+
+            if( dicIdx < 0 )
+                return null;
+            else
+                return itemDic[dicIdx];
         }
         
 
         /// <summary>
-        /// 아이템 이름을 기반으로 해당 아이템의 오브젝트 리스트 참조값을 반환합니다<br/>
-        /// 해당 오브젝트 리스트가 존재하지 않는 경우 null을 반환하지만,<br/>
-        /// isNewIfNotExist 옵션을 통해 인벤토리 내부에 새롭게 생성하여 반환할 수 있습니다.<br/><br/>
-        /// *** 해당 아이템 이름이 월드사전에 매칭되지 않는 경우 예외가 발생합니다. ***<br/>
+        /// 아이템 이름에 해당하는 오브젝트 리스트 참조값을 반환합니다<br/>
+        /// 옵션을 통해 오브젝트 리스트가 없다면 새롭게 생성할 수 있습니다.<br/><br/>
+        /// *** 해당 아이템 이름이 월드사전에 매칭되지 않는 경우 예외가 발생 ***<br/>
+        /// *** 해당 아이템 이름의 종류에 해당하는 사전을 보관하고 있지 않다면 예외가 발생 ***
         /// </summary>
-        /// <returns>해당하는 이름의 아이템이 인벤토리 목록에 존재하는 경우 GameObject형식의 리스트를, 존재하지 않는 경우 null을 반환합니다</returns>
+        /// <returns>
+        ///  1. 동일한 이름의 아이템이 하나라도 들어있다면 해당 오브젝트리스트를 반환합니다.<br/>
+        ///  2. 동일한 이름의 아이템이 하나라도 들어있지 않을 때 (새로 생성하기 옵션을 주지 않은 경우) null값을 반환합니다.(일반적 사용, IsExist를 대체가능)<br/>
+        ///  3. 동일한 이름의 아이템이 하나라도 들어있지 않을 때 (새로 생성하기 옵션을 준 경우) 새로운 오브젝트 리스트를 반환합니다.(AddItem시 사용)
+        /// </returns>
         public List<GameObject> GetItemObjectList(string itemName, bool isNewIfNotExist=false)
         {
-            for(int i=0; i<dicLen; i++)
-            {
-                if(itemDic[i].ContainsKey(itemName))
-                    return itemDic[i][itemName];
-            }
-                             
-            if(isNewIfNotExist)     // 새로 생성하기 옵션이 설정된 경우 
+            // 아이템 이름에 해당하는 사전 인덱스를 구합니다.
+            int dicIdx = GetDicIndex( GetItemTypeIgnoreExists(itemName) );
+
+            // 사전인덱스 값이 0이하라면 예외를 던집니다.
+            if(dicIdx<0)
+                throw new Exception("해당 아이템 이름에 해당하는 사전이 존재하지 않습니다.");
+
+            // 아이템이 하나라도 들어있다면 바로 해당 오브젝트 리스트를 반환합니다.
+            if(itemDic[dicIdx].ContainsKey(itemName))
+                return itemDic[dicIdx][itemName];
+            
+            // 아이템이 들어있지 않을때, 새로 생성하기 옵션이 있는 경우
+            // 오브젝트 리스트를 새로 생성 및 등록하여 반환합니다.
+            else if(isNewIfNotExist)     
             {                    
-                List<GameObject> itemObjList = new List<GameObject>();        // 오브젝트 리스트를 새로 만듭니다.
-                GetItemDic(itemName).Add(itemName, itemObjList); // 인벤토리 사전에 오브젝트 리스트를 집어넣습니다.
-                return itemObjList;                                           // 생성된 오브젝트 리스트 참조를 반환합니다.
+                List<GameObject> itemObjList = new List<GameObject>();  // 오브젝트 리스트를 새로 만듭니다.
+                itemDic[dicIdx].Add(itemName, itemObjList);             // 인벤토리 사전에 오브젝트 리스트를 집어넣습니다.
+                return itemObjList;                                     // 생성된 오브젝트 리스트 참조를 반환합니다.
             }
+            
+            // 아이템이 들어있지 않을때, 새로 생성하기 옵션이 없는 경우 null을 반환합니다.
             else                    
                 return null;           
         }

@@ -3,57 +3,65 @@ using System;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
+/*
+* [작업 사항]
+* 
+* <v1.0 - 2023_1102_최원준>
+* 1- 아이템의 SetOverlapCount, Remove, IsEnoughOverlapCount메서드 ItemInfo클래스에서 옮겨옴
+* 아이템 수량을 증감시키거나, 삭제시키거나, 수량이 충분환지 확인하는 기능
+* 
+* 2- 아이템의 SetOverlapCount, IsEnoughOverlapCount 메서드 삭제
+* 이유는 아이템 자체적인 삭제나, 정보검색 기능을 넣게되면, 인벤토리가 있는 상태와 없는상태를 구분해서 코드를 넣어야 하기 때문이고,
+* 인벤토리를 통하지 않으면 정보의 동기화 오류가 발생할 가능성이 크기 때문
+* 
+* 3- Remove메서드도 삭제
+* Inventory 내부적으로 제거후 ItemInfo를 반환하면 그다음 삭제하면 딜레이를 줄 필요가 없기때문 
+* 
+* 
+* <v2.0 - 2024_0104_최원준>
+* 1- SlotDrop에 관한 관련 메서드들을 ItemInfo.cs에서 옮겨옴
+* 
+* <v2.1 - 2024_0105_최원준>
+* 1- MoveSlotToAnotherListSlot메서드 내부 IsSlotEnough를 ItemType기반 호출에서 ItemInfo기반 호출로 변경
+* => 잡화아이템의 경우 슬롯이 필요하지 않은 경우가 있기 때문
+* 
+* 2- SlotDrop 이벤트 발생 시 MoveSlotInSameListSlot내에서 isActiveTabAll일 때 slotIndex에 값을 넣던 점을 slotIndexAll로 변경
+* 
+* <2.2 - 2024_0106_최원준
+* 1- ItemPointerStatusWindow에 존재하던 코드를 일부 옮겨옴.
+* 아이템이 상태창 코드를 들고 있던것을 상태창으로 옮기고 포인터 이벤트 시에만 해당 상태창코드를 호출하는 방식으로 변경
+* 
+* 2- Pointer Enter와 PointerExit이벤트 상속 후 아이템의 포인터 접근이 일어날 때마다 상태창의 메서드를 호출
+* 
+* <v2.3 -2024_0112_최원준>
+* 1- 테스트용 메서드 PrintDebugInfo 삭제
+* 
+* <v2.4 - 2024_0116_최원준>
+* 1- MoveSlotToAnotherListSlot메서드 내부에
+* 슬롯 충분 여부 검사 메서드를 IsSlotEnough를 IsSlotEnoughCertain으로 변경
+* 
+* <v2.5 - 2024_0116_최원준>
+* 1- MoveSlotToAnotherListSlot메서드에서 
+* 아이템의 이전인벤토리의 탭정보와 옮길 인벤토리의 탭정보가 일치하지 않으면 실패하도록 처리
+* 
+* 2- MoveSlotToAnotherListSlot메서드에서 지정 슬롯에 드랍되도록 AddItem메서드를 AddItemToSlot으로 변경
+* 
+* <v3.0 - 2024_0123_최원준>
+* 1- 메서드명 변경 
+* MoveSlotInSameListSlot    -> MoveSlotToSlotSameInventory
+* MoveSlotToAnotherListSlot ->  MoveSlotToSlotAnotherInventory
+* 
+* 2- MoveSlotToSlotAnotherInventory메서드에서 타 인벤토리 간 이동 조건추가
+* 탭일치(옮긴 것 보여주기 위함) + 종류일치(해당아이템 보관가능 해야하기 때문)
+* 
+* 
+*/
+
+
 public partial class ItemInfo : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
 {
-    /*
-     * [작업 사항]
-     * 
-     * <v1.0 - 2023_1102_최원준>
-     * 1- 아이템의 SetOverlapCount, Remove, IsEnoughOverlapCount메서드 ItemInfo클래스에서 옮겨옴
-     * 아이템 수량을 증감시키거나, 삭제시키거나, 수량이 충분환지 확인하는 기능
-     * 
-     * 2- 아이템의 SetOverlapCount, IsEnoughOverlapCount 메서드 삭제
-     * 이유는 아이템 자체적인 삭제나, 정보검색 기능을 넣게되면, 인벤토리가 있는 상태와 없는상태를 구분해서 코드를 넣어야 하기 때문이고,
-     * 인벤토리를 통하지 않으면 정보의 동기화 오류가 발생할 가능성이 크기 때문
-     * 
-     * 3- Remove메서드도 삭제
-     * Inventory 내부적으로 제거후 ItemInfo를 반환하면 그다음 삭제하면 딜레이를 줄 필요가 없기때문 
-     * 
-     * 
-     * <v2.0 - 2024_0104_최원준>
-     * 1- SlotDrop에 관한 관련 메서드들을 ItemInfo.cs에서 옮겨옴
-     * 
-     * <v2.1 - 2024_0105_최원준>
-     * 1- MoveSlotToAnotherListSlot메서드 내부 IsSlotEnough를 ItemType기반 호출에서 ItemInfo기반 호출로 변경
-     * => 잡화아이템의 경우 슬롯이 필요하지 않은 경우가 있기 때문
-     * 
-     * 2- SlotDrop 이벤트 발생 시 MoveSlotInSameListSlot내에서 isActiveTabAll일 때 slotIndex에 값을 넣던 점을 slotIndexAll로 변경
-     * 
-     * <2.2 - 2024_0106_최원준
-     * 1- ItemPointerStatusWindow에 존재하던 코드를 일부 옮겨옴.
-     * 아이템이 상태창 코드를 들고 있던것을 상태창으로 옮기고 포인터 이벤트 시에만 해당 상태창코드를 호출하는 방식으로 변경
-     * 
-     * 2- Pointer Enter와 PointerExit이벤트 상속 후 아이템의 포인터 접근이 일어날 때마다 상태창의 메서드를 호출
-     * 
-     * <v2.3 -2024_0112_최원준>
-     * 1- 테스트용 메서드 PrintDebugInfo 삭제
-     * 
-     * <v2.4 - 2024_0116_최원준>
-     * 1- MoveSlotToAnotherListSlot메서드 내부에
-     * 슬롯 충분 여부 검사 메서드를 IsSlotEnough를 IsSlotEnoughCertain으로 변경
-     * 
-     * <v2.5 - 2024_0116_최원준>
-     * 1- MoveSlotToAnotherListSlot메서드에서 
-     * 아이템의 이전인벤토리의 탭정보와 옮길 인벤토리의 탭정보가 일치하지 않으면 실패하도록 처리
-     * 
-     * 2- MoveSlotToAnotherListSlot메서드에서 지정 슬롯에 드랍되도록 AddItem메서드를 AddItemToSlot으로 변경
-     * 
-     */
-
     string strItemDropSpace = "ItemDropSpace";  // 슬롯이 가지고 있는 태그    
-
-
-    
+        
     /// <summary>
     /// 아이템에서 커서를 대는 순간 자동으로 아이템 스테이터스 창을 띄워줍니다.
     /// </summary>
@@ -69,9 +77,6 @@ public partial class ItemInfo : MonoBehaviour, IPointerEnterHandler, IPointerExi
     {
         statusInteractive.OnItemPointerExit();
     }
-
-
-
 
 
 
@@ -102,7 +107,7 @@ public partial class ItemInfo : MonoBehaviour, IPointerEnterHandler, IPointerExi
         if(callerSlotTr==prevDropSlotTr)        
         {   
             print("동일 인벤토리 동일 슬롯 간 드롭 발생");
-            return MoveSlotInSameListSlot(callerSlotTr);            // 동일한 인벤토리의 동일한 슬롯->슬롯으로의 이동
+            return MoveSlotToSlotSameInventory(callerSlotTr);            // 동일한 인벤토리의 동일한 슬롯->슬롯으로의 이동
         }
         else
         {
@@ -110,12 +115,12 @@ public partial class ItemInfo : MonoBehaviour, IPointerEnterHandler, IPointerExi
             if( callerSlotTr.parent == prevDropSlotTr.parent)
             {
                 print("동일 인벤토리 타 슬롯 간 드롭 발생");
-                return MoveSlotInSameListSlot(callerSlotTr);       // 같은 인벤토리 타 슬롯 간 이동
+                return MoveSlotToSlotSameInventory(callerSlotTr);       // 같은 인벤토리 타 슬롯 간 이동
             }
             else
             {
                 print("타 인벤토리 타 슬롯 간 드롭 발생");
-                return MoveSlotToAnotherListSlot(callerSlotTr);    // 타 인벤토리 슬롯으로의 이동
+                return MoveSlotToSlotAnotherInventory(callerSlotTr);    // 타 인벤토리 슬롯으로의 이동
             }
         }   
     }
@@ -132,7 +137,7 @@ public partial class ItemInfo : MonoBehaviour, IPointerEnterHandler, IPointerExi
     /// 만약 슬롯에 이미 다른 아이템 오브젝트가 있다면 서로의 인덱스 정보와 위치를 교환합니다.<br/>
     /// </summary>
     /// <returns>현재는 실패조건이 없으므로 true를 반환합니다. (스위칭 불가한 아이템 등이 나오면 조절합니다.)</returns>
-    private bool MoveSlotInSameListSlot(Transform nextSlotTr)
+    private bool MoveSlotToSlotSameInventory(Transform nextSlotTr)
     {
         int nextSlotIdx = nextSlotTr.GetSiblingIndex();     // 다음 슬롯의 인덱스 해당 슬롯의 자식넘버를 참조합니다.
         
@@ -185,7 +190,7 @@ public partial class ItemInfo : MonoBehaviour, IPointerEnterHandler, IPointerExi
     /// 이는 버튼 등으로 아이템을 옮겨야 할 경우가 있기 때문입니다.<br/>
     /// </summary>
     /// <returns>새로운 인벤토리 슬롯에 남는 자리가 있는경우 true를, 남는자리가 없거나 해당 슬롯에 기존의 아이템이 있다면 false를 반환</returns>
-    private bool MoveSlotToAnotherListSlot(Transform nextSlotTr)
+    private bool MoveSlotToSlotAnotherInventory(Transform nextSlotTr)
     {
         if(nextSlotTr.childCount>=1)        // 슬롯에 아이템이 담겨있다면,
         {
@@ -197,18 +202,25 @@ public partial class ItemInfo : MonoBehaviour, IPointerEnterHandler, IPointerExi
         Transform nextInventoryTr = nextSlotTr.parent.parent.parent.parent;
         InventoryInfo nextInventoryInfo = nextInventoryTr.GetComponent<InventoryInfo>();
 
+
+
+
+
         // 전체탭 여부와 자식 인덱스값 리딩
         bool isActiveTabAllNext = nextInventoryInfo.interactive.IsActiveTabAll;
         int childIdxNext = nextSlotTr.GetSiblingIndex();
 
         // 새로운 인벤토리 슬롯에 남는 자리가 있는 경우
-        if( nextInventoryInfo.IsSlotEmpty(this,childIdxNext,isActiveTabAllNext) )
+        if( nextInventoryInfo.IsSlotEmpty(this, childIdxNext, isActiveTabAllNext) )
         {
 
-            // 아이템이 속해있던 활성탭과 현재 인벤토리의 활성탭이 일치하는 경우에만 AddItem을 허락합니다.
-            if( curActiveTab==nextInventoryInfo.interactive.CurActiveTab )
-            {
-                 // 이전 인벤토리에서 아이템을 제거합니다.
+            /*** 타 인벤토리 간 이동 조건 - 탭일치(옮긴 것 보여주기 위함) + 종류일치(해당아이템 보관가능) ***/
+            // 1. 아이템이 속해있던 활성탭과 현재 인벤토리의 활성탭이 일치하는 경우와
+            // 2. 해당하는 사전인덱스가 있을 때(사전 종류가 일치할때)만 AddItem을 허락합니다.
+            if( curActiveTab==nextInventoryInfo.interactive.CurActiveTab 
+                && nextInventoryInfo.inventory.GetDicIndex(this.item.Type)>=0 )
+            { 
+                // 이전 인벤토리에서 아이템을 제거합니다.
                 inventoryInfo.RemoveItem( this );  
                                                     
                 // 현재 아이템을 새로운 인벤토리의 해당 슬롯에 추가합니다.

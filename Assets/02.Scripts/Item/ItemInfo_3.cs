@@ -29,7 +29,8 @@ public partial class ItemInfo : MonoBehaviour
 {    
     
     /// <summary>
-    /// 아이템의 정보 변동으로 인한 파괴여부를 체크합니다.
+    /// 아이템의 정보 변동으로 인한 파괴여부를 체크합니다.<br/>
+    /// 내구도 조건에 따른 파괴, 중첩수량에 따른파괴 
     /// </summary>
     public void CheckDestroyInfo()
     {
@@ -80,8 +81,10 @@ public partial class ItemInfo : MonoBehaviour
 
     public void OnItemUse()
     {
-        
+            
     }
+
+
 
     public void OnItemDrink()
     {

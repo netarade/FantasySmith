@@ -31,9 +31,19 @@ public class ButtonPlayTest : MonoBehaviour
 
     public void btnCreateItem()
     {
-        inventoryInfo.AddItem( "장작", 1 );
-        inventoryInfo.AddItem( "손도끼" );
-        inventoryInfo.AddItem( "키" );
+        inventoryInfo.AddItem( "Mud", 1 );
+        inventoryInfo.AddItem( "Thread", 1 );
+        inventoryInfo.AddItem( "Vine", 1 );
+
+        if(inventoryInfo.IsItemEnough("Mud",2) )
+            Debug.Log($"Mud 2개 초과");
+        
+        //if(inventoryInfo.IsItemEnough("Thread",3) )
+        //    Debug.Log($"Thread 3개 초과");
+
+        //if(inventoryInfo.IsItemEnough("Vine",5) )
+        //    Debug.Log($"Vine 5개 초과");
+
     }
 
     public void btnNext()

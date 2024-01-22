@@ -36,6 +36,13 @@ using UnityEngine.UI;
  * <v2.1 - 2024-0114_최원준>
  * 1- 상속스크립트 QuickSlot을 정의하고 관련속성을 상속받기위해 private 변수와 메서드를 protected처리
  * 
+ * <v2.2 -2024_0122_최원준>
+ * 1- 그래픽 레이캐스팅을 ItemSelect가 아니라 InventoryInfo쪽에서 시전하고 리스트를 반환하는 
+ * RaycastAllToConnectedInventory메서드 작성
+ * => 이유는 아이템쪽에서 클라이언트를 따로 참조해서 기능을 구현하는 것보다 결과만 반환하는 것이 재사용성이 높기 때문
+ * (ItemSelect 스크립트에서 아이템을 선택할 때 뿐만 아니라, 포션의 사용 등으로 인해
+ * 플레이어가 인벤토리 창이 열린상태로 우클릭할 때도 레이캐스팅이 시전해야 하는 경우가 생김.)  
+ * 
  * 
  * 
  */
@@ -286,20 +293,20 @@ public partial class InventoryInfo : MonoBehaviour
 
 
 
+    // 그래픽 레이캐스팅 시 인자로 전달 할 포인터 이벤트
     PointerEventData pEventData = new PointerEventData(EventSystem.current);
+
+    // 그래픽 레이캐스팅 결과를 받을 리스트
     List<RaycastResult> raycastResults = new List<RaycastResult>();
 
-    /// <summary>
-    /// 레이캐스팅 결과를 반환합니다.
-    /// </summary>
-    public IReadOnlyList<RaycastResult> RaycastResults { get { return raycastResults; } }
-
 
     /// <summary>
-    /// 연결된 모든 인벤토리를 향해 레이캐스팅을 시전합니다.<br/>
+    /// 연결된 모든 인벤토리를 향해 레이캐스팅을 시전하고 레이캐스팅 결과를 반환합니다.<br/>
+    /// 선택 옵션으로 맞은 결과의 오브젝트 이름을 출력하도록 설정할 수 있습니다.
     /// </summary>
-    protected void RaycastAllToConnectedInventory()
-    {         
+    public IReadOnlyList<RaycastResult> RaycastAllToConnectedInventory(bool isPrintDebugInfo=false)
+    {                 
+        // 레이캐스트 결과리스트를 초기화합니다.
         raycastResults.Clear();
 
         // 이벤트가 일어날 포지션을 마우스를 다시 클릭했을 때의 지점으로 설정합니다.
@@ -309,6 +316,25 @@ public partial class InventoryInfo : MonoBehaviour
         for( int i = 0; i<clientInfo.Count; i++ )
             clientInfo[i].gRaycaster.Raycast( pEventData, raycastResults );
 
+        if(isPrintDebugInfo)
+            PrintGRayCastDebugInfo(raycastResults);
+
+        return raycastResults;
     }
+
+    /// <summary>
+    /// 레이캐스팅 결과의 모든 오브젝트 이름 정보를 출력합니다.
+    /// </summary>
+    protected void PrintGRayCastDebugInfo(List<RaycastResult> raycastResults)
+    {
+        string objNames = "";
+
+        for( int i = 0; i<raycastResults.Count; i++ )
+            objNames+=raycastResults[i].gameObject.name+" ";
+
+        print( "[검출된 오브젝트 이름]\n" + objNames );
+    }
+
+
 
 }

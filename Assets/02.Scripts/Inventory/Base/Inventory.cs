@@ -264,6 +264,8 @@ using UnityEngine.Assertions.Must;
  * 이를 지정 슬롯에 추가하는 방식으로 변경하기위해, 이니셜라이저에서 초기 활성탭정보를 받아들여서
  * 해당 정보를 토대로 AddItem해주는 방식으로 변경하였음.
  * 
+ * <v2024_0122_최원준>
+ * 1- 메서드명 AccumulateItemObjCount를 CalculateItemObjCount로 변경
  * 
  */
 
@@ -432,7 +434,7 @@ namespace InventoryManagement
         /// AddItem메서드, RemoveItem메서드에서 내부적으로 사용되고 있습니다.<br/><br/>
         /// *** 인자로 ItemType.None을 전달한 경우 예외를 발생시킵니다. ***
         /// </summary>
-        public void AccumulateItemObjCount(ItemType itemType, int inCount)
+        public void CalculateItemObjCount(ItemType itemType, int inCount)
         {
             if(itemType == ItemType.None )
                 throw new Exception("인자로 전달 한 아이템 종류가 해당 인벤토리에 맞지 않습니다. 확인하여 주세요.");

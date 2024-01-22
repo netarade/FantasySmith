@@ -62,6 +62,8 @@ using UnityEngine.UI;
  * 1- AddItemToSlot메서드에서 slotIndex를 예외처리하던 부분삭제
  * (IsSlotEnough에서 진행하므로 필요없음)
  * 
+ * <v3.4 - 2024_0122_최원준>
+ * 1- 메서드명 UpdateAllOVerlapCountInExist를 UpdateTextInfoSameItemName으로 변경
  * 
  */
 
@@ -262,8 +264,8 @@ public partial class InventoryInfo : MonoBehaviour
     /// </summary>
     protected void AddItemBasic(ItemInfo itemInfo, int slotIndex=-1, bool isActiveTabAll=false)
     {
-        if( itemInfo.Item.Type is ItemType.Misc )
-            throw new Exception("잡화 아이템의 경우 다른 메서드를 호출해야 합니다.");
+        if( itemInfo.Item.Type == ItemType.Misc )
+            throw new Exception("일반 아이템이 아닙니다. 잡화 아이템 전용 메서드를 호출해야합니다.");
 
         inventory.AddItem( itemInfo, slotIndex, isActiveTabAll );  // 아이템을 내부 인벤토리에 추가합니다.
         itemInfo.OnItemAdded(this);                                // 아이템에 최신 정보를 반영합니다.
@@ -278,7 +280,7 @@ public partial class InventoryInfo : MonoBehaviour
     /// </summary>
     protected void AddItemMisc(ItemInfo itemInfo, int slotIndex=-1, bool isActiveTabAll=false)
     {
-        if( !(itemInfo.Item.Type is ItemType.Misc) )
+        if( itemInfo.Item.Type != ItemType.Misc )
             throw new Exception("해당 아이템이 잡화아이템이 아닙니다.");
 
         ItemMisc itemMisc = (ItemMisc)itemInfo.Item;
@@ -294,7 +296,7 @@ public partial class InventoryInfo : MonoBehaviour
 
         // 수량정보가 변동이 있다면, 기존 아이템과 동일한 이름의 아이템의 수량정보를 업데이트합니다.
         if( beforeOverlapCount!=afterOverlapCount )
-            UpdateAllOverlapCountInExist( itemMisc.Name );
+            UpdateTextInfoSameItemName( itemMisc.Name );
 
         // 아이템 수량이 변동이 없거나, 남은 상태라면, 아이템에 최신 정보를 반영합니다. 
         if( afterOverlapCount!=0 )                              
@@ -307,7 +309,7 @@ public partial class InventoryInfo : MonoBehaviour
     /// AddItem에서 내부적으로 사용됩니다. 
     /// </summary>
     /// <param name="itemName"></param>
-    protected void UpdateAllOverlapCountInExist(string itemName)
+    protected void UpdateTextInfoSameItemName(string itemName)
     {
         List<GameObject> itemObjList = inventory.GetItemObjectList(itemName);
 
@@ -358,6 +360,10 @@ public partial class InventoryInfo : MonoBehaviour
     }
 
 
+    //public ItemInfo GetItemInfo(string itemName, bool isLatest=true)
+    //{
+
+    //}
 
 
 

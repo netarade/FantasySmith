@@ -85,6 +85,17 @@ using UnityEngine.UI;
  * 1- DropItemWithRaycastResults메서드에서  
  * 슬롯의 계층 상위 부모 인벤토리가 퀵슬롯이라면 퀵슬롯의 드롭메서드까지 호출해주도록 변경
  * 
+ * <v7.2 - 2024_0122_최원준>
+ * 1- 그래픽 레이캐스팅을 ItemSelect스크립트에서 직접하는 것이 아니라 아이템이 속한 InventoryInfo를 매번 참조하여 캐스팅하도록 변경
+ * 
+ * a- 그래픽레이캐스팅 관련 변수를 삭제
+ * 관련 메서드 (RaycastAllToConnectedInventory, PrintDebugInfo) 및 
+ * 관련 변수(clientList, raycastResults, isInventoryConnect 등)을 삭제 
+ * 
+ * b- DropItemWithRaycastResults메서드 DropItemWithRaycast으로 이름 변경
+ * 내부에 inventoryInfo의 레이캐스팅을 호출하여 결과를 받도록 코드변경
+ * 
+ * 
  */
 
 
@@ -104,11 +115,8 @@ public class ItemSelect : MonoBehaviour
 
     protected Vector3 moveVecToCenter;      // 아이템 셀렉팅을 시작할 때 인벤토리를 원점으로 되돌릴 수 있는 벡터
         
-    protected IReadOnlyList<InventoryInfo> clientList;    // 서버 인벤토리의 연결된 클라이언트 인벤토리참조
-    protected PointerEventData pEventData;                // 그래픽 레이캐스팅 시 전달 할 포인터 이벤트
-    protected List<RaycastResult> raycastResults;         // 그래픽 레이캐스팅 결과를 받을 리스트
-    protected bool isInventoryConnect;                    // 셀렉팅 중인 아이템의 인벤토리가 연결 상태인 지 여부
 
+    protected InventoryInfo inventoryInfo;                // 아이템이 속한 인벤토리 참조 (동적으로 변경)
     protected InventoryInteractive interactive;           // 전체 아이템 셀렉팅 여부 참조를 위한 인터렉티브 스크립트 참조
     protected bool isMyItemSelecting = false;             // 현재 아이템이 선택 중인지 여부
     protected bool isFirstSelectDelay = false;            // 처음 셀렉팅 후 딜레이 시간이 지났는지 여부
@@ -121,10 +129,7 @@ public class ItemSelect : MonoBehaviour
         itemRectTr = GetComponent<RectTransform>();     
         itemCG = GetComponent<CanvasGroup>();     
         itemInfo = GetComponent<ItemInfo>();
-        itemSelectBtn = GetComponent<Button>(); 
-              
-        pEventData=new PointerEventData( EventSystem.current ); // 포인터 이벤트 데이터의 이벤트 시스템을 설정합니다.
-        raycastResults = new List<RaycastResult>();             // 레이캐스팅 리스트를 초기화합니다.
+        itemSelectBtn = GetComponent<Button>();        
     }
 
 
@@ -163,11 +168,7 @@ public class ItemSelect : MonoBehaviour
     {
         InitFirstOnDeselect();              // 셀릭팅이 끝난 후 초기화를 진행합니다.
 
-        RaycastAllToConnectedInventory();   // 연결된 모든 인벤토리에게 레이케스팅 동작을 실행합니다.
-
-        PrintDebugInfo(raycastResults);
-
-        DropItemWithRaycastResults();       // 레이캐스팅된 결과를 토대로 아이템을 이동시킵니다.      
+        DropItemWithRaycast();       // 레이캐스팅된 결과를 토대로 아이템을 이동시킵니다.      
 
         InitLastOnDeselect();               // 레이캐스팅이 끝난 후 초기화를 진행합니다.
     }
@@ -245,9 +246,6 @@ public class ItemSelect : MonoBehaviour
         StartCoroutine( FirstSelectDelayTime( 0.1f ) );
 
 
-
-
-
         // 이전 부모 위치 (슬롯리스트와 개별 슬롯)을 저장합니다.
         prevParentSlotTr=itemRectTr.parent;
         selectingParentTr=interactive.gameObject.transform.parent; // 인벤토리의 부모 캔버스 참조
@@ -260,25 +258,9 @@ public class ItemSelect : MonoBehaviour
         moveVecToCenter=itemRectTr.position-Input.mousePosition;
 
         
-
-
-
-        // 연결된 모든 인벤토리의 그래픽 레이캐스터를 얻기 위한 인벤토리 참조를 서버 인벤토리를 통해 얻습니다.
-        clientList=itemInfo.InventoryInfo.ServerInfo.ClientInfo;
-
-        // 현재 아이템이 속한 인벤토리가 연결상태인지를 확인합니다.
-        isInventoryConnect=itemInfo.InventoryInfo.IsConnect;
-
-        // 레이캐스트 결과리스트를 초기화합니다.
-        raycastResults.Clear();
+        // 아이템이 속한 인벤토리 정보를 새롭게 참조합니다. (변경가능성이 있으므로)
+        inventoryInfo = itemInfo.InventoryInfo;
     }
-
-
-
-
-
-
-
 
 
 
@@ -290,7 +272,6 @@ public class ItemSelect : MonoBehaviour
         isMyItemSelecting=false;        // 내 아이템 선택 상태를 바로 비활성화합니다.
         isFirstSelectDelay=false;       // 처음 클릭 상태를 비활성화 합니다.
     }
-
 
     
     /// <summary>
@@ -304,26 +285,16 @@ public class ItemSelect : MonoBehaviour
     }
 
 
-    /// <summary>
-    /// 연결된 모든 인벤토리를 향해 레이캐스팅을 시전합니다.<br/>
-    /// </summary>
-    protected void RaycastAllToConnectedInventory()
-    {
-        // 이벤트가 일어날 포지션을 마우스를 다시 클릭했을 때의 지점으로 설정합니다.
-        pEventData.position = Input.mousePosition;
-
-        // 연결된 모든 인벤토리에게 그래픽 레이캐스팅을 시전하고 결과를 받습니다.
-        for( int i = 0; i<clientList.Count; i++ )
-            clientList[i].gRaycaster.Raycast( pEventData, raycastResults );
-    }
-
 
 
     /// <summary>
     /// 레이캐스팅 결과의 조건에 따라 아이템에게 일어나는 동작을 모아둔 메서드입니다. 
     /// </summary>
-    protected void DropItemWithRaycastResults()
-    {
+    protected void DropItemWithRaycast()
+    {        
+        // 인벤토리에 그래픽 레이케스팅을 요청하고 결과를 반환받습니다.
+        IReadOnlyList<RaycastResult> raycastResults = inventoryInfo.RaycastAllToConnectedInventory();
+
         // 레이캐스팅에 성공한 경우(검출한 오브젝트가 있는 경우)
         if( raycastResults.Count>0 )
         {
@@ -355,7 +326,7 @@ public class ItemSelect : MonoBehaviour
             //print( "[검출되지 않았습니다]" );
 
             // 현재 인벤토리가 연결상태라면
-            if( isInventoryConnect )
+            if( inventoryInfo.IsConnect )
                 itemInfo.UpdatePositionInfo();    // 원위치로 돌립니다.
             // 현재 인벤토리가 연결상태가 아니라면
             else
@@ -404,18 +375,7 @@ public class ItemSelect : MonoBehaviour
     
 
 
-    /// <summary>
-    /// 레이캐스팅된 결과의 모든 오브젝트 이름 정보를 출력합니다.
-    /// </summary>
-    protected void PrintDebugInfo(List<RaycastResult> raycastResults)
-    {
-        string objNames = "";
-
-        for( int i = 0; i<raycastResults.Count; i++ )
-            objNames+=raycastResults[i].gameObject.name+" ";
-
-        print( "[검출되었습니다!]"+objNames );
-    }
+    
 
 
 

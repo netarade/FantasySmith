@@ -59,21 +59,24 @@ namespace ItemData
 
 
     /// <summary>
-    /// 건설재료 - ItemMisc을 상속하며 오브젝트마다 고유의 내구도가 있습니다.
+    /// 건설아이템 - ItemMisc을 상속하며 오브젝트마다 고유의 내구도가 있습니다.<br/>
+    /// 장식용과 재료용으로 구분됩니다.<br/>
+    /// 재료용은 일반 잡화아이템과 동일하게 인벤토리를 옮겨다닐 수 있지만,<br/>
+    /// 장식용은 외부상태로 항상 존재하며 저장되고 불러와져야 합니다. (아이템화 즉,인벤토리 내부로 2D 상태가 될 수 없습니다.)
     /// </summary>
     [Serializable]
     public class ItemBuilding : ItemMisc
     {
-        [JsonProperty] public int Durability;   // 건설재료의 내구도
-
+        [JsonProperty] public bool isDecoration;    // 장식용 속성 (재료인지, 장식용인지 여부)
+        [JsonProperty] public int Durability;       // 건설아이템의 내구도
 
         public ItemBuilding( ItemType mainType, string No, string name, VisualReferenceIndex visualRefIndex
-            , MiscType subType, int Durability, string desc )
+            , MiscType subType, bool isDecoration, int Durability, string desc )
             : base(mainType, No, name, visualRefIndex, subType, desc)
         {
+            this.isDecoration = isDecoration;
             this.Durability = Durability;
         }
-
     }
 
 
@@ -123,6 +126,9 @@ namespace ItemData
         /// </summary>
         public float temparature;   
         
+        /// <summary>
+        /// 체력, 허기, 갈증, 체온
+        /// </summary>
         public ItemStatus(float hp, float hunger, float thirsty, float temparature=0f)
         {
             this.hp = hp;

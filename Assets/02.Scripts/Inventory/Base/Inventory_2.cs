@@ -326,7 +326,7 @@ namespace InventoryManagement
             itemObjList.Add(itemInfo.gameObject);          
                   
             // 해당 아이템 종류의 현재 오브젝트의 갯수를 증가시킵니다.
-            AccumulateItemObjCount(itemType, 1);          
+            CalculateItemObjCount(itemType, 1);          
 
             // 성공을 반환합니다.
             return true;                                    
@@ -430,10 +430,10 @@ namespace InventoryManagement
                 ItemMisc oldItemMisc = (ItemMisc)itemObjList[idx].GetComponent<ItemInfo>().Item;
                     
                 // 기존 아이템에 현재 남은수량을 최대 허용치까지 채우고 남은 수량을 반환받습니다.
-                afterCount = oldItemMisc.SetOverlapCount(beforeCount);
+                afterCount = oldItemMisc.AccumulateOverlapCount(beforeCount);
 
                 // 줄어든 수량만큼 신규아이템의 수량을 감소시켜 줍니다.
-                newItemMisc.SetOverlapCount(beforeCount-afterCount);
+                newItemMisc.AccumulateOverlapCount(beforeCount-afterCount);
                     
                 // 다음 반복문에 사용하기 위하여 현재수량과 일치시켜 줍니다. 
                 beforeCount = afterCount;
@@ -508,7 +508,7 @@ namespace InventoryManagement
             targetItemInfo =itemObjList[targetIdx].GetComponent<ItemInfo>();  // 반환 할 아이템 참조값을 얻습니다.
             itemObjList.RemoveAt(targetIdx);        // 해당 인덱스의 아이템을 제거합니다            
         
-            AccumulateItemObjCount(itemType, -1);       // 해당 아이템 종류의 현재 오브젝트의 갯수를 감소시킵니다.      
+            CalculateItemObjCount(itemType, -1);       // 해당 아이템 종류의 현재 오브젝트의 갯수를 감소시킵니다.      
                         
             return targetItemInfo;            // 목록에서 제거한 아이템을 반환합니다.     
         }

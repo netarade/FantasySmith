@@ -187,7 +187,7 @@ public partial class ItemInfo : MonoBehaviour
                        
             if(itemMisc != null)
             {                
-                itemMisc.SetOverlapCount(value);    // 수량정보를 수정합니다.
+                itemMisc.AccumulateOverlapCount(value);    // 수량정보를 수정합니다.
                 UpdateTextInfo();   // 텍스트 정보를 수정합니다.
                 CheckDestroyInfo(); // 파괴 여부를 체크합니다.
             }

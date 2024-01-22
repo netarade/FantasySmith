@@ -25,11 +25,11 @@ public class DummyItemSelect : ItemSelect
         quickSlot.OnDummySelected(prevParentSlotTr);        
 
 
-        // 연결된 모든 인벤토리에 레이캐스팅을 시전합니다.
-        RaycastAllToConnectedInventory();
+        //// 연결된 모든 인벤토리에 레이캐스팅을 시전합니다.
+        //RaycastAllToConnectedInventory();
         
-        // 레이캐스팅 결과를 봅니다.
-        PrintDebugInfo(raycastResults);
+        //// 레이캐스팅 결과를 봅니다.
+        //PrintDebugInfo(raycastResults);
         
 
         InitLastOnDeselect();   

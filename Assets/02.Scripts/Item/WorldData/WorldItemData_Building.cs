@@ -23,18 +23,18 @@ public partial class WorldItem
     {         
         return new Dictionary<string, Item>()
         {           
-            //"키 접근 값", (대분류, "넘버링", "아이템 이름", 인스펙터뷰에서 참조번호, 중분류, 내구도, "아이템 설명")
+            //"키 접근 값", (대분류, "넘버링", "아이템 이름", 인스펙터뷰에서 참조번호, 중분류, 외부 장식용, 내구도, "아이템 설명")
             { 
                 "벽", new ItemBuilding( ItemType.Misc, "5000", "벽", new VisualReferenceIndex(0),
-                MiscType.Building, 10, "~~하는용도로 사용")    
+                MiscType.Building, true, 10, "~~하는용도로 사용")    
             },
             { 
                 "점토", new ItemBuilding( ItemType.Misc, "5001", "점토", new VisualReferenceIndex(1),
-                MiscType.Building, 15,"~~하는용도로 사용") 
+                MiscType.Building, false, 15,"~~하는용도로 사용") 
             },
             { 
                 "흙", new ItemBuilding( ItemType.Misc, "5002", "흙", new VisualReferenceIndex(2),
-                MiscType.Building, 15,"~~하는용도로 사용") 
+                MiscType.Building, false ,15,"~~하는용도로 사용") 
             },
         };
 

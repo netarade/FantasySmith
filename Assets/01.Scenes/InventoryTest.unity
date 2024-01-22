@@ -247,7 +247,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   vcArr:
-  - itemDesc: "00\uC7A5\uC791"
+  - itemDesc: 00Mud
+    innerSprite: {fileID: 21300000, guid: 65b246c1c0c0ac1479dd188550da07a0, type: 3}
+    statusSprite: {fileID: 21300000, guid: 65b246c1c0c0ac1479dd188550da07a0, type: 3}
+    outerPrefab: {fileID: 116581284}
+  - itemDesc: 01Thread
+    innerSprite: {fileID: 21300000, guid: 65b246c1c0c0ac1479dd188550da07a0, type: 3}
+    statusSprite: {fileID: 21300000, guid: 65b246c1c0c0ac1479dd188550da07a0, type: 3}
+    outerPrefab: {fileID: 116581284}
+  - itemDesc: 02Stone
     innerSprite: {fileID: 21300000, guid: 65b246c1c0c0ac1479dd188550da07a0, type: 3}
     statusSprite: {fileID: 21300000, guid: 65b246c1c0c0ac1479dd188550da07a0, type: 3}
     outerPrefab: {fileID: 116581284}
@@ -1003,11 +1011,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   vcArr:
-  - itemDesc: "00\uC190\uB3C4\uB07C"
+  - itemDesc: 00StoneAxe
     innerSprite: {fileID: 21300000, guid: a4910fbe75cd4b14c82d45526ae4f58f, type: 3}
     statusSprite: {fileID: 21300000, guid: a4910fbe75cd4b14c82d45526ae4f58f, type: 3}
     outerPrefab: {fileID: 706623660}
-  - itemDesc: 01
+  - itemDesc: 01StonePickaxe
     innerSprite: {fileID: 21300000, guid: a4910fbe75cd4b14c82d45526ae4f58f, type: 3}
     statusSprite: {fileID: 21300000, guid: a4910fbe75cd4b14c82d45526ae4f58f, type: 3}
     outerPrefab: {fileID: 1441331410966627}

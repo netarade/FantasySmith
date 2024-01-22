@@ -89,6 +89,15 @@ using System;
  * <v7.3 - 2024_0118_최원준>
  * 1- MiscType의 Potion을 기획에 맞게 Food로 변경
  * 
+ * <V7.4 - 2024_0122_최원준>
+ * 1- 메서드명 SetOverlapCount를 AccumulateOverlapCount로 변경
+ * 이유는 중첩수량을 설정이 아니라 누적하여 증감시키기 때문. 
+ * (AddItem, RemoveItem, ReduceItem시에도 기존수량을 덮어쓰는 것이 아니라 기존수량에 증감되어야함)
+ * 
+ * 2- 생성자에서 중첩수량을 iOverlapCount = 1; 로 직접 설정하고 있던 부분을 삭제
+ * 이유는 CreateManager에서 아이템 생성 시 인자로 수량을 전달받아 생성할 때 AccumulateOverlaCount로 수량을 그대로 맞추게되는데
+ * 증감메서드이기 때문에 1개가 이미 들어가있는채로 생성되어버림.
+ * 
  */
 
 
@@ -128,7 +137,7 @@ namespace ItemData
         /// </summary>
         /// <param name="inCount"></param>
         /// <returns>인자로 전달된 수량이 아이템이 가질 수 있는 최대, 최소 수량을 초과하는 경우 남은 수량 인자를 반환합니다.</returns>
-        public int SetOverlapCount(int inCount)
+        public int AccumulateOverlapCount(int inCount)
         {
             int remainCount;
 
@@ -180,7 +189,6 @@ namespace ItemData
         public ItemMisc( ItemType mainType, string No, string name, VisualReferenceIndex visualRefIndex, MiscType subType, string desc )
             : base( mainType, No, name, visualRefIndex, desc )
         { 
-            iOverlapCount = 1;
             eMiscType = subType;            
         }
 

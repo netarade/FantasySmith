@@ -154,6 +154,13 @@ using UnityEngine;
  * <v5.2 - 2024_0118_최원준>
  * 1- GetItemSlotIndexIndirect메서드 내부 printDebugInfo주석처리
  * 
+ * <v5.3- 2024_0122_최원준>
+ * 1- IsEnough메서드에서 처음 아이템 존재여부를 검사할 때 인자로 들어온 count를 넣어서 IsExist를 호출하고 있었기 때문에
+ * 잡화아이템의 경우 제대로 검사가 되지 않았던 문제를 수정
+ * (=> 먼저 count를 넣지 않고 존재하는지 검사 한 후에 
+ * 잡화아이템의 경우 IsEnoughOverlaCount를, 비잡화의 경우 IsExist에 count넣어서 한 번 더 검사들어가도록 수정)
+ * 
+ * 
  */
 
 
@@ -539,7 +546,7 @@ namespace InventoryManagement
                 ItemMisc itemMisc=(ItemMisc)itemInfo.Item;
 
                 // 남은수량을 넣어서 새로운 남은 수량을 반환받습니다.
-                remainCount=itemMisc.SetOverlapCount( remainCount );
+                remainCount=itemMisc.AccumulateOverlapCount( remainCount );
 
                 // 수정이 끝난 오브젝트의 중첩 텍스트를 수정합니다.
                 itemInfo.UpdateTextInfo();
@@ -628,18 +635,25 @@ namespace InventoryManagement
 
 
             List<GameObject> itemObjList = GetItemObjectList(itemName);     // 인벤토리의 아이템 오브젝트 리스트 참조
-           
+
             // 인벤토리에 오브젝트 리스트가 존재하지 않는 경우 false반환
-            if( itemObjList==null ) 
+            if( itemObjList==null )
+            {
+                Debug.Log( "오브젝트 리스트가 없습니다." );
                 return false;
-
+            }
             // 오브젝트 리스트가 존재하면서 들어있는 오브젝트 수량이 충분하다면,
-            else if( itemObjList.Count >= itemObjCount ) 
+            else if( itemObjList.Count-itemObjCount>=0 )
+            {
+                Debug.Log( "수량이 충분합니다." );
                 return true;
-
+            }
             // 오브젝트 수량이 충분하지 않다면,
             else
+            {
+                Debug.Log("수량이 충분하지않습다.");
                 return false;
+            }
         }
 
 
@@ -657,17 +671,17 @@ namespace InventoryManagement
         /// <returns>아이템이 존재하며 수량이 충분한 경우 true를, 존재하지 않거나 수량이 충분하지 않다면 false를 반환</returns>
         public bool IsEnough(string itemName, int count=1, bool isReduceAndDestroy = false, bool isLatestModify=true)
         {
-            // 아이템이 존재한다면
-            if( IsExist(itemName, count) ) //count갯수만큼 검사해야함
+            // 아이템이 하나라도 존재한다면
+            if( IsExist( itemName ) )
             {
                 // 아이템 종류를 확인합니다.
-                ItemType itemType = GetItemTypeInExists(itemName);   
+                ItemType itemType = GetItemTypeInExists( itemName );
 
                 // 잡화 아이템이라면
                 if( itemType==ItemType.Misc )
                 {
-                    // 수량이 충분하다면,
-                    if( IsEnoughOverlapCount( itemName, count, false, isLatestModify ) )    
+                    // 중첩수량을 검사합니다.
+                    if( IsEnoughOverlapCount( itemName, count, false, isLatestModify ) )
                     {
                         // 수량감산 및 파괴옵션이 걸려있다면, 수량감산 및 수량 0이하 파괴
                         if( isReduceAndDestroy )
@@ -682,23 +696,29 @@ namespace InventoryManagement
                 // 잡화 아이템이 아니라면
                 else
                 {
-                    // count갯수만큼 제거합니다.
-                    if( isReduceAndDestroy )
+                    // 오브젝트 수량을 검사합니다.
+                    if( IsExist( itemName, count ) )
                     {
-                        for(int i=0; i<count; i++)
+                        // count갯수만큼 제거합니다.
+                        if( isReduceAndDestroy )
                         {
-                            ItemInfo rItemInfo = RemoveItem(itemName, isLatestModify);
-                            GameObject.Destroy(rItemInfo.gameObject);
-                        }                    
-                    }
+                            for( int i = 0; i<count; i++ )
+                            {
+                                ItemInfo rItemInfo = RemoveItem( itemName, isLatestModify );
+                                GameObject.Destroy( rItemInfo.gameObject );
+                            }
+                        }
 
-                    return true;        // 옵션여부와 상관없이 true 반환
+                        return true;        // 옵션여부와 상관없이 true 반환
+                    }
+                    else
+                        return false;
                 }
 
             }
             // 아이템이 존재하지 않는다면,
-            else
-                return false;   
+            else 
+                return false;
         }
 
 

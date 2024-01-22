@@ -202,6 +202,21 @@ using WorldItemData;
 * 2- 3D아이템 생성 시 콜라이더를 붙여주기 위한 조건 검사를 GetComponentInChildren으로 변경
 * (자식포함 모든 계층에 콜라이더가 없어야 붙여주기 위함. 빌딩오브젝트의 경우 자식에만 콜라이더가 있는 경우가 있음)
 * 
+* <v12.7 - 2024_0122_최원준>
+* 1- 읽기전용 아이템 정보를 반환하는 메서드 GetReadableItem메서드를 추가
+* 아이템을 생성하지 않고 ItemInfo 클래스의 Name, Desc 값 등의 프로퍼티를 호출할 수 있으며, 스프라이트를 참조할 수 있어야 할 필요
+* (아이템 이동이 없으며 정보만 참조가능한 용도로 크래프팅UI등에 사용하기 위함)
+* 
+* 2- CreateWorldItem의 itemName과 count를 인자로 받는 메서드 내부 코드를 
+* Item을 인자로 받는 오버로딩 메서드를 재사용하여 호출하는 것으로 변경
+* (이유는 로직이 바뀔 때마다 두 번 적어야 하기 때문.)
+* 
+* 3- 아이템 오브젝트 생성 시 콜라이더를 자동으로 붙여주는 코드 삭제
+* 오브젝트마다 콜라이더가 다르기 때문에 프리팹에서 수동으로 맞춰주기로 팀끼리 합의.
+* 
+* 4- 빌딩 아이템 생성시 isDecortation속성에 따라 태그를 붙여줘야할 경우와 붙여주지 말아야할 경우를 구분하는 식으로 코드 변경
+* 
+* 
 * 
 */
 
@@ -337,41 +352,16 @@ namespace CreateManagement
 
             // 잡화 아이템인 경우 수량 정보 입력
             if( itemType==ItemType.Misc )
-                ( (ItemMisc)itemClone ).SetOverlapCount( overlapCount );
+                ( (ItemMisc)itemClone ).AccumulateOverlapCount( overlapCount );
 
-            // 오브젝트 월드에 생성
-            GameObject itemObj2D = Instantiate( itemPrefab2D );
-
-            // 아이템 정보를 등록
-            ItemInfo itemInfo = itemObj2D.GetComponent<ItemInfo>();
-            itemInfo.Item=itemClone;
-
-
-            // 아이템 정보를 전달하여 3D 오브젝트를 복제 생성한다음, itemObj에 부착합니다.
-            GameObject itemObj3D = Instantiate( visualManager.GetItemPrefab3D(itemInfo));
-            
-            // 태그가 없다면 추가(빌딩아이템의 경우 따로 태그가 존재해야하기 때문)
-            if( itemObj3D.tag== null ) 
-                itemObj3D.tag = itemTag;
-            
-            // 프리팹의 모든 계층에 콜라이더가 달려있지 않아야 콜라이더를 임시로 붙여줍니다. 
-            if(itemObj3D.GetComponentInChildren<Collider>() == null )
-                itemObj3D.AddComponent<BoxCollider>().isTrigger=false;
-
-
-            // 2D오브젝트를 3D오브젝트 하위에 부착합니다.
-            itemObj2D.transform.SetParent( itemObj3D.transform );
-
-            // 아이템의 초기화를 진행합니다.
-            itemInfo.OnItemCreated();
-
-
-            // 컴포넌트 참조값 반환
-            return itemInfo;
+            // Item 인스턴스를 전달하여 오브젝트를 생성하여 반환합니다.
+            return CreateWorldItem(itemClone);
         }
 
+
+
         /// <summary>
-        /// Item 인스턴스가 이미 존재하는 경우에<br/>
+        /// Item 인스턴스가 이미 존재하는 경우에 
         /// 해당 아이템의 정보로 월드 상에 아이템 오브젝트를 생성하여 참조값을 반환하여 줍니다.
         /// </summary>
         /// <returns>해당 아이템 오브젝트의 ItemInfo 컴포넌트 참조 값을 반환합니다.</returns>
@@ -387,8 +377,13 @@ namespace CreateManagement
             // 아이템 정보를 전달하여 3D 오브젝트를 복제 생성한다음, itemObj에 부착합니다.
             GameObject itemObj3D = Instantiate( visualManager.GetItemPrefab3D(itemInfo));
             
-            // 태그가 없다면 추가(빌딩아이템의 경우 따로 태그가 존재해야하기 때문)
-            if( itemObj3D.tag== null ) 
+            // 빌딩아이템이 아닌경우 아이템 태그를 붙여줍니다.
+            if( itemInfo.MiscType != MiscType.Building)
+                itemObj3D.tag = itemTag;
+
+            // 빌딩아이템의 경우 장식용이 아닌 경우에만 태그를 붙여줍니다.
+            else
+                if( ((ItemBuilding)item).isDecoration == false )
                 itemObj3D.tag = itemTag;
 
             // 프리팹의 모든 계층에 콜라이더가 달려있지 않아야 콜라이더를 임시로 붙여줍니다. 
@@ -406,6 +401,25 @@ namespace CreateManagement
             return itemInfo;
         }
 
+
+
+        /// <summary>
+        /// 읽기 전용 ItemInfo를 반환합니다.<br/>
+        /// 월드 아이템 속성 값과 스프라이트 정보를 가지는 2D 정보입니다.<br/>
+        /// 3D 오브젝트(실체)가 없기 때문에 인벤토리의 아이템으로서 사용이 불가능하며,<br/>
+        /// 고유 정보를 읽기만 가능하고 쓰기는 불가능합니다.
+        /// </summary>
+        /// <returns></returns>
+        public ItemInfo GetReadableItem(string itemName)
+        {
+            ItemInfo itemInfo = itemPrefab2D.GetComponent<ItemInfo>();
+            itemInfo.Item = GetWorldDic(itemName)[itemName];
+
+            itemInfo.innerSprite = visualManager.GetItemSprite(itemInfo, SpriteType.innerSprite);
+            itemInfo.statusSprite = visualManager.GetItemSprite(itemInfo, SpriteType.statusSprite);
+
+            return itemInfo;
+        }
 
     }
 }

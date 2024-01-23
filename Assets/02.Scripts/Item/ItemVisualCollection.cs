@@ -30,6 +30,10 @@ using UnityEngine;
  * 
  * 4- icArrImg변수명을 vcArr로 변경
  * 
+ * <v4.1 - 2024_0123_최원준>
+ * 1- 장비 착용지점을 나타내는 트랜스폼 정보값인 Transform 변수 추가
+ * 
+ * 
  */
 
 namespace CreateManagement
@@ -55,6 +59,7 @@ namespace CreateManagement
         public string itemDesc;         // 인스펙터뷰에서 보여질 아이템 이름 또는 설명
         public Sprite innerSprite;      // 인벤토리 내부에서 보여질 이미지
         public Sprite statusSprite;     // 인벤토리 상태창에서 커서를 포커싱했을 때 보여질 이미지
+        public Transform weaponTr;      // 장비 착용지점을 나타내는 트랜스폼 정보값
         public GameObject outerPrefab;  // 아이템이 3D 월드 상에서 보여질 프리팹 참조
     }
 

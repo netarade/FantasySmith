@@ -1,3 +1,4 @@
+using DataManagement;
 using Newtonsoft.Json;
 using System;
 using UnityEngine;
@@ -67,6 +68,9 @@ using UnityEngine;
  * 1- Pickax를 삭제하고 Production 또는 Tool으로 변경할 예정 (생산계열 또는 도구 아이템이므로)
  * (ItemInfo_4.cs의 weaponTypeString도 수정해야함)
  * 
+ * <v5.4 - 2024_0123_최원준>
+ * 1- 장비 착용위치를 나타내고 저장하기 위한 STransform변수 equipTr을 선언 및 생성자에서 초기화
+ * 
  */
 namespace ItemData
 {    
@@ -87,6 +91,7 @@ namespace ItemData
         [JsonProperty] protected WeaponType eWeaponType;   // 무기 소분류 타입 (검,창,활...)
         [JsonProperty] protected int iPower;               // 공격력
         [JsonProperty] protected int iDurability;          // 내구
+        [JsonProperty] protected STransform equipTr;       // 장비 착용위치
 
         /** 아이템 업그레이드 정보 **/
         [JsonProperty] protected float fPowerMult;         // 장비 기본 성능 (일반 무기-100, 제작무기-제작에따른 변화)
@@ -121,6 +126,8 @@ namespace ItemData
             }
         
         
+        [JsonIgnore] public STransform EquipTr { get { return equipTr; } }
+        
 
         /// <summary>
         /// 무기 아이템의 최초 생성을 위한 생성자 옵션
@@ -131,14 +138,15 @@ namespace ItemData
             ItemType mainType, string No, string name, VisualReferenceIndex visualRefIndex, 
 
             // 무기 고유 정보
-            WeaponType subType, int power, int durability, string desc
+            WeaponType subType, STransform equipTr, int power, int durability, string desc
             
         ) : base( mainType, No, name, visualRefIndex, desc )
         {
             eWeaponType = subType;
             iPower = power;
             iDurability = durability;
-            fPowerMult = 1f;                               
+            fPowerMult = 1f;        
+            this.equipTr = equipTr;                       
         }
 
     }

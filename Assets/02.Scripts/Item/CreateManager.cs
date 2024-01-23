@@ -382,8 +382,7 @@ namespace CreateManagement
                 itemObj3D.tag = itemTag;
 
             // 빌딩아이템의 경우 장식용이 아닌 경우에만 태그를 붙여줍니다.
-            else
-                if( ((ItemBuilding)item).isDecoration == false )
+            else if( ((ItemBuilding)item).isDecoration == false )
                 itemObj3D.tag = itemTag;
 
             // 프리팹의 모든 계층에 콜라이더가 달려있지 않아야 콜라이더를 임시로 붙여줍니다. 

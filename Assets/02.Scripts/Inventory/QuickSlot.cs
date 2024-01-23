@@ -71,6 +71,9 @@ using UnityEngine.UI;
  * 2- dummyTr을 dummyRectTr로 변경, cell사이즈를 변경하기 위함. 
  * (이미지 사이즈를 슬롯의 셀사이즈에 맞게 축소시켜야 하므로,)
  * 
+ * <v3.1 - 2024_0123_최원준>
+ * 1- 아이템 장착 및 해제 시 3D오브젝트 최상위에있는 기본 콜라이더를 비활성화 활성화하도록 변경
+ * 
  */
 
 
@@ -254,6 +257,9 @@ public class QuickSlot : InventoryInfo
         // 아이템을 장착합니다.
         slotItemInfo[slotIndex].OnItemEquip(equipTr);
 
+        // 아이템의 기본 콜라이더를 비활성화 합니다.
+        slotItemInfo[slotIndex].ItemCol.enabled = false;
+
         // 장착 슬롯넘버로 설정합니다.
         equipSlotIndex = slotIndex;
 
@@ -294,7 +300,10 @@ public class QuickSlot : InventoryInfo
 
         // 장착한 아이템을 지정 슬롯에 다시 추가합니다.
         AddItemToSlot( slotItemInfo[equipSlotIndex], equipSlotIndex, interactive.IsActiveTabAll );
-                
+                        
+        // 아이템의 기본 콜라이더를 활성화 합니다.
+        slotItemInfo[equipSlotIndex].ItemCol.enabled = true;
+
         // 아이템 장착상태 해제
         isItemEquipped = false;
 
@@ -344,18 +353,33 @@ public class QuickSlot : InventoryInfo
 
 
     /// <summary>
-    /// 슬롯 드롭이벤트가 일어날 때 드롭을 발생시키는 쪽에서 추가적으로 호출해줘야 할 메서드입니다.<br/>
+    /// 슬롯 드롭이벤트가 일어날 때 드롭을 발생시키는 쪽에서 추가적으로 호출해줘야 할 메서드이며, 
+    /// 드롭 가능여부를 반환합니다.<br/>
     /// 드롭이 일어나는 아이템과 슬롯의 정보를 전달해야 합니다.
     /// </summary>
-    public void OnQuickSlotDrop( ItemInfo droppedItemInfo, Transform slotTr )
+    /// <returns>퀵슬롯에 드롭이 가능하면 true를, 불가능하면 false를 반환</returns>
+    public bool OnQuickSlotDrop( ItemInfo droppedItemInfo, Transform slotTr )
     {
         int slotIndex = slotTr.GetSiblingIndex();
+                
+        // 슬롯의 인덱스가 고정무기 배열의 마지막 인덱스를 초과한다면 실패조건을 반환합니다.
+        if(slotIndex >= equipWeaponType.Length)
+            return false;
+
+        // 드롭할 아이템의 무기타입이 일치하지 않으면 실패조건을 반환합니다.
+        if(droppedItemInfo.WeaponType !=equipWeaponType[slotIndex] )
+            return false;
+
+
 
         // 슬롯 자리상태 활성화
         isItemPlaced[slotIndex] = true;
 
         // 슬롯 아이템 정보 활성화
         slotItemInfo[slotIndex] = droppedItemInfo;
+
+        // 성공을 반환합니다.
+        return true;
     }
 
     /// <summary>

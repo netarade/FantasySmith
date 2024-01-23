@@ -99,7 +99,7 @@ public partial class InventoryInfo : MonoBehaviour
     
 
 
-    protected CanvasGroup inventoryCG;        // 인벤토리의 캔버스 그룹
+    public CanvasGroup inventoryCG;        // 인벤토리의 캔버스 그룹
 
     /// <summary>
     /// 현재 인벤토리의 상위부모 캔버스의 그래픽레이캐스터를 반환합니다.

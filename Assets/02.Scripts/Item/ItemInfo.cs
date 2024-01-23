@@ -344,6 +344,8 @@ using InventoryManagement;
  *
  *2- SlotIndex 프로퍼티명 SlotIndexEach로 변경
  *
+ *<v13.3 - 2024_0123_최원준>
+ *1- 아이템의 콜라이더를 끄기 위한 itemCol변수 추가하여 OnItemCreated에서 생성될 때 itemTr을 통해 초기화하도록 설정
  *
  */
 
@@ -375,7 +377,7 @@ public partial class ItemInfo : MonoBehaviour
     RectTransform itemRectTr;       // 자기자신 2D 트랜스폼 참조(초기 계층 - 상위 부모)
     Transform itemTr;               // 자기자신 3D 트랜스폼 참조(초기 계층 - 하위 마지막 자식)
     CanvasGroup itemCG;             // 아이템의 캔버스 그룹 컴포넌트 (아이템이 월드로 나갔을 때 2D이벤트를 막기위한 용도) 
-    
+    Collider itemCol;               // 아이템의 3D오브젝트가 가지고 있는 기본 콜라이더
 
     /*** 아이템 변동 정보 ***/
 
@@ -421,6 +423,14 @@ public partial class ItemInfo : MonoBehaviour
     /// </summary>
     public InventoryInfo InventoryInfo { get {return inventoryInfo;} }
 
+
+    /// <summary>
+    /// 현재 아이템이 담긴 인벤토리 인터렉티브스크립트 참조값입니다.
+    /// </summary>
+    public InventoryInteractive InventoryInteractive { get { return inventoryInteractive;} }
+
+
+
     /// <summary>
     /// 현재 아이템이 담겨있는 슬롯리스트의 Transform을 반환합니다.
     /// </summary>
@@ -431,6 +441,10 @@ public partial class ItemInfo : MonoBehaviour
     /// </summary>
     public TabType CurActiveTab { get { return curActiveTab;} }
 
+    /// <summary>
+    /// 아이템이 기본적으로 3D 오브젝트의 최상위에 가지고 있는 콜라이더입니다.
+    /// </summary>
+    public Collider ItemCol { get { return itemCol;} }
 
 
 
@@ -520,6 +534,9 @@ public partial class ItemInfo : MonoBehaviour
         // 2D오브젝트와 분리되어서 생성된 3D 오브젝트의 계층 정보를 참조합니다
         // (2D오브젝트 상위에 Canvas를 둘 때 한 번더 수정될 가능성 있음!)
         itemTr = transform.parent;
+
+        // 3D오브젝트의 콜라이더 정보를 참조합니다.
+        itemCol = itemTr.GetComponent<Collider>();      
         
         // 아이템의 중첩수량 텍스트를 초기화합니다.
         InitCountTxt();
@@ -531,7 +548,7 @@ public partial class ItemInfo : MonoBehaviour
         UpdateTextInfo();                   
                 
         // 인벤토리 정보를 초기화합니다
-        UpdateInventoryInfo(null);          
+        UpdateInventoryInfo(null);             
     }
 
 
@@ -584,6 +601,9 @@ public partial class ItemInfo : MonoBehaviour
         else
             countTxt.enabled = false;
     }
+
+
+
 
 
 

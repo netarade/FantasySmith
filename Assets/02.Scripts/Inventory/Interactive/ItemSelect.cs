@@ -1,4 +1,3 @@
-
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -98,6 +97,14 @@ using UnityEngine.UI;
  * <v7.3 - 2024_0123_최원준>
  * 1- FinishSelecting 매개변수 없는 오버로딩 메서드 추가선언
  * ItemInfo에서 호출하여 슬롯 드롭시 강제로 셀렉팅 종료를 하기 위함 
+ * 
+ * <v7.4 - 2024_0123_최원준>
+ * 1- 타 인벤토리 이동 시 셀렉팅을 막기 위해 슬롯 드랍이후 
+ * itemInfo의 최신 inventoryInfo와 interactive에 접근하여 중간에 상태를 반영시키고
+ * SelectDoneDelayTime 메서드에서도 과거 인벤토리와 최신 인벤토리의 상태를 동시에 해제하도록 변경
+ * 
+ * <v7.5 - 2024_0123_최원준>
+ * 1- 
  * 
  */
 
@@ -251,7 +258,7 @@ public class ItemSelect : MonoBehaviour
         prevParentSlotTr=itemRectTr.parent;
         selectingParentTr=interactive.gameObject.transform.parent; // 인벤토리의 부모 캔버스 참조
 
-        itemRectTr.SetParent( selectingParentTr );                 // 부모를 일시적으로 인벤토리의 부모인 캔버스로 잡아서 이미지 우선순위를 높입니다.
+        itemRectTr.SetParent( selectingParentTr );              // 부모를 일시적으로 인벤토리의 부모인 캔버스로 잡아서 이미지 우선순위를 높입니다.
         itemCG.blocksRaycasts=false;                            // 드래그 이벤트 이외에는 받지 않습니다.
 
         // 원점 이동 벡터를 구합니다.
@@ -307,13 +314,33 @@ public class ItemSelect : MonoBehaviour
                 // 검출한 오브젝트의 태그가 슬롯이라면,
                 if( resultTr.tag==strItemDropSpace )
                 {
-                    itemInfo.OnItemSlotDrop( resultTr );
-
                     // 슬롯의 계층 상위 부모 인벤토리가 퀵슬롯이라면 퀵슬롯 드롭메서드 또한 호출해줍니다.
                     QuickSlot quickSlot = resultTr.parent.parent.parent.parent.GetComponent<QuickSlot>();
-                    
-                    if(quickSlot != null )
-                        quickSlot.OnQuickSlotDrop(itemInfo, resultTr);
+
+                    // 퀵슬롯이라면 퀵슬롯에 드롭이 가능한지 확인후 드롭을 진행합니다.
+                    if( quickSlot!=null )
+                    {
+                        if( quickSlot.OnQuickSlotDrop( itemInfo, resultTr ) )
+                        {
+                            itemInfo.OnItemSlotDrop( resultTr );
+
+                            // 타 인벤토리 전이 시 아이템 셀렉팅 상태가 끝나지 않았기 때문에
+                            // 최신 인벤토리 정보의 상태를 반영합니다.
+                            itemInfo.InventoryInteractive.IsItemSelecting = true;
+                            itemInfo.InventoryInfo.inventoryCG.blocksRaycasts = false;
+                        }
+
+                    }
+                    // 퀵슬롯이 아닌 경우 바로 드롭을 진행합니다.
+                    else
+                    {
+                        itemInfo.OnItemSlotDrop( resultTr );
+                        
+                        // 타 인벤토리 전이 시 아이템 셀렉팅 상태가 끝나지 않았기 때문에
+                        // 최신 인벤토리 정보의 상태를 반영합니다.
+                        itemInfo.InventoryInteractive.IsItemSelecting = true;
+                        itemInfo.InventoryInfo.inventoryCG.blocksRaycasts = false;
+                    }
                 }
                 // 검출한 오브젝트의 태그가 슬롯이 아니라면, 다시 원위치로 돌려줍니다.
                 else
@@ -352,9 +379,6 @@ public class ItemSelect : MonoBehaviour
 
 
 
-
-
-
     /// <summary>
     /// 처음 셀렉트하기 위해 클릭할 때 바로 셀렉트 종료의 호출이 일어나는 것을 막기 위한 딜레이 메서드
     /// </summary>
@@ -370,8 +394,18 @@ public class ItemSelect : MonoBehaviour
     protected IEnumerator SelectDoneDelayTime(float time)
     {
         yield return new WaitForSeconds(time);
-        interactive.IsItemSelecting = false;
-        itemCG.blocksRaycasts = true;       // 드래그가 끝나면 다시 이벤트를 받게 합니다.
+        
+        // 인벤토리 변경 전 상태를 초기화합니다.
+        interactive.IsItemSelecting = false;    
+        itemCG.blocksRaycasts = true;           // 드래그가 끝나면 다시 이벤트를 받게 합니다.
+
+        
+        // 새로 변경된 인벤토리의 상태를 초기화합니다.
+        if( !itemInfo.IsWorldPositioned )
+        {
+            itemInfo.InventoryInteractive.IsItemSelecting=false;
+            itemInfo.InventoryInfo.inventoryCG.blocksRaycasts=true;
+        }
     }
     
 

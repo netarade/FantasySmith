@@ -250,14 +250,17 @@ MonoBehaviour:
   - itemDesc: 00Mud
     innerSprite: {fileID: 21300000, guid: 65b246c1c0c0ac1479dd188550da07a0, type: 3}
     statusSprite: {fileID: 21300000, guid: 65b246c1c0c0ac1479dd188550da07a0, type: 3}
+    weaponTr: {fileID: 0}
     outerPrefab: {fileID: 116581284}
   - itemDesc: 01Thread
     innerSprite: {fileID: 21300000, guid: 65b246c1c0c0ac1479dd188550da07a0, type: 3}
     statusSprite: {fileID: 21300000, guid: 65b246c1c0c0ac1479dd188550da07a0, type: 3}
+    weaponTr: {fileID: 0}
     outerPrefab: {fileID: 116581284}
   - itemDesc: 02Stone
     innerSprite: {fileID: 21300000, guid: 65b246c1c0c0ac1479dd188550da07a0, type: 3}
     statusSprite: {fileID: 21300000, guid: 65b246c1c0c0ac1479dd188550da07a0, type: 3}
+    weaponTr: {fileID: 0}
     outerPrefab: {fileID: 116581284}
 --- !u!4 &108264672
 Transform:
@@ -584,6 +587,19 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 4820296530510894, guid: d8d9495abd2c10646b93b85672b74057, type: 3}
   m_PrefabInstance: {fileID: 1060284596}
   m_PrefabAsset: {fileID: 0}
+--- !u!65 &706623664
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 706623660}
+  m_Material: {fileID: 0}
+  m_IsTrigger: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Size: {x: 0.8827949, y: 2.5365179, z: 0.22881599}
+  m_Center: {x: -0.31839547, y: 0.37569797, z: -1.3347474e-15}
 --- !u!1 &901355465
 GameObject:
   m_ObjectHideFlags: 0
@@ -894,10 +910,12 @@ MonoBehaviour:
   - itemDesc: "00\uBCBD"
     innerSprite: {fileID: 0}
     statusSprite: {fileID: 0}
+    weaponTr: {fileID: 0}
     outerPrefab: {fileID: 946728064}
   - itemDesc: "01\uBCBD"
     innerSprite: {fileID: 0}
     statusSprite: {fileID: 0}
+    weaponTr: {fileID: 0}
     outerPrefab: {fileID: 946728064}
 --- !u!1 &1382244208
 GameObject:
@@ -1014,10 +1032,12 @@ MonoBehaviour:
   - itemDesc: 00StoneAxe
     innerSprite: {fileID: 21300000, guid: a4910fbe75cd4b14c82d45526ae4f58f, type: 3}
     statusSprite: {fileID: 21300000, guid: a4910fbe75cd4b14c82d45526ae4f58f, type: 3}
+    weaponTr: {fileID: 0}
     outerPrefab: {fileID: 706623660}
   - itemDesc: 01StonePickaxe
     innerSprite: {fileID: 21300000, guid: a4910fbe75cd4b14c82d45526ae4f58f, type: 3}
     statusSprite: {fileID: 21300000, guid: a4910fbe75cd4b14c82d45526ae4f58f, type: 3}
+    weaponTr: {fileID: 0}
     outerPrefab: {fileID: 1441331410966627}
 --- !u!1 &1551957526
 GameObject:
@@ -1067,6 +1087,7 @@ MonoBehaviour:
   - itemDesc: "00\uD0A4"
     innerSprite: {fileID: 21300000, guid: 5d0c7b9914087414698722d97f6e08f1, type: 3}
     statusSprite: {fileID: 21300000, guid: 5d0c7b9914087414698722d97f6e08f1, type: 3}
+    weaponTr: {fileID: 0}
     outerPrefab: {fileID: 116581284}
 --- !u!1 &1573494801
 GameObject:
@@ -1360,6 +1381,7 @@ MonoBehaviour:
   - itemDesc: 00Food1
     innerSprite: {fileID: 0}
     statusSprite: {fileID: 0}
+    weaponTr: {fileID: 0}
     outerPrefab: {fileID: 0}
 --- !u!1 &1441331410966627
 GameObject:
@@ -3754,6 +3776,18 @@ PrefabInstance:
       propertyPath: equipTr.pickaxTr
       value: 
       objectReference: {fileID: 4820295664240981}
+    - target: {fileID: 6730178789244435374, guid: 4ef5740969aadc34081e91276f13abe7, type: 3}
+      propertyPath: equipWeaponType.Array.size
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 6730178789244435374, guid: 4ef5740969aadc34081e91276f13abe7, type: 3}
+      propertyPath: equipWeaponType.Array.data[0]
+      value: 9
+      objectReference: {fileID: 0}
+    - target: {fileID: 6730178789244435374, guid: 4ef5740969aadc34081e91276f13abe7, type: 3}
+      propertyPath: equipWeaponType.Array.data[1]
+      value: 2
+      objectReference: {fileID: 0}
     - target: {fileID: 6730178789348631019, guid: 4ef5740969aadc34081e91276f13abe7, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 

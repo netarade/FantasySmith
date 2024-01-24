@@ -172,6 +172,14 @@ using UnityEngine;
  * 이는 실패조건이지 예외처리 조건이 아니었음. 따라서 false처리
  * (해당 이름의 아이템이 없는 상태에서 이 메서드 발동 시 예외가 발생했을 가능성이 큼)
  * 
+ * <v6.0 - 2024_0124_최원준>
+ * 1- 딕셔너리 저장형식을 GameObject기반에서 ItemInfo로 변경하면서 관련 메서드 수정
+ *(CompareBySlotIndexEach, ReadSlotIndexFromItemDic, SetOverlapCount, 
+ *IsEnoughOverlapCount, IsExist, IsAbleToAddMisc)
+ *
+ * 2- SetOverlapCount메서드에서 removeList를 사용하지 않고 tempInfoList를 사용하던 로직 수정,
+ * 메서드 시작 시 removeList를 초기화하는 코드 추가
+ * 
  */
 
 
@@ -309,7 +317,7 @@ namespace InventoryManagement
             indexList.Clear();   
 
             // 아이템의 ItemType을 기반으로 해당하는 딕셔너리를 구합니다
-            Dictionary<string, List<GameObject>> itemDic;
+            Dictionary<string, List<ItemInfo>> itemDic;
 
 
             TabType tabType;  
@@ -347,23 +355,21 @@ namespace InventoryManagement
         /// 슬롯 인덱스를 해당 딕셔너리로부터 하나씩 읽어들여 저장합니다.<br/>
         /// 인자로 인덱스 리스트 참조값과 어떤 딕셔너리에 추가할 것인지, 현재 탭 상태가 전체탭인지 여부를 전달해야 합니다.
         /// </summary>
-        private void ReadSlotIndexFromItemDic(ref List<int> indexList, Dictionary<string, List<GameObject>> itemDic, bool isActiveTabAll )
+        private void ReadSlotIndexFromItemDic(ref List<int> indexList, Dictionary<string, List<ItemInfo>> itemDic, bool isActiveTabAll )
         {   
             if( indexList==null || itemDic==null )
                 throw new Exception("리스트 혹은 딕셔너리 참조값이 존재하지 않습니다.");
                 
 
             // 해당 사전에서 아이템 정보를 하나씩 읽어옵니다.
-            foreach(List<GameObject> itemObjList in itemDic.Values)     
+            foreach(List<ItemInfo> itemInfoList in itemDic.Values)     
             {
-                foreach(GameObject itemObj in itemObjList)
+                foreach(ItemInfo itemInfo in itemInfoList)
                 {
-                    Item item = itemObj.GetComponent<ItemInfo>().Item;   
-
                     if( isActiveTabAll )  
-                        indexList.Add(item.SlotIndexAll);   // 전체 슬롯 인덱스 기반으로 구하는 경우
+                        indexList.Add(itemInfo.Item.SlotIndexAll);   // 전체 슬롯 인덱스 기반으로 구하는 경우
                     else                
-                        indexList.Add(item.SlotIndexEach);  // 개별 슬롯 인덱스 기반으로 구하는 경우
+                        indexList.Add(itemInfo.Item.SlotIndexEach);  // 개별 슬롯 인덱스 기반으로 구하는 경우
                 } 
             }
         }
@@ -462,10 +468,10 @@ namespace InventoryManagement
         /// 리스트의 Sort메서드에 인덱스 정렬기준을 전달하기 위한 기준 메서드<br/>
         /// 잡화아이템의 개별 슬롯 인덱스를 기준으로 해서 오름차순으로 정렬됩니다.<br/>
         /// </summary>
-        public static int CompareBySlotIndexEach(GameObject itemObj1, GameObject itemObj2)
+        public static int CompareBySlotIndexEach(ItemInfo itemInfo1, ItemInfo itemInfo2)
         {
-            ItemMisc itemMisc1 = (ItemMisc)itemObj1.GetComponent<ItemInfo>().Item;
-            ItemMisc itemMisc2 = (ItemMisc)itemObj2.GetComponent<ItemInfo>().Item;
+            ItemMisc itemMisc1 = (ItemMisc)itemInfo1.Item;
+            ItemMisc itemMisc2 = (ItemMisc)itemInfo2.Item;
             return itemMisc1.SlotIndexEach.CompareTo(itemMisc2.SlotIndexEach);
         }
 
@@ -489,11 +495,11 @@ namespace InventoryManagement
         /// <returns>기존의 오브젝트에 감소 혹은 추가하고 남은 초과 수량, 모든 기존 아이템에 해당 수량이 들어갔다면 0을 반환</returns>
         public int SetOverlapCount(string itemName, int inCount, bool isLatestModify=true, List<ItemInfo> removeList=null)
         {
-            List<GameObject> itemObjList = GetItemObjectList(itemName);     // 인벤토리의 아이템 오브젝트 리스트 참조
+            List<ItemInfo> itemInfoList = GetItemInfoList(itemName);     // 인벤토리의 아이템 오브젝트 리스트 참조
             ItemType itemType = GetItemTypeIgnoreExists(itemName);              // 아이템 종류 참조
                         
             // 해당 이름의 아이템 오브젝트가 존재하지 않는 경우, 아이템의 종류가 잡화아이템이 아닌 경우 예외처리
-            if(itemObjList==null)
+            if(itemInfoList==null)
                 throw new Exception("아이템이 이 인벤토리에 존재하지 않습니다.");
             if(itemType != ItemType.Misc)
                 throw new Exception("잡화 아이템이 아닙니다.");
@@ -508,39 +514,41 @@ namespace InventoryManagement
                 removeList = this.tempInfoList;   // 임시리스트로 설정
             }
 
+            removeList.Clear();                 // 삭제목록을 초기화합니다.
+
             int remainCount = inCount;          // 가산 또는 감산하고 남은 수량 (초기값 : 수량 전달인자)
             
             // 개별 슬롯 인덱스를 기준으로하여 오름차순으로 정렬합니다.
-            itemObjList.Sort(CompareBySlotIndexEach);
+            itemInfoList.Sort(CompareBySlotIndexEach);
 
 
             // 최신순으로 수정할 지 오래된 순으로 수정할 지를 판단하여 내부 메서드를 반복호출합니다.            
             if(isLatestModify)  
             {
-                for(int i=itemObjList.Count-1; i>=0; i--)
+                for(int i=itemInfoList.Count-1; i>=0; i--)
                     if( SetCountInLoopByOrder(i) ) { break; }   // 호출 금지가 활성화되면 반복문을 종료합니다.
             }
             else                
             {
-                for(int i=0; i<=itemObjList.Count-1; i++)
+                for(int i=0; i<=itemInfoList.Count-1; i++)
                     if( SetCountInLoopByOrder(i) ) { break; }   // 호출 금지가 활성화되면 반복문을 종료합니다.
             }
 
 
             // 삭제 리스트에 있는 아이템을 역순으로 순회합니다. 
-            for( int i=tempInfoList.Count-1; i>=0; i--)
+            for( int i=removeList.Count-1; i>=0; i--)
             {
-                // 인벤토리 리스트에서 제거
-                RemoveItem(tempInfoList[i]);
+                // 인벤토리 목록에서 제거
+                RemoveItem(removeList[i]);
                                 
                 // 즉시 삭제가 활성화 되있다면 오브젝트 삭제
                 if(isInstantRemove)
-                    GameObject.Destroy(tempInfoList[i].gameObject);
+                    GameObject.Destroy(removeList[i].gameObject);
             }
 
             // 즉시 삭제의 경우 전송리스트 초기화
             if(isInstantRemove)
-                tempInfoList.Clear();   
+                removeList.Clear();   
 
             // 호출하고 남은 수량을 반환합니다.
             return remainCount; 
@@ -549,11 +557,11 @@ namespace InventoryManagement
 
 
             // 아이템을 조회 순서에 따라서 하나씩 꺼내어 수량 정보를 조절하고,
-            // 수량이 0이된 아이템을 tempInfoList에 담아주는 내부 메서드입니다.
+            // 수량이 0이된 아이템을 삭제 리스트에 담아주는 내부 메서드입니다.            
             bool SetCountInLoopByOrder(int idx)
             {
                 // 반복문을 돌 때마다 아이템 정보 참조를 위한 설정
-                ItemInfo itemInfo=itemObjList[idx].GetComponent<ItemInfo>();
+                ItemInfo itemInfo=itemInfoList[idx];
                 ItemMisc itemMisc=(ItemMisc)itemInfo.Item;
 
                 // 남은수량을 넣어서 새로운 남은 수량을 반환받습니다.
@@ -565,7 +573,7 @@ namespace InventoryManagement
                 // 변경한 아이템의 수량이 0이 된 경우에는 삭제 리스트에 담습니다.
                 // 바로 제거하지 않고 따로 담는 이유는 중간에 리스트의 Count 변동이 생기기 때문입니다.
                 if( itemMisc.OverlapCount==0 )
-                    tempInfoList.Add( itemInfo );
+                    removeList.Add( itemInfo );
 
                 // 남은 수량이 0이된 경우 외부 호출 금지를 활성화합니다.
                 if(remainCount==0)  
@@ -598,19 +606,19 @@ namespace InventoryManagement
                 throw new Exception("수량 전달인자는 1이상이어야 합니다.");
             
 
-            List<GameObject> itemObjList = GetItemObjectList(itemName);     // 이름을 통한 아이템 오브젝트 리스트 참조
+            List<ItemInfo> itemInfoList = GetItemInfoList(itemName);     // 이름을 통한 ItemInfo 리스트 참조
 
-            // 해당 아이템 이름으로 오브젝트 리스트가 존재하지 않거나, 키값이 있지만 비었다면 실패처리
-            if( itemObjList == null || itemObjList.Count==0 )
+            // 해당 아이템 이름으로 ItemInfo가 존재하지 않거나, 키 값이 있지만 비었다면 실패처리
+            if( itemInfoList == null || itemInfoList.Count==0 )
                 return false;
                         
                                     
             int totalCount = 0;                         // 중첩수량을 누적 시키기 위한 변수 설정
             bool isTotalEnough = false;                 // 중첩수량이 충분한지 확인하기 위한 변수
 
-            foreach(GameObject itemObj in itemObjList)  // 아이템을 하나씩 꺼내어 정보를 읽습니다.
+            foreach(ItemInfo itemInfo in itemInfoList)  // 아이템을 하나씩 꺼내어 정보를 읽습니다.
             {
-                ItemMisc itemMisc = (ItemMisc)itemObj.GetComponent<ItemInfo>().Item;
+                ItemMisc itemMisc = (ItemMisc)itemInfo.Item;
                 totalCount += itemMisc.OverlapCount;    // 중첩수량을 누적시킵니다.
                    
                 // 합계 누적 수량을 구할 때마다 인자로 들어 온 수량보다 큰지 확인합니다.
@@ -649,16 +657,16 @@ namespace InventoryManagement
                 throw new Exception("수량이 0이하로 전달되었습니다. 확인하여 주세요.");
 
 
-            List<GameObject> itemObjList = GetItemObjectList(itemName);     // 인벤토리의 아이템 오브젝트 리스트 참조
+            List<ItemInfo> itemInfoList = GetItemInfoList(itemName);     // 인벤토리의 해당 ItemInfo 리스트 참조
 
-            // 인벤토리에 오브젝트 리스트가 존재하지 않는 경우 false반환
-            if( itemObjList==null )
+            // 인벤토리에 ItemInfo 리스트가 존재하지 않는 경우 false반환
+            if( itemInfoList==null )
             {
-                Debug.Log( "오브젝트 리스트가 없습니다." );
+                Debug.Log( "ItemInfo 리스트가 없습니다." );
                 return false;
             }
-            // 오브젝트 리스트가 존재하면서 들어있는 오브젝트 수량이 충분하다면,
-            else if( itemObjList.Count-itemObjCount>=0 )
+            // ItemInfo 리스트가 존재하면서, 들어있는 오브젝트 수량이 충분하다면,
+            else if( itemInfoList.Count-itemObjCount>=0 )
             {
                 Debug.Log( "수량이 충분합니다." );
                 return true;
@@ -804,16 +812,16 @@ namespace InventoryManagement
             int curRemainSlotCnt = GetCurRemainSlotCount( itemType );
 
 
-            // 오브젝트 리스트 참조를 설정합니다.
-            List<GameObject> itemObjList = GetItemObjectList( itemName );
+            // ItemInfo 리스트 참조를 설정합니다.
+            List<ItemInfo> itemInfoList = GetItemInfoList( itemName );
 
-            // 기존 오브젝트 리스트가 있는 경우는
-            if( itemObjList!=null )
+            // 기존 ItemInfo 리스트가 있는 경우는
+            if( itemInfoList!=null )
             { 
-                // 아이템을 하나씩 꺼내어 remainCount를 감산합니다.
-                foreach( GameObject itemObj in itemObjList )
+                // ItemInfo를 하나씩 꺼내어 remainCount를 감산합니다.
+                foreach( ItemInfo itemInfo in itemInfoList )
                 {
-                    ItemMisc itemMisc = (ItemMisc)itemObj.GetComponent<ItemInfo>().Item;
+                    ItemMisc itemMisc = (ItemMisc)itemInfo.Item;
 
                     // 해당 아이템을 최대수량으로 만들기 위한 수량이 얼마 남았는 지를 계산합니다.
                     remainCount-=( maxOverlapCount-itemMisc.OverlapCount );

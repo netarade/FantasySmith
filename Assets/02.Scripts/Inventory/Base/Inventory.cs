@@ -264,8 +264,16 @@ using UnityEngine.Assertions.Must;
  * 이를 지정 슬롯에 추가하는 방식으로 변경하기위해, 이니셜라이저에서 초기 활성탭정보를 받아들여서
  * 해당 정보를 토대로 AddItem해주는 방식으로 변경하였음.
  * 
- * <v2024_0122_최원준>
+ * <v10.5 - 2024_0122_최원준>
  * 1- 메서드명 AccumulateItemObjCount를 CalculateItemObjCount로 변경
+ * 
+ * <V11.0 - 2024_0124_최원준>
+ * 1- 딕셔너리에 GameObject가 아니라 ItemInfo 스크립트 참조를 저장하기로 결정
+ * 이유는 2D 상태로 보관할때와 3D상태로 보관할 때의 계층구조가 틀려지기 때문에 참조시 오류날 위험성이 있기 때문이고,
+ * 2D, 3D상태에서의 계층 참조값이 ItemInfo에 기록되고 있기 때문에 안정성측면에서 유리하기 때문.
+ *
+ * 2- 딕셔너리 저장형식을 GameObject기반에서 ItemInfo로 변경하면서 관련 메서드 수정
+ *(SerializeDicToItemList, InitCurDicItemObjCount)
  * 
  */
 
@@ -275,21 +283,21 @@ using UnityEngine.Assertions.Must;
 namespace InventoryManagement
 {
     /// <summary>
-    /// 인벤토리를 정의하는 클래스, 딕셔너리에 이름참조를 통하여 접근하면
-    /// 내부에 GameObject를 저장하는 weapList와 miscList가 있습니다.<br/> 
-    /// ******Save, Load시 인벤토리 클래스를 저장해야 합니다.******
+    /// 내부적으로 데이터를 저장하고 처리하는 인벤토리 클래스입니다.<br/>
+    /// 딕셔너리와, 딕셔너리 종류배열, 딕셔너리별 오브젝트 제한수, 탭종류 배열 등을 속성으로 가지고 있으며<br/>
+    /// 딕셔너리에 ItemInfo를 추가, 제거, 정보 계산 등의 기능을 담당하고 있습니다.<br/><br/>
     /// </summary>
     [Serializable]
     public partial class Inventory
     {
         /**** 세이브 로드 시 저장해야할 속성들 ****/
-        public Dictionary<string, List<GameObject>>[] itemDic;  // 아이템 딕셔너리
+        public Dictionary<string, List<ItemInfo>>[] itemDic;  // 아이템 딕셔너리
         public ItemType[] dicType;                              // 딕셔너리의 종류
 
         public int[] slotCountLimitTab;                         // 탭별 슬롯 제한 수
 
         /*** 로드시에만 지정되는 속성들 ***/
-        public TabType[] tabType;                           // 탭의 종류
+        public TabType[] tabType;                               // 탭의 종류
 
 
         /**** 로드 시에만 불러온 후 게임 중에 지속적으로 관리 및 참조해야 할 속성 ****/ 
@@ -383,15 +391,15 @@ namespace InventoryManagement
             int toatlCount = 0;
 
             // 아이템 타입을 기반으로 딕셔너리를 구합니다.
-            Dictionary<string, List<GameObject>> itemDic = GetItemDic(itemType);
+            Dictionary<string, List<ItemInfo>> itemDic = GetItemDic(itemType);
 
             // 해당 사전이 없거나 인벤토리 사전에 들어있는 리스트가 하나도 없다면, 바로 0을 반환합니다.
             if(itemDic==null || itemDic.Count==0)        
                 return 0;
 
-            // 해당 딕셔너리에서 게임오브젝트 리스트를 꺼내고 리스트의 Count 프로퍼티를 통해 게임오브젝트 숫자를 누적시킵니다.
-            foreach(List<GameObject> objList in itemDic.Values)
-                toatlCount += objList.Count;   
+            // 해당 딕셔너리에서 ItemInfo 리스트를 꺼내고 리스트의 Count 프로퍼티를 통해 게임오브젝트 숫자를 누적시킵니다.
+            foreach(List<ItemInfo> itemInfoList in itemDic.Values)
+                toatlCount += itemInfoList.Count;   
             
             return toatlCount;  
         }
@@ -538,11 +546,12 @@ namespace InventoryManagement
         /// <param name="itemType"> GameObject타입에서 Item타입으로 리스트화 할 사전목록의 종류를 정해주세요. Weapon, Misc등이 있습니다. </param>
         public List<T> SerializeDicToItemList<T>() where T : Item
         {
-            List<T> itemList = new List<T>();       // 새로운 T형식 아이템리스트 생성
+            // 새로운 T형식 아이템리스트를 생성합니다. (T형식은 Item을 상속하는 자식클래스입니다.)
+            List<T> itemList = new List<T>();       
 
 
             // 현재 인벤토리에서 어떤 사전을 참조 할 것인지 T를 바탕으로 결정합니다.
-            Dictionary<string, List<GameObject>> itemDic = null;
+            Dictionary<string, List<ItemInfo>> itemDic = null;
             ItemType itemType = ItemType.None;
 
             // 들어온 아이템 클래스 T인자를 ItemType에 맞게 변환합니다.
@@ -556,18 +565,16 @@ namespace InventoryManagement
                 return null;
 
 
-            // 해당 사전의 아이템을 하나씩 불러와서 하위 클래스 형식(T형식) 으로 저장합니다.
-            foreach( List<GameObject> objList in itemDic.Values )                // 해당 사전에서 게임오브젝트 리스트를 하나씩 꺼내어
+            /*** 해당 사전의 아이템을 하나씩 불러와서 하위 클래스 형식(T형식) 으로 저장합니다. ***/
+            // 해당 사전에서 ItemInfo 리스트를 하나씩 꺼내어
+            foreach( List<ItemInfo> itemInfoList in itemDic.Values )    
             {
-                // 오브젝트 리스트가 할당되어있지만 아이템이 존재하지 않는경우 다음 오브젝트리스트를 찾습니다.
-                if(objList.Count==0)
-                    continue;
-
-                for( int i = 0; i<objList.Count; i++ )                               // 리스트의 게임오브젝트를 모두 가져옵니다.
-                    itemList.Add( (T)objList[i].GetComponentInChildren<ItemInfo>().Item ); // item 스크립트를 하나씩 꺼내어 T형식으로 저장합니다.
+                // Item 인스턴스를 하나씩 꺼내어 T형식으로 저장합니다.
+                foreach( ItemInfo itemInfo in itemInfoList )
+                    itemList.Add( (T)itemInfo.Item );            
             }
 
-            // item 정보가 하나씩 저장되어있는 itemList를 반환합니다.
+            // Item의 하위 자식 타입으로 저장되어있는 itemList를 반환합니다.
             return itemList;
         }
 
@@ -674,14 +681,14 @@ namespace InventoryManagement
             int dicLen = dicTypes.Length;
 
             // 전체 배열 사용 전 할당합니다
-            itemDic=new Dictionary<string, List<GameObject>>[dicLen];
+            itemDic=new Dictionary<string, List<ItemInfo>>[dicLen];
             dicType=new ItemType[dicLen];
 
 
             // 배열의 개별 요소를 할당합니다.
             for( int i = 0; i<dicLen; i++ )
             {
-                itemDic[i] = new Dictionary<string, List<GameObject>>();    // 개별 딕셔너리 할당
+                itemDic[i] = new Dictionary<string, List<ItemInfo>>();    // 개별 딕셔너리 할당
                 dicType[i] = dicTypes[i].itemType;                          // 개별 타입을 이니셜라이저의 타입으로 설정
                 
 

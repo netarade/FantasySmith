@@ -74,6 +74,11 @@ using UnityEngine.UI;
  * <v3.1 - 2024_0123_최원준>
  * 1- 아이템 장착 및 해제 시 3D오브젝트 최상위에있는 기본 콜라이더를 비활성화 활성화하도록 변경
  * 
+ * <v3.2 - 2024_0124_최원준>
+ * 1- Start내부에 playerInventory참조를 잡는 부분을  GetChild(0) 직접참조에서 GetComponentInChildren으로 변경
+ * 이유는 인벤토리 내부에 크래프팅 UI창이 공존해야 하는 경우 상태창보다 계층이 앞서야 하므로 
+ * 캔버스 하위 인벤토리 오브젝트보다 위로 배치해야하기 때문
+ * 
  */
 
 
@@ -182,7 +187,7 @@ public class QuickSlot : InventoryInfo
         isItemEquipped = false;
 
         // 그래픽 레이캐스팅이 가능하도록 플레이어 인벤토리와 연동상태로 시작합니다.
-        playerInventory = inventoryTr.parent.GetChild(0).GetComponent<InventoryInfo>();
+        playerInventory = inventoryTr.parent.GetComponentInChildren<InventoryInfo>();
         this.RegisterInventoryLink(playerInventory);
 
         // 창을 항상 열어둡니다.

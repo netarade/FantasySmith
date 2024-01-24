@@ -86,6 +86,10 @@ using UnityEngine;
  * <v10.1 - 2024_0115_최원준>
  * 1- 변수 및 프로퍼티명 SlotIndex를 SlotIndexEach로 변경
  * 
+ * <v10.2 - 2024_0124_최원준>
+ * 1- Item클래스에 저장해야할 변수로 onwerId를 추가하였음
+ * 이유는 월드상에 설치하는 아이템의 경우 소유주를 설정해서 퀘스트 성공 여부를 판단하며, 저장하고 불러와야할 경우가 있기 때문
+ * 
  * 
  */
 
@@ -157,7 +161,7 @@ namespace ItemData
         [JsonProperty] VisualReferenceIndex sVisualRefIndex;
         [JsonProperty] int iSlotIndexEach;
         [JsonProperty] int iSlotIndexAll;
-        
+        [JsonProperty] string iOwnerId;
 
 
 
@@ -202,6 +206,11 @@ namespace ItemData
         /// </summary>
         [JsonIgnore] public int SlotIndexAll { get{return iSlotIndexAll; } set{iSlotIndexAll=value;} }
 
+
+        /// <summary>
+        /// 해당 아이템의 소유주 ID를 말합니다. 어떤 인벤토리에 저장되는 지에 따라 해당 아이템의 소유주ID가 결정되어집니다.
+        /// </summary>
+        [JsonIgnore] public string OwnerId { get { return iOwnerId; } set { iOwnerId=value; } }
 
 
 

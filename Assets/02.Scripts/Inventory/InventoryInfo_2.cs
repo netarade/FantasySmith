@@ -68,6 +68,10 @@ using UnityEngine.UI;
  * <v3.5 - 2024_0123_최원준>
  * 1- UpdateTextInfoSameItemName에서 GetItemObjectList메서드를 사용하는 구문 조건검사 추가
  * 
+ * <v3.6 - 2024_0124_최원준>
+ * 1- Inventory클래스의 딕셔너리 저장형식을 GameObject기반에서 ItemInfo로 변경하면서 관련 메서드 수정
+ * (UpdateTextInfoSameItemName)
+ * 
  */
 
 public partial class InventoryInfo : MonoBehaviour
@@ -123,23 +127,25 @@ public partial class InventoryInfo : MonoBehaviour
     public ItemInfo RemoveItem(string itemName, bool isDestroy=false)
     {
         // 인벤토리 목록에서 제거하고 반환 할 참조값을 저장합니다.
-        ItemInfo rItemInfo = inventory.RemoveItem(itemName);   
+        ItemInfo itemInfo = inventory.RemoveItem(itemName);   
         
-        if( rItemInfo==null )
+        if( itemInfo==null )
             throw new Exception( "해당 이름의 아이템이 존재하지 않습니다." );       
         
         // 파괴 옵션이 걸려있다면, 아이템을 파괴하고 null을 반환합니다.
         else if( isDestroy )
         {
-            Destroy( rItemInfo.gameObject );       
+            Destroy( itemInfo.gameObject );       
             return null;
         }
         
         // 아이템을 3D상태로 전환합니다.
-        rItemInfo.DimensionShift(true);
-        rItemInfo.UpdateInventoryInfo(null);
+        itemInfo.DimensionShift(true);
 
-        return rItemInfo;
+        // 인벤토리 정보를 제거합니다.
+        itemInfo.UpdateInventoryInfo(null);
+
+        return itemInfo;
     }
 
 
@@ -152,23 +158,7 @@ public partial class InventoryInfo : MonoBehaviour
     /// </summary>
     public ItemInfo RemoveItem(ItemInfo itemInfo, bool isDestroy=false)
     {
-        // 인벤토리 목록에서 제거하고 반환 할 참조값을 저장합니다.
-        ItemInfo rItemInfo = inventory.RemoveItem(itemInfo);   
-        
-        if( rItemInfo==null )
-            throw new Exception( "해당 이름의 아이템이 존재하지 않습니다." );       
-        
-        // 파괴 옵션이 걸려있다면, 아이템을 파괴하고 null을 반환합니다.
-        else if( isDestroy )
-        {
-            Destroy( rItemInfo.gameObject );       
-            return null;
-        }
-        // 아이템을 3D상태로 전환합니다.
-        rItemInfo.DimensionShift(true);
-        rItemInfo.UpdateInventoryInfo(null);
-
-        return rItemInfo;
+        return RemoveItem(itemInfo.Name, isDestroy); // 이름을 기반으로 메서드 재호출을 진행합니다.
     }
 
 
@@ -253,7 +243,6 @@ public partial class InventoryInfo : MonoBehaviour
         else
             AddItemBasic(itemInfo);
 
-
         // 아이템 추가의 성공을 반환합니다.
         return true;
     }
@@ -308,19 +297,19 @@ public partial class InventoryInfo : MonoBehaviour
      
 
     /// <summary>
-    /// 인자로 전달한 이름과 동일한 기존 아이템의 수량을 모두 업데이트 해주는 메서드<br/>
+    /// 인자로 전달한 이름과 동일한 기존 아이템의 수량을 모두 업데이트 해주는 메서드입니다<br/>
     /// AddItem에서 내부적으로 사용됩니다. 
     /// </summary>
     /// <param name="itemName"></param>
     protected void UpdateTextInfoSameItemName(string itemName)
     {
-        List<GameObject> itemObjList = inventory.GetItemObjectList(itemName);
+        List<ItemInfo> itemInfoList = inventory.GetItemInfoList(itemName);
 
-        if(itemObjList == null || itemObjList.Count==0 )
+        if(itemInfoList == null || itemInfoList.Count==0 )
             return;
 
-        foreach(GameObject itemObj in itemObjList )
-            itemObj.GetComponent<ItemInfo>().UpdateTextInfo();
+        foreach(ItemInfo itemInfo in itemInfoList )
+            itemInfo.UpdateTextInfo();
 
     }
 

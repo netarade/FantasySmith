@@ -347,6 +347,12 @@ using InventoryManagement;
  *<v13.3 - 2024_0123_최원준>
  *1- 아이템의 콜라이더를 끄기 위한 itemCol변수 추가하여 OnItemCreated에서 생성될 때 itemTr을 통해 초기화하도록 설정
  *
+ *<v13.4 - 2024_0124_최원준>
+ *1- playerTr을 ownerTr로 변경
+ *
+ *2- 아이템 소유주 정보를 나타내는 OwnerId를 추가
+ *
+ *
  */
 
 
@@ -393,9 +399,10 @@ public partial class ItemInfo : MonoBehaviour
     InventoryInteractive inventoryInteractive;  // 현재 아이템이 참조 할 인벤토리 인터렉티브 스크립트
     StatusWindowInteractive statusInteractive;  // 현재 아이템이 참조 할 상태창 인터렉티브 스크립트
 
-    Transform playerTr;                 // 현재 아이템을 소유하고 있는 플레이어 캐릭터 정보 참조
+    Transform ownerTr;                  // 현재 아이템을 소유하고 있는 인벤토리 소유자 정보 참조
+
     Transform baseDropTr;               // 아이템이 떨어질 기본 드랍 위치
-    bool isBaseDropSetParent;      // 기본 드랍위치에 부모설정 옵션이 걸려있는지 여부
+    bool isBaseDropSetParent;           // 기본 드랍위치에 부모설정 옵션이 걸려있는지 여부
 
 
     /**** InventoryInfoChange 메서드 호출시 변동 ****/
@@ -447,6 +454,13 @@ public partial class ItemInfo : MonoBehaviour
     public Collider ItemCol { get { return itemCol;} }
 
 
+    /// <summary>
+    /// 아이템의 소유주 정보를 반환합니다.<br/>
+    /// 이는 해당 인벤토리를 소유하고 있는 계층최상위 부모 오브젝트명입니다.
+    /// </summary>
+    public string OwnerId { get { return item.OwnerId; } }
+    
+
 
 
     /*** 내부 아이템의 속성을 변경해주는 프로퍼티 ***/
@@ -467,10 +481,7 @@ public partial class ItemInfo : MonoBehaviour
     /// 클론 한 Item 인스턴스를 저장하고, 저장 되어있는 인스턴스를 불러올 수 있습니다.<br/>
     /// </summary>
     public Item Item { set{ item=value; } get { return item; } }
-
-
-
-
+    
 
 
 
@@ -723,9 +734,10 @@ public partial class ItemInfo : MonoBehaviour
 
             slotListTr = null;
             emptyListTr = null;
-
-            playerTr = null;
             prevDropSlotTr = null;
+
+            ownerTr = null;             // 아이템 소유자 
+            item.OwnerId = "World";     // 아이템 소유자를 World로 변경합니다.
         }
         else // 다른 인벤토리로 전달된 경우
         {
@@ -740,15 +752,15 @@ public partial class ItemInfo : MonoBehaviour
                         
             slotListTr = inventoryTr.GetChild(0).GetChild(0).GetChild(0);
             emptyListTr = inventoryTr.GetChild(0).GetChild(1);
-
-            playerTr = inventoryTr.parent.parent;                   // 플레이어 위치 참조 (아직 미사용)
-                        
-            baseDropTr = inventoryInfo.baseDropTr;                  // 기본 드랍위치와 부모설정을 인벤토리로부터 참조
+                                         
+            baseDropTr = inventoryInfo.baseDropTr;                      // 기본 드랍위치와 부모설정을 인벤토리로부터 참조
             isBaseDropSetParent = inventoryInfo.isBaseDropSetParent;      
             prevDropSlotTr = slotListTr.GetChild(item.SlotIndexEach);   // 이전 드롭이벤트 호출자를 현재 들어있는 슬롯으로 최신화                                  
 
-            UpdateActiveTabInfo();                                  // 액티브 탭 정보 최신화   
-            
+            UpdateActiveTabInfo();                                      // 액티브 탭 정보를 최신화합니다.   
+
+            ownerTr = inventoryInfo.OwnerTr;            // 아이템 소유자 Transform 참조값을 변경합니다.
+            item.OwnerId = inventoryInfo.OwnerId;       // 아이템 소유자 ID를 내부 아이템에 저장합니다.            
         }      
     }
 

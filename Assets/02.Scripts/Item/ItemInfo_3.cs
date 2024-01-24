@@ -109,6 +109,17 @@ public partial class ItemInfo : MonoBehaviour
 
 
 
+    /// <summary>
+    /// 아이템을 어떠한 상태도 전환 하지 않고 인벤토리에 등록만 합니다.<br/>
+    /// 즉, 3D상태의 아이템이 인벤토리에 추가되어도 2D상태로 변경되지 않습니다.
+    /// </summary>
+    public void Register(InventoryInfo inventoryInfo)
+    {        
+        item.OwnerId = inventoryInfo.OwnerId;   // 아이템 소유주 정보를 인벤토리 소유주로 변경합니다.
+        inventoryInfo.inventory.AddItem(this);  // 내부인벤토리에 아이템을 등록합니다.
+    }
+
+
 
 
 

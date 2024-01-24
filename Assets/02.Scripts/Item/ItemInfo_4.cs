@@ -13,6 +13,9 @@ using UnityEngine;
 * <v1.1 - 2024_0118_최원준>
 * 1- Durability프로퍼티 내부에 itemBuilding이후에 itemWeapon의 Durability를 수정하고 있어서 null값 오류가 뜨는 부분 수정
 * 
+* <v1.2 - 2024_0124_최원준>
+* 1- 빌딩아이템의 속성을 반환하는 IsDecoration 프로퍼티를 추가
+* 
 * 
 */
 public partial class ItemInfo : MonoBehaviour
@@ -41,6 +44,7 @@ public partial class ItemInfo : MonoBehaviour
     /// 아이템의 대분류로 잡화, 무기, 장비, 퀘스트 3가지 종류가 있습니다.
     /// </summary>
     public ItemType Type { get { return item.Type; } }
+        
 
     
 
@@ -196,6 +200,24 @@ public partial class ItemInfo : MonoBehaviour
         }
     }
 
+
+    
+    /// <summary>
+    /// 아이템이 장식용 속성을 가지고 있는지 여부를 반환합니다.<br/><br/>
+    /// 해당 아이템의 종류가 빌딩 아이템이 아니라면 반드시 false를 반환하고,<br/>
+    /// 빌딩 아이템이라면 장식용속성에 따라 true, false를 반환합니다.
+    /// </summary>
+    public bool IsDecoration
+    {
+        get
+        {
+            ItemBuilding itemBuilding = item as ItemBuilding;
+            if( itemBuilding!=null )
+                return false;
+            else
+                return itemBuilding.isDecoration;
+        }
+    }
 
 
 

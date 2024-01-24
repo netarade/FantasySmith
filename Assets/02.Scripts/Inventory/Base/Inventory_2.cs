@@ -196,6 +196,12 @@ using WorldItemData;
  * ItemInfo오버로딩 메서드의 예외처리와 일치시킴
  * (이유는 IsItemEnough를 검사하지 않고 RemoveItem호출한 후 다른 메서드를 연계하는 것을 방지하기 위해)
  * 
+ * <v7.0 - 2024_0124_최원준>
+ * 1- 딕셔너리 저장형식을 GameObject기반에서 ItemInfo로 변경하면서 관련 메서드 수정
+ *(AddItemToDic, FillExistItemOverlapCount, RemoveItem(ItemInfo), RemoveItem(string), 
+ *GetItemDic(ItemType), GetItemDic(string), GetItemInfoList )
+ * 
+ * 
  */
 
 namespace InventoryManagement
@@ -339,11 +345,11 @@ namespace InventoryManagement
             }
 
 
-            // 아이템 이름을 기반으로 오브젝트 리스트를 결정합니다. (존재하지 않는다면 새롭게 생성하여 반환합니다.)
-            List<GameObject> itemObjList = GetItemObjectList(itemName, true);
+            // 아이템 이름을 기반으로 해당 사전의 ItemInfo 리스트를 결정합니다. (존재하지 않는다면 새롭게 생성하여 반환합니다.)
+            List<ItemInfo> itemInfoList = GetItemInfoList(itemName, true);
 
-            // 해당 아이템 오브젝트를 추가합니다.
-            itemObjList.Add(itemInfo.gameObject);          
+            // 해당 아이템 정보를 추가합니다.
+            itemInfoList.Add(itemInfo);          
                   
             // 해당 아이템 종류의 현재 오브젝트의 갯수를 증가시킵니다.
             CalculateItemObjCount(itemType, 1);          
@@ -411,27 +417,27 @@ namespace InventoryManagement
             ItemMisc newItemMisc = (ItemMisc)itemInfo.Item;
 
             // 오브젝트 리스트 참조를 설정합니다.
-            List<GameObject> itemObjList = GetItemObjectList( newItemMisc.Name );                       
+            List<ItemInfo> itemInfoList = GetItemInfoList( newItemMisc.Name );                       
 
             // 기존 아이템에 수량채우기 실행 전 후를 비교할 수량을 현재 아이템의 수량으로 설정합니다.
             int beforeCount = newItemMisc.OverlapCount; 
             int afterCount = newItemMisc.OverlapCount;
 
             // 기존 오브젝트 리스트가 있는 경우는
-            if( itemObjList!=null )
+            if( itemInfoList!=null )
             { 
                 // 오름차순 정렬을 시행합니다.
-                itemObjList.Sort(CompareBySlotIndexEach);
+                itemInfoList.Sort(CompareBySlotIndexEach);
 
                 // 슬롯 순서로 정렬 된 아이템을 접근 기준에 따라 하나씩 꺼내어 기존 아이템에 수량채우기를 실행합니다.
                 if( isLatestModify )
                 {
-                    for( int i = itemObjList.Count-1; i>=0; i-- )
+                    for( int i = itemInfoList.Count-1; i>=0; i-- )
                         if( FillCountInLoopByOrder(i) ) { break; } // 내부적으로 true를 반환하면 빠져나갑니다.                                     
                 }
                 else
                 {
-                    for( int i = 0; i<=itemObjList.Count-1; i++ )   
+                    for( int i = 0; i<=itemInfoList.Count-1; i++ )   
                         if( FillCountInLoopByOrder(i) ) { break; } // 내부적으로 true를 반환하면 빠져나갑니다.  
                 }
             }
@@ -447,7 +453,7 @@ namespace InventoryManagement
             bool FillCountInLoopByOrder(int idx)
             {
                 // 기존 아이템에 인덱스를 통한 접근을 하여 정보를 불러옵니다.
-                ItemMisc oldItemMisc = (ItemMisc)itemObjList[idx].GetComponent<ItemInfo>().Item;
+                ItemMisc oldItemMisc = (ItemMisc)itemInfoList[idx].GetComponent<ItemInfo>().Item;
                     
                 // 기존 아이템에 현재 남은수량을 최대 허용치까지 채우고 남은 수량을 반환받습니다.
                 afterCount = oldItemMisc.AccumulateOverlapCount(beforeCount);
@@ -486,14 +492,14 @@ namespace InventoryManagement
                 throw new Exception("아이템 스크립트가 존재하지 않는 오브젝트입니다. 확인하여 주세요.");
             
             // 이름을 기반으로 해당 딕셔너리 참조를 받습니다.
-            List<GameObject> itemObjList = GetItemObjectList(itemInfo.Item.Name);            
+            List<ItemInfo> itemInfoList = GetItemInfoList(itemInfo.Item.Name);            
 
             // 인벤토리 목록에서 없는 아이템 예외처리
-            if( itemObjList==null || itemObjList.Count==0 )
+            if( itemInfoList==null || itemInfoList.Count==0 )
                 throw new Exception("해당 아이템이 인벤토리 내부에 존재하지 않습니다. 확인하여 주세요.");
 
-            // List<GameObject>에 직접 GameObject 인스턴스를 전달하여 목록에서 제거합니다.
-            itemObjList.Remove(itemInfo.gameObject);
+            // ItemInfo리스트에 직접 ItemInfo를 전달하여 목록에서 제거합니다.
+            itemInfoList.Remove(itemInfo);
 
             // 목록에서 제거한 참조값을 다시 반환합니다. 
             return itemInfo;
@@ -506,31 +512,31 @@ namespace InventoryManagement
         /// <returns>딕셔너리 목록의 제거에 성공한 경우 해당 아이템의 ItemInfo 참조값을, 목록에 없는 아이템인 경우 null을 반환합니다.</returns>
         public ItemInfo RemoveItem(string itemName, bool isLatest=true)
         {            
-            // 딕셔너리에서 오브젝트 리스트를 받습니다
-            List<GameObject> itemObjList = GetItemObjectList(itemName); 
+            // 딕셔너리에서 ItemInfo 리스트를 받습니다
+            List<ItemInfo> itemInfoList = GetItemInfoList(itemName); 
 
             // 오브젝트 리스트가 존재하지 않거나, 오브젝트 리스트의 갯수가 0이라면 삭제를 못하므로 예외처리
-            if(itemObjList==null || itemObjList.Count==0)
+            if(itemInfoList==null || itemInfoList.Count==0)
                 throw new Exception("해당 아이템이 인벤토리 내부에 존재하지 않습니다. 확인하여 주세요.");
 
 
-            // 해당 오브젝트 리스트를 참고하여 아이템의 타입을 미리 얻습니다
-            ItemType itemType = itemObjList[0].GetComponent<ItemInfo>().Item.Type;            
+            // 해당 ItemInfo 리스트의 첫번째 항목을 참조하여 아이템의 타입을 얻습니다
+            ItemType itemType = itemInfoList[0].Item.Type;            
             
             ItemInfo targetItemInfo = null;  // 반환할 아이템과 참조할 인덱스를 설정합니다.
             int targetIdx;
 
             if( isLatest )
-                targetIdx = itemObjList.Count-1;  // 최신 순
+                targetIdx = itemInfoList.Count-1;  // 최신 순
             else
                 targetIdx = 0;                    //오래된 순
 
-            targetItemInfo =itemObjList[targetIdx].GetComponent<ItemInfo>();  // 반환 할 아이템 참조값을 얻습니다.
-            itemObjList.RemoveAt(targetIdx);        // 해당 인덱스의 아이템을 제거합니다            
+            targetItemInfo =itemInfoList[targetIdx];    // 반환 할 아이템 참조값을 저장합니다.
+            itemInfoList.RemoveAt(targetIdx);           // 해당 인덱스의 아이템을 리스트에서 제거합니다            
         
-            CalculateItemObjCount(itemType, -1);       // 해당 아이템 종류의 현재 오브젝트의 갯수를 감소시킵니다.      
+            CalculateItemObjCount(itemType, -1);        // 해당 아이템 종류의 현재 오브젝트의 갯수를 감소시킵니다.      
                         
-            return targetItemInfo;            // 목록에서 제거한 아이템을 반환합니다.     
+            return targetItemInfo;                      // 목록에서 제거한 아이템을 반환합니다.     
         }
 
 
@@ -559,7 +565,7 @@ namespace InventoryManagement
         /// ** 해당하는 이름의 아이템이 월드 아이템 목록에 존재하지 않는 경우 예외 발생 **
         /// </summary>
         /// <returns>해당 아이템 종류의 사전을 반환</returns>
-        public Dictionary<string, List<GameObject>> GetItemDic(string itemName)
+        public Dictionary<string, List<ItemInfo>> GetItemDic(string itemName)
         {            
             ItemType itemType = createManager.GetWorldItemType(itemName);
 
@@ -573,7 +579,7 @@ namespace InventoryManagement
         /// *** ItemType.None으로 전달 된 경우 예외를 던집니다 *** 
         /// </summary>
         /// <returns>해당 아이템 종류의 사전을 반환</returns>
-        public Dictionary<string, List<GameObject>> GetItemDic(ItemType itemType)
+        public Dictionary<string, List<ItemInfo>> GetItemDic(ItemType itemType)
         {
             if(itemType == ItemType.None)
                 throw new Exception("정확한 종류의 아이템을 전달해야 합니다.");
@@ -588,17 +594,17 @@ namespace InventoryManagement
         
 
         /// <summary>
-        /// 아이템 이름에 해당하는 오브젝트 리스트 참조값을 반환합니다<br/>
-        /// 옵션을 통해 오브젝트 리스트가 없다면 새롭게 생성할 수 있습니다.<br/><br/>
+        /// 아이템 이름에 해당하는 ItemInfo 리스트 참조값을 반환합니다<br/>
+        /// 옵션을 통해 리스트가 없다면 새롭게 생성할 수 있습니다.<br/><br/>
         /// *** 해당 아이템 이름이 월드사전에 매칭되지 않는 경우 예외가 발생 ***<br/>
         /// *** 해당 아이템 이름의 종류에 해당하는 사전을 보관하고 있지 않다면 예외가 발생 ***
         /// </summary>
         /// <returns>
-        ///  1. 동일한 이름의 아이템이 하나라도 들어있다면 해당 오브젝트리스트를 반환합니다.<br/>
+        ///  1. 동일한 이름의 아이템이 하나라도 들어있다면 해당 ItemInfo 리스트를 반환합니다.<br/>
         ///  2. 동일한 이름의 아이템이 하나라도 들어있지 않을 때 (새로 생성하기 옵션을 주지 않은 경우) null값을 반환합니다.(일반적 사용, IsExist를 대체가능)<br/>
-        ///  3. 동일한 이름의 아이템이 하나라도 들어있지 않을 때 (새로 생성하기 옵션을 준 경우) 새로운 오브젝트 리스트를 반환합니다.(AddItem시 사용)
+        ///  3. 동일한 이름의 아이템이 하나라도 들어있지 않을 때 (새로 생성하기 옵션을 준 경우) 새로운 ItemInfo 리스트를 반환합니다.(AddItem시 사용)
         /// </returns>
-        public List<GameObject> GetItemObjectList(string itemName, bool isNewIfNotExist=false)
+        public List<ItemInfo> GetItemInfoList(string itemName, bool isNewIfNotExist=false)
         {
             // 아이템 이름에 해당하는 사전 인덱스를 구합니다.
             int dicIdx = GetDicIndex( GetItemTypeIgnoreExists(itemName) );
@@ -607,17 +613,17 @@ namespace InventoryManagement
             if(dicIdx<0)
                 throw new Exception("해당 아이템 이름에 해당하는 사전이 존재하지 않습니다.");
 
-            // 아이템이 하나라도 들어있다면 바로 해당 오브젝트 리스트를 반환합니다.
+            // 아이템이 하나라도 들어있다면 바로 해당 ItemInfo 리스트를 반환합니다.
             if(itemDic[dicIdx].ContainsKey(itemName))
                 return itemDic[dicIdx][itemName];
             
             // 아이템이 들어있지 않을때, 새로 생성하기 옵션이 있는 경우
-            // 오브젝트 리스트를 새로 생성 및 등록하여 반환합니다.
+            // ItemInfo 리스트를 새로 생성 및 등록하여 반환합니다.
             else if(isNewIfNotExist)     
             {                    
-                List<GameObject> itemObjList = new List<GameObject>();  // 오브젝트 리스트를 새로 만듭니다.
-                itemDic[dicIdx].Add(itemName, itemObjList);             // 인벤토리 사전에 오브젝트 리스트를 집어넣습니다.
-                return itemObjList;                                     // 생성된 오브젝트 리스트 참조를 반환합니다.
+                List<ItemInfo> itemInfoList = new List<ItemInfo>();  // ItemInfo 리스트를 새로 만듭니다.
+                itemDic[dicIdx].Add(itemName, itemInfoList);         // 인벤토리 사전에 ItemInfo 리스트를 집어넣습니다.
+                return itemInfoList;                                 // 생성된 ItemInfo 리스트 참조를 반환합니다.
             }
             
             // 아이템이 들어있지 않을때, 새로 생성하기 옵션이 없는 경우 null을 반환합니다.

@@ -234,6 +234,26 @@ using CreateManagement;
  * 1- UpdateDicItemPosition메서드에서 GetItemDic관련 null값 검사문 추가
  * 2- UpdateAllItemVisualInfo메서드에서 GetItemDic관련 null값 검사문 추가
  * 
+ * <v10.0 - 2024_0124_최원준>
+ * 1- Inventory클래스의 딕셔너리 저장형식을 GameObject기반에서 ItemInfo로 변경하면서 관련 메서드 수정
+ * (UpdateAllItemVisualInfo, UpdateDicItemPosition)
+ * 
+ * 2- ownerTr변수와 OwnerId프로퍼티를 선언하여 인벤토리가 생성시 부모오브젝트명을 ID로 부여받을 수 있게 하였음.
+ * (AddItem,RemoveItem등에서 아이템에 소유주를 결정하게 하는 용도로 사용)
+ * 
+ * 3- 메서드명 변경 SavePlayerData LoadPlayerData -> SaveOwnerData LoadOwnerData 
+ * 
+ * 
+ * 4- Awake문에서 saveFileName을 초기화할 때 inventoryTr의 계층참조를 직접 접근하여 name을 받아서 초기화하던 부분을
+ * OwnerId를 호출하여 초기화하는 것으로 수정
+ * 
+ * 5- InventoryInfo의 IsWorldPositioned속성을 추가
+ * Initializer에서 IsWorldPositioned값을 받아서 InventoryInfo의 IsWorldPositioned속성이 결정되도록 하였음.
+ * (월드상에 놓여지는 인벤토리인지 여부를 결정)
+ * 
+ * 6- UpdateViusalizationInfo메서드를 IsWorldPositioned 속성이 아닌 경우에만 호출하도록 변경
+ * 이유는 월드 보관함의 경우 2D 이미지를 보여줄 필요가 없으며, 3D오브젝트를 생성해주는 메서드가 호출되어져야 하기 때문
+ * 
  */
 
 
@@ -257,21 +277,35 @@ public partial class InventoryInfo : MonoBehaviour
     protected Transform emptyListTr;              // 현재 인벤토리가 관리하는 빈 리스트의 Transform 정보입니다.
 
     protected InventoryInitializer initializer;   // 사용자가 정의한 방식으로 인벤토리의 초기화를 진행하기 위한 참조
-    public InventoryInteractive interactive;   // 자신의 인터렉티브 스크립트를 참조하여 활성화 탭정보를 받아오기 위한 변수 선언
+    public InventoryInteractive interactive;      // 자신의 인터렉티브 스크립트를 참조하여 활성화 탭정보를 받아오기 위한 변수 선언
     protected DataManager dataManager;            // 저장과 로드 관련 메서드를 호출 할 스크립트 참조
     protected CreateManager createManager;        // 아이템 생성을 요청하고 반환받을 스크립트 참조
     
-
     [Header("이 인벤토리의 아이템 기본 드랍위치")]
-    public Transform baseDropTr;        // 아이템을 기본적으로 떨어 트릴 위치를 인스펙터뷰에서 직접 지정
+    public Transform baseDropTr;                // 아이템을 기본적으로 떨어 트릴 위치를 인스펙터뷰에서 직접 지정
     
     [Header("기본 드랍위치 부모 지정 옵션")]
-    public bool isBaseDropSetParent;    // 드롭장소에 부모 계층에 속할지 지정하는 옵션 (씬정리 용도 및 부모와 함께 움직이도록 하는 용도)
+    public bool isBaseDropSetParent;            // 드롭장소에 부모 계층에 속할지 지정하는 옵션 (씬정리 용도 및 부모와 함께 움직이도록 하는 용도)
     
-    protected string saveFileName;                // 저장파일 이름 설정
+    protected string saveFileName;              // 저장파일 이름 설정
 
-    
 
+
+
+
+
+        
+    /// <summary>
+    /// 인벤토리의 소유자 정보를 반환합니다.<br/>
+    /// 인벤토리의 계층 최상위 부모 오브젝트를 말합니다.
+    /// </summary>
+    public Transform OwnerTr { get { return inventoryTr.parent.parent;}  }
+        
+    /// <summary>
+    /// 인벤토리의 소유자 ID입니다.<br/>
+    /// 인벤토리의 계층 최상위 부모 오브젝트명을 반환합니다.
+    /// </summary>
+    public string OwnerId { get { return OwnerTr.name; } }          
 
 
     protected virtual void Awake()
@@ -283,7 +317,7 @@ public partial class InventoryInfo : MonoBehaviour
         Transform gameController = GameObject.FindWithTag("GameController").transform;
         dataManager = gameController.GetComponent<DataManager>();           // 게임컨트롤러 태그가 있는 오브젝트의 컴포넌트 참조
         createManager = gameController.GetComponent<CreateManager>();       // 데이터 매니저와 동일한 오브젝트의 컴포넌트 참조
-        saveFileName = inventoryTr.parent.parent.name + "_Inventory";   // 세이브 파일이름을 오브젝트 명을 기준으로 설정
+        saveFileName = OwnerId + "_Inventory";   // 세이브 파일이름을 소유자 명을 기준으로 설정
                      
         initializer = GetComponent<InventoryInitializer>();     // 자신 오브젝트의 스크립트 참조
         interactive = GetComponent<InventoryInteractive>();     
@@ -300,15 +334,13 @@ public partial class InventoryInfo : MonoBehaviour
             clientInfo.Add(this);                   // 연결 인벤토리 정보에 자신을 등록합니다.
             serverInfo = this;                      // 자기자신을 서버로 등록합니다.
         }
-
-        
     }
 
     // dataManager와 createManager의 초기화가 이루어진 이후 로드해야함.
     protected virtual void Start()
     {        
         /** 호출 순서 고정: 로드->인터렉티브스크립트 초기화 및 슬롯생성요청->아이템표현 ***/
-        this.LoadPlayerData();              // 저장된 플레이어 데이터를 불러옵니다. 
+        this.LoadOwnerData();              // 저장된 플레이어 데이터를 불러옵니다. 
         interactive.Initialize(this);       // 인터렉티브 스크립트 초기화를 진행합니다.
         this.UpdateAllItemVisualInfo();     // 슬롯에 모든 아이템의 시각화를 진행합니다.   
     }
@@ -321,14 +353,14 @@ public partial class InventoryInfo : MonoBehaviour
     /// </summary>
     protected virtual void OnApplicationQuit()
     {
-        SavePlayerData(); // 플레이어 데이터 저장
+        SaveOwnerData(); // 플레이어 데이터 저장
     }
 
 
     /// <summary>
-    /// 인벤토리 관련 플레이어 데이터를 불러옵니다
+    /// 인벤토리 관련 소유주 데이터를 불러옵니다
     /// </summary>
-    protected void LoadPlayerData()
+    protected void LoadOwnerData()
     {
         // 로드 할 파일명을 설정합니다
         dataManager.FileSettings(saveFileName); 
@@ -342,9 +374,9 @@ public partial class InventoryInfo : MonoBehaviour
 
 
     /// <summary>
-    /// 인벤토리 관련 플레이어 데이터를 저장합니다 
+    /// 인벤토리 관련 소유주 데이터를 저장합니다 
     /// </summary>
-    protected void SavePlayerData()
+    protected void SaveOwnerData()
     {        
         // 세이브 할 파일명을 설정합니다
         dataManager.FileSettings(saveFileName);   
@@ -366,28 +398,31 @@ public partial class InventoryInfo : MonoBehaviour
 
 
     /// <summary>
-    /// 인벤토리가 보유하고 있는 모든 사전의 아이템에 인벤토리 정보를 전달합니다.
+    /// 인벤토리가 보유하고 있는 모든 사전의 아이템에 인벤토리 정보를 전달합니다.<br/><br/>
     /// 게임 로드 시 기존 아이템의 이미지나 위치 정보 등을 최신화하기 위한 메서드입니다.<br/>
     /// 내부적으로 모든 아이템에 OnItemAdded 메서드를 호출하여 새롭게 생성되었을 때의 정보를 입력합니다.<br/>
     /// </summary>
     protected void UpdateAllItemVisualInfo()
     {   
-        Dictionary<string, List<GameObject>> itemDic;                       // 참조할 아이템 사전을 선언합니다.
+        Dictionary<string, List<ItemInfo>> itemDic;                     // 참조할 아이템 사전을 선언합니다.
             
-        for(int i=0; i<inventory.dicLen; i++)                               // 인벤토리 사전의 갯수만큼 반복합니다.
+        for(int i=0; i<inventory.dicLen; i++)                           // 인벤토리 사전의 갯수만큼 반복합니다.
         {
-            itemDic =inventory.GetItemDic( inventory.dicType[i] ); // 아이템 종류에 따른 인벤토리의 사전을 할당받습니다.
+            itemDic =inventory.GetItemDic( inventory.dicType[i] );      // 아이템 종류에 따른 인벤토리의 사전을 할당받습니다.
                           
             // 아이템 사전이 없거나 리스트가 존재하지 않는다면 다음 사전을 참조합니다.
             if(itemDic==null || itemDic.Count==0)   
                 continue;
 
-            foreach( List<GameObject> objList in itemDic.Values )           // 인벤토리 사전에서 게임오브젝트 리스트를 하나씩 꺼내어
+            // 인벤토리 사전에서 ItemInfo를 하나씩 꺼내어 가져옵니다.
+            foreach( List<ItemInfo> itemInfoList in itemDic.Values )    
             {
-                foreach(GameObject itemObj in objList)                      // 리스트의 게임오브젝트를 모두 가져옵니다.
-                    itemObj.GetComponent<ItemInfo>().OnItemAdded(this);     // OnItemChnaged메서드를 호출하며 현재 인벤토리 참조값을 전달합니다.
+                foreach( ItemInfo itemInfo in itemInfoList )
+                {                    
+                    if( !itemInfo.IsDecoration )         // 아이템이 장식용 속성을 가지지 않는 경우에만
+                        itemInfo.OnItemAdded( this );    // 현재 인벤토리 참조값을 전달하여 OnItemAdded메서드를 호출합니다
+                }
             }
-
         }
     }
 
@@ -536,20 +571,17 @@ public partial class InventoryInfo : MonoBehaviour
     public void UpdateDicItemPosition(ItemType itemType)
     {            
         // 인벤토리의 현재 활성화 탭종류와 일치하는 딕셔너리를 참조합니다.
-        Dictionary<string, List<GameObject>> itemDic = inventory.GetItemDic(itemType);
+        Dictionary<string, List<ItemInfo>> itemDic = inventory.GetItemDic(itemType);
 
         // 해당 종류의 사전이 존재하지 않거나 리스트가 존재하지 않는다면 바로 종료합니다. 
         if(itemDic==null || itemDic.Count==0)
             return;
 
 
-        foreach( List<GameObject> itemObjList in itemDic.Values )  // 해당 딕셔너리의 오브젝트리스트를 가져옵니다.
+        foreach( List<ItemInfo> itemInfoList in itemDic.Values )    // 해당 딕셔너리의 ItemInfo리스트를 가져옵니다.
         {
-            foreach( GameObject itemObj in itemObjList )           // 오브젝트리스트에서 오브젝트를 하나씩 가져옵니다.
-            {
-                ItemInfo itemInfo = itemObj.GetComponent<ItemInfo>();  // 아이템 정보를 읽어들입니다.
-                itemInfo.UpdatePositionInfo();                   // 활성화 탭 기반으로 해당 종류의 위치정보를 업데이트합니다.
-            }
+            foreach( ItemInfo itemInfo in itemInfoList )            // ItemInfo리스트에서 ItemInfo를 하나씩 가져옵니다.
+                itemInfo.UpdatePositionInfo();                      // 활성화 탭 기반으로 해당 종류의 위치정보를 업데이트합니다.
         }
     }
 

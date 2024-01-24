@@ -1,3 +1,4 @@
+using DataManagement;
 using Newtonsoft.Json;
 using System;
 
@@ -21,6 +22,10 @@ using System;
  * 이유는 ItemInfo클래스에서 무기와 동일하게 Durability로 접근할 수 있게 하기 위함.
  * 
  * 2- ItemFood를 정의하고 스테이터스 수치를 증감시키는 ItemStatus 구조체를 갖도록 하였음.
+ * 
+ * <v2.0 - 2024_0124_최원준>
+ * 1- ItemBuilding에 STransform 변수인 worldTr을 추가
+ * 이유는 아이템이 월드상태에서 인벤토리에 저장되는 아이템인 경우 저장할 수 있는 Transform정보를 가진채로 저장되어져야하기 때문
  * 
  */
 
@@ -67,8 +72,9 @@ namespace ItemData
     [Serializable]
     public class ItemBuilding : ItemMisc
     {
-        [JsonProperty] public bool isDecoration;    // 장식용 속성 (재료인지, 장식용인지 여부)
         [JsonProperty] public int Durability;       // 건설아이템의 내구도
+        [JsonProperty] public bool isDecoration;    // 장식용 속성 (재료인지, 장식용인지 여부)
+        [JsonProperty] public STransform worldTr;   // 아이템이 월드에 놓여지는 변환정보
 
         public ItemBuilding( ItemType mainType, string No, string name, VisualReferenceIndex visualRefIndex
             , MiscType subType, bool isDecoration, int Durability, string desc )

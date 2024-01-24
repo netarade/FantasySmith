@@ -215,6 +215,9 @@ using System;
 * <v9.2- 2024_0116_최원준>
 * 1- UpdateAllItemActiveTabInfo메서드 내부 GetItemDic관련 null검사문 추가
 * 
+* <v9.3 - 2024_0124_최원준>
+* 1- Inventory클래스의 딕셔너리 저장형식을 GameObject기반에서 ItemInfo로 변경하면서 관련 메서드 수정
+* (UpdateAllItemActiveTabInfo)
 * 
 */
 
@@ -503,7 +506,7 @@ public class InventoryInteractive : MonoBehaviour
     private void UpdateAllItemActiveTabInfo()
     {
         // 하나씩 가져와서 참조 할 딕셔너리 변수 선언
-        Dictionary<string, List<GameObject>> itemDic;
+        Dictionary<string, List<ItemInfo>> itemDic;
 
         for( int i = 0; i<inventory.dicLen; i++ )
         {
@@ -513,15 +516,10 @@ public class InventoryInteractive : MonoBehaviour
             if(itemDic == null || itemDic.Count==0)
                 continue;
 
-            foreach( List<GameObject> itemObjList in itemDic.Values )      // 해당 딕셔너리의 오브젝트리스트를 가져옵니다.
+            foreach( List<ItemInfo> itemInfoList in itemDic.Values )      // 해당 딕셔너리의 ItemInfo리스트를 가져옵니다.
             {
-                foreach( GameObject itemObj in itemObjList )               // 오브젝트리스트에서 오브젝트를 하나씩 가져옵니다.
-                {
-                    ItemInfo itemInfo = itemObj.GetComponent<ItemInfo>();  // 아이템 정보를 읽어들입니다.
-
+                foreach( ItemInfo itemInfo in itemInfoList )               // ItemInfo리스트에서 ItemInfo를 하나씩 가져옵니다.
                     itemInfo.UpdateActiveTabInfo(this, curActiveTab, isActiveTabAll);   // 아이템의 활성화 탭 정보를 최신화합니다.
-                }
-
             }
         }
     }

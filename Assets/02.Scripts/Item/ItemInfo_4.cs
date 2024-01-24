@@ -1,3 +1,4 @@
+using DataManagement;
 using ItemData;
 using System;
 using System.Collections;
@@ -123,7 +124,7 @@ public partial class ItemInfo : MonoBehaviour
     }
 
     /// <summary>
-    /// 무기 및 건설재료 아이템의 내구도입니다. (해당 아이템 : 무기, 건설재료)<br/><br/>
+    /// 무기 및 건설재료 아이템의 내구도입니다. (해당 아이템 : 무기, 건설)<br/><br/>
     /// get - 아이템 종류가 맞으면 내구도를 반환하며, 틀리면 음의 정수(-1)를 반환합니다.<br/><br/>
     /// 
     /// set - 내구도 수치를 수정할 수 있으며, 아이템 종류가 맞지 않는 경우 예외가 발생합니다.<br/>
@@ -203,20 +204,42 @@ public partial class ItemInfo : MonoBehaviour
 
     
     /// <summary>
-    /// 아이템이 장식용 속성을 가지고 있는지 여부를 반환합니다.<br/><br/>
-    /// 해당 아이템의 종류가 빌딩 아이템이 아니라면 반드시 false를 반환하고,<br/>
-    /// 빌딩 아이템이라면 장식용속성에 따라 true, false를 반환합니다.
+    /// 건설 아이템의 상세 분류 정보를 반환합니다. (해당 아이템 : 건설)<br/><br/>
+    /// 재료아이템, 장식용아이템, 인벤토리아이템, 없음 등의 종류가 있습니다.<br/><br/>
+    /// get - 아이템 종류가 맞으면 상세 타입을 반환하며, 틀리면 BuildingType.None을 반환합니다.<br/><br/>
     /// </summary>
-    public bool IsDecoration
+    public BuildingType BuildingType
     {
         get
         {
             ItemBuilding itemBuilding = item as ItemBuilding;
+
             if( itemBuilding!=null )
-                return false;
-            else
-                return itemBuilding.isDecoration;
+                return itemBuilding.buildingType;
+
+            return BuildingType.None;
         }
+    }
+
+    
+    /// <summary>
+    /// 아이템에 저장된 STransform을 반환합니다.  (해당 아이템 : 무기, 건설)<br/><br/>
+    /// get - ItemWeapon 인경우 EquipTr을, ItemBuilding인 경우 WorldTr을, 이외의 타입은 null을 반환합니다.
+    /// </summary>
+    public STransform SerializedTr {  
+        get 
+        { 
+            ItemWeapon itemWeapon = item as ItemWeapon;
+            ItemBuilding itemBuilding = item as ItemBuilding;
+            
+            if(itemBuilding!=null)
+                return itemBuilding.WorldTr;
+
+            else if(itemWeapon!=null)
+                return itemWeapon.EquipTr;
+
+            return null;
+        } 
     }
 
 

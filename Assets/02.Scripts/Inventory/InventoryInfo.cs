@@ -254,6 +254,25 @@ using CreateManagement;
  * 6- UpdateViusalizationInfo메서드를 IsWorldPositioned 속성이 아닌 경우에만 호출하도록 변경
  * 이유는 월드 보관함의 경우 2D 이미지를 보여줄 필요가 없으며, 3D오브젝트를 생성해주는 메서드가 호출되어져야 하기 때문
  * 
+ * <v10.1 - 2024_0124_최원준>
+ * 1- 메서드명 변경 SaveOwnerData LoadOwnerData -> SaveInventoryData LoadInventoryData
+ * 
+ * 2- IsWorldPositioned 변수명을 isItem3dStore로 변경하였음.
+ * 이유는 월드에 놓여지는 속성이 아니라 3D상태의 아이템을 저장하는 역할을 하는 인벤토리이기 때문
+ * 
+ * 3- OwnerId의 타입을 string에서 int형으로 변경 및 주석 수정
+ * 이유는 순번대로 id를 증가시켜 부여하기 위함
+ *
+ * 4- UpdateAllItemTransformInfo메서드를 추가.
+ * 3d상태의 아이템을 보관하는 인벤토리의 경우 로드되면 해당 위치정보로 아이템을 옮겨주어야 하기 때문.
+ * 
+ * 5- 동적으로 생성되는 인벤토리인지 판단하는 isInstantiated변수를 추가하고 initializer를 통한 초기화를 진행
+ * 
+ * 6- 저장파일이름을 나타내는 변수인 saveFileName의 초기화를 직접 최상위 오브젝트명과 "Inventory"를 붙여서 구분하던 것을
+ * 최상위 오브젝트명과 initializer의 inventoryId를 전달받아 초기화하는 방식으로 변경.
+ * (이유는 오브젝트 명이 동일할 수있기 때문)
+ * 
+ *
  */
 
 
@@ -290,22 +309,23 @@ public partial class InventoryInfo : MonoBehaviour
     protected string saveFileName;              // 저장파일 이름 설정
 
 
-
-
-
-
+    protected bool isItem3dStore;               // 3d 상태의 아이템을 보관하는 인벤토리인지 여부
+    protected bool isInstantiated;              // 게임 중에 동적으로 생성되는 인벤토리인지 여부
+    
+    protected Transform ownerTr;                // 인벤토리 소유자 정보
+    protected int ownerId;                      // 인벤토리 소유자 고유 식별 번호
         
+
     /// <summary>
     /// 인벤토리의 소유자 정보를 반환합니다.<br/>
-    /// 인벤토리의 계층 최상위 부모 오브젝트를 말합니다.
+    /// 인벤토리의 계층 최상위 부모 오브젝트이며, 플레이어 인벤토리의 경우 해당 플레이어 오브젝트를 말합니다.
     /// </summary>
-    public Transform OwnerTr { get { return inventoryTr.parent.parent;}  }
+    public Transform OwnerTr { get { return ownerTr;}  }
         
     /// <summary>
-    /// 인벤토리의 소유자 ID입니다.<br/>
-    /// 인벤토리의 계층 최상위 부모 오브젝트명을 반환합니다.
+    /// 인벤토리의 소유자를 식별할 수 있는 고유 식별 번호입니다.
     /// </summary>
-    public string OwnerId { get { return OwnerTr.name; } }          
+    public int OwnerId { get { return ownerId; } }          
 
 
     protected virtual void Awake()
@@ -313,15 +333,21 @@ public partial class InventoryInfo : MonoBehaviour
         inventoryTr = transform; 
         slotListTr = inventoryTr.GetChild(0).GetChild(0).GetChild(0);
         emptyListTr = inventoryTr.GetChild(0).GetChild(1);
-
+                          
+        interactive = GetComponent<InventoryInteractive>(); 
+        initializer = GetComponent<InventoryInitializer>();     // 자신 오브젝트의 스크립트 참조
+                                                                                                               
+        isItem3dStore = initializer.isItem3dStore;    // 월드 아이템 생성 인벤토리인지를 결정합니다.         
+        isInstantiated = initializer.isInstantiated;  // 동적 생성되는 인벤토리인지를 결정합니다.  
+        ownerTr = inventoryTr.parent.parent;          // 계층 최상위 부모가 소유자가 됩니다.
+        
         Transform gameController = GameObject.FindWithTag("GameController").transform;
         dataManager = gameController.GetComponent<DataManager>();           // 게임컨트롤러 태그가 있는 오브젝트의 컴포넌트 참조
         createManager = gameController.GetComponent<CreateManager>();       // 데이터 매니저와 동일한 오브젝트의 컴포넌트 참조
-        saveFileName = OwnerId + "_Inventory";   // 세이브 파일이름을 소유자 명을 기준으로 설정
-                     
-        initializer = GetComponent<InventoryInitializer>();     // 자신 오브젝트의 스크립트 참조
-        interactive = GetComponent<InventoryInteractive>();     
-        
+               
+        // 저장 파일이름을 이니셜라이저의 id와 일치 시킵니다
+        saveFileName = ownerTr.name + initializer.inventoryId;  
+
 
         /*** Inventory_3.cs 관련 변수 ***/
         inventoryCG = GetComponent<CanvasGroup>();  // 인벤토리의 캔버스그룹을 참조합니다
@@ -340,9 +366,15 @@ public partial class InventoryInfo : MonoBehaviour
     protected virtual void Start()
     {        
         /** 호출 순서 고정: 로드->인터렉티브스크립트 초기화 및 슬롯생성요청->아이템표현 ***/
-        this.LoadOwnerData();              // 저장된 플레이어 데이터를 불러옵니다. 
+        this.LoadInventoryData();              // 저장된 플레이어 데이터를 불러옵니다. 
         interactive.Initialize(this);       // 인터렉티브 스크립트 초기화를 진행합니다.
-        this.UpdateAllItemVisualInfo();     // 슬롯에 모든 아이템의 시각화를 진행합니다.   
+
+        // 3D아이템을 보관하는 인벤토리라면 월드상에 생성된 아이템의 Transform 정보를 반영합니다.
+        if(isItem3dStore)
+            UpdateAllItemTransformInfo();   
+        // 2D아이템을 보관하는 인벤토리라면 슬롯에 모든 아이템의 시각화를 진행합니다.
+        else
+            UpdateAllItemVisualInfo(); 
     }
 
 
@@ -353,20 +385,20 @@ public partial class InventoryInfo : MonoBehaviour
     /// </summary>
     protected virtual void OnApplicationQuit()
     {
-        SaveOwnerData(); // 플레이어 데이터 저장
+        SaveInvetoryData(); // 플레이어 데이터 저장
     }
 
 
     /// <summary>
-    /// 인벤토리 관련 소유주 데이터를 불러옵니다
+    /// 인벤토리 관련 데이터를 불러옵니다
     /// </summary>
-    protected void LoadOwnerData()
+    protected void LoadInventoryData()
     {
         // 로드 할 파일명을 설정합니다
         dataManager.FileSettings(saveFileName); 
 
         // 파일에서 로드한 데이터한 변수에 저장합니다.
-        InventorySaveData loadData = dataManager.LoadData(initializer);              
+        InventorySaveData loadData = dataManager.LoadInventoryData(initializer);              
         
         // 역직렬화하여 게임 상의 인벤토리로 변환합니다.
         inventory=loadData.savedInventory.Deserialize(initializer, createManager);   
@@ -374,15 +406,15 @@ public partial class InventoryInfo : MonoBehaviour
 
 
     /// <summary>
-    /// 인벤토리 관련 소유주 데이터를 저장합니다 
+    /// 인벤토리 관련 데이터를 저장합니다 
     /// </summary>
-    protected void SaveOwnerData()
+    protected void SaveInvetoryData()
     {        
         // 세이브 할 파일명을 설정합니다
         dataManager.FileSettings(saveFileName);   
 
         // 메서드 호출 시점에 다른 스크립트에서 save했을 수도 있으므로 새롭게 생성하지 않고 기존 데이터 최신화합니다
-        InventorySaveData saveData = dataManager.LoadData(initializer);
+        InventorySaveData saveData = dataManager.LoadInventoryData(initializer);
 
         // 직렬화하여 저장 가능한 인벤토리로 변환합니다.
         saveData.savedInventory.Serialize(inventory);   
@@ -398,9 +430,8 @@ public partial class InventoryInfo : MonoBehaviour
 
 
     /// <summary>
-    /// 인벤토리가 보유하고 있는 모든 사전의 아이템에 인벤토리 정보를 전달합니다.<br/><br/>
-    /// 게임 로드 시 기존 아이템의 이미지나 위치 정보 등을 최신화하기 위한 메서드입니다.<br/>
-    /// 내부적으로 모든 아이템에 OnItemAdded 메서드를 호출하여 새롭게 생성되었을 때의 정보를 입력합니다.<br/>
+    /// 인벤토리가 보유하고 있는 모든 사전의 아이템에 인벤토리 정보를 전달하여 이미지나 위치 정보 등을 최신화합니다.<br/>
+    /// 2D 아이템을 보관하는 인벤토리에서 로드 이후 호출되어져야 하는 메서드입니다.<br/>
     /// </summary>
     protected void UpdateAllItemVisualInfo()
     {   
@@ -418,13 +449,42 @@ public partial class InventoryInfo : MonoBehaviour
             foreach( List<ItemInfo> itemInfoList in itemDic.Values )    
             {
                 foreach( ItemInfo itemInfo in itemInfoList )
-                {                    
-                    if( !itemInfo.IsDecoration )         // 아이템이 장식용 속성을 가지지 않는 경우에만
-                        itemInfo.OnItemAdded( this );    // 현재 인벤토리 참조값을 전달하여 OnItemAdded메서드를 호출합니다
+                    itemInfo.OnItemAdded( this );    // 현재 인벤토리 참조값을 전달하여 OnItemAdded메서드를 호출합니다
+            }
+        }
+    }
+
+
+
+    /// <summary>
+    /// 인벤토리가 보유하고 있는 모든 사전의 아이템 3D 오브젝트의 Transform 정보를 최신화합니다.<br/>
+    /// 3D 아이템을 보관하는 인벤토리에서 로드 이후 호출되어져야 하는 메서드입니다.<br/>
+    /// </summary>
+    protected void UpdateAllItemTransformInfo()
+    {
+        Dictionary<string, List<ItemInfo>> itemDic;                     // 참조할 아이템 사전을 선언합니다.
+            
+        for(int i=0; i<inventory.dicLen; i++)                           // 인벤토리 사전의 갯수만큼 반복합니다.
+        {
+            itemDic =inventory.GetItemDic( inventory.dicType[i] );      // 아이템 종류에 따른 인벤토리의 사전을 할당받습니다.
+                          
+            // 아이템 사전이 없거나 리스트가 존재하지 않는다면 다음 사전을 참조합니다.
+            if(itemDic==null || itemDic.Count==0)   
+                continue;
+
+            // 인벤토리 사전에서 ItemInfo를 하나씩 꺼내어 가져옵니다.
+            foreach( List<ItemInfo> itemInfoList in itemDic.Values )    
+            {
+                foreach( ItemInfo itemInfo in itemInfoList )
+                {
+                    // 아이템의 STransform 정보를 불러와서 Transform에 동기화시켜줍니다.
+                    itemInfo.SerializedTr.Deserialize( itemInfo.ItemTr );
                 }
             }
         }
     }
+
+
 
 
 

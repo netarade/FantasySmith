@@ -6,6 +6,8 @@
 using UnityEngine;
 using System.IO;
 using Newtonsoft.Json;
+using CreateManagement;
+using System;
 
 /*
  * [작업 사항]  
@@ -49,6 +51,10 @@ using Newtonsoft.Json;
  * <v4.4 - 2024_0112_최원준>
  * 1- 인벤토리 전용 초기화 인자를 전달받는 로드메서드를 만듬.
  * 이유는 매개변수를 전달받는 T타입 생성자호출이 어렵기 때문 
+ * 
+ * <v4.5 - 2024_0124_최원준>
+ * 1- 인벤토리전용 메서드인 LoadData의 메서드명을 LoadInventoryData로 변경
+ * 2- LoadInventoryData에 initializer에 isReset속성이 결정되어 있으면 Id를 새롭게 부여하도록 결정
  * 
  */
 
@@ -186,15 +192,26 @@ namespace DataManagement
         /// 인벤토리 전용 로드 메서드입니다. 초기화 전용 클래스 전달인자를 토대로 인벤토리의 초기화를 진행합니다.<br/>
         /// </summary>
         /// <returns>인벤토리 사용자 정의 클래스를 반환</returns>
-        public InventorySaveData LoadData(InventoryInitializer initializer) 
+        public InventorySaveData LoadInventoryData(InventoryInitializer initializer) 
         {
             if(initializer==null)
                 throw new System.Exception("이니셜라이져가 전달되지 않았습니다.");
+
+            
+            // Id를 등록하기위한 인스턴스를 생성합니다.
+            CreateManager createManager = GetComponent<CreateManager>();
+            string keyPrefabName = initializer.inventoryInfo.OwnerTr.name;
+            int newId = initializer.inventoryId;
 
             // 리셋 옵션이 전달 된 경우
             if(initializer.isReset)
             {
                 Debug.Log("파일 초기화 " + Path);
+
+                // Id중복으로 인해 등록에 실패했다면
+                if( !createManager.RegisterId( IdType.Inventory, keyPrefabName, newId) )
+                    throw new Exception("Id중복으로 인해 등록에 실패했습니다. 새로운 Id를 부여해 주세요.");
+
                 return new InventorySaveData(initializer); 
             }
             
@@ -206,7 +223,12 @@ namespace DataManagement
             }
             else //저장된 슬롯이 없다면 새롭게 게임데이터를 만들어 반환
             {
-                Debug.Log("파일이 없음");                                    
+                Debug.Log("파일이 없음");
+                
+                // Id를 새롭게 등록합니다.
+                createManager.RegisterId( IdType.Inventory, keyPrefabName, newId);
+
+                // 인벤토리 데이터를 반환합니다.
                 return new InventorySaveData(initializer);   
             }
         }

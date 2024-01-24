@@ -59,8 +59,7 @@ namespace DataManagement
     /// 주의 사항 - 유니티 전용 클래스는 저장 불가. 기본 자료형으로 저장하거나, 구조체 또는 클래스를 만들어 저장해야 합니다.
     /// </summary>
     public class InventorySaveData : SaveData
-    {
-        
+    {        
         /// <summary>
         /// 직렬화되어 저장 되어있는 플레이어의 인벤토리입니다.<br/>
         /// 저장시 Serialize메서드를 기존 Inventory클래스의 인스턴스를 인자로 전달하여 호출하고,<br/>
@@ -80,8 +79,8 @@ namespace DataManagement
         {
             if(initializer==null)
                 throw new Exception("이니셜라이저가 전달되지 않았습니다.");
-
-            savedInventory = new SInventory(initializer);     // 새로운 직렬화 인벤토리 생성  
+            
+            savedInventory = new SInventory(initializer);     // 새로운 직렬화 인벤토리 생성             
         }
               
     }

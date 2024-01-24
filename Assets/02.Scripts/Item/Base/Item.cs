@@ -90,6 +90,10 @@ using UnityEngine;
  * 1- Item클래스에 저장해야할 변수로 onwerId를 추가하였음
  * 이유는 월드상에 설치하는 아이템의 경우 소유주를 설정해서 퀘스트 성공 여부를 판단하며, 저장하고 불러와야할 경우가 있기 때문
  * 
+ * <v10.3 - 2024_0124_최원준>
+ * 1- owerId의 타입을 string에서 int로 변경 및 주석 수정
+ * 이유는 순번대로 id를 증가시켜 부여하기 위함
+ * 
  * 
  */
 
@@ -161,7 +165,7 @@ namespace ItemData
         [JsonProperty] VisualReferenceIndex sVisualRefIndex;
         [JsonProperty] int iSlotIndexEach;
         [JsonProperty] int iSlotIndexAll;
-        [JsonProperty] string iOwnerId;
+        [JsonProperty] int iOwnerId;
 
 
 
@@ -208,9 +212,10 @@ namespace ItemData
 
 
         /// <summary>
-        /// 해당 아이템의 소유주 ID를 말합니다. 어떤 인벤토리에 저장되는 지에 따라 해당 아이템의 소유주ID가 결정되어집니다.
+        /// 해당 아이템의 소유자를 식별할 수 있는 고유 번호를 말합니다.<br/>
+        /// 어떤 인벤토리에 저장되는 지에 따라 해당 아이템의 소유자Id가 결정되어집니다.
         /// </summary>
-        [JsonIgnore] public string OwnerId { get { return iOwnerId; } set { iOwnerId=value; } }
+        [JsonIgnore] public int OwnerId { get { return iOwnerId; } set { iOwnerId=value; } }
 
 
 

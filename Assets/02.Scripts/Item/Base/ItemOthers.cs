@@ -24,8 +24,17 @@ using System;
  * 2- ItemFood를 정의하고 스테이터스 수치를 증감시키는 ItemStatus 구조체를 갖도록 하였음.
  * 
  * <v2.0 - 2024_0124_최원준>
- * 1- ItemBuilding에 STransform 변수인 worldTr을 추가
+ * 1- ItemBuilding에 STransform 변수인 WorldTr을 추가
  * 이유는 아이템이 월드상태에서 인벤토리에 저장되는 아이템인 경우 저장할 수 있는 Transform정보를 가진채로 저장되어져야하기 때문
+ * 
+ * 2- isDecoration을 삭제하고 enum변수인 BuildingType buldingType을 추가하였음.
+ * 이유는 장식용 속성 뿐만아니라 설치형 인벤토리인지 여부도 구분해야 하는데 이는 속성보다는 세부타입을 주어 구분하는것이 효율적이기 때문
+ * 
+ * 
+ * 3- public 변수에 JsonPropert 애트리뷰트 삭제
+ * 
+ * 
+ *
  * 
  */
 
@@ -64,6 +73,11 @@ namespace ItemData
 
 
     /// <summary>
+    /// 빌딩 아이템의 세부종류로서 현재 재료아이템, 장식용아이템, 인벤토리, 없음 등의 종류가 있습니다.
+    /// </summary>
+    public enum BuildingType { Material, Decoration, Inventory, None }
+
+    /// <summary>
     /// 건설아이템 - ItemMisc을 상속하며 오브젝트마다 고유의 내구도가 있습니다.<br/>
     /// 장식용과 재료용으로 구분됩니다.<br/>
     /// 재료용은 일반 잡화아이템과 동일하게 인벤토리를 옮겨다닐 수 있지만,<br/>
@@ -72,18 +86,20 @@ namespace ItemData
     [Serializable]
     public class ItemBuilding : ItemMisc
     {
-        [JsonProperty] public int Durability;       // 건설아이템의 내구도
-        [JsonProperty] public bool isDecoration;    // 장식용 속성 (재료인지, 장식용인지 여부)
-        [JsonProperty] public STransform worldTr;   // 아이템이 월드에 놓여지는 변환정보
+        public int Durability;              // 건설아이템의 내구도
+        public BuildingType buildingType;   // 세부 종류 (재료, 장식용, 인벤토리)
+        public STransform WorldTr;          // 아이템이 월드에 놓여지는 변환정보
 
         public ItemBuilding( ItemType mainType, string No, string name, VisualReferenceIndex visualRefIndex
-            , MiscType subType, bool isDecoration, int Durability, string desc )
+            , MiscType subType, BuildingType buildingType, int durability, string desc )
             : base(mainType, No, name, visualRefIndex, subType, desc)
         {
-            this.isDecoration = isDecoration;
-            this.Durability = Durability;
+            this.buildingType = buildingType;
+            Durability = durability;
         }
     }
+
+
 
 
 
@@ -92,13 +108,13 @@ namespace ItemData
     [Serializable]
     public class ItemFood : ItemMisc
     {
-        public ItemStatus status;
+        public ItemStatus Status;
 
         public ItemFood( ItemType mainType, string No, string name, VisualReferenceIndex visualRefIndex
             , MiscType subType, ItemStatus status, string desc )
             : base(mainType, No, name, visualRefIndex, subType, desc)
         {
-            this.status = status;
+            Status = status;
         }
     }
 

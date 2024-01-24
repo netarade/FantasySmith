@@ -3,6 +3,7 @@ using UnityEngine;
 using ItemData;
 using System;
 using WorldItemData;
+using DataManagement;
 
 /*
  * 
@@ -216,6 +217,14 @@ using WorldItemData;
 * 
 * 4- 빌딩 아이템 생성시 isDecortation속성에 따라 태그를 붙여줘야할 경우와 붙여주지 말아야할 경우를 구분하는 식으로 코드 변경
 * 
+* <v12.8 - 2024_0124_최원준>
+* 1- 인벤토리에 고유 식별번호를 부여하기 위하여
+* 저장용 클래스 IdData를 데이터매니저를 통해 세이브 로드하는 코드를 작성하였고,
+* GetId메서드를 작성
+* 
+* 2- CreateWorldItem의 빌딩아이템에 태그를 붙여주는 경우의 코드를 
+* itemInfo.Item을 ItemBuilding으로 변환시켜서 isDecoration속성을 확인하던 부분을
+* BuildingType프로퍼티로 바로 확인하여 붙여주도록 변경
 * 
 * 
 */
@@ -238,6 +247,10 @@ namespace CreateManagement
 
         VisualManager visualManager;
         readonly string itemTag = "Item";       // 아이템 3D 오브젝트에 적용시킬 태그
+        
+        DataManager dataManager;                // 데이터 저장용 매니저 참조
+        IdData idData;                          // 고유 식별번호를 부여하기 위한 저장용 인스턴스
+
 
         public void Awake()
         {
@@ -253,7 +266,20 @@ namespace CreateManagement
             dicLen=worldDic.Length;
 
             visualManager = GetComponent<VisualManager>();
+            dataManager = GetComponent<DataManager>();
+                        
+            dataManager.FileSettings("CreateManager_IdData");   // 저장 파일 이름 설정
+            idData = dataManager.LoadData<IdData>();            // 파일을 로드하여 인스턴스 참조
         }
+
+        private void OnApplicationQuit()
+        {
+            dataManager.FileSettings("CreateManager_IdData");   // 저장 파일 이름 설정
+            dataManager.SaveData<IdData>( idData );             // 인스턴스를 파일로 세이브
+        }
+
+
+
 
         /// <summary>
         /// 아이템 이름을 기반으로 해당 아이템의 ItemType을 반환합니다<br/><br/>
@@ -377,13 +403,10 @@ namespace CreateManagement
             // 아이템 정보를 전달하여 3D 오브젝트를 복제 생성한다음, itemObj에 부착합니다.
             GameObject itemObj3D = Instantiate( visualManager.GetItemPrefab3D(itemInfo));
             
-            // 빌딩아이템이 아닌경우 아이템 태그를 붙여줍니다.
-            if( itemInfo.MiscType != MiscType.Building)
+            // 빌딩아이템의 세부타입이 Decoration과 Inventory가 아닌 경우에만 태그를 붙여줍니다.
+            if( itemInfo.BuildingType!=BuildingType.Decoration || itemInfo.BuildingType!=BuildingType.Inventory)
                 itemObj3D.tag = itemTag;
 
-            // 빌딩아이템의 경우 장식용이 아닌 경우에만 태그를 붙여줍니다.
-            else if( ((ItemBuilding)item).isDecoration == false )
-                itemObj3D.tag = itemTag;
 
             // 프리팹의 모든 계층에 콜라이더가 달려있지 않아야 콜라이더를 임시로 붙여줍니다. 
             if(itemObj3D.GetComponentInChildren<Collider>() == null )
@@ -418,6 +441,41 @@ namespace CreateManagement
             itemInfo.statusSprite = visualManager.GetItemSprite(itemInfo, SpriteType.statusSprite);
 
             return itemInfo;
+        }
+
+
+        /// <summary>
+        /// 동일한 프리팹에 다른 고유의 식별번호를 부여하고 Id사전에 저장해줍니다.<br/>
+        /// 전달 인자로 어떤 Id 딕셔너리를 참조할 것인지와 프리팹명을 전달해야 합니다.<br/> 
+        /// 동적으로 Id를 할당해야 할 경우에 사용합니다.<br/>
+        /// </summary>
+        /// <returns>새롭게 부여된 식별번호를 반환</returns>
+        public int GetNewId(IdType idDicType, string keyPrefabName)
+        {
+            return idData.GetNewId(idDicType, keyPrefabName);
+        }
+
+
+        
+        /// <summary>
+        /// Id사전에 원하는 숫자로 고유 식별 번호를 등록합니다.<br/>
+        /// 참조할 Id종류, 키로 접근할 프리팹 명, 등록할 식별 번호를 전달해야 합니다.<br/>
+        /// 동일한 id가 존재한다면 실패를 반환받습니다.
+        /// </summary>
+        /// <returns>id 등록 성공 시 true를, 실패 시 false를 반환</returns>
+        public bool RegisterId(IdType idDicType, string keyPrefabName, int id)
+        {
+            return idData.RegisterId(idDicType, keyPrefabName, id);
+        }
+
+
+        /// <summary>
+        /// Id사전에 등록되어있는 고유 식별 번호의 등록을 해제합니다.<br/>
+        /// 참조할 Id종류, 키로 접근할 프리팹 명, 해제할 식별 번호를 전달해야 합니다.
+        /// </summary>
+        public void UnregisterId( IdType idDicType, string keyPrefabName, int id )
+        {
+            idData.UnregisterId(idDicType, keyPrefabName, id);
         }
 
     }

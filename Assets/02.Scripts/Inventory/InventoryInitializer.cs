@@ -17,11 +17,29 @@ using InventoryManagement;
 * 1- 표시탭옵션을 Interactive클래스에서 옮겨옴.
 * 2- 공유옵션 삭제 (반드시 공유옵션이 들어가야하므로)
 * 
+* <v2.1 - 2024_0125_최원준>
+* 1- 파일설정을 삭제하고 인벤토리 식별번호를 타나내는 inventoryId를 추가
+* 
+* 2- 인벤토리 종류를 구분하기 위해 isItem3DStore와 isInstantiated 속성을 추가하였음
+* (각각 3d 아이템 보관 인벤토리와 게임 진행 중에 생성되는 인벤토리인지를 알려주는 속성)
+* 
+* 
 */
 public class InventoryInitializer : MonoBehaviour
 {
+
     [Header("인벤토리 모든 설정 리셋")]
-    public bool isReset;
+    public bool isReset = false;
+    
+    [Header("인벤토리 식별 번호")]
+    public int inventoryId = -1;
+
+    [Header("아이템을 3d상태로 보관하는 인벤토리 여부")]
+    public bool isItem3dStore = false;
+
+    [Header("게임 중에 생성되는 인벤토리 여부")]
+    public bool isInstantiated = false;
+
 
     [Header("딕셔너리와 슬롯 제한수를 지정(같은 딕셔너리 불가)")]
     public DicType[] dicTypes;
@@ -32,11 +50,12 @@ public class InventoryInitializer : MonoBehaviour
     public TabType[] showTabType;
 
 
-    [Header("----- 아래부터 미완성 -----")]
-    [Header("저장파일 이름과 저장 슬롯을 직접 설정")]
-    public bool isCustomFileSetting;
-    public string fileName;
-    public int saveSlotNo;
+    public InventoryInfo inventoryInfo;
+
+    private void Awake()
+    {
+        inventoryInfo = GetComponent<InventoryInfo>();
+    }
 
 }
 

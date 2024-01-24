@@ -54,6 +54,7 @@
  * 1- 클래스 및 파일명 변경 GameData->SaveData
  * 2- 파일분리 - SaveData_Player, SaveData_Inventory, SaveData_Transform으로 분리 (관련 클래스를 모으기 위해)
  * 
+ * 
  */
 
 
@@ -65,7 +66,6 @@ namespace DataManagement
     /// 세이브할 데이터 클래스를 만든 후 이 인터페이스를 상속해서 Save와 Load를 해야 합니다. <br/>
     /// </summary>
     public interface SaveData { }
-           
-
+          
 
 }

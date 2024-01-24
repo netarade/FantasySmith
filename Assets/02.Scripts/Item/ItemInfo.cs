@@ -4,6 +4,7 @@ using ItemData;
 using System;
 using CreateManagement;
 using InventoryManagement;
+using DataManagement;
 
 /*
  * [작업 사항]
@@ -352,6 +353,12 @@ using InventoryManagement;
  *
  *2- 아이템 소유주 정보를 나타내는 OwnerId를 추가
  *
+ *<v13.5 - 2024_0124_최원준>
+ *1- OwnerId의 타입을 string에서 int형으로 변경 및 주석 수정
+ *이유는 순번대로 id를 증가시켜 부여하기 위함
+ *
+ *2- OwnerTr 및 ItemTr 읽기전용 프로퍼티 추가 
+ *
  *
  */
 
@@ -455,11 +462,25 @@ public partial class ItemInfo : MonoBehaviour
 
 
     /// <summary>
-    /// 아이템의 소유주 정보를 반환합니다.<br/>
-    /// 이는 해당 인벤토리를 소유하고 있는 계층최상위 부모 오브젝트명입니다.
+    /// 아이템의 소유자를 식별할 수 있는 고유 숫자를 반환합니다.<br/>
+    /// 이는 해당 인벤토리를 소유하고 있는 계층최상위 부모 오브젝트의 고유 식별 번호입니다.
     /// </summary>
-    public string OwnerId { get { return item.OwnerId; } }
+    public int OwnerId { get { return item.OwnerId; } }
     
+
+    /// <summary>
+    /// 아이템 소유자의 Transform 참조값을 반환합니다.<br/>
+    /// 이는 해당 인벤토리를 소유하고 있는 계층최상위 부모 오브젝트를 말합니다.
+    /// </summary>
+    public Transform OwnerTr { get { return ownerTr; } }
+
+
+    /// <summary>
+    /// 아이템의 3D 오브젝트가 가지고 있는 Transform 컴포넌트 참조값을 반환합니다.
+    /// </summary>
+    public Transform ItemTr { get { return itemTr; } }
+
+
 
 
 
@@ -736,8 +757,8 @@ public partial class ItemInfo : MonoBehaviour
             emptyListTr = null;
             prevDropSlotTr = null;
 
-            ownerTr = null;             // 아이템 소유자 
-            item.OwnerId = "World";     // 아이템 소유자를 World로 변경합니다.
+            ownerTr = null;        // 아이템 소유주 초기화
+            item.OwnerId = -1;     // 아이템 소유주 식별 번호를 초기화합니다.
         }
         else // 다른 인벤토리로 전달된 경우
         {
@@ -759,8 +780,8 @@ public partial class ItemInfo : MonoBehaviour
 
             UpdateActiveTabInfo();                                      // 액티브 탭 정보를 최신화합니다.   
 
-            ownerTr = inventoryInfo.OwnerTr;            // 아이템 소유자 Transform 참조값을 변경합니다.
-            item.OwnerId = inventoryInfo.OwnerId;       // 아이템 소유자 ID를 내부 아이템에 저장합니다.            
+            ownerTr = inventoryInfo.OwnerTr;            // 아이템 소유자를 인벤토리 소유자로 결정합니다.
+            item.OwnerId = inventoryInfo.OwnerId;       // 아이템 소유자 식별번호를 내부 아이템에 저장합니다.            
         }      
     }
 

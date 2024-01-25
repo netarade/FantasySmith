@@ -216,10 +216,6 @@ namespace DataManagement
             if(initializer.isReset)
             {
                 Debug.Log("InventorySaveData 파일 초기화 " + path);
-
-                if(initializer.inventoryInfo.IsServer)
-                    initializer.inventoryInfo.RegisterOwnerInfo();
-
                 return new InventorySaveData(initializer); 
             }
             
@@ -233,9 +229,6 @@ namespace DataManagement
             {
                 Debug.Log("InventorySaveData 파일이 없음");
                 
-                if(initializer.inventoryInfo.IsServer)
-                    initializer.inventoryInfo.RegisterOwnerInfo();
-
                 // 인벤토리 데이터를 반환합니다.
                 return new InventorySaveData(initializer);   
             }

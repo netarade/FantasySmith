@@ -25,11 +25,13 @@ public class ButtonPlayTest : MonoBehaviour
 {
     InventoryInfo playerInventoryInfo;
     CreateManager createManager;
+    UserInfo userInfo;
 
     private void Start()
     {
         playerInventoryInfo = GameObject.FindWithTag("Player").GetComponentInChildren<InventoryInfo>();
         createManager = GameObject.FindWithTag("GameController").GetComponent<CreateManager>();
+        userInfo = GameObject.FindWithTag("Player").GetComponent<UserInfo>();
     }
 
 
@@ -71,14 +73,8 @@ public class ButtonPlayTest : MonoBehaviour
     }
 
     public void CraftStart()
-    {
-
-        createManager.CreateWorldItem("벽").RegisterToWorld(playerInventoryInfo.OwnerTr).OnItemWorldDrop(playerInventoryInfo.baseDropTr);
-        
-        createManager.CreateWorldItem("울타리").RegisterToWorld(playerInventoryInfo.OwnerTr).OnItemWorldDrop(playerInventoryInfo.baseDropTr);
-        
-        createManager.CreateWorldItem("인벤토리").RegisterToWorld(playerInventoryInfo.OwnerTr).OnItemWorldDrop(playerInventoryInfo.baseDropTr);
-
+    {        
+        createManager.CreateWorldInventoryItem(userInfo,"인벤토리").OnItemWorldDrop(playerInventoryInfo.baseDropTr);       
         
     }
 

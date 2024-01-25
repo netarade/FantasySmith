@@ -1,4 +1,5 @@
 using CreateManagement;
+using DataManagement;
 using ItemData;
 using System;
 using UnityEngine;
@@ -27,6 +28,19 @@ using UnityEngine;
 * <v2.2 - 2024_0125_최원준>
 * 1- RegisterToWorld 작성
 * 인벤토리 소유자의 Transform 정보를 받아서 소유자id를 변경 후 월드 인벤토리에 저장하는 역할
+* 
+* <v2.3 - 2024_0125_최원준>
+* 1- RegisterToWorld메서드 인자를 InventoryInfo를 기반으로 오버로딩, 기존 메서드는 오버로딩 메서드를 재활용, 주석 수정
+* 
+* <v3.0 - 2024_0126_최원준>
+* 1- 플레이어가 UserInfo 스크립트에서 Id를 할당받고 시작함에 따라서, UserInfo를 매개변수로 통일 해야 하므로,
+* RegisterToWorld 오버로딩 메서드(InventoryInfo 및 Transform)를 삭제하고 UserInfo를 전달받음.
+* 
+* 2- RegisterToWorld메서드명을 RegisterWorldInvetory로 변경
+* 
+* 3- SetPrivateId메서드 정의하여 아이템이 고유 식별 번호(Id)를 외부로부터 부여받을 수 있게 하였음.
+* 
+* 4- isRegistered 속성을 정의하여 월드인벤토리에 등록되었는지 여부를 기록하고, 해당 정보를 토대로 SetPrivateId를 추가호출 가능성 여부를 판단.
 * 
 */
 
@@ -113,27 +127,47 @@ public partial class ItemInfo : MonoBehaviour
     }
 
 
-
+    bool isRegisterdToWorld = false;    // 월드 인벤토리에 등록되었는지 여부
 
     /// <summary>
-    /// 아이템을 어떠한 상태도 전환 하지 않고 인벤토리에 등록만 합니다.<br/>
-    /// 즉, 3D상태의 아이템이 인벤토리에 추가되어도 2D상태로 변경되지 않습니다.
+    /// 아이템을 어떠한 상태도 전환 하지 않고 월드 인벤토리에 등록만 합니다.<br/>
+    /// 즉, 3D상태의 아이템이 월드 인벤토리에 추가되어도 2D상태로 변경되지 않습니다.<br/><br/>
+    /// 인자로 아이템의 소유자 정보를 전달해야 합니다.<br/><br/>
+    /// *** 이 메서드를 통해 아이템이 월드 인벤토리에 등록되어도 고유식별번호는 따로 할당 받지 않습니다. ***
     /// </summary>
     /// <returns>자기자신의 참조값을 그대로 반환합니다. 추가로 다른 메서드를 호출할 수 있습니다</returns>
-    public ItemInfo RegisterToWorld(Transform inventoryOwnerTr)
-    {       
-        InventoryInfo ownerInventoryInfo = inventoryOwnerTr.GetComponentInChildren<InventoryInfo>();
+    public ItemInfo RegisterWorldInvetory(UserInfo ownerInfo)
+    {
+        // 아이템 소유자 식별번호를 유저의 식별번호로 지정합니다.
+        item.OwnerId = ownerInfo.UserId;    
 
-        // 아이템 소유자 식별번호를 인벤토리 소유자의 식별번호로 지정합니다.
-        item.OwnerId = ownerInventoryInfo.OwnerId;    
+        // 아이템 소유자 명을 유저의 프리팹 명으로 지정합니다.
+        item.OwnerName = ownerInfo.UserPrefabName;
 
-        // 아이템 소유자 명을 인벤토리 소유자 명으로 지정합니다.
-        item.OwnerName = ownerInventoryInfo.OwnerName;
+        // 아이템 소유자 위치를 저장합니다.
+        ownerTr = ownerInfo.transform;
 
         // 월드 인벤토리에 저장합니다.
         worldInventoryInfo.inventory.AddItem(this);
 
+        // 등록되었음을 활성화합니다.
+        isRegisterdToWorld = true;
+
         return this;
+    }
+
+    /// <summary>
+    /// 아이템의 고유 Id를 할당받습니다.<br/>
+    /// CreateManager가 부여한 고유 ID를 전달해야합니다.<br/><br/>
+    /// *** 아이템이 월드에 등록된 상태가 아니라면 예외가 발생합니다. ***
+    /// </summary>
+    public void SetPrivateId(int id)
+    {
+        // 월드 인벤토리에 등록되지 않았다면 예외처리
+        if( !isRegisterdToWorld )
+            throw new Exception("월드 인벤토리에 등록된 상태가 아닙니다.");
+
+        item.Id = id;
     }
 
 
@@ -143,20 +177,12 @@ public partial class ItemInfo : MonoBehaviour
 
 
 
-
-
-
-
+    /// <summary>
+    /// 디버그 출력용 메서드 - 아이템 정보를 확인합니다.
+    /// </summary>
     public void PrintDebugInfo()
     {
-        string debugInfo = "";
-        
-        debugInfo += string.Format($"이름 : {item.Name}\n" );
-        debugInfo += string.Format($"종류 : {item.Type}\n" );
-        debugInfo += string.Format($"전체 탭 인덱스 : {item.SlotIndexAll}\n" );
-        debugInfo += string.Format($"개별 탭 인덱스 : {item.SlotIndexEach}\n" );
-
-        print(debugInfo);
+        item.ItemDeubgInfo();
     }
 
 

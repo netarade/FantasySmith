@@ -100,6 +100,11 @@ using UnityEngine;
  * 
  * 2- ItemBuilding클래스의 상속관계를 ItemMisc에서 Item으로 변경으로 인해 ItemType.Building을 추가
  * 
+ * <10.5 - 2024_0125_최원준>
+ * 1- ownerId이외의 아이템 자체의 Id 변수를 추가하였음.
+ * 이유는 월드 인벤토리에 아이템이 저장될 때 누구의 아이템인지 유저 정보도 있어야 하지만, 
+ * 인벤토리의 경우 동일한 이름의 아이템이 만들어 질 때의 식별번호가 필요하기 때문(저장파일을 달리 하기 위해서)
+ * 
  */
 
 namespace ItemData
@@ -172,7 +177,7 @@ namespace ItemData
         [JsonProperty] int iSlotIndexAll;
         [JsonProperty] string iOwnerName;
         [JsonProperty] int iOwnerId;
-
+        [JsonProperty] int iId;
 
 
 
@@ -228,6 +233,12 @@ namespace ItemData
         /// </summary>
         [JsonIgnore] public int OwnerId { get { return iOwnerId; } set { iOwnerId=value; } }
 
+        /// <summary>
+        /// 아이템 고유의 식별번호입니다.<br/>
+        /// 동일한 이름의 아이템에 식별번호가 필요한 경우 부여될 수 있습니다. (ex. 인벤토리 아이템)
+        /// 식별번호가 부여되지 않은 아이템의 Id 기본값은 -1입니다.
+        /// </summary>
+        [JsonIgnore] public int Id { get{ return iId; }  set { iId=value; } }
 
 
 
@@ -238,6 +249,7 @@ namespace ItemData
             sNo = No;
             sVisualRefIndex = visualRefIndex;
             sDesc = desc;
+            iId = -1;
         }
 
         /// <summary>
@@ -252,12 +264,19 @@ namespace ItemData
         /// </summary>
         public void ItemDeubgInfo()
         {
-            Debug.Log("Type : " + Type);
-            Debug.Log("No : " + No);
-            Debug.Log("Name : " + Name);
-            Debug.Log("SlotIndexEach : " + SlotIndexEach);
-            Debug.Log("SlotIndexAll : " + SlotIndexAll);
-            Debug.Log("Desc : " + sDesc);
+            string debugStr = string.Format(
+            $"Type : {Type}" +
+            $"No : {No}" +
+            $"Name : {Name}" +
+            $"SlotIndexEach : {SlotIndexEach}" +
+            $"SlotIndexAll : {SlotIndexAll}" +
+            $"Desc : {sDesc}" +
+            $"OwnerId : {iOwnerId}" +
+            $"OwnerName : {iOwnerName}" +
+            $"ItemId : {iId}"
+            );
+
+            Debug.Log( debugStr );
         }
     }
 }

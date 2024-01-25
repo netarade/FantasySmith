@@ -27,6 +27,16 @@ using InventoryManagement;
 * 1- 인벤토리 식별번호 inventoryId를 ownerId로 변경
 * 인벤토리 식별번호가 필요한 것이 아니라 인벤토리 소유자 Id의 세팅이 필요한것 이므로
 * 
+* <v3.0 - 2024_0126_최원준>
+* 1- 이니셜라이져 이전상태(v2.0)으로 롤백
+* 
+* 2- 인벤토리 소유자 식별 번호를 삭제
+* 이유는 플레이어에 UserInfo스크립트를 부착하여 메서드 전달수단으로 사용하기로 하였기 때문.
+* 
+* 3- 인벤토리 종류를 구분하는 isItem3dStore, isInstantiated속성을 삭제
+* 아이템을 3D로 보관하는 인벤토리 속성의 경우 - 월드 인벤토리 전용 클래스인 WorldInventoryInfo에서 오버라이딩을 통해 조절할 수 있으며,
+* 동적할당 인벤토리의 경우(즉, 아이템형 인벤토리의 경우) 계층 최상위 부모에 UserInfo가 존재하는지 여부에 따라 구분할 수 있기 때문
+* 
 * 
 */
 public class InventoryInitializer : MonoBehaviour
@@ -35,17 +45,8 @@ public class InventoryInitializer : MonoBehaviour
     [Header("인벤토리 모든 설정 리셋")]
     public bool isReset = false;
     
-    [Header("인벤토리 소유자 식별 번호 - 동일 계층 다중 인벤토리는 식별번호 동일")]
-    public int inventoryOwnerId = -1;
-
     [Header("중심 인벤토리 속성 - 동일 계층 다중 인벤토리가 있는 경우 하나만 체크")]
     public bool isServer = false;
-
-    [Header("아이템을 3d상태로 보관하는 인벤토리 여부(월드인벤토리 전용)")]
-    public bool isItem3dStore = false;
-
-    [Header("게임 중에 생성되는 인벤토리 여부")]
-    public bool isInstantiated = false;
 
 
     [Header("딕셔너리와 슬롯 제한수를 지정(같은 딕셔너리 불가)")]
@@ -56,13 +57,6 @@ public class InventoryInitializer : MonoBehaviour
     [Header("(표시탭 종류 All-전체, Quest-퀘스트, Misc-잡화, Weapon-장비)")]
     public TabType[] showTabType;
 
-
-    public InventoryInfo inventoryInfo;
-
-    private void Awake()
-    {
-        inventoryInfo = GetComponent<InventoryInfo>();
-    }
 
 }
 

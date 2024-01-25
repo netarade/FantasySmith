@@ -374,6 +374,15 @@ using DataManagement;
  *(이는 3D상태일때도 캔버스그룹을 통해 레이캐스팅을 받거나 흘리는 기능이 있기 때문인것으로 보여지는데)
  *=> 이미지 컴포넌트의 레이캐스트 블록을 해제하고, Interactable속성을 비활성화 시키는 것으로 변경
  *
+ *<v13.8 - 2024_0125_최원준>
+ *1- OwnerId이외의 아이템 자체의 Id 프로퍼티 추가하였음.
+ *이유는 월드 인벤토리에 아이템이 저장될 때 누구의 아이템인지 유저 정보도 있어야 하지만, 
+ *인벤토리의 경우 동일한 이름의 아이템이 만들어 질 때의 식별번호가 필요하기 때문(저장파일을 달리 하기 위해서)
+ *
+ *<v14.0 - 2024_0126_최원준>
+ *1- Id변수명을 ItemId로 변경
+ *2- UpdateInventoryInfo에서 월드로 나갈때 ownerId를 0에서 -1로 초기화하는 것으로 변경
+ *
  *
  */
 
@@ -408,7 +417,6 @@ public partial class ItemInfo : MonoBehaviour
     Collider itemCol;               // 아이템의 3D오브젝트가 가지고 있는 기본 콜라이더
 
     InventoryInfo worldInventoryInfo;   // 아이템을 3D상태로 보관할 수 있는 월드 인벤토리 정보
-
 
     /*** 아이템 변동 정보 ***/
 
@@ -511,7 +519,12 @@ public partial class ItemInfo : MonoBehaviour
     /// </summary>
     public Transform ItemTr { get { return itemTr; } }
 
-
+    /// <summary>
+    /// 아이템 고유의 식별번호입니다.<br/>
+    /// 동일한 이름의 아이템에 식별번호가 필요한 경우 부여될 수 있습니다. (ex. 인벤토리 아이템)<br/>
+    /// 식별번호가 부여되지 않은 아이템의 Id 기본값은 -1입니다.
+    /// </summary>
+    public int ItemId {get {return item.Id;} }
 
 
 
@@ -794,7 +807,7 @@ public partial class ItemInfo : MonoBehaviour
             prevDropSlotTr = null;
 
             ownerTr = null;                    // 아이템 소유자 초기화
-            item.OwnerId = 0;                  // 아이템 소유자 식별 번호를 초기화합니다.
+            item.OwnerId = -1;                 // 아이템 소유자 식별 번호를 초기화합니다.
             item.OwnerName = worldOwnerName;   // 아이템 소유자 명을 월드로 변경합니다.
         }
         else // 다른 인벤토리로 전달된 경우

@@ -72,6 +72,9 @@ using UnityEngine.UI;
  * 1- Inventory클래스의 딕셔너리 저장형식을 GameObject기반에서 ItemInfo로 변경하면서 관련 메서드 수정
  * (UpdateTextInfoSameItemName)
  * 
+ * <v4.0 - 2024_0126_최원준>
+ * 1- 인벤토리 검색 및 연산관련 메서드 (SetItemOverlapCount, IsItemEnough, IsSlotEnough, IsSlotEmpty)를 InventoryInfo.cs에서 옮겨옴
+ * 
  */
 
 public partial class InventoryInfo : MonoBehaviour
@@ -81,6 +84,142 @@ public partial class InventoryInfo : MonoBehaviour
     /// AddItem메서드에서 
     /// </summary>
     protected List<ItemInfo> tempInfoList = new List<ItemInfo>();
+
+
+
+
+    
+
+    /// <summary>
+    /// 인벤토리에 존재하는 해당 이름의 *기존* 잡화 아이템 수량을 증가시키거나 감소시킵니다.<br/>
+    /// 인자로 해당 아이템 이름과 수량을 지정해야 합니다.<br/><br/>
+    /// 아이템 수량을 감소시키려면 수량 인자로 음수를 전달하여야 하며,<br/>
+    /// 기존 수량이 감소로 인해 0이되면 아이템이 인벤토리 목록에서 제거되며, 파괴됩니다.<br/><br/>
+    /// 아이템 수량을 증가시키려면 수량 인자로 양수를 전달하여야 하며,<br/>
+    /// 아이템 최대 수량 제한으로 인해 더 이상 수량을 증가시키기 못하는 경우는 나머지 초과 수량을 반환합니다.<br/><br/>
+    /// 최신 순, 오래된 순으로 감소여부를 결정할 수있습니다. (기본값: 최신순)<br/><br/>
+    /// ** 아이템 이름이 해당 인벤토리에 존재하지 않거나, 잡화아이템이 아닌 경우 예외를 발생시킵니다. **
+    /// </summary>
+    /// <returns></returns>
+    public int SetItemOverlapCount( string itemName, int inCount, bool isLatestModify = true )
+    {
+        return inventory.SetOverlapCount(itemName, inCount, isLatestModify, null);
+    }
+
+
+    
+    /// <summary>
+    /// 아이템의 종류와 상관없이 아이템이 해당 수량 만큼 인벤토리에 존재하는지 여부를 반환합니다.<br/>
+    /// 아이템 이름과 수량으로 이루어진 구조체 배열을 인자로 받습니다.<br/><br/>
+    /// 일반 아이템은 오브젝트의 갯수를 의미하며, 잡화 아이템은 중첩수량을 의미합니다.<br/>   
+    /// 해당 수량만큼 감소 및 파괴옵션을 지정할 수 있습니다. (기본값: 수량 1, 수량 감소 및 파괴 안함, 최신순 감소 및 파괴)<br/><br/>
+    /// *** 수량 인자가 0이하라면 예외를 발생시킵니다. ***
+    /// </summary>
+    /// <returns>아이템이 존재하며 수량이 충분한 경우 true를, 존재하지 않거나 수량이 충분하지 않다면 false를 반환</returns>
+    public bool IsItemEnough( ItemPair[] pairs, bool isReduceAndDestroy = false, bool isLatestModify = true )
+    {
+        return inventory.IsEnough(pairs, isReduceAndDestroy, isLatestModify);
+    }
+
+
+
+    
+    /// <summary>
+    /// 아이템의 종류와 상관없이 아이템이 해당 수량 만큼 인벤토리에 존재하는지 여부를 반환합니다.<br/>
+    /// 아이템 이름과 수량을 인자로 받습니다.<br/><br/>
+    /// 일반 아이템은 오브젝트의 갯수를 의미하며, 잡화 아이템은 중첩수량을 의미합니다.<br/>   
+    /// 해당 수량만큼 감소 및 파괴옵션을 지정할 수 있습니다. (기본값: 수량 1, 수량 감소 및 파괴 안함, 최신순 감소 및 파괴)<br/><br/>
+    /// *** 수량 인자가 0이하라면 예외를 발생시킵니다. ***
+    /// </summary>
+    /// <returns>아이템이 존재하며 수량이 충분한 경우 true를, 존재하지 않거나 수량이 충분하지 않다면 false를 반환</returns>
+    public bool IsItemEnough( string itemName, int count=1, bool isReduceAndDestroy = false, bool isLatestModify=true )
+    {
+        return inventory.IsEnough(itemName, count, isReduceAndDestroy, isLatestModify);      
+    }
+
+
+
+
+
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+    /// <summary>
+    /// 이 인벤토리의 슬롯에 아이템을 원하는 수량만큼 생성했을 때 아무 슬롯에 들어갈 빈 자리가 있는지 여부를 반환합니다.<br/>
+    /// 인자로 아이템 이름과 수량인자를 전달해야 합니다. (수량인자의 기본값은 1입니다.)<br/><br/>
+    /// 
+    /// 비잡화아이템의 경우 수량인자만큼 오브젝트를 갖습니다. (즉, 수량인자가 오브젝트의 개수를 말합니다.)<br/>
+    /// 잡화 아이템의 경우 수량인자를 넣어도 최대 중첩수량에 도달하기 전까지는 오브젝트를 1개만 형성합니다. (즉, 수량인자는 중첩수량을 말합니다.)<br/><br/>
+    /// </summary>
+    /// <returns>아이템을 생성가능하다면 true를, 불가능하다면 false를 반환합니다.</returns>
+    public bool IsSlotEnough(string itemName, int overlapCount=1)
+    {
+        ItemType itemType = createManager.GetWorldItemType(itemName);
+
+        if( itemType==ItemType.Misc )
+            return inventory.IsAbleToAddMisc( itemName, overlapCount ); 
+        else
+            return inventory.GetCurRemainSlotCount(itemType) >= overlapCount; // 남은 슬롯 칸 수가 overlapCount이상
+    }
+
+    /// <summary>
+    /// 해당 아이템이 아무 슬롯에 들어갈 빈 자리가 있는지 여부를 반환합니다.<br/>
+    /// 기본 아이템의 경우 슬롯여부에 따라 성공, 실패를 반환하며,<br/>
+    /// 잡화 아이템의 경우 중첩되어서 슬롯이 필요없는 경우 슬롯에 빈자리가 없어도 성공을 반환할 수 있습니다.<br/>
+    /// 기존 아이템 정보가 존재해야 합니다.
+    /// </summary>
+    /// <returns>아이템을 생성가능하다면 true를, 불가능하다면 false를 반환합니다.</returns>
+    public bool IsSlotEnough(ItemInfo itemInfo)
+    {
+        ItemType itemType = itemInfo.Item.Type;
+
+        if( itemType == ItemType.Misc )
+        {
+            ItemMisc itemMisc = (ItemMisc)itemInfo.Item;
+            return inventory.IsAbleToAddMisc(itemMisc.Name, itemMisc.OverlapCount);
+        }
+        else
+            return inventory.IsRemainSlotIndirect(itemType);  // 아무자리에 남은 슬롯 칸수가 있는지
+    }
+
+
+
+
+    /// <summary>
+    /// 해당 아이템이 현재 탭의 특정 슬롯에 들어갈 수 있을 지 여부를 반환합니다.<br/>
+    /// 아이템 정보와 슬롯의 지정 인덱스, 전체 탭 여부를 인자로 받습니다.
+    /// </summary>
+    /// <returns>슬롯에 빈자리가 없는 경우 false를, 빈자리가 있는 경우 true를 반환</returns>
+    public bool IsSlotEmpty(ItemInfo itemInfo, int slotIndex, bool isActiveTabAll)
+    {
+        return inventory.IsRemainSlotDirect(itemInfo.Item.Type, slotIndex, isActiveTabAll);         
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

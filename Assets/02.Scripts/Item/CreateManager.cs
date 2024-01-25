@@ -371,6 +371,51 @@ namespace CreateManagement
         }
 
 
+        /// <summary>
+        /// 월드 인벤토리 생성 시 사용해야 할 메서드입니다.
+        /// </summary>
+        /// <returns></returns>
+        public ItemInfo CreateWorldInventoryItem(UserInfo itemOwnerInfo, string itemName)
+        {
+            InventoryInfo inventoryInfo = itemOwnerInfo.inventoryInfo;
+            
+            if(inventoryInfo==null)
+                throw new Exception("전달한 Transform이 인벤토리를 소유하고 있지 않습니다.");
+            
+            Item itemClone = GetWorldItemClone( itemName );         // 새로운 아이템 클론을 할당받습니다.
+            ItemType itemType = GetWorldItemType( itemName );       // 이름에 해당하는 ItemType을 확인합니다.
+
+            if( itemType != ItemType.Building)
+                throw new Exception("ItemBuilding 타입이 아닙니다. 확인하여 주세요.");
+
+            // 아이템을 생성하고 ItemInfo 참조값을 반환받습니다.
+            ItemInfo itemInfo = CreateWorldItem(itemClone).RegisterWorldInvetory(itemOwnerInfo);
+                  
+
+            // 새롭게 생성하는 아이템이 건설 아이템 중에서 인벤토리 종류인 경우에는 추가 정보를 입력해야 합니다.
+            if(itemInfo.BuildingType == BuildingType.Inventory)
+            {
+                // 새로운 ID를 부여합니다.
+                int itemId = GetNewId(IdType.Inventory, itemInfo.ItemTr.name);
+
+                // ID를 등록합니다.
+                itemInfo.SetPrivateId(itemId);
+
+                // 아이템화 인벤토리의 인벤토리 정보를 참조합니다.
+                InventoryInfo itemInventoryInfo = itemInfo.ItemTr.GetComponentInChildren<InventoryInfo>();
+                                
+                // itemInfo를 전달하여 소유자 정보를 업데이트 해줍니다.
+                itemInventoryInfo.UpdateItemInventoryInfo(itemInfo);
+            }
+            
+            
+            return itemInfo;    // 생성한 itemInfo를 반환합니다.
+        }
+
+
+
+
+
 
 
         /// <summary>
@@ -382,8 +427,8 @@ namespace CreateManagement
         /// <returns>해당 아이템 오브젝트의 ItemInfo 컴포넌트 참조 값을 반환합니다.</returns>
         public ItemInfo CreateWorldItem( string itemName, int overlapCount = 1 )
         {
-            Item itemClone = GetWorldItemClone( itemName );
-            ItemType itemType = GetWorldItemType( itemName );
+            Item itemClone = GetWorldItemClone( itemName );     // 새로운 아이템 클론을 할당받습니다.
+            ItemType itemType = GetWorldItemType( itemName );   // 이름에 해당하는 ItemType을 확인합니다.
 
             if( overlapCount<=0 )
                 throw new Exception( "수량이 0이하 입니다. 정확하게 입력해주세요." );
@@ -391,18 +436,10 @@ namespace CreateManagement
             // 잡화 아이템인 경우 수량 정보 입력
             if( itemType==ItemType.Misc )
                 ( (ItemMisc)itemClone ).AccumulateOverlapCount( overlapCount );
-
-            // 새롭게 생성하는 아이템이 건설 아이템 중에서 인벤토리 종류인 경우
-            ItemBuilding itemBuilding = itemClone as ItemBuilding;            
-            if( itemBuilding != null )
-            {
-                if(itemBuilding.buildingType == BuildingType.Inventory)
-                {
-                    itemBuilding.OwnerId = GetNewId();
-                    itemBuilding.OwnerName = 
-                }
-            }
-
+                     
+            // 건설 아이템인 경우 예외 처리
+            else if(itemType==ItemType.Building)
+                throw new Exception("건설 아이템의 생성은 CreateWorldInventoryItem 메서드를 이용해야 합니다.");
 
             // Item 인스턴스를 전달하여 오브젝트를 생성하여 반환합니다.
             return CreateWorldItem(itemClone);

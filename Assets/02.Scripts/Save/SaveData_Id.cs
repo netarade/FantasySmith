@@ -14,6 +14,9 @@ using Unity.VisualScripting;
  * 2- keyPrefabName 매개변수 명을 rootName으로 변경 
  * (최상위 부모라는 의미)
  * 
+ * <v1.2 - 2024_0125_최원준>
+ * 1- 유저의 고유 식별번호를 저장할 수 있는 userId, IdType.User를 만들고 관련 코드를 추가하였음.
+ * 
  */
 
 
@@ -22,7 +25,7 @@ namespace DataManagement
     /// <summary>
     /// Id의 종류로 IdData클래스에 사용되는 메서드의 전달인자로 사용됩니다.<br/>
     /// </summary>
-    public enum IdType { Inventory }
+    public enum IdType { User, Inventory }
 
     /// <summary>
     /// 고유 식별번호 저장 전용 클래스입니다.<br/>
@@ -30,6 +33,13 @@ namespace DataManagement
     /// </summary>
     public class IdData : SaveData
     {
+        
+        /// <summary>
+        /// 사용자의 고유 식별 번호를 기록하기 위한 딕셔너리입니다.<br/>
+        /// 키 값은 프리팹 명이며, 동일 한 이름의 프리팹으로 생성되는 유저는 다른 식별 번호를 int값으로 가지고 있습니다.
+        /// </summary>
+        [JsonProperty] Dictionary<string, List<int>> userId;
+
         /// <summary>
         /// 인벤토리의 고유 식별 번호를 기록하기 위한 딕셔너리입니다.<br/>
         /// 키 값은 프리팹 명이며, 동일 한 이름의 프리팹으로 생성되는 인벤토리는 다른 식별 번호를 int값으로 가지고 있습니다.
@@ -43,6 +53,7 @@ namespace DataManagement
         /// </summary>
         public IdData()
         {
+            userId = new Dictionary<string, List<int>>();
             inventoryId = new Dictionary<string, List<int>>();
         }
 
@@ -54,11 +65,12 @@ namespace DataManagement
         private Dictionary<string, List<int>> GetIdDic(IdType idDicType)
         {
             Dictionary<string, List<int>> idDic = null;
-
-            // 전달인자
-            if(idDicType == IdType.Inventory)
+                                    
+            if(idDicType == IdType.User)
+                idDic = userId;
+            else if(idDicType == IdType.Inventory)
                 idDic = inventoryId;
-
+            
             return idDic;
         }
 

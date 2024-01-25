@@ -284,6 +284,19 @@ using CreateManagement;
  * 4- LoadAllItemTransformInfo 메서드를 WorldInventoryInfo로 옮김
  * 이유는 3D아이템을 보관하는 인벤토리 전용으로 호출해줘야 할 메서드이기 때문
  *
+ *<11.0 - 2024_0126_최원준>
+ * 
+ * 1- 인벤토리 검색 및 연산관련 메서드 (SetItemOverlapCount, IsItemEnough, IsSlotEnough, IsSlotEmpty)를 InventoryInfo_2.cs로 옮김
+ * 
+ * 2- 인벤토리 소유자 정보 UserInfo 클래스를 시작 시 참조하여 유저 고유 Id를 초기화하고, 이를 토대로 세이브 파일명을 산출할 수 있게 하였음.
+ * 
+ * 3- (IsInstantiated되어지는) 아이템형 인벤토리의 경우 UserTr은 특정할 수 있지만, UserInfo가 없기 때문에
+ * UpdateItemInventoryInfo메서드가 외부에서 호출되어서 소유자 식별번호 (ownerID)를 결정시켜 주게 만듬.
+ * => 즉, 아이템형 인벤토리의 경우 소유자는 아이템 3D오브젝트이고, 소유자 식별번호는 아이템 2D 스크립트인 ItemInfo에 저장되어있는 고유 식별번호가 된다. 
+ *
+ *4- isItem3dStore, isInstantiated속성을 삭제
+ *
+ *
  */
 
 
@@ -322,15 +335,10 @@ public partial class InventoryInfo : MonoBehaviour
     [Header("기본 드랍위치 부모 지정 옵션")]
     public bool isBaseDropSetParent;            // 드롭장소에 부모 계층에 속할지 지정하는 옵션 (씬정리 용도 및 부모와 함께 움직이도록 하는 용도)
     
-    protected string saveFileName;              // 저장파일 이름 설정
-
-
-    protected bool isItem3dStore;               // 3d 상태의 아이템을 보관하는 인벤토리인지 여부
-    protected bool isInstantiated;              // 게임 중에 동적으로 생성되는 인벤토리인지 여부
-    
-    protected Transform ownerTr;                // 인벤토리 소유자 정보
-    protected int ownerId;                      // 인벤토리 소유자 고유 식별 번호
-
+        
+    protected Transform ownerTr;                // 인벤토리 소유자 위치 정보
+    UserInfo ownerInfo;                         // 인벤토리 소유자 정보
+    protected int ownerId = -1;                 // 인벤토리 소유자 고유 식별 번호
 
     /// <summary>
     /// 인벤토리의 소유자 정보를 반환합니다.<br/>
@@ -350,6 +358,24 @@ public partial class InventoryInfo : MonoBehaviour
     public string OwnerName { get { return ownerTr.name; } }
 
 
+    /// <summary>
+    /// InventoryInfo의 스크립트명을 반환받습니다.<br/>
+    /// 상속 스크립트의 경우 스크립트명이 틀려질 수 있습니다.
+    /// </summary>
+    public string ScriptName { 
+        get {  
+                string fullName = GetType().Name;                
+                return fullName.Substring(fullName.LastIndexOf('.')+1);
+            }   
+        }
+    
+    /// <summary>
+    /// 저장 파일 명을 반환합니다.<br/>
+    /// 저장 파일이름 예시 - Player0_InventoryInfo_
+    /// </summary>
+    public string SaveFileName { get { return OwnerName + OwnerId + "_" + ScriptName + "_"; } }             
+
+
     protected virtual void Awake()
     {         
         inventoryTr = transform; 
@@ -363,19 +389,11 @@ public partial class InventoryInfo : MonoBehaviour
         dataManager = gameController.GetComponent<DataManager>();           // 게임컨트롤러 태그가 있는 오브젝트의 컴포넌트 참조
         createManager = gameController.GetComponent<CreateManager>();       // 데이터 매니저와 동일한 오브젝트의 컴포넌트 참조
                
-        
-        isItem3dStore = initializer.isItem3dStore;    // 월드 아이템 생성 인벤토리인지를 결정합니다.         
-        isInstantiated = initializer.isInstantiated;  // 동적 생성되는 인벤토리인지를 결정합니다.  
-        isServer = initializer.isServer;              // 서버 인벤토리 여부를 결정합니다.
-                                                              
-        ownerTr = inventoryTr.parent.parent.parent;   // 계층 최상위 부모가 소유자가 됩니다.    
-        ownerId = initializer.inventoryOwnerId;       // 소유자 id값을 이니셜라이저로부터 받아서 초기화합니다.                                                      
 
-        // 저장 파일이름 예시 - Player0_InventoryInfo_ (최상위 오브젝트명Id_스크립트명_)
-        saveFileName = OwnerName + OwnerId + "_" + GetType().Name + "_";   
-        
+
 
         /*** Inventory_3.cs 관련 변수 ***/
+        isServer = initializer.isServer;            // 서버 인벤토리 여부를 결정합니다.
         inventoryCG = GetComponent<CanvasGroup>();  // 인벤토리의 캔버스그룹을 참조합니다
         InitOpenState(false);                       // 인벤토리의 오픈상태를 꺼짐으로 만듭니다
 
@@ -386,15 +404,24 @@ public partial class InventoryInfo : MonoBehaviour
             clientInfo.Add(this);                   // 연결 인벤토리 정보에 자신을 등록합니다.
             serverInfo = this;                      // 자기자신을 서버로 등록합니다.
         }
+
+
+        /*** 인벤토리 소유자 정보를 초기화 합니다. ***/
+        ownerTr = inventoryTr.parent.parent.parent;     // 계층 최상위 부모가 인벤토리 소유자가 됩니다.           
+        ownerInfo = ownerTr.GetComponent<UserInfo>();   // 소유자 정보는 유저정보 스크립트를 참조합니다.
+        
+        // 인벤토리 소유자가 UserInfo가 있는 경우
+        if(ownerInfo != null)
+            ownerId = ownerInfo.UserId;                 // 유저Id가 인벤토리 소유자 식별번호가 됩니다. 
     }
 
     // dataManager와 createManager의 초기화가 이루어진 이후 로드해야함.
     protected virtual void Start()
-    {        
-        /** 호출 순서 고정: 로드->인터렉티브스크립트 초기화 및 슬롯생성요청->아이템표현 ***/
-        this.LoadInventoryData();           // 저장된 플레이어 데이터를 불러옵니다. 
-        interactive.Initialize(this);       // 인터렉티브 스크립트 초기화를 진행합니다. 
-        UpdateAllItemVisualInfo();          // 슬롯에 모든 아이템의 시각화를 진행합니다.
+    {                
+        /** 호출 순서 고정: 로드 -> 인터렉티브스크립트 초기화 및 슬롯생성요청 -> 아이템표현 ***/
+        LoadInventoryData();            // 저장된 플레이어 데이터를 불러옵니다. 
+        interactive.Initialize(this);   // 인터렉티브 스크립트 초기화를 진행합니다.
+        UpdateAllItemVisualInfo();      // 슬롯에 모든 아이템의 시각화를 진행합니다. 
     }
 
 
@@ -405,7 +432,7 @@ public partial class InventoryInfo : MonoBehaviour
     /// </summary>
     protected virtual void OnApplicationQuit()
     {
-        SaveInvetoryData(); // 플레이어 데이터 저장
+        SaveInvetoryData();         // 플레이어 데이터 저장                    
     }
 
 
@@ -413,15 +440,16 @@ public partial class InventoryInfo : MonoBehaviour
     /// 인벤토리 관련 데이터를 불러옵니다
     /// </summary>
     protected void LoadInventoryData()
-    {
+    {      
         // 로드 할 파일명을 설정합니다
-        dataManager.FileSettings(saveFileName); 
+        dataManager.FileSettings(SaveFileName); 
 
         // 파일에서 로드한 데이터한 변수에 저장합니다.
         InventorySaveData loadData = dataManager.LoadInventoryData(initializer);              
         
         // 역직렬화하여 게임 상의 인벤토리로 변환합니다.
-        inventory=loadData.savedInventory.Deserialize(initializer, createManager);   
+        inventory=loadData.savedInventory.Deserialize(initializer, createManager); 
+                  
     }
 
 
@@ -431,7 +459,7 @@ public partial class InventoryInfo : MonoBehaviour
     protected void SaveInvetoryData()
     {        
         // 세이브 할 파일명을 설정합니다
-        dataManager.FileSettings(saveFileName);   
+        dataManager.FileSettings(SaveFileName);   
 
         // 메서드 호출 시점에 다른 스크립트에서 save했을 수도 있으므로 새롭게 생성하지 않고 기존 데이터 최신화합니다
         InventorySaveData saveData = dataManager.LoadInventoryData(initializer);
@@ -442,6 +470,32 @@ public partial class InventoryInfo : MonoBehaviour
         // 파일을 저장합니다.
         dataManager.SaveData(saveData);
     }
+
+
+
+    /// <summary>
+    /// 아이템화 인벤토리의 소유자 식별번호를 등록합니다.<br/>
+    /// 전달 인자로 고유 식별 번호가 등록되어 있는 ItemInfo가 전달되어야 합니다.<br/><br/>
+    /// 아이템화 인벤토리의 소유자는 계층 최상위 부모인 아이템 3D 오브젝트이며,<br/>
+    /// 소유자 식별 번호(Id)는 내부 ItemInfo에 저장되어 있는 Item 고유 식별번호입니다.
+    /// </summary>
+    public void UpdateItemInventoryInfo(ItemInfo inventoryItemInfo)
+    {
+        if(inventoryItemInfo.BuildingType != BuildingType.Inventory )
+            throw new Exception("건설 아이템의 세부 종류가 BuildingType.Inventory가 아닙니다.");
+        if(inventoryItemInfo.ItemId<0)
+            throw new Exception("아이템의 고유 식별 번호가 할당되어 있지 않습니다.");
+
+        ownerId = inventoryItemInfo.ItemId;       // 아이템에 저장 되어있는 고유 Id가 소유자 Id가 됩니다.
+    }
+
+
+
+
+
+
+
+
 
 
 
@@ -476,142 +530,6 @@ public partial class InventoryInfo : MonoBehaviour
 
 
 
-
-
-
-
-
-
-    /// <summary>
-    /// 인벤토리에 존재하는 해당 이름의 *기존* 잡화 아이템 수량을 증가시키거나 감소시킵니다.<br/>
-    /// 인자로 해당 아이템 이름과 수량을 지정해야 합니다.<br/><br/>
-    /// 아이템 수량을 감소시키려면 수량 인자로 음수를 전달하여야 하며,<br/>
-    /// 기존 수량이 감소로 인해 0이되면 아이템이 인벤토리 목록에서 제거되며, 파괴됩니다.<br/><br/>
-    /// 아이템 수량을 증가시키려면 수량 인자로 양수를 전달하여야 하며,<br/>
-    /// 아이템 최대 수량 제한으로 인해 더 이상 수량을 증가시키기 못하는 경우는 나머지 초과 수량을 반환합니다.<br/><br/>
-    /// 최신 순, 오래된 순으로 감소여부를 결정할 수있습니다. (기본값: 최신순)<br/><br/>
-    /// ** 아이템 이름이 해당 인벤토리에 존재하지 않거나, 잡화아이템이 아닌 경우 예외를 발생시킵니다. **
-    /// </summary>
-    /// <returns></returns>
-    public int SetItemOverlapCount( string itemName, int inCount, bool isLatestModify = true )
-    {
-        return inventory.SetOverlapCount(itemName, inCount, isLatestModify, null);
-    }
-
-
-    
-    /// <summary>
-    /// 아이템의 종류와 상관없이 아이템이 해당 수량 만큼 인벤토리에 존재하는지 여부를 반환합니다.<br/>
-    /// 아이템 이름과 수량으로 이루어진 구조체 배열을 인자로 받습니다.<br/><br/>
-    /// 일반 아이템은 오브젝트의 갯수를 의미하며, 잡화 아이템은 중첩수량을 의미합니다.<br/>   
-    /// 해당 수량만큼 감소 및 파괴옵션을 지정할 수 있습니다. (기본값: 수량 1, 수량 감소 및 파괴 안함, 최신순 감소 및 파괴)<br/><br/>
-    /// *** 수량 인자가 0이하라면 예외를 발생시킵니다. ***
-    /// </summary>
-    /// <returns>아이템이 존재하며 수량이 충분한 경우 true를, 존재하지 않거나 수량이 충분하지 않다면 false를 반환</returns>
-    public bool IsItemEnough( ItemPair[] pairs, bool isReduceAndDestroy = false, bool isLatestModify = true )
-    {
-        return inventory.IsEnough(pairs, isReduceAndDestroy, isLatestModify);
-    }
-
-
-
-    
-    /// <summary>
-    /// 아이템의 종류와 상관없이 아이템이 해당 수량 만큼 인벤토리에 존재하는지 여부를 반환합니다.<br/>
-    /// 아이템 이름과 수량을 인자로 받습니다.<br/><br/>
-    /// 일반 아이템은 오브젝트의 갯수를 의미하며, 잡화 아이템은 중첩수량을 의미합니다.<br/>   
-    /// 해당 수량만큼 감소 및 파괴옵션을 지정할 수 있습니다. (기본값: 수량 1, 수량 감소 및 파괴 안함, 최신순 감소 및 파괴)<br/><br/>
-    /// *** 수량 인자가 0이하라면 예외를 발생시킵니다. ***
-    /// </summary>
-    /// <returns>아이템이 존재하며 수량이 충분한 경우 true를, 존재하지 않거나 수량이 충분하지 않다면 false를 반환</returns>
-    public bool IsItemEnough( string itemName, int count=1, bool isReduceAndDestroy = false, bool isLatestModify=true )
-    {
-        return inventory.IsEnough(itemName, count, isReduceAndDestroy, isLatestModify);      
-    }
-
-
-
-
-
-
-    
-
-
-
-
-
-
-
-
-
-
-
-
-    /// <summary>
-    /// 이 인벤토리의 슬롯에 아이템을 원하는 수량만큼 생성했을 때 아무 슬롯에 들어갈 빈 자리가 있는지 여부를 반환합니다.<br/>
-    /// 인자로 아이템 이름과 수량인자를 전달해야 합니다. (수량인자의 기본값은 1입니다.)<br/><br/>
-    /// 
-    /// 비잡화아이템의 경우 수량인자만큼 오브젝트를 갖습니다. (즉, 수량인자가 오브젝트의 개수를 말합니다.)<br/>
-    /// 잡화 아이템의 경우 수량인자를 넣어도 최대 중첩수량에 도달하기 전까지는 오브젝트를 1개만 형성합니다. (즉, 수량인자는 중첩수량을 말합니다.)<br/><br/>
-    /// </summary>
-    /// <returns>아이템을 생성가능하다면 true를, 불가능하다면 false를 반환합니다.</returns>
-    public bool IsSlotEnough(string itemName, int overlapCount=1)
-    {
-        ItemType itemType = createManager.GetWorldItemType(itemName);
-
-        if( itemType==ItemType.Misc )
-            return inventory.IsAbleToAddMisc( itemName, overlapCount ); 
-        else
-            return inventory.GetCurRemainSlotCount(itemType) >= overlapCount; // 남은 슬롯 칸 수가 overlapCount이상
-    }
-
-    /// <summary>
-    /// 해당 아이템이 아무 슬롯에 들어갈 빈 자리가 있는지 여부를 반환합니다.<br/>
-    /// 기본 아이템의 경우 슬롯여부에 따라 성공, 실패를 반환하며,<br/>
-    /// 잡화 아이템의 경우 중첩되어서 슬롯이 필요없는 경우 슬롯에 빈자리가 없어도 성공을 반환할 수 있습니다.<br/>
-    /// 기존 아이템 정보가 존재해야 합니다.
-    /// </summary>
-    /// <returns>아이템을 생성가능하다면 true를, 불가능하다면 false를 반환합니다.</returns>
-    public bool IsSlotEnough(ItemInfo itemInfo)
-    {
-        ItemType itemType = itemInfo.Item.Type;
-
-        if( itemType == ItemType.Misc )
-        {
-            ItemMisc itemMisc = (ItemMisc)itemInfo.Item;
-            return inventory.IsAbleToAddMisc(itemMisc.Name, itemMisc.OverlapCount);
-        }
-        else
-            return inventory.IsRemainSlotIndirect(itemType);  // 아무자리에 남은 슬롯 칸수가 있는지
-    }
-
-
-
-
-    /// <summary>
-    /// 해당 아이템이 현재 탭의 특정 슬롯에 들어갈 수 있을 지 여부를 반환합니다.<br/>
-    /// 아이템 정보와 슬롯의 지정 인덱스, 전체 탭 여부를 인자로 받습니다.
-    /// </summary>
-    /// <returns>슬롯에 빈자리가 없는 경우 false를, 빈자리가 있는 경우 true를 반환</returns>
-    public bool IsSlotEmpty(ItemInfo itemInfo, int slotIndex, bool isActiveTabAll)
-    {
-        return inventory.IsRemainSlotDirect(itemInfo.Item.Type, slotIndex, isActiveTabAll);         
-    }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     /// <summary>
     /// 특정 종류의 딕셔너리에 존재하는 아이템의 슬롯 정보를 업데이트해주는 메서드입니다.<br/>
     /// 아이템의 종류에 따른 딕셔너리를 참조하여 
@@ -635,6 +553,10 @@ public partial class InventoryInfo : MonoBehaviour
                 itemInfo.UpdatePositionInfo();                      // 활성화 탭 기반으로 해당 종류의 위치정보를 업데이트합니다.
         }
     }
+
+
+
+
 
 
 

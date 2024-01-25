@@ -53,6 +53,18 @@ using UnityEngine.UI;
  * 2- RegisterOwnerInfo메서드 작성하여 인벤토리 소유자의 고유 식별번호를 등록할 수 있게 하였음.
  * (DataManager에서 처음 로드할 때 서버 인벤토리만 한번 호출할 수 있게함)
  * 
+ * <v2.5 - 2024_0125_최원준>
+ * 1- RegisterOwnerInfo의 IdType을 Inventory에서 User로 변경하였음.
+ * 이유는 월드 인벤토리에 아이템이 저장될 때 누구의 아이템인지 유저 정보도 있어야 하지만, 
+ * 인벤토리의 경우 동일한 이름의 아이템이 만들어 질 때의 식별번호가 필요하기 때문(저장파일을 달리 하기 위해서)
+ * 
+ * 2- RegisterOwnerInfo 메서드명을  RegisterUserInfo로 변경
+ * (원래는 플레이어 쪽에서 UserId를 부여받아야 하지만, 편의상 인벤토리에서 설정하는 것으로 간주) 
+ * 
+ * 3- RegisterUserInfo 메서드를 제거
+ * 이유는 플레이어의 Id부여는 씬 시작 전 로그인화면에서 할당되어 이루어져야 하는데 현재는 구현이 안되어있으므로
+ * 이니셜라이저로 대체하는 것이고, 따로 등록하지 않아도 되기 때문
+ * (나중에 로비 화면(로그인화면)이 생기면 진행할 예정)
  * 
  */
 
@@ -355,23 +367,6 @@ public partial class InventoryInfo : MonoBehaviour
         print( "[검출된 오브젝트 이름]\n" + objNames );
     }
 
-
-
-    /// <summary>
-    /// 인벤토리 소유자명과 소유자 식별 번호를 등록합니다.
-    /// </summary>
-    public void RegisterOwnerInfo()
-    {
-        // 3d 아이템만 보관하는 인벤토리이거나,
-        if( isItem3dStore )
-            return;
-        
-        // (한 번만 실행하기 위하여) 중심 인벤토리(서버)가 아니라면 실행하지 않습니다. (동적할당되는 인벤토리는 예외적으로 실행합니다.)
-        if( !isServer && !isInstantiated  )        
-                return;
-
-        createManager.RegisterId(IdType.Inventory, OwnerName, OwnerId);
-    }
 
 
 

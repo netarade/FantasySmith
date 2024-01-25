@@ -36,7 +36,7 @@ public partial class WorldItem
             },
             { 
                 "인벤토리", new ItemBuilding( ItemType.Building, "5002", "인벤토리", new VisualReferenceIndex(2),
-                BuildingType.Basic ,15, "~~하는용도로 사용") 
+                BuildingType.Inventory ,15, "~~하는용도로 사용") 
             },
         };
     }

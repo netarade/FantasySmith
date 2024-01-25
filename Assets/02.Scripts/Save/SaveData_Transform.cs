@@ -153,13 +153,13 @@ namespace DataManagement
         /// 인자로 원본 캐릭터의 위치정보를 전달하면 STransform에 정보를 자동으로 입력하여 줍니다.<br/>
         /// 기본 생성자로 STransform을 생성한 경우에 사용하세요.
         /// </summary>
-        public void Serialize(Transform tr)
+        public STransform Serialize(Transform tr)
         {
             // tr값이 전달되지 않은 경우 값을 tr을 사용하지 않고 기본값 초기화
             if( tr==null )
             {
                 Initialize();
-                return;
+                return this;
             }
 
             x = tr.position.x;
@@ -171,6 +171,8 @@ namespace DataManagement
             xScale = tr.localScale.x;
             yScale = tr.localScale.y;
             zScale = tr.localScale.z;
+
+            return this;
         }
 
 
@@ -183,6 +185,16 @@ namespace DataManagement
             tr.position = new Vector3(x, y, z);
             tr.rotation = Quaternion.Euler(xRot, yRot, zRot);
             tr.localScale = new Vector3(xScale, yScale, zScale);
+        }
+
+        public override string ToString()
+        {            
+            string str = string.Format( 
+                $"worldPos({x},{y},{y})\n" +
+                $"worldRot({xRot},{yRot},{zRot})\n" +
+                $"localScale({xScale},{yScale},{zScale})\n" );
+
+            return str;
         }
     }
 

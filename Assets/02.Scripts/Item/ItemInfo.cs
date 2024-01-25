@@ -369,6 +369,12 @@ using DataManagement;
  *3- SwitchAppearAs2D메서드를 OnItemCreated에서 호출해주도록 함.
  *아이템을 생성하고 바로 사용하는 경우 DimensionShift를 사용하지 않았기 때문에 2D기능이 종료가 되지 않은 상태로 나가서 셀렉팅이 일어남.
  *
+ *<v13.7 - 2024_0125_최원준>
+ *1- 아이템이 3D상태일 때 캔버스그룹의 blockRaycasts를 코드로 false로 만들어도 적용되지 않는 문제가 있어서
+ *(이는 3D상태일때도 캔버스그룹을 통해 레이캐스팅을 받거나 흘리는 기능이 있기 때문인것으로 보여지는데)
+ *=> 이미지 컴포넌트의 레이캐스트 블록을 해제하고, Interactable속성을 비활성화 시키는 것으로 변경
+ *
+ *
  */
 
 
@@ -857,11 +863,9 @@ public partial class ItemInfo : MonoBehaviour
     /// </summary>
     private void SwitchAppearAs2D(bool isWorldPositioned)
     {        
-        // 월드 상에 아이템이 있다면, UI 이벤트를 더 이상 받지 않으며, 2D이미지를 투명처리합니다.
-        itemCG.blocksRaycasts = !isWorldPositioned;
+        itemCG.interactable = !isWorldPositioned;
         itemCG.alpha = isWorldPositioned ? 0f:1f;
         itemImage.raycastTarget = !isWorldPositioned;
-        Debug.Log("현재 레이캐스팅 상태"+itemCG.blocksRaycasts);
     }
            
     /// <summary>
@@ -900,9 +904,7 @@ public partial class ItemInfo : MonoBehaviour
         ChangeHierarchy(isMoveToWorld);
 
         // 아이템의 모습을 변경합니다
-        SwitchAppearAs2D(isMoveToWorld);                    
-
-        Debug.Log("디멘션 호출되었습니다" + isMoveToWorld);
+        SwitchAppearAs2D(isMoveToWorld);
     }
      
 

@@ -392,6 +392,18 @@ namespace CreateManagement
             if( itemType==ItemType.Misc )
                 ( (ItemMisc)itemClone ).AccumulateOverlapCount( overlapCount );
 
+            // 새롭게 생성하는 아이템이 건설 아이템 중에서 인벤토리 종류인 경우
+            ItemBuilding itemBuilding = itemClone as ItemBuilding;            
+            if( itemBuilding != null )
+            {
+                if(itemBuilding.buildingType == BuildingType.Inventory)
+                {
+                    itemBuilding.OwnerId = GetNewId();
+                    itemBuilding.OwnerName = 
+                }
+            }
+
+
             // Item 인스턴스를 전달하여 오브젝트를 생성하여 반환합니다.
             return CreateWorldItem(itemClone);
         }
@@ -462,9 +474,9 @@ namespace CreateManagement
         /// 동적으로 Id를 할당해야 할 경우에 사용합니다.<br/>
         /// </summary>
         /// <returns>새롭게 부여된 식별번호를 반환</returns>
-        public int GetNewId(IdType idDicType, string keyPrefabName)
+        public int GetNewId(IdType idDicType, string keyRootName)
         {
-            return idData.GetNewId(idDicType, keyPrefabName);
+            return idData.GetNewId(idDicType, keyRootName);
         }
 
 
@@ -489,6 +501,8 @@ namespace CreateManagement
         {
             idData.UnregisterId(idDicType, keyRootName, id);
         }
+
+
 
 
     }

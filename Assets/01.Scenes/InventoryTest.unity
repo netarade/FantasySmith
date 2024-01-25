@@ -2695,6 +2695,7 @@ MonoBehaviour:
   baseDropTr: {fileID: 0}
   isBaseDropSetParent: 0
   inventoryCG: {fileID: 0}
+  saveInterval: 10
 --- !u!1 &326283087
 GameObject:
   m_ObjectHideFlags: 0

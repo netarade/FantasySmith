@@ -1,9 +1,29 @@
+using DataManagement;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+/*
+ * [작업사항]
+ * <v1.0 - 2024_0125_최원준>
+ * 1- 3D 상태로 아이템을 보관하는 인벤토리 클래스를 작성
+ * 
+ * 2- LoadAllItemTransformInfo를 기존 InventoryInfo에서 옮겨왔으며,
+ * 추가로 SaveAllItemTransformInfo메서드 작성
+ * 
+ * <v1.1 - 2024_0125_최원준>
+ * 1- SaveAllInfoTimeCheck메서드명 SaveAllItemTransformInfoInterval로 변경
+ * 매개변수명을 timeDuration에서 interval로 수정
+ * 
+ * 2- 
+ * 
+ * 
+ */
+
+
 public class WorldInventoryInfo : InventoryInfo
 {
+    public float saveInterval = 10f;
 
     protected override void Start()
     {        
@@ -12,15 +32,23 @@ public class WorldInventoryInfo : InventoryInfo
         interactive.Initialize(this);     // 인터렉티브 스크립트 초기화를 진행합니다. 
         LoadAllItemTransformInfo();       // 아이템의 3D 정보를 업데이트 합니다.
 
-        StartCoroutine( SaveAllInfoTimeCheck(10.0f) );
+        // 인스펙터뷰에서 설정된 값만큼 이 인벤토리에 등록되어있는 월드 아이템 저장을 실행합니다.
+        StartCoroutine( SaveAllItemTransformInfoInterval(saveInterval) );
     }
 
 
-    IEnumerator SaveAllInfoTimeCheck(float checkDuration)
+
+    /// <summary>
+    /// SaveAllItemTransformInfo메서드를 interval 간격으로 실행해주는 코루틴입니다.
+    /// </summary>
+    IEnumerator SaveAllItemTransformInfoInterval(float interval)
     {
-        Debug.Log("월드아이템 저장을 진행 중입니다.");
-        SaveAllItemTransformInfo();
-        yield return new WaitForSeconds(checkDuration);
+        while( true )
+        {
+            Debug.Log( "월드아이템 저장을 진행 중입니다." );
+            SaveAllItemTransformInfo();
+            yield return new WaitForSeconds( interval );
+        }
     }
 
 
@@ -76,7 +104,7 @@ public class WorldInventoryInfo : InventoryInfo
                 foreach( ItemInfo itemInfo in itemInfoList )
                 {
                     // 아이템의 STransform 정보를 불러와서 Transform을 반영하여 저장합니다.
-                    itemInfo.SerializedTr.Serialize( itemInfo.ItemTr );
+                    itemInfo.SerializedTr.Serialize( itemInfo.ItemTr );                   
                 }
             }
         }

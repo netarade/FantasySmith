@@ -16,6 +16,9 @@ using System.Collections.Generic;
  * 1- ConvertItemTypeToTabType메서드내부의 모든 아이템 종류 검사를 ==으로 대체
  * (is문을 사용했으나 열거형은 폴리모핑이 안되므로)
  * 
+ * <v1.3 - 2024_0125_최원준>
+ * 1- ItemBuilding 클래스의 상속관계를 ItemMisc에서 Item으로 변경함으로 인해 
+ * ConvertItemTypeToTabType의 탭타입을 All로 설정
  * 
  */
 
@@ -46,10 +49,12 @@ namespace InventoryManagement
                 return TabType.All;
             else if(itemType == ItemType.Quest)
                 return TabType.Quest;
-            else if(itemType == ItemType.Misc)          //빌딩재료, 요리재료등 모두 잡화로 인식
+            else if(itemType == ItemType.Misc)          // 건설재료, 요리재료등 모두 잡화로 인식
                 return TabType.Misc;
             else if(itemType == ItemType.Weapon)
                 return TabType.Equip;
+            else if( itemType==ItemType.Building )      // 실외 건설아이템의 경우 모든 탭으로 인식
+                return TabType.All;
             else
                 throw new Exception("해당 아이템 종류로 설정된 탭타입이 존재하지 않습니다.");        
         }

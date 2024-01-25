@@ -1,3 +1,4 @@
+using DataManagement;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -46,6 +47,13 @@ using UnityEngine.UI;
  * <v2.3 - 2024_0123_최원준>
  * 1- RaycastAllToConnectedInventory메서드에서 클라이언트 인경우 서버의 레이캐스팅을 재호출 해주도록 수정
  * 
+ * <v2.4 - 2024_0125_최원준>
+ * 1- public변수 inventoryCG의 HideInInspector 어트리뷰트 추가
+ * 
+ * 2- RegisterOwnerInfo메서드 작성하여 인벤토리 소유자의 고유 식별번호를 등록할 수 있게 하였음.
+ * (DataManager에서 처음 로드할 때 서버 인벤토리만 한번 호출할 수 있게함)
+ * 
+ * 
  */
 
 
@@ -75,12 +83,13 @@ public partial class InventoryInfo : MonoBehaviour
 
 
 
+    protected bool isServer;
+
     /// <summary>
     /// 다른 인벤토리를 다중 참조하기 위한 서버역할을 하게 됩니다.<br/>
     /// 플레이어 인벤토리의 경우 인스펙터 뷰에서 서버를 체크해야 합니다.
     /// </summary>
-    [Header("플레이어 인벤토리인 경우 체크")]
-    [SerializeField] protected bool isServer = false;
+    public bool IsServer { get { return isServer; } }
 
     
     protected bool isOpen;
@@ -98,7 +107,7 @@ public partial class InventoryInfo : MonoBehaviour
     public bool IsConnect { get { return isConnect; } }
     
 
-
+    [HideInInspector]
     public CanvasGroup inventoryCG;        // 인벤토리의 캔버스 그룹
 
     /// <summary>
@@ -344,6 +353,24 @@ public partial class InventoryInfo : MonoBehaviour
             objNames+=raycastResults[i].gameObject.name+" ";
 
         print( "[검출된 오브젝트 이름]\n" + objNames );
+    }
+
+
+
+    /// <summary>
+    /// 인벤토리 소유자명과 소유자 식별 번호를 등록합니다.
+    /// </summary>
+    public void RegisterOwnerInfo()
+    {
+        // 3d 아이템만 보관하는 인벤토리이거나,
+        if( isItem3dStore )
+            return;
+        
+        // (한 번만 실행하기 위하여) 중심 인벤토리(서버)가 아니라면 실행하지 않습니다. (동적할당되는 인벤토리는 예외적으로 실행합니다.)
+        if( !isServer && !isInstantiated  )        
+                return;
+
+        createManager.RegisterId(IdType.Inventory, OwnerName, OwnerId);
     }
 
 

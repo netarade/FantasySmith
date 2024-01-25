@@ -275,6 +275,10 @@ using UnityEngine.Assertions.Must;
  * 2- 딕셔너리 저장형식을 GameObject기반에서 ItemInfo로 변경하면서 관련 메서드 수정
  *(SerializeDicToItemList, InitCurDicItemObjCount)
  * 
+ * <v11.1 - 2024_0125_최원준>
+ * 1- 기존 ItemBuilding클래스를 ItemMisc에서 Item으로 상속관계를 변경함에 따라서
+ * TypeMatchingItemClassToItemType메서드에 ItemType.Building을 추가
+ * 
  */
 
 
@@ -593,6 +597,8 @@ namespace InventoryManagement
                 itemType = ItemType.Misc;
             else if( typeof( T )==typeof( ItemQuest ) )
                 itemType = ItemType.Quest;
+            else if( typeof(T)==typeof(ItemBuilding) )
+                itemType = ItemType.Building;
             else
                 throw new Exception("아이템 클래스에 맞는 아이템 타입이 정의되어있지 않습니다.");
 
@@ -688,10 +694,9 @@ namespace InventoryManagement
             // 배열의 개별 요소를 할당합니다.
             for( int i = 0; i<dicLen; i++ )
             {
-                itemDic[i] = new Dictionary<string, List<ItemInfo>>();    // 개별 딕셔너리 할당
-                dicType[i] = dicTypes[i].itemType;                          // 개별 타입을 이니셜라이저의 타입으로 설정
+                itemDic[i] = new Dictionary<string, List<ItemInfo>>();  // 개별 딕셔너리 할당
+                dicType[i] = dicTypes[i].itemType;                      // 개별 타입을 이니셜라이저의 타입으로 설정
                 
-
                 // 슬롯 제한수를 초기화합니다.
                 InitSlotCountLimitTab( dicType[i], dicTypes[i].slotLimit );
             }

@@ -27,23 +27,42 @@ public partial class WorldItem
         {           
             //"키 접근 값", (대분류, "넘버링", "아이템 이름", 인스펙터뷰에서 참조번호, 중분류, 외부 장식용, 내구도, "아이템 설명")
             { 
-                "벽", new ItemBuilding( ItemType.Misc, "5000", "벽", new VisualReferenceIndex(0),
-                MiscType.Building, BuildingType.Decoration, 10, "~~하는용도로 사용")    
+                "벽", new ItemBuilding( ItemType.Building, "5000", "벽", new VisualReferenceIndex(0),
+                BuildingType.Basic, 10, "~~하는용도로 사용")    
             },
             { 
-                "점토", new ItemBuilding( ItemType.Misc, "5001", "점토", new VisualReferenceIndex(1),
-                MiscType.Building, BuildingType.Material, 15,"~~하는용도로 사용") 
+                "울타리", new ItemBuilding( ItemType.Building, "5001", "울타리", new VisualReferenceIndex(1),
+                BuildingType.Basic, 15, "~~하는용도로 사용") 
             },
             { 
-                "인벤토리", new ItemBuilding( ItemType.Misc, "5002", "인벤토리", new VisualReferenceIndex(2),
-                MiscType.Building, BuildingType.Inventory ,15,"~~하는용도로 사용") 
+                "인벤토리", new ItemBuilding( ItemType.Building, "5002", "인벤토리", new VisualReferenceIndex(2),
+                BuildingType.Basic ,15, "~~하는용도로 사용") 
             },
         };
-
-
-
-
     }
+
+
+
+
+
+    private Dictionary<string, Item> InitDic_BuildingMisc()
+    {         
+        return new Dictionary<string, Item>()
+        {           
+            //"키 접근 값", (대분류, "넘버링", "아이템 이름", 인스펙터뷰에서 참조번호, 중분류, "아이템 설명")
+            { 
+                "흙", new ItemMisc( ItemType.Misc, "5000", "흙", new VisualReferenceIndex(0),
+                MiscType.Building, "~~하는용도로 사용")    
+            },
+            { 
+                "나무", new ItemMisc( ItemType.Misc, "5000", "나무", new VisualReferenceIndex(1),
+                MiscType.Building, "~~하는용도로 사용")    
+            },
+
+
+        };
+    }
+
 
 }
 }

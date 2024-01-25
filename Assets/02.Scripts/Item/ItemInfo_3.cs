@@ -1,3 +1,4 @@
+using CreateManagement;
 using ItemData;
 using System;
 using UnityEngine;
@@ -22,6 +23,10 @@ using UnityEngine;
 * 
 * <v2.1 - 2024_0118_최원준>
 * 1- CheckDestroyInfo메서드에서 2D 상태일 때는 2D 오브젝트를 파괴해야하고, 3D 상태일때는 3D오브젝트를 파괴하도록 수정
+* 
+* <v2.2 - 2024_0125_최원준>
+* 1- RegisterToWorld 작성
+* 인벤토리 소유자의 Transform 정보를 받아서 소유자id를 변경 후 월드 인벤토리에 저장하는 역할
 * 
 */
 
@@ -109,14 +114,26 @@ public partial class ItemInfo : MonoBehaviour
 
 
 
+
     /// <summary>
     /// 아이템을 어떠한 상태도 전환 하지 않고 인벤토리에 등록만 합니다.<br/>
     /// 즉, 3D상태의 아이템이 인벤토리에 추가되어도 2D상태로 변경되지 않습니다.
     /// </summary>
-    public void Register(InventoryInfo inventoryInfo)
-    {        
-        item.OwnerId = inventoryInfo.OwnerId;   // 아이템 소유주 정보를 인벤토리 소유주로 변경합니다.
-        inventoryInfo.inventory.AddItem(this);  // 내부인벤토리에 아이템을 등록합니다.
+    /// <returns>자기자신의 참조값을 그대로 반환합니다. 추가로 다른 메서드를 호출할 수 있습니다</returns>
+    public ItemInfo RegisterToWorld(Transform inventoryOwnerTr)
+    {       
+        InventoryInfo ownerInventoryInfo = inventoryOwnerTr.GetComponentInChildren<InventoryInfo>();
+
+        // 아이템 소유자 식별번호를 인벤토리 소유자의 식별번호로 지정합니다.
+        item.OwnerId = ownerInventoryInfo.OwnerId;    
+
+        // 아이템 소유자 명을 인벤토리 소유자 명으로 지정합니다.
+        item.OwnerName = ownerInventoryInfo.OwnerName;
+
+        // 월드 인벤토리에 저장합니다.
+        worldInventoryInfo.inventory.AddItem(this);
+
+        return this;
     }
 
 

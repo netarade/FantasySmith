@@ -359,6 +359,15 @@ using DataManagement;
  *
  *2- OwnerTr 및 ItemTr 읽기전용 프로퍼티 추가 
  *
+ *<v13.6 - 2024_0125_최원준>
+ *1- 읽기전용 프로퍼티 OwnerName과 worldOnwnerName을 추가하였음.
+ *이유는 아이템이 저장될때 소유자명도 같이 저장해야 Id를 인식할 때 키값으로 접근이 가능하기 때문
+ *
+ *2- worldInventoryInfo를 추가하여, visualManager스크립트가 위치한 하위 컴포넌트를 참조하도록 하였음.
+ *이는 ItemInfo_3.cs의 RigesterToWorldInventory메서드에서 사용하기 위함
+ *
+ *3- SwitchAppearAs2D메서드를 OnItemCreated에서 호출해주도록 함.
+ *아이템을 생성하고 바로 사용하는 경우 DimensionShift를 사용하지 않았기 때문에 2D기능이 종료가 되지 않은 상태로 나가서 셀렉팅이 일어남.
  *
  */
 
@@ -391,6 +400,9 @@ public partial class ItemInfo : MonoBehaviour
     Transform itemTr;               // 자기자신 3D 트랜스폼 참조(초기 계층 - 하위 마지막 자식)
     CanvasGroup itemCG;             // 아이템의 캔버스 그룹 컴포넌트 (아이템이 월드로 나갔을 때 2D이벤트를 막기위한 용도) 
     Collider itemCol;               // 아이템의 3D오브젝트가 가지고 있는 기본 콜라이더
+
+    InventoryInfo worldInventoryInfo;   // 아이템을 3D상태로 보관할 수 있는 월드 인벤토리 정보
+
 
     /*** 아이템 변동 정보 ***/
 
@@ -461,16 +473,29 @@ public partial class ItemInfo : MonoBehaviour
     public Collider ItemCol { get { return itemCol;} }
 
 
+
+
+    /// <summary>
+    /// 아이템이 3D로 전환되어 월드에 놓여진 상태가 될 때, 해당 아이템의 소유자명을 말합니다.
+    /// </summary>
+    public string worldOwnerName { get; } = "World";
+        
+    /// <summary>
+    /// 아이템의 소유자 명을 반환합니다.<br/>
+    /// 아이템이 인벤토리에 보관된다면 해당 인벤토리의 계층 최상위 오브젝트 명이 소유자명이 됩니다.
+    /// </summary>
+    public string OwnerName { get { return item.OwnerName; } }
+
     /// <summary>
     /// 아이템의 소유자를 식별할 수 있는 고유 숫자를 반환합니다.<br/>
-    /// 이는 해당 인벤토리를 소유하고 있는 계층최상위 부모 오브젝트의 고유 식별 번호입니다.
+    /// 이는 해당 인벤토리를 소유하고 있는 계층 최상위 부모 오브젝트의 고유 식별 번호입니다.
     /// </summary>
     public int OwnerId { get { return item.OwnerId; } }
     
 
     /// <summary>
     /// 아이템 소유자의 Transform 참조값을 반환합니다.<br/>
-    /// 이는 해당 인벤토리를 소유하고 있는 계층최상위 부모 오브젝트를 말합니다.
+    /// 이는 해당 인벤토리를 소유하고 있는 계층 최상위 부모 오브젝트를 말합니다.
     /// </summary>
     public Transform OwnerTr { get { return ownerTr; } }
 
@@ -504,6 +529,8 @@ public partial class ItemInfo : MonoBehaviour
     public Item Item { set{ item=value; } get { return item; } }
     
 
+    
+
 
 
     /// <summary>
@@ -520,7 +547,7 @@ public partial class ItemInfo : MonoBehaviour
         
         itemCG = GetComponent<CanvasGroup>();
         visualManager = GameObject.FindWithTag("GameController").GetComponent<VisualManager>();
-    
+        worldInventoryInfo = visualManager.GetComponentInChildren<InventoryInfo>();
     }
 
 
@@ -580,7 +607,10 @@ public partial class ItemInfo : MonoBehaviour
         UpdateTextInfo();                   
                 
         // 인벤토리 정보를 초기화합니다
-        UpdateInventoryInfo(null);             
+        UpdateInventoryInfo(null);
+        
+        // 2D 기능을 중단한 상태로 생성합니다.
+        SwitchAppearAs2D(true);
     }
 
 
@@ -757,8 +787,9 @@ public partial class ItemInfo : MonoBehaviour
             emptyListTr = null;
             prevDropSlotTr = null;
 
-            ownerTr = null;        // 아이템 소유주 초기화
-            item.OwnerId = -1;     // 아이템 소유주 식별 번호를 초기화합니다.
+            ownerTr = null;                    // 아이템 소유자 초기화
+            item.OwnerId = 0;                  // 아이템 소유자 식별 번호를 초기화합니다.
+            item.OwnerName = worldOwnerName;   // 아이템 소유자 명을 월드로 변경합니다.
         }
         else // 다른 인벤토리로 전달된 경우
         {
@@ -780,8 +811,9 @@ public partial class ItemInfo : MonoBehaviour
 
             UpdateActiveTabInfo();                                      // 액티브 탭 정보를 최신화합니다.   
 
-            ownerTr = inventoryInfo.OwnerTr;            // 아이템 소유자를 인벤토리 소유자로 결정합니다.
-            item.OwnerId = inventoryInfo.OwnerId;       // 아이템 소유자 식별번호를 내부 아이템에 저장합니다.            
+            ownerTr = inventoryInfo.OwnerTr;                // 아이템 소유자를 인벤토리 소유자로 결정합니다.
+            item.OwnerId = inventoryInfo.OwnerId;           // 아이템 소유자 식별번호를 내부 아이템에 저장합니다.
+            item.OwnerName = inventoryInfo.OwnerName;       // 아이템 소유자명을 인벤토리 소유자명으로 변경합니다.
         }      
     }
 
@@ -828,6 +860,8 @@ public partial class ItemInfo : MonoBehaviour
         // 월드 상에 아이템이 있다면, UI 이벤트를 더 이상 받지 않으며, 2D이미지를 투명처리합니다.
         itemCG.blocksRaycasts = !isWorldPositioned;
         itemCG.alpha = isWorldPositioned ? 0f:1f;
+        itemImage.raycastTarget = !isWorldPositioned;
+        Debug.Log("현재 레이캐스팅 상태"+itemCG.blocksRaycasts);
     }
            
     /// <summary>
@@ -862,11 +896,13 @@ public partial class ItemInfo : MonoBehaviour
         // 월드상태 변수 활성화
         isWorldPositioned = isMoveToWorld;  
                 
-        // 아이템의 모습을 변경합니다
-        SwitchAppearAs2D(isMoveToWorld);
-                    
         // 계층구조를 변경합니다.
         ChangeHierarchy(isMoveToWorld);
+
+        // 아이템의 모습을 변경합니다
+        SwitchAppearAs2D(isMoveToWorld);                    
+
+        Debug.Log("디멘션 호출되었습니다" + isMoveToWorld);
     }
      
 

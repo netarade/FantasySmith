@@ -15,6 +15,12 @@ using UnityEngine;
  * 1- InitDic메서드 내부에 빌딩아이템의 사전을 추가로 반환하도록 설정
  * 2- 주석 보완
  * 
+ * <v2.2 - 2024_0125_최원준>
+ * 1- itemDicSub를 변수에서 배열로 변경
+ * 
+ * 2- 잡화사전 InitDic_BuildingMisc와 InitDic_Food를 초기화
+ * 
+ * 
  */
 
 namespace WorldItemData
@@ -66,18 +72,23 @@ namespace WorldItemData
         private Dictionary<string, Item> InitDic(ItemType itemType)
         {            
             Dictionary<string, Item> itemDic;       // 반환할 클래스의 사전
-            Dictionary<string, Item> itemDicSub;    // 자식 클래스 사전
-            
+            Dictionary<string, Item>[] itemDicSub = new Dictionary<string, Item>[2];    // 자식 클래스 사전
+                        
+
             switch(itemType)
             {
                 case ItemType.Misc:
                     itemDic = InitDic_Misc();
-                    itemDicSub = InitDic_Building();    //자식사전을 추가로 할당받습니다.
+                    itemDicSub[0] = InitDic_BuildingMisc();    //자식사전을 추가로 할당받습니다.
+                    itemDicSub[1] = InitDic_Food();
 
-                    // 자식 사전의 아이템을 하나씩 꺼내어 저장합니다.
-                    foreach(KeyValuePair<string, Item> item in itemDicSub)
-                        itemDic.Add(item.Key, item.Value);
-                                        
+                    for( int i = 0; i<itemDicSub.Length; i++ )
+                    {
+                        // 자식 사전의 아이템을 하나씩 꺼내어 저장합니다.
+                        foreach( KeyValuePair<string, Item> item in itemDicSub[i] )
+                            itemDic.Add( item.Key, item.Value );
+                    }
+                    
                     break;
 
                 case ItemType.Weapon:                
@@ -86,6 +97,10 @@ namespace WorldItemData
 
                 case ItemType.Quest:
                     itemDic = InitDic_Quest();
+                    break;
+
+                case ItemType.Building:
+                    itemDic = InitDic_Building();
                     break;
 
                 default:

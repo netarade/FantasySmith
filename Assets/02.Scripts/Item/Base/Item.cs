@@ -94,6 +94,11 @@ using UnityEngine;
  * 1- owerId의 타입을 string에서 int로 변경 및 주석 수정
  * 이유는 순번대로 id를 증가시켜 부여하기 위함
  * 
+ * <v10.4 - 2024_0125_최원준>
+ * 1- string타입의 ownerName을 추가
+ * 이유는 id의 키값을 프리팹명으로 접근가능하기 때문에 ownerName을 저장해야할 필요성이 있음
+ * 
+ * 2- ItemBuilding클래스의 상속관계를 ItemMisc에서 Item으로 변경으로 인해 ItemType.Building을 추가
  * 
  */
 
@@ -146,9 +151,9 @@ namespace ItemData
 
 
     /// <summary>
-    /// 아이템의 대분류로 현재 잡화, 무기, 퀘스트 3가지 종류가 있습니다.
+    /// 아이템의 대분류로 현재 잡화, 무기, 퀘스트, 건설 4가지 종류가 있습니다.
     /// </summary>
-    public enum ItemType { Misc, Weapon, Quest ,None };
+    public enum ItemType { Misc, Weapon, Quest, Building, None };
     
 
     /// <summary>
@@ -165,6 +170,7 @@ namespace ItemData
         [JsonProperty] VisualReferenceIndex sVisualRefIndex;
         [JsonProperty] int iSlotIndexEach;
         [JsonProperty] int iSlotIndexAll;
+        [JsonProperty] string iOwnerName;
         [JsonProperty] int iOwnerId;
 
 
@@ -209,14 +215,18 @@ namespace ItemData
         /// 해당 아이템이 담긴 전체 슬롯에 대한 인덱스 정보입니다.
         /// </summary>
         [JsonIgnore] public int SlotIndexAll { get{return iSlotIndexAll; } set{iSlotIndexAll=value;} }
-
+        
+        /// <summary>
+        /// 해당 아이템의 소유자명을 말합니다.<br/>
+        /// 아이템이 인벤토리에 보관된다면 해당 인벤토리 소유자명이 아이템 소유자명이 됩니다.
+        /// </summary>
+        [JsonIgnore] public string OwnerName { get { return iOwnerName; } set { iOwnerName=value; }  }
 
         /// <summary>
         /// 해당 아이템의 소유자를 식별할 수 있는 고유 번호를 말합니다.<br/>
         /// 어떤 인벤토리에 저장되는 지에 따라 해당 아이템의 소유자Id가 결정되어집니다.
         /// </summary>
         [JsonIgnore] public int OwnerId { get { return iOwnerId; } set { iOwnerId=value; } }
-
 
 
 

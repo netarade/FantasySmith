@@ -45,6 +45,10 @@ using WorldItemData;
  * (switch문에서 default에서 예외처리를 던지던 부분 삭제 - 
  * 현재 IVC가 Basic오브젝트 밖에 없으므로, Craft등의 서브타입이 생성되면 에러 발생)
  * 
+ * <v2.2 - 2024_0125_최원준>
+ * 1- 건설 아이템의 상속관계를 ItemMisc에서 ItemBuilding으로 변경함으로 인하여
+ * IVCType에 기존 MiscBuilding 이외에 Building, MiscFood 인덱스를 추가하였고, GetIVCIndex메서드에 반영
+ * 
  * 
  */
 namespace CreateManagement
@@ -52,7 +56,7 @@ namespace CreateManagement
     public enum SpriteType { innerSprite, statusSprite }             // 어떤 Sprite값을 얻기위한 종류 정의
 
     // 이미지 집합 배열의 인덱스 구분
-    public enum IVCType { Weapon, Quest, MiscBasic, MiscBuilding }
+    public enum IVCType { Weapon, Quest, MiscBasic, MiscBuilding, Building, MiscFood }
 
 
     public class VisualManager : MonoBehaviour
@@ -96,24 +100,32 @@ namespace CreateManagement
             switch( itemType )        
             {
                 case ItemType.Weapon:
-                    ivcIdx=(int)IVCType.Weapon;
+                    ivcIdx=(int)IVCType.Weapon;                 // 무기류
                     break;
 
                 case ItemType.Quest:
-                    ivcIdx=(int)IVCType.Quest;
+                    ivcIdx=(int)IVCType.Quest;                  // 퀘스트 아이템
+                    break;
+
+                case ItemType.Building:
+                    ivcIdx=(int)IVCType.Building;               // 건설 아이템
                     break;
 
                 case ItemType.Misc:
-                    ItemMisc miscItem = (ItemMisc)item;
+                    ItemMisc itemMisc = item as ItemMisc;
 
-                    if(miscItem.MiscType==MiscType.Building)
-                        ivcIdx=(int)IVCType.MiscBuilding;       // 빌딩 재료
-                    else
-                        ivcIdx=(int)IVCType.MiscBasic;          // 나머지 기본 재료
+                    if( itemMisc!=null )
+                    {
+                        if( itemMisc.MiscType==MiscType.Building )    // 건설 재료
+                            ivcIdx=(int)IVCType.MiscBuilding;
 
-                    break;
+                        else if( itemMisc.MiscType==MiscType.Food )   // 음식
+                            ivcIdx=(int)IVCType.MiscFood;
+                        else
+                            ivcIdx=(int)IVCType.MiscBasic;          // 나머지 기본 재료
+                    }
 
-                    
+                    break;                    
             }
 
             // 참조할 인덱스가 수정되지 않았다면, 예외를 던지며 수정되었다면 반환합니다.

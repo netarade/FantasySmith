@@ -156,11 +156,15 @@ public class PlayerInteractive : MonoBehaviour
     /// </summary>
     private void OnTriggerEnter( Collider other )
     {
-        ItemInfo itemInfo = other.GetComponentInChildren<ItemInfo>();
-        
-        if( itemInfo != null)
+
+        if( other.CompareTag( "Item" ) )
         {
-            itemInfo.OnItemWorldGain(playerInventory);
+            ItemInfo itemInfo = other.GetComponentInChildren<ItemInfo>();
+
+            if( itemInfo!=null )
+            {
+                itemInfo.OnItemWorldGain( playerInventory );
+            }
         }
     }
 

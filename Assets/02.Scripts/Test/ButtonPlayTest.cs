@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using InventoryManagement;
+using CreateManagement;
 
 
 /* [작업 사항]
@@ -22,21 +23,26 @@ using InventoryManagement;
 /// </summary>
 public class ButtonPlayTest : MonoBehaviour
 {
-    InventoryInfo inventoryInfo;
+    InventoryInfo playerInventoryInfo;
+    CreateManager createManager;
+
     private void Start()
     {
-        inventoryInfo=GameObject.FindWithTag("Player").GetComponentInChildren<InventoryInfo>();
+        playerInventoryInfo = GameObject.FindWithTag("Player").GetComponentInChildren<InventoryInfo>();
+        createManager = GameObject.FindWithTag("GameController").GetComponent<CreateManager>();
     }
 
 
     public void btnCreateItem()
     {
-        inventoryInfo.AddItem( "Mud", 1 );
-        inventoryInfo.AddItem( "Thread", 1 );
-        inventoryInfo.AddItem( "Vine", 1 );
-        inventoryInfo.AddItem( "StoneAxe", 1 );
+        //playerInventoryInfo.AddItem( "Mud", 1 );
+        //playerInventoryInfo.AddItem( "Thread", 1 );
+        //playerInventoryInfo.AddItem( "Vine", 1 );
+        //playerInventoryInfo.AddItem( "StoneAxe", 1 );
+        playerInventoryInfo.AddItem( "Food1", 3 );
+        playerInventoryInfo.AddItem( "흙", 5 );
 
-        if(inventoryInfo.IsItemEnough("Mud",2) )
+        if(playerInventoryInfo.IsItemEnough("Mud",2) )
             Debug.Log($"Mud 2개 초과");
         
         //if(inventoryInfo.IsItemEnough("Thread",3) )
@@ -66,7 +72,12 @@ public class ButtonPlayTest : MonoBehaviour
 
     public void CraftStart()
     {
+
+        createManager.CreateWorldItem("벽").RegisterToWorld(playerInventoryInfo.OwnerTr).OnItemWorldDrop(playerInventoryInfo.baseDropTr);
         
+        createManager.CreateWorldItem("울타리").RegisterToWorld(playerInventoryInfo.OwnerTr).OnItemWorldDrop(playerInventoryInfo.baseDropTr);
+        
+        createManager.CreateWorldItem("인벤토리").RegisterToWorld(playerInventoryInfo.OwnerTr).OnItemWorldDrop(playerInventoryInfo.baseDropTr);
 
         
     }

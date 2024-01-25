@@ -1,4 +1,6 @@
+using Newtonsoft.Json;
 using System.Collections.Generic;
+using System.Diagnostics;
 using Unity.VisualScripting;
 
 /*
@@ -6,8 +8,11 @@ using Unity.VisualScripting;
  * <v1.0 - 2024_0124_최원준>
  * 1- 게임 진행 중 할당되는 고유의 식별번호를 저장하기 위한 목적의 클래스 작성
  * 
+ * <v1.1 - 2024_0125_최원준>
+ * 1- inventoryId의 JsonProperty를 추가
  * 
- * 
+ * 2- keyPrefabName 매개변수 명을 rootName으로 변경 
+ * (최상위 부모라는 의미)
  * 
  */
 
@@ -29,7 +34,7 @@ namespace DataManagement
         /// 인벤토리의 고유 식별 번호를 기록하기 위한 딕셔너리입니다.<br/>
         /// 키 값은 프리팹 명이며, 동일 한 이름의 프리팹으로 생성되는 인벤토리는 다른 식별 번호를 int값으로 가지고 있습니다.
         /// </summary>
-        Dictionary<string, List<int>> inventoryId;
+        [JsonProperty] Dictionary<string, List<int>> inventoryId;
 
 
         /// <summary>
@@ -58,7 +63,7 @@ namespace DataManagement
         }
 
         /// <summary>
-        /// 인자로 전달한 Id종류와 딕셔너리의 키로 접근할 프리팹 명에 따른 Id리스트를 가져옵니다.<br/>
+        /// 인자로 전달한 Id종류와 딕셔너리의 키로 접근할 최상위 프리팹 명에 따른 Id리스트를 가져옵니다.<br/>
         /// 세번째 전달인자 옵션을 통해 키가 없다면 리스트를 새롭게 생성하여 반환할 수 있습니다.<br/>
         /// </summary>
         /// <returns>새로 생성하기 옵션이 없으면서 해당 키 값의 리스트가 존재하지 않는경우 null값을 반환, 
@@ -87,14 +92,14 @@ namespace DataManagement
 
         /// <summary>
         /// 동일한 프리팹에 다른 고유의 식별번호를 부여하고 저장합니다.<br/>
-        /// 전달 인자로 어떤 Id 딕셔너리를 참조할 것인지와 프리팹명을 전달해야 합니다.<br/> 
+        /// 전달 인자로 어떤 Id 딕셔너리를 참조할 것인지와 최상위 프리팹명을 전달해야 합니다.<br/> 
         /// 해당 사전에 저장되어있는 동일한 키값에 있는 식별번호 이외의 다른 번호를 새롭게 부여하고 사전에 저장합니다.  
         /// </summary>
         /// <returns>새롭게 부여된 식별번호를 반환</returns>
-        public int GetNewId(IdType idDicType, string keyPrefabName)
+        public int GetNewId(IdType idDicType, string rootName)
         {            
             // 키값에 따른 idList를 반환받습니다. (없다면 새로 생성하여 반환받습니다.)      
-            List<int> idList = GetIdList(idDicType, keyPrefabName, true);    
+            List<int> idList = GetIdList(idDicType, rootName, true);    
             
             
             // 식별번호 목록에 하나의 값도 없는 경우, 최초 식별번호를 0번부터 부여합니다.
@@ -132,19 +137,21 @@ namespace DataManagement
 
         /// <summary>
         /// 고유 식별 번호를 원하는 숫자로 등록합니다.<br/>
-        /// 참조할 Id종류, 키로 접근할 프리팹 명, 등록할 식별 번호를 전달해야 합니다.<br/>
+        /// 참조할 Id종류, 키로 접근할 최상위 프리팹 명, 등록할 식별 번호를 전달해야 합니다.<br/>
         /// 동일한 id가 존재한다면 실패를 반환받습니다.
         /// </summary>
         /// <returns>id 등록 성공 시 true를, 실패 시 false를 반환</returns>
-        public bool RegisterId(IdType idDicType, string keyPrefabName, int id)
+        public bool RegisterId(IdType idDicType, string rootName, int id)
         {            
             // 키값에 따른 idList를 반환받습니다. (없다면 새로 생성하여 반환받습니다.)       
-            List<int> idList = GetIdList(idDicType, keyPrefabName, true);
+            List<int> idList = GetIdList(idDicType, rootName, true);
 
             // id가 이미 존재한다면 실패를 반환합니다.
-            if( idList.Contains(id) )
+            if( idList.Contains( id ) )
+            {
+                UnityEngine.Debug.Log("ID가 이미 존재합니다.");
                 return false;
-
+            }
             // id가 존재하지 않는다면 리스트에 추가하고 성공 반환합니다.
             idList.Add(id);
             return true;
@@ -152,12 +159,12 @@ namespace DataManagement
 
         /// <summary>
         /// 등록되어있는 고유 식별 번호의 등록을 해제합니다.<br/>
-        /// 참조할 Id종류, 키로 접근할 프리팹 명, 해제할 식별 번호를 전달해야 합니다.
+        /// 참조할 Id종류, 키로 접근할 최상위 프리팹 명, 해제할 식별 번호를 전달해야 합니다.
         /// </summary>
-        public void UnregisterId( IdType idDicType, string keyPrefabName, int id )
+        public void UnregisterId( IdType idDicType, string rootName, int id )
         {
             // 키값에 따른 idList를 반환받습니다. (없다면 새로 생성하지 않습니다.)    
-            List<int> idList = GetIdList(idDicType, keyPrefabName, false);
+            List<int> idList = GetIdList(idDicType, rootName, false);
 
             // id리스트가 존재하지 않는다면 종료합니다.
             if(idList==null)

@@ -226,6 +226,11 @@ using DataManagement;
 * itemInfo.Item을 ItemBuilding으로 변환시켜서 isDecoration속성을 확인하던 부분을
 * BuildingType프로퍼티로 바로 확인하여 붙여주도록 변경
 * 
+* <v12.9 - 2024_0125_최원준>
+* 1- RegisterId, UnregisterId의 매개변수 keyPrefabName을 keyRootName으로 변경
+* 
+* 2- 건설아이템의 ItemMisc에서 Item으로 상속관계 변경으로 인해
+* CreateWorldItem메서드 내부 빌딩아이템에 태그를 붙여주는 경우의 코드를 ItemType검사로 변경
 * 
 */
 
@@ -251,6 +256,10 @@ namespace CreateManagement
         DataManager dataManager;                // 데이터 저장용 매니저 참조
         IdData idData;                          // 고유 식별번호를 부여하기 위한 저장용 인스턴스
 
+        InventoryInfo worldInventoryInfo;       // 아이템을 3D 상태로 보관하는 월드 인벤토리
+
+        string saveFileName;                    // 세이브 파일명
+
 
         public void Awake()
         {
@@ -267,15 +276,18 @@ namespace CreateManagement
 
             visualManager = GetComponent<VisualManager>();
             dataManager = GetComponent<DataManager>();
+            worldInventoryInfo = GetComponentInChildren<InventoryInfo>();   // 게임매니저 하위에 존재
                         
-            dataManager.FileSettings("CreateManager_IdData");   // 저장 파일 이름 설정
-            idData = dataManager.LoadData<IdData>();            // 파일을 로드하여 인스턴스 참조
+            saveFileName = "WorldInventory_IdData_";
+                       
+            dataManager.FileSettings(saveFileName);     // 저장 파일 이름 설정
+            idData = dataManager.LoadData<IdData>();    // 파일을 로드하여 인스턴스 참조
         }
 
         private void OnApplicationQuit()
         {
-            dataManager.FileSettings("CreateManager_IdData");   // 저장 파일 이름 설정
-            dataManager.SaveData<IdData>( idData );             // 인스턴스를 파일로 세이브
+            dataManager.FileSettings(saveFileName);      // 저장 파일 이름 설정
+            dataManager.SaveData<IdData>( idData );      // 인스턴스를 파일로 세이브
         }
 
 
@@ -403,8 +415,8 @@ namespace CreateManagement
             // 아이템 정보를 전달하여 3D 오브젝트를 복제 생성한다음, itemObj에 부착합니다.
             GameObject itemObj3D = Instantiate( visualManager.GetItemPrefab3D(itemInfo));
             
-            // 빌딩아이템의 세부타입이 Decoration과 Inventory가 아닌 경우에만 태그를 붙여줍니다.
-            if( itemInfo.BuildingType!=BuildingType.Decoration || itemInfo.BuildingType!=BuildingType.Inventory)
+            // 건설 아이템이 아닌 경우에만 태그를 붙여줍니다.
+            if( item.Type != ItemType.Building)
                 itemObj3D.tag = itemTag;
 
 
@@ -459,24 +471,25 @@ namespace CreateManagement
         
         /// <summary>
         /// Id사전에 원하는 숫자로 고유 식별 번호를 등록합니다.<br/>
-        /// 참조할 Id종류, 키로 접근할 프리팹 명, 등록할 식별 번호를 전달해야 합니다.<br/>
+        /// 참조할 Id종류, 키로 접근할 최상위 프리팹 명, 등록할 식별 번호를 전달해야 합니다.<br/>
         /// 동일한 id가 존재한다면 실패를 반환받습니다.
         /// </summary>
         /// <returns>id 등록 성공 시 true를, 실패 시 false를 반환</returns>
-        public bool RegisterId(IdType idDicType, string keyPrefabName, int id)
+        public bool RegisterId(IdType idDicType, string keyRootName, int id)
         {
-            return idData.RegisterId(idDicType, keyPrefabName, id);
+            return idData.RegisterId(idDicType, keyRootName, id);
         }
 
 
         /// <summary>
         /// Id사전에 등록되어있는 고유 식별 번호의 등록을 해제합니다.<br/>
-        /// 참조할 Id종류, 키로 접근할 프리팹 명, 해제할 식별 번호를 전달해야 합니다.
+        /// 참조할 Id종류, 키로 접근할 최상위 프리팹 명, 해제할 식별 번호를 전달해야 합니다.
         /// </summary>
-        public void UnregisterId( IdType idDicType, string keyPrefabName, int id )
+        public void UnregisterId( IdType idDicType, string keyRootName, int id )
         {
-            idData.UnregisterId(idDicType, keyPrefabName, id);
+            idData.UnregisterId(idDicType, keyRootName, id);
         }
+
 
     }
 }

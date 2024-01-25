@@ -17,6 +17,8 @@ using UnityEngine;
 * <v1.2 - 2024_0124_최원준>
 * 1- 빌딩아이템의 속성을 반환하는 IsDecoration 프로퍼티를 추가
 * 
+* <v1.3 - 2024_0125_최원준>
+* 1- 빌딩아이템 클래스 설계 변경(ItemMisc상속->Item상속)으로 인해 GetItemSpec메서드 내부 수정
 * 
 */
 public partial class ItemInfo : MonoBehaviour
@@ -278,8 +280,7 @@ public partial class ItemInfo : MonoBehaviour
         ItemBuilding itemBuilding = item as ItemBuilding;  
         if(itemBuilding!=null)
             return string.Format(
-            $"종류 : 건설 재료\n" +
-            $"수량 : {itemBuilding.OverlapCount}" +
+            $"종류 : 건설\n" +
             $"내구도 : {itemBuilding.Durability}"
             );
 

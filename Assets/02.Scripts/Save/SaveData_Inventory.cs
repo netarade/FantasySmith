@@ -49,6 +49,9 @@ using UnityEngine;
  * <v2.3 - 2024_0116_최원준>
  * 1- SInventory생성자에서 slotCountLimitTab배열 생성시 dicLen만큼 생성하던 것에서 tabLen만큼 생성하도록 수정
  * 
+ * <v2.4 - 2024_0125_최원준>
+ * 1- 기존 ItemBuilding클래스를 ItemMisc에서 Item으로 상속관계를 변경함에 따라서 신규 ItemType.Building 추가하여
+ * 새로운 ItemBuilding 리스트인 buildingList변수를 추가하고 Serialize와 Deserialize도 맞게 수정 
  * 
  */
 
@@ -97,6 +100,7 @@ namespace DataManagement
         public List<ItemWeapon> weapList;
         public List<ItemMisc> miscList;
         public List<ItemQuest> questList;
+        public List<ItemBuilding> buildingList;
 
         public int[] slotCountLimitTab;
 
@@ -124,7 +128,7 @@ namespace DataManagement
 
 
 
-         /// <summary>
+        /// <summary>
         /// 파일로 저장 되어있는 인벤토리를 게임 진행 중에 사용하기 위하여 역직렬화하여 로드하는 메서드입니다.<br/>
         /// 파일에 저장되어 있는 SInventory의 정보를 토대로 Inventory 인스턴스를 만들어 반환합니다.<br/><br/>
         /// Initializer와 CreateManager를 전달해야 합니다.
@@ -140,7 +144,7 @@ namespace DataManagement
             inventory.DeserializeItemListToDic<ItemWeapon>( this.weapList );
             inventory.DeserializeItemListToDic<ItemMisc>( this.miscList );
             inventory.DeserializeItemListToDic<ItemQuest>( this.questList );
-
+            inventory.DeserializeItemListToDic<ItemBuilding>( this.buildingList );
 
             for( int i = 0; i<inventory.tabLen; i++ )
                 inventory.slotCountLimitTab[i] = this.slotCountLimitTab[i];
@@ -161,6 +165,7 @@ namespace DataManagement
             this.weapList=inventory.SerializeDicToItemList<ItemWeapon>();
             this.miscList=inventory.SerializeDicToItemList<ItemMisc>();
             this.questList=inventory.SerializeDicToItemList<ItemQuest>();
+            this.buildingList = inventory.SerializeDicToItemList<ItemBuilding>();
             
             for(int i=0; i<inventory.tabLen; i++)
                 this.slotCountLimitTab[i] = inventory.slotCountLimitTab[i];

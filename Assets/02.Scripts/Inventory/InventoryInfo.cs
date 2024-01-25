@@ -272,6 +272,17 @@ using CreateManagement;
  * 최상위 오브젝트명과 initializer의 inventoryId를 전달받아 초기화하는 방식으로 변경.
  * (이유는 오브젝트 명이 동일할 수있기 때문)
  * 
+ * <v10.2 - 2024_0125_최원준>
+ * 1- 읽기전용 프로퍼티 OwnerName을 추가
+ * 이유는 아이템이 OwnerName을 저장하고 있어야 IdData의 키값으로 Id에 접근이 가능해지기 때문
+ *
+ * 2- public변수 inventory와 interactive의 HideInInspector 어트리뷰트 추가
+ * 
+ * 3- UpdateAllItemTransformInfo메서드명을 LoadAllItemTransformInfo로 변경
+ * Save메서드도 따로 만들것이기 때문
+ * 
+ * 4- LoadAllItemTransformInfo 메서드를 WorldInventoryInfo로 옮김
+ * 이유는 3D아이템을 보관하는 인벤토리 전용으로 호출해줘야 할 메서드이기 때문
  *
  */
 
@@ -288,6 +299,7 @@ public partial class InventoryInfo : MonoBehaviour
     /// 인벤토리에 아이템을 생성하고 제거하거나 현재 아이템의 검색 기능 등을 가지고 있습니다.<br/>
     /// 딕셔너리 내부에 게임 오브젝트를 보유하고 있으므로 씬 전환이나 세이브 로드 시에 반드시 Item 형식의 List로의 Convert가 필요합니다.
     /// </summary>
+    [HideInInspector]
     public Inventory inventory;
 
 
@@ -295,8 +307,12 @@ public partial class InventoryInfo : MonoBehaviour
     protected Transform slotListTr;               // 현재 인벤토리가 관리하는 슬롯 리스트의 Transform 정보입니다.
     protected Transform emptyListTr;              // 현재 인벤토리가 관리하는 빈 리스트의 Transform 정보입니다.
 
-    protected InventoryInitializer initializer;   // 사용자가 정의한 방식으로 인벤토리의 초기화를 진행하기 위한 참조
+    [HideInInspector]
+    public InventoryInitializer initializer;      // 사용자가 정의한 방식으로 인벤토리의 초기화를 진행하기 위한 참조
+
+    [HideInInspector]
     public InventoryInteractive interactive;      // 자신의 인터렉티브 스크립트를 참조하여 활성화 탭정보를 받아오기 위한 변수 선언
+    
     protected DataManager dataManager;            // 저장과 로드 관련 메서드를 호출 할 스크립트 참조
     protected CreateManager createManager;        // 아이템 생성을 요청하고 반환받을 스크립트 참조
     
@@ -314,7 +330,7 @@ public partial class InventoryInfo : MonoBehaviour
     
     protected Transform ownerTr;                // 인벤토리 소유자 정보
     protected int ownerId;                      // 인벤토리 소유자 고유 식별 번호
-        
+
 
     /// <summary>
     /// 인벤토리의 소유자 정보를 반환합니다.<br/>
@@ -328,6 +344,12 @@ public partial class InventoryInfo : MonoBehaviour
     public int OwnerId { get { return ownerId; } }          
 
 
+    /// <summary>
+    /// 인벤토리 소유자의 최상위 오브젝트명을 반환합니다.
+    /// </summary>
+    public string OwnerName { get { return ownerTr.name; } }
+
+
     protected virtual void Awake()
     {         
         inventoryTr = transform; 
@@ -336,18 +358,22 @@ public partial class InventoryInfo : MonoBehaviour
                           
         interactive = GetComponent<InventoryInteractive>(); 
         initializer = GetComponent<InventoryInitializer>();     // 자신 오브젝트의 스크립트 참조
-                                                                                                               
-        isItem3dStore = initializer.isItem3dStore;    // 월드 아이템 생성 인벤토리인지를 결정합니다.         
-        isInstantiated = initializer.isInstantiated;  // 동적 생성되는 인벤토리인지를 결정합니다.  
-        ownerTr = inventoryTr.parent.parent;          // 계층 최상위 부모가 소유자가 됩니다.
-        
+              
         Transform gameController = GameObject.FindWithTag("GameController").transform;
         dataManager = gameController.GetComponent<DataManager>();           // 게임컨트롤러 태그가 있는 오브젝트의 컴포넌트 참조
         createManager = gameController.GetComponent<CreateManager>();       // 데이터 매니저와 동일한 오브젝트의 컴포넌트 참조
                
-        // 저장 파일이름을 이니셜라이저의 id와 일치 시킵니다
-        saveFileName = ownerTr.name + initializer.inventoryId;  
+        
+        isItem3dStore = initializer.isItem3dStore;    // 월드 아이템 생성 인벤토리인지를 결정합니다.         
+        isInstantiated = initializer.isInstantiated;  // 동적 생성되는 인벤토리인지를 결정합니다.  
+        isServer = initializer.isServer;              // 서버 인벤토리 여부를 결정합니다.
+                                                              
+        ownerTr = inventoryTr.parent.parent.parent;   // 계층 최상위 부모가 소유자가 됩니다.    
+        ownerId = initializer.inventoryOwnerId;       // 소유자 id값을 이니셜라이저로부터 받아서 초기화합니다.                                                      
 
+        // 저장 파일이름 예시 - Player0_InventoryInfo_ (최상위 오브젝트명Id_스크립트명_)
+        saveFileName = OwnerName + OwnerId + "_" + GetType().Name + "_";   
+        
 
         /*** Inventory_3.cs 관련 변수 ***/
         inventoryCG = GetComponent<CanvasGroup>();  // 인벤토리의 캔버스그룹을 참조합니다
@@ -366,15 +392,9 @@ public partial class InventoryInfo : MonoBehaviour
     protected virtual void Start()
     {        
         /** 호출 순서 고정: 로드->인터렉티브스크립트 초기화 및 슬롯생성요청->아이템표현 ***/
-        this.LoadInventoryData();              // 저장된 플레이어 데이터를 불러옵니다. 
-        interactive.Initialize(this);       // 인터렉티브 스크립트 초기화를 진행합니다.
-
-        // 3D아이템을 보관하는 인벤토리라면 월드상에 생성된 아이템의 Transform 정보를 반영합니다.
-        if(isItem3dStore)
-            UpdateAllItemTransformInfo();   
-        // 2D아이템을 보관하는 인벤토리라면 슬롯에 모든 아이템의 시각화를 진행합니다.
-        else
-            UpdateAllItemVisualInfo(); 
+        this.LoadInventoryData();           // 저장된 플레이어 데이터를 불러옵니다. 
+        interactive.Initialize(this);       // 인터렉티브 스크립트 초기화를 진행합니다. 
+        UpdateAllItemVisualInfo();          // 슬롯에 모든 아이템의 시각화를 진행합니다.
     }
 
 
@@ -454,35 +474,6 @@ public partial class InventoryInfo : MonoBehaviour
         }
     }
 
-
-
-    /// <summary>
-    /// 인벤토리가 보유하고 있는 모든 사전의 아이템 3D 오브젝트의 Transform 정보를 최신화합니다.<br/>
-    /// 3D 아이템을 보관하는 인벤토리에서 로드 이후 호출되어져야 하는 메서드입니다.<br/>
-    /// </summary>
-    protected void UpdateAllItemTransformInfo()
-    {
-        Dictionary<string, List<ItemInfo>> itemDic;                     // 참조할 아이템 사전을 선언합니다.
-            
-        for(int i=0; i<inventory.dicLen; i++)                           // 인벤토리 사전의 갯수만큼 반복합니다.
-        {
-            itemDic =inventory.GetItemDic( inventory.dicType[i] );      // 아이템 종류에 따른 인벤토리의 사전을 할당받습니다.
-                          
-            // 아이템 사전이 없거나 리스트가 존재하지 않는다면 다음 사전을 참조합니다.
-            if(itemDic==null || itemDic.Count==0)   
-                continue;
-
-            // 인벤토리 사전에서 ItemInfo를 하나씩 꺼내어 가져옵니다.
-            foreach( List<ItemInfo> itemInfoList in itemDic.Values )    
-            {
-                foreach( ItemInfo itemInfo in itemInfoList )
-                {
-                    // 아이템의 STransform 정보를 불러와서 Transform에 동기화시켜줍니다.
-                    itemInfo.SerializedTr.Deserialize( itemInfo.ItemTr );
-                }
-            }
-        }
-    }
 
 
 

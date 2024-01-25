@@ -44,6 +44,10 @@ using System;
 
 namespace ItemData
 {
+
+
+
+
     /// <summary>
     /// 퀘스트 아이템 클래스 - 별도의 탭을 사용하기 때문에 ItemType의 대분류 기준에 속하며, Item을 상속합니다.<br/>
     /// (특징 - 수량 표시하지 않음, 아이템 셀렉트 및 드랍이 불가능, 전체 탭에 표시되지 않음 )
@@ -75,27 +79,28 @@ namespace ItemData
     /// <summary>
     /// 빌딩 아이템의 세부종류로서 현재 재료아이템, 장식용아이템, 인벤토리, 없음 등의 종류가 있습니다.
     /// </summary>
-    public enum BuildingType { Material, Decoration, Inventory, None }
+    public enum BuildingType { Basic, Inventory, None }
 
     /// <summary>
-    /// 건설아이템 - ItemMisc을 상속하며 오브젝트마다 고유의 내구도가 있습니다.<br/>
+    /// 건설아이템 - Item을 상속하며 오브젝트마다 고유의 내구도가 있습니다.<br/>
     /// 장식용과 재료용으로 구분됩니다.<br/>
     /// 재료용은 일반 잡화아이템과 동일하게 인벤토리를 옮겨다닐 수 있지만,<br/>
     /// 장식용은 외부상태로 항상 존재하며 저장되고 불러와져야 합니다. (아이템화 즉,인벤토리 내부로 2D 상태가 될 수 없습니다.)
     /// </summary>
     [Serializable]
-    public class ItemBuilding : ItemMisc
+    public class ItemBuilding : Item
     {
         public int Durability;              // 건설아이템의 내구도
         public BuildingType buildingType;   // 세부 종류 (재료, 장식용, 인벤토리)
         public STransform WorldTr;          // 아이템이 월드에 놓여지는 변환정보
 
         public ItemBuilding( ItemType mainType, string No, string name, VisualReferenceIndex visualRefIndex
-            , MiscType subType, BuildingType buildingType, int durability, string desc )
-            : base(mainType, No, name, visualRefIndex, subType, desc)
+            , BuildingType buildingType, int durability, string desc )
+            : base(mainType, No, name, visualRefIndex, desc)
         {
             this.buildingType = buildingType;
             Durability = durability;
+            WorldTr = new STransform();
         }
     }
 

@@ -23,6 +23,10 @@ using InventoryManagement;
 * 2- 인벤토리 종류를 구분하기 위해 isItem3DStore와 isInstantiated 속성을 추가하였음
 * (각각 3d 아이템 보관 인벤토리와 게임 진행 중에 생성되는 인벤토리인지를 알려주는 속성)
 * 
+* <v2.2 - 2024_0125_최원준>
+* 1- 인벤토리 식별번호 inventoryId를 ownerId로 변경
+* 인벤토리 식별번호가 필요한 것이 아니라 인벤토리 소유자 Id의 세팅이 필요한것 이므로
+* 
 * 
 */
 public class InventoryInitializer : MonoBehaviour
@@ -31,10 +35,13 @@ public class InventoryInitializer : MonoBehaviour
     [Header("인벤토리 모든 설정 리셋")]
     public bool isReset = false;
     
-    [Header("인벤토리 식별 번호")]
-    public int inventoryId = -1;
+    [Header("인벤토리 소유자 식별 번호 - 동일 계층 다중 인벤토리는 식별번호 동일")]
+    public int inventoryOwnerId = -1;
 
-    [Header("아이템을 3d상태로 보관하는 인벤토리 여부")]
+    [Header("중심 인벤토리 속성 - 동일 계층 다중 인벤토리가 있는 경우 하나만 체크")]
+    public bool isServer = false;
+
+    [Header("아이템을 3d상태로 보관하는 인벤토리 여부(월드인벤토리 전용)")]
     public bool isItem3dStore = false;
 
     [Header("게임 중에 생성되는 인벤토리 여부")]

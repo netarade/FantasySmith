@@ -2,6 +2,7 @@ using ItemData;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -79,6 +80,12 @@ using UnityEngine.UI;
  * 이유는 인벤토리 내부에 크래프팅 UI창이 공존해야 하는 경우 상태창보다 계층이 앞서야 하므로 
  * 캔버스 하위 인벤토리 오브젝트보다 위로 배치해야하기 때문
  * 
+ * <v3.3 - 2024_0125_최원준>
+ * 1- Awake문의 saveFileName을 다르게 오버라이딩하는 부분 삭제
+ * 부모 인벤토리 스크립트에서 저장파일 이름을 자동으로 설정되게 하였으므로 
+ * 
+ * 2- Start문에서 서버여부와 ownerId가 플레이어 인벤토리와 틀린지 검사해서 예외처리하는 부분 추가
+ * 
  */
 
 
@@ -137,7 +144,7 @@ public class QuickSlot : InventoryInfo
 
 
 
-    InventoryInfo playerInventory;  // 플레이어 인벤토리
+    InventoryInfo playerInventory;  // 퀵슬롯과 연결되어 서버가 되는 플레이어의 인벤토리
 
 
 
@@ -146,12 +153,20 @@ public class QuickSlot : InventoryInfo
     {
         base.Awake();
 
-        saveFileName = inventoryTr.parent.parent.name + "_QuickSlot";
+        playerInventory = GetComponent<InventoryInfo>();
+
+        if(ownerId != playerInventory.OwnerId)
+            throw new Exception("같은 계층의 인벤토리 소유자 식별번호는 동일해야합니다.");
+
+        if(isServer)
+            throw new Exception("중심 인벤토리가 될 수 없습니다.");
     }
 
     protected override void Start()
     {
         base.Start();
+                
+
 
         if( initializer.dicTypes.Length != 1 )
             throw new Exception("하나의 종류 딕셔너리만 선택가능합니다.");

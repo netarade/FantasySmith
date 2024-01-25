@@ -233,6 +233,15 @@ public class ItemSelect : MonoBehaviour
 
     protected bool OnSelectFailCondition()
     {
+        if( itemInfo==null )
+            Debug.Log( $"아이템 정보가 없습니다.\n본인:{gameObject.name} 부모:{transform.parent.name}" );
+        else if(itemInfo.InventoryInfo==null)
+            Debug.Log( $"인벤토리 정보가 없습니다.\n본인:{gameObject.name} 부모:{transform.parent.name}" );
+        else
+            Debug.Log( $"다른 오류.\n본인:{gameObject.name} 부모:{transform.parent.name}" );
+
+
+
         // Select를 시작하면 현재 아이템의 인벤토리 정보를 최신화하여 가져옵니다. 
         interactive = itemInfo.InventoryInfo.gameObject.GetComponent<InventoryInteractive>();
 

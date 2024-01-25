@@ -52,9 +52,18 @@ using System;
  * 1- 인벤토리 전용 초기화 인자를 전달받는 로드메서드를 만듬.
  * 이유는 매개변수를 전달받는 T타입 생성자호출이 어렵기 때문 
  * 
- * <v4.5 - 2024_0124_최원준>
+ * <v4.5 - 2024_0124_최원준> 
  * 1- 인벤토리전용 메서드인 LoadData의 메서드명을 LoadInventoryData로 변경
+ * 
  * 2- LoadInventoryData에 initializer에 isReset속성이 결정되어 있으면 Id를 새롭게 부여하도록 결정
+ * 
+ * 3- 저장파일명 중복되는 코드를 SaveFileName 프로퍼티를 만들어 통합
+ * 
+ * 4- (이슈) T형식의 데이터를 로드할 때, path가 자꾸 지워져있어서 파일이 존재하지 않는다고 판단하여  
+ * 프로퍼티 Path를 읽기전용으로 만들고 내부 private타입의 path를 두었으나 해결이 안되었음
+ * => 임시적으로 Load가 일어날 때 path가 빈값이라면 기본경로로 설정하라는 코드를 추가하여 해결
+ * 
+ * 
  * 
  */
 
@@ -81,11 +90,13 @@ namespace DataManagement
     /// </summary>
     public class DataManager : MonoBehaviour
     {
+        string path;
+
         /// <summary>
         /// 현재 저장과 로드를 하고있는 폴더 경로를 설정하고 볼 수 있습니다. 설정하지 않았다면 기본 경로를 반환합니다.<br/>
         /// *****해당 폴더가 실제로 존재하지 않으면 저장, 로드가 되지 않으니 주의합니다.*****
         /// </summary>
-        public string Path { get; set; }           
+        public string Path { get { return path; } }           
         
         /// <summary>
         /// 확장자를 설정하거나 볼 수 있습니다.
@@ -103,10 +114,13 @@ namespace DataManagement
         /// </summary>
         public int SlotNum {get; set; }
 
+        string SaveFileName { get { return path + FileName + "S" + SlotNum.ToString() + Extension; } }
+
+
 
         private void Awake()
         {
-            Path = Application.persistentDataPath+"/";
+            path = Application.persistentDataPath+"/";
             FileName = "NoName";
             Extension = ".json";
             SlotNum = 0;
@@ -137,13 +151,13 @@ namespace DataManagement
         public void SetPath( string path, bool isRelative = true )
         {
             if( isRelative )
-                Path=Application.persistentDataPath+"/"+path+"/";
+                this.path=Application.persistentDataPath+"/"+path+"/";
             else
-                Path=path;
+                this.path=path;
         }
 
 
-        #if USE_NEWTONSOFT_JSON
+#if USE_NEWTONSOFT_JSON
         /// <summary>
         /// 현재 슬롯에 파일이 존재하는지 여부를 반환합니다.
         /// </summary>
@@ -151,19 +165,17 @@ namespace DataManagement
         /// <returns>true or false</returns>
         public bool IsFileExist()
         {
-            return File.Exists(Path + FileName + "S" + SlotNum.ToString() + Extension);
+            return File.Exists(SaveFileName);
         }
 
         /// <summary>
         /// 세이브 데이터를 저장합니다. 인자로 전달하는 T는 SaveData인터페이스를 상속하는 사용자정의 클래스여야 합니다.
         /// </summary>
-        /// <param name="gameData">SaveData 인터페이스를 상속하는 사용자 정의 자료형</param>
-        /// <param name="saveSlot">세이브할 슬롯</param>
         public void SaveData<T>(T gameData) where T : SaveData
         {
             //Debug.Log("저장진행 중");
             string data = JsonConvert.SerializeObject(gameData, Formatting.Indented);
-            File.WriteAllText(Path + FileName + "S" + SlotNum.ToString() + Extension, data);
+            File.WriteAllText(SaveFileName, data);
             //Debug.Log("저장완료");
         }
 
@@ -172,17 +184,20 @@ namespace DataManagement
         /// </summary>
         /// <returns>SaveData 인터페이스를 상속하는 사용자 정의 자료형</returns>
         public T LoadData<T>() where T : SaveData, new()  // 제약조건: SaveData 인터페이스의 종류이며, 디폴트 생성자가 존재
-        {
-            
+        {           
+            // path가 지워져있다면 기본경로로 재 설정
+            if(path==null || path=="")
+                path = Application.persistentDataPath+"/";
+
             if( IsFileExist() ) // 저장된 파일이 있다면 기존 게임데이터를 만들어 반환
             {
-                Debug.Log("파일이 존재 " + Path);
-                string data = File.ReadAllText(Path + FileName + "S" + SlotNum.ToString() + Extension);
+                Debug.Log($"{typeof(T)} 파일이 존재 " + path);
+                string data = File.ReadAllText(SaveFileName);
                 return JsonConvert.DeserializeObject<T>(data); 
             }
             else //저장된 슬롯이 없다면 새롭게 게임데이터를 만들어 반환
             {
-                Debug.Log("파일이 없음");                                    
+                Debug.Log($"{typeof(T)} 파일이 없음");
                 return new T();   
             }
         }
@@ -196,37 +211,30 @@ namespace DataManagement
         {
             if(initializer==null)
                 throw new System.Exception("이니셜라이져가 전달되지 않았습니다.");
-
-            
-            // Id를 등록하기위한 인스턴스를 생성합니다.
-            CreateManager createManager = GetComponent<CreateManager>();
-            string keyPrefabName = initializer.inventoryInfo.OwnerTr.name;
-            int newId = initializer.inventoryId;
-
+                        
             // 리셋 옵션이 전달 된 경우
             if(initializer.isReset)
             {
-                Debug.Log("파일 초기화 " + Path);
+                Debug.Log("InventorySaveData 파일 초기화 " + path);
 
-                // Id중복으로 인해 등록에 실패했다면
-                if( !createManager.RegisterId( IdType.Inventory, keyPrefabName, newId) )
-                    throw new Exception("Id중복으로 인해 등록에 실패했습니다. 새로운 Id를 부여해 주세요.");
+                if(initializer.inventoryInfo.IsServer)
+                    initializer.inventoryInfo.RegisterOwnerInfo();
 
                 return new InventorySaveData(initializer); 
             }
             
             if( IsFileExist() ) // 저장된 파일이 있다면 기존 게임데이터를 만들어 반환
             {
-                Debug.Log("파일이 존재 " + Path);
-                string data = File.ReadAllText(Path + FileName + "S" + SlotNum.ToString() + Extension);
+                Debug.Log("InventorySaveData 파일이 존재 " + path);
+                string data = File.ReadAllText(SaveFileName);
                 return JsonConvert.DeserializeObject<InventorySaveData>(data); 
             }
             else //저장된 슬롯이 없다면 새롭게 게임데이터를 만들어 반환
             {
-                Debug.Log("파일이 없음");
+                Debug.Log("InventorySaveData 파일이 없음");
                 
-                // Id를 새롭게 등록합니다.
-                createManager.RegisterId( IdType.Inventory, keyPrefabName, newId);
+                if(initializer.inventoryInfo.IsServer)
+                    initializer.inventoryInfo.RegisterOwnerInfo();
 
                 // 인벤토리 데이터를 반환합니다.
                 return new InventorySaveData(initializer);   

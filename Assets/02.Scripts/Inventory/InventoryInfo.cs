@@ -296,6 +296,12 @@ using CreateManagement;
  *
  *4- isItem3dStore, isInstantiated속성을 삭제
  *
+ *<v11.1 - 2024_0126_최원준>
+ *1- SwitchAllItemAppearAs2D메서드를 작성하여 인벤토리 창 Off시 모든아이템의 2D 기능을 중단하도록 설정
+ *
+ *<v11.2 - 2024_0128_최원준>
+ *1- 애니메이션의 길이가 재생 된 이후에 인벤토리 창이 열리도록 Animation컴포넌트 배열과 WaitForSeconds 변수 추가
+ *
  *
  */
 
@@ -337,8 +343,12 @@ public partial class InventoryInfo : MonoBehaviour
     
         
     protected Transform ownerTr;                // 인벤토리 소유자 위치 정보
-    UserInfo ownerInfo;                         // 인벤토리 소유자 정보
+    protected UserInfo ownerInfo;               // 인벤토리 소유자 정보
     protected int ownerId = -1;                 // 인벤토리 소유자 고유 식별 번호
+    
+    protected Animation[] animations;           // 인벤토리 오픈에 관련된 애니메이션
+    protected WaitForSeconds animationWaitTime; // IEnumrator에서 사용할 애니메이션이 끝나는데 걸리는 시간
+
 
     /// <summary>
     /// 인벤토리의 소유자 정보를 반환합니다.<br/>
@@ -391,7 +401,6 @@ public partial class InventoryInfo : MonoBehaviour
                
 
 
-
         /*** Inventory_3.cs 관련 변수 ***/
         isServer = initializer.isServer;            // 서버 인벤토리 여부를 결정합니다.
         inventoryCG = GetComponent<CanvasGroup>();  // 인벤토리의 캔버스그룹을 참조합니다
@@ -418,10 +427,17 @@ public partial class InventoryInfo : MonoBehaviour
     // dataManager와 createManager의 초기화가 이루어진 이후 로드해야함.
     protected virtual void Start()
     {                
+        // 슬롯이 생성되기 이전 애니메이션 클립의 최대길이를 구합니다.
+        float animationTime = GetLongestAnimationLength( GetComponentsInChildren<Animation>() );
+
         /** 호출 순서 고정: 로드 -> 인터렉티브스크립트 초기화 및 슬롯생성요청 -> 아이템표현 ***/
         LoadInventoryData();            // 저장된 플레이어 데이터를 불러옵니다. 
         interactive.Initialize(this);   // 인터렉티브 스크립트 초기화를 진행합니다.
-        UpdateAllItemVisualInfo();      // 슬롯에 모든 아이템의 시각화를 진행합니다. 
+        UpdateAllItemVisualInfo();      // 슬롯에 모든 아이템의 시각화를 진행합니다.
+
+        // 슬롯 생성 이후 모든 애니메이션 컴포넌트를 참조합니다.
+        animations = GetComponentsInChildren<Animation>();  
+        animationWaitTime = new WaitForSeconds(animationTime);  //애니메이션 최대 길이에 해당하는 인스턴스를 초기화합니다.
     }
 
 
@@ -546,13 +562,41 @@ public partial class InventoryInfo : MonoBehaviour
         if(itemDic==null || itemDic.Count==0)
             return;
 
-
         foreach( List<ItemInfo> itemInfoList in itemDic.Values )    // 해당 딕셔너리의 ItemInfo리스트를 가져옵니다.
         {
             foreach( ItemInfo itemInfo in itemInfoList )            // ItemInfo리스트에서 ItemInfo를 하나씩 가져옵니다.
                 itemInfo.UpdatePositionInfo();                      // 활성화 탭 기반으로 해당 종류의 위치정보를 업데이트합니다.
         }
     }
+
+
+
+    /// <summary>
+    /// 모든 아이템의 2D 기능을 중단하거나 재활성화 합니다.<br/>
+    /// 아이템 Interactable 속성과 이미지 투명도를 조절합니다.<br/><br/>
+    /// 인자로 2D 기능을 활성화 시킬 지 여부를 전달해야 합니다.
+    /// </summary>
+    public void SwitchAllItemAppearAs2D(bool isEnable2D)
+    {   
+        Dictionary<string, List<ItemInfo>> itemDic;                     // 참조할 아이템 사전을 선언합니다.
+            
+        for(int i=0; i<inventory.dicLen; i++)                           // 인벤토리 사전의 갯수만큼 반복합니다.
+        {
+            itemDic =inventory.GetItemDic( inventory.dicType[i] );      // 아이템 종류에 따른 인벤토리의 사전을 할당받습니다.
+                          
+            // 아이템 사전이 없거나 리스트가 존재하지 않는다면 다음 사전을 참조합니다.
+            if(itemDic==null || itemDic.Count==0)   
+                continue;
+
+            // 인벤토리 사전에서 ItemInfo를 하나씩 꺼내어 가져옵니다.
+            foreach( List<ItemInfo> itemInfoList in itemDic.Values )    
+            {
+                foreach( ItemInfo itemInfo in itemInfoList )
+                    itemInfo.SwitchAppearAs2D(!isEnable2D);
+            }
+        }
+    }
+
 
 
 

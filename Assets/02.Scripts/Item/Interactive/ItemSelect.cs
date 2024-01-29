@@ -103,8 +103,10 @@ using UnityEngine.UI;
  * itemInfo의 최신 inventoryInfo와 interactive에 접근하여 중간에 상태를 반영시키고
  * SelectDoneDelayTime 메서드에서도 과거 인벤토리와 최신 인벤토리의 상태를 동시에 해제하도록 변경
  * 
- * <v7.5 - 2024_0123_최원준>
- * 1- 
+ * <v7.5 - 2024_0126_최원준>
+ * 1- 퀵슬롯 드롭에 실패한 경우 원위치로 돌려주는 코드 추가
+ * 
+ * 
  * 
  */
 
@@ -134,12 +136,21 @@ public class ItemSelect : MonoBehaviour
     protected string strItemDropSpace = "ItemDropSpace";  // 아이템을 드롭할 수 있는 태그 설정(슬롯의 태그)
 
 
+    // +++ 2024_0128_협업 코드 (신혜성)
+    public QuestCheck check;
+    public Craft_UIManager craft_UIManager;
+
+
     protected virtual void Start()
     {
         itemRectTr = GetComponent<RectTransform>();     
         itemCG = GetComponent<CanvasGroup>();     
         itemInfo = GetComponent<ItemInfo>();
         itemSelectBtn = GetComponent<Button>();  
+
+        // +++ 2024_0128_협업 코드 (신혜성)
+        check = GameObject.Find("Canvas-Quest").GetComponent<QuestCheck>();
+        craft_UIManager = GameObject.Find("CraftingSystem").GetComponent<Craft_UIManager>();
     }
 
 
@@ -237,8 +248,6 @@ public class ItemSelect : MonoBehaviour
             Debug.Log( $"아이템 정보가 없습니다.\n본인:{gameObject.name} 부모:{transform.parent.name}" );
         else if(itemInfo.InventoryInfo==null)
             Debug.Log( $"인벤토리 정보가 없습니다.\n본인:{gameObject.name} 부모:{transform.parent.name}" );
-        else
-            Debug.Log( $"다른 오류.\n본인:{gameObject.name} 부모:{transform.parent.name}" );
 
 
 
@@ -310,7 +319,7 @@ public class ItemSelect : MonoBehaviour
     protected void DropItemWithRaycast()
     {        
         // 인벤토리에 그래픽 레이케스팅을 요청하고 결과를 반환받습니다.
-        IReadOnlyList<RaycastResult> raycastResults = inventoryInfo.RaycastAllToConnectedInventory();
+        IReadOnlyList<RaycastResult> raycastResults = inventoryInfo.RaycastAllToConnectedInventory(true);
 
         // 레이캐스팅에 성공한 경우(검출한 오브젝트가 있는 경우)
         if( raycastResults.Count>0 )
@@ -338,6 +347,9 @@ public class ItemSelect : MonoBehaviour
                             itemInfo.InventoryInteractive.IsItemSelecting = true;
                             itemInfo.InventoryInfo.inventoryCG.blocksRaycasts = false;
                         }
+                        // 퀵슬롯 드랍에 실패한 경우 원위치로 돌려줍니다.
+                        else                            
+                            itemInfo.UpdatePositionInfo();
 
                     }
                     // 퀵슬롯이 아닌 경우 바로 드롭을 진행합니다.
@@ -367,7 +379,14 @@ public class ItemSelect : MonoBehaviour
                 itemInfo.UpdatePositionInfo();    // 원위치로 돌립니다.
             // 현재 인벤토리가 연결상태가 아니라면
             else
+            {
                 itemInfo.OnItemWorldDrop();       // 인벤토리에서 아이템 드롭을 허용합니다.
+
+
+                // +++ 2024_0128_협업 코드 (신혜성)
+                check.WorldQuestCheck();          // 드랍된 아이템이 발생할 경우 퀘스트 체크 최신화
+                craft_UIManager.CheckTab();       // 드랍된 아이템이 발생할 경우 제작에 필요한 재료 목록을 최신화 
+            }
         }
         else
             throw new System.Exception( "드랍 이상이 발생하였습니다. 확인하여 주세요." );

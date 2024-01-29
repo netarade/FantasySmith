@@ -396,13 +396,13 @@ namespace CreateManagement
             if(itemInfo.BuildingType == BuildingType.Inventory)
             {
                 // 새로운 ID를 부여합니다.
-                int itemId = GetNewId(IdType.Inventory, itemInfo.ItemTr.name);
+                int itemId = GetNewId(IdType.Inventory, itemInfo.Item3dTr.name);
 
                 // ID를 등록합니다.
                 itemInfo.SetPrivateId(itemId);
 
                 // 아이템화 인벤토리의 인벤토리 정보를 참조합니다.
-                InventoryInfo itemInventoryInfo = itemInfo.ItemTr.GetComponentInChildren<InventoryInfo>();
+                InventoryInfo itemInventoryInfo = itemInfo.Item3dTr.GetComponentInChildren<InventoryInfo>();
                                 
                 // itemInfo를 전달하여 소유자 정보를 업데이트 해줍니다.
                 itemInventoryInfo.UpdateItemInventoryInfo(itemInfo);

@@ -75,6 +75,12 @@ using UnityEngine.UI;
  * <v4.0 - 2024_0126_최원준>
  * 1- 인벤토리 검색 및 연산관련 메서드 (SetItemOverlapCount, IsItemEnough, IsSlotEnough, IsSlotEmpty)를 InventoryInfo.cs에서 옮겨옴
  * 
+ * 2- 아이템명에 해당하는 수량을 알려주는 메서드 HowManyCount를 작성
+ *  (크래프팅에서 같은 종류의 아이템이 수량이 얼마인지 정확하게 알필요가 있음)
+ * 
+ * <v4.1 - 2024_0127_최원준>
+ * 1- ReduceItem의 ItemInfo를 직접 받는 오버로딩 메서드 구현
+ * 
  */
 
 public partial class InventoryInfo : MonoBehaviour
@@ -248,8 +254,17 @@ public partial class InventoryInfo : MonoBehaviour
         return IsItemEnough(itemPairs, true);
     }
 
-
-
+    
+    /// <summary>
+    /// 아이템 참조값을 직접 전달하여 해당 아이템의 전달 수량만큼 감소시킵니다.<br/><br/>
+    /// *** 아이템 정보 전달이 되지 않았거나, 수량 인자 전달이 잘못된 경우 예외가 발생 ***<br/>
+    /// *** 잡화아이템이 아닌 경우 예외가 발생 ***
+    /// </summary>
+    /// <returns>수량이 충분하지 않으면 false를, 수량이 충분하여 감소에 성공하면 true를 반환</returns>
+    public bool ReduceItem( ItemInfo itemInfo, int overlapCount )
+    {
+        return inventory.ReduceItem(itemInfo, overlapCount);
+    }
 
 
 
@@ -260,7 +275,6 @@ public partial class InventoryInfo : MonoBehaviour
     /// 해당 이름의 아이템을 인벤토리의 목록에서 제거후에 목록에서 제거한 아이템의 ItemInfo 참조값을 반환합니다.<br/>
     /// 제거 후 바로 파괴하려면 두번 째 인자를 true로 설정합니다. (기본적으로 파괴되지 않습니다.)<br/><br/>
     /// 제거 한 아이템은 자동으로 World의 InventoryInfo클래스의 playerDropTr로 지정해둔 곳에 떨어트려줍니다.<br/><br/>
-    /// 월드로 나간 아이템을 다른 인벤토리로 주기 위해서는 다른 InventoryInfo참조의 AddItem메서드를 사용해 다시 ItemInfo를 전달해야 합니다.<br/><br/>
     /// *** 인벤토리에 해당 이름의 아이템이 없으면 예외를 발생시킵니다. ***<br/>
     /// </summary>
     public ItemInfo RemoveItem(string itemName, bool isDestroy=false)
@@ -289,15 +303,27 @@ public partial class InventoryInfo : MonoBehaviour
 
 
     /// <summary>
-    /// 해당 아이템을 인벤토리의 목록에서 직접 제거후에 목록에서 제거한 아이템의 ItemInfo 참조값을 반환합니다.<br/>
+    /// 해당 아이템을 인벤토리의 목록에서 직접 제거합니다.<br/>
+    /// 제거후에 목록에서 제거한 아이템의 ItemInfo 참조값을 반환하여 다른 메서드를 호출할 수 있습니다.<br/><br/>
     /// 제거 후 바로 파괴하려면 두번 째 인자를 true로 설정합니다. (기본적으로 파괴되지 않습니다.)<br/><br/>
     /// 제거 한 아이템은 자동으로 World의 InventoryInfo클래스의 playerDropTr로 지정해둔 곳에 떨어트려줍니다.<br/><br/>
-    /// 월드로 나간 아이템을 다른 인벤토리로 주기 위해서는 다른 InventoryInfo참조의 AddItem메서드를 사용해 다시 ItemInfo를 전달해야 합니다.<br/><br/>
-    /// *** 인벤토리에 해당 이름의 아이템이 없으면 예외를 발생시킵니다. ***<br/>
+    /// *** 인자가 전달되지 않거나, 인벤토리에 해당 이름의 아이템이 없으면 예외가 발생합니다. ***<br/>
     /// </summary>
     public ItemInfo RemoveItem(ItemInfo itemInfo, bool isDestroy=false)
     {
-        return RemoveItem(itemInfo.Name, isDestroy); // 이름을 기반으로 메서드 재호출을 진행합니다.
+        if(itemInfo==null)
+            throw new Exception("아이템 정보가 전달되지 않았습니다.");
+        
+        if( inventory.RemoveItem(itemInfo) == null )
+            throw new Exception("해당 인벤토리에 아이템 정보가 존재하지 않습니다.");
+                    
+        // 아이템을 3D상태로 전환합니다.
+        itemInfo.DimensionShift(true);
+
+        // 인벤토리 정보를 제거합니다.
+        itemInfo.UpdateInventoryInfo(null);  
+        
+        return itemInfo;
     }
 
 
@@ -316,7 +342,7 @@ public partial class InventoryInfo : MonoBehaviour
     {
         if( !IsSlotEnough(itemName, overlapCount) )
             return false;
-                
+        
         // createManager에게 생성요청을하여 오브젝트 하나를 만듭니다.
         ItemInfo itemInfo = createManager.CreateWorldItem(itemName, overlapCount);
 
@@ -498,6 +524,15 @@ public partial class InventoryInfo : MonoBehaviour
     //}
 
 
+    
+    /// <summary>
+    /// 인자로 전달 한 이름에 해당 하는 아이템의 수량이 얼마인지를 알려줍니다.
+    /// </summary>
+    /// <returns>잡화 아이템의 경우에는 중첩 수량을, 비잡화 아이템의 경우에는 오브젝트 갯수를 반환</returns>
+    public int HowManyCount(string itemName)
+    {
+        return inventory.HowManyCount(itemName);
+    }
 
 
 

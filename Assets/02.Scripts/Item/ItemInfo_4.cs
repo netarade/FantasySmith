@@ -245,6 +245,24 @@ public partial class ItemInfo : MonoBehaviour
 
     }
 
+    /// <summary>
+    /// 아이템이 캐릭터에 영향을 주는 스테이터스 수치를 반환합니다.(해당 아이템 : 음식)<br/><br/>
+    /// get - ItemFood인 경우 저장되어있는 ItemStatus 인스턴스를, 이 외의 타입은 default(ItemStatus)를 반환합니다.
+    /// </summary>
+    public ItemStatus StatusInfo
+    {
+        get
+        {
+            ItemFood itemFood = item as ItemFood;
+            
+            if( itemFood!=null )
+                return itemFood.Status;
+            else
+                return default(ItemStatus);
+        }
+
+    }
+
 
 
 

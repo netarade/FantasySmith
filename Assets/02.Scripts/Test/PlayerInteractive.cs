@@ -3,6 +3,7 @@ using ItemData;
 using System.Collections;
 using System.Collections.Generic;
 using Unity.VisualScripting;
+using UnityEditor.PackageManager;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -49,15 +50,66 @@ public class PlayerInteractive : MonoBehaviour
         animator = GetComponent<Animator>();
     }
 
-    private void Update()
+    public void PlayerStatusChange(ItemStatus itemStatus)
     {
-        // 플레이어가 공격버튼을 누르는 상황
-        if(Input.GetMouseButtonDown(1) && bMouseCoolTime)
+        playerHp += itemStatus.hp;
+        playerHunger += itemStatus.hunger;
+        playerThirsty += itemStatus.thirsty;
+    }
+
+
+    private void Update()
+    {        
+        // 플레이어가 인벤토리를 여는 상황
+        Ray clickRay = Camera.main.ScreenPointToRay(Input.mousePosition);
+        Debug.DrawRay(clickRay.origin, clickRay.direction*100f, Color.cyan);
+
+
+        // 플레이어 포션먹는 상황 (우클릭)
+        if(Input.GetMouseButtonDown(1) && playerInventory.IsOpen )
         {
             bMouseCoolTime = false;
-            animator.SetTrigger("Attack");
+
+            // 연결되어있는 모든 인벤토리에 레이캐스팅을 시전하고 결과를 받습니다.
+            IReadOnlyList<RaycastResult> resultList = playerInventory.RaycastAllToConnectedInventory();
+            
+            foreach(RaycastResult result in resultList )
+            {               
+                ItemInfo itemInfo = result.gameObject.GetComponent<ItemInfo>(); 
+                if( itemInfo != null )
+                {
+                    // 음식 아이템의 경우, 플레이어의 상태 변화메서드를 전달하여, 아이템 섭취메서드를 호출합니다.
+                    if(itemInfo.MiscType == MiscType.Food)      
+                        itemInfo.OnItemEat(PlayerStatusChange);     
+
+                    break;
+                }
+            }
+
+            Debug.Log($"현재 캐릭터 수치 HP:{playerHp} 배고픔:{playerHunger} 목마름:{playerThirsty}");
+
+
             StartCoroutine( MouseDelayTime(1f) );
+            //animator.SetTrigger("Attack");
         }
+        // 아이템 먹는 상황
+        else if( Input.GetMouseButtonDown(1) && !playerInventory.IsOpen)
+        {
+            RaycastHit hitInfo;
+
+            if( Physics.Raycast(clickRay, out hitInfo, Mathf.Infinity) )
+            {
+                if( hitInfo.collider.CompareTag("Item") )
+                {
+                    ItemInfo itemInfo = hitInfo.collider.GetComponentInChildren<ItemInfo>();
+                    if(itemInfo!=null ) 
+                        itemInfo.OnItemWorldGain(playerInventory);
+                }
+            }
+        }
+
+
+
 
         // 플레이어가 인벤토리 창을 여는 상황
         if(Input.GetKeyDown(KeyCode.I))
@@ -66,9 +118,6 @@ public class PlayerInteractive : MonoBehaviour
         }
         
 
-        // 플레이어가 인벤토리를 여는 상황
-        Ray clickRay = Camera.main.ScreenPointToRay(Input.mousePosition);
-        Debug.DrawRay(clickRay.origin, clickRay.direction*100f, Color.cyan);
 
         if(Input.GetKeyDown(KeyCode.E))
         {            
@@ -107,6 +156,8 @@ public class PlayerInteractive : MonoBehaviour
         // 마우스 우클릭을 누르는 상황
         // if(Input.GetMouseButtonDown(1))
         //    playerInventory.
+
+        
 
     }
 

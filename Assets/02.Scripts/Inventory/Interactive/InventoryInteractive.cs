@@ -219,6 +219,10 @@ using System;
 * 1- Inventory클래스의 딕셔너리 저장형식을 GameObject기반에서 ItemInfo로 변경하면서 관련 메서드 수정
 * (UpdateAllItemActiveTabInfo)
 * 
+* <9.4 - 2024_0126_최원준>
+* 1- 버튼 종료 메서드에 인벤토리 연결을 종료하는 로직에서 PlayerInputs 관련 메서드의 호출을 추가 (통합프로젝트 전용 메서드)
+* 2- 버튼 종료 메서드에 인벤토리 연결을 종료하는 로직에서 CrateCtrl 관련 메서드의 호출을 추가 (통합프로젝트 전용 메서드)
+* 
 */
 
 
@@ -452,21 +456,32 @@ public class InventoryInteractive : MonoBehaviour
 
 
 
-    /// <summary>
-    /// X버튼을 눌러 인벤토리를 닫을 때 호출해주는 메서드입니다.<br/>
-    /// 다른 인벤토리와 연결 상태라면 연결을 해제하고 모든 인벤토리 창을 닫으며,<br/>
-    /// 연결 상태가 아니라면 자신의 인벤토리 창만 닫습니다.
-    /// </summary>
-    public void BtnInventoryClose()
-    {
-        if(inventoryInfo.IsConnect)
-            inventoryInfo.DisconnectInventory();
-        else
-            inventoryInfo.InitOpenState(false);
-    }
+     
 
-
-
+     /// <summary>
+     /// X버튼을 눌러 인벤토리를 닫을 때 호출해주는 메서드입니다.<br/>
+     /// 다른 인벤토리와 연결 상태라면 연결을 해제하고 모든 인벤토리 창을 닫으며,<br/>
+     /// 연결 상태가 아니라면 자신의 인벤토리 창만 닫습니다.
+     /// </summary>
+     public void BtnInventoryClose()
+     {
+         if( inventoryInfo.IsConnect )
+         {
+             PlayerInputs playerInputs = inventoryInfo.ServerInfo.OwnerTr.GetComponent<PlayerInputs>();
+    
+             if( playerInputs!=null )
+                 playerInputs.OnInventoryConnect( false );
+    
+             inventoryInfo.DisconnectInventory();
+    
+             CrateCtrl crateCtrl = inventoryInfo.OwnerTr.GetComponent<CrateCtrl>();
+             
+             if( crateCtrl!=null )
+                 crateCtrl.AnimateCrateClose();
+         }
+         else
+             inventoryInfo.InitOpenState( false );  
+     }
 
 
 

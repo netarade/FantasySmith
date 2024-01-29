@@ -279,6 +279,11 @@ using UnityEngine.Assertions.Must;
  * 1- 기존 ItemBuilding클래스를 ItemMisc에서 Item으로 상속관계를 변경함에 따라서
  * TypeMatchingItemClassToItemType메서드에 ItemType.Building을 추가
  * 
+ * <v11.2 - 2024_0126_최원준>
+ * 1- 유틸리티 적인 성격의 메서드를 Inventory_4.cs로 옮김 - (현 스크립트에는 초기화 관련 메서드를 모아둠) 
+ * GetDicIndex
+ * 
+ * 
  */
 
 
@@ -341,38 +346,6 @@ namespace InventoryManagement
 
 
         
-        /// <summary>
-        /// 아이템 종류에 해당하는 사전의 인덱스를 반환합니다.<br/>
-        /// 일치하는 종류의 사전이 없다면 -1을 반환합니다.<br/><br/>
-        /// *** ItemType.None을 전달하면 예외가 발생합니다. ***
-        /// </summary>
-        /// <returns>일치하는 종류의 사전이 있다면 해당 사전의 인덱스 값을 반환, 없다면 -1을 반환</returns>
-        public int GetDicIndex(ItemType itemType)
-        {
-            if(itemType==ItemType.None )
-                throw new Exception("아이템 종류가 잘못되었습니다. 해당 종류의 사전을 구할 수 없습니다.");
-
-            for(int i=0; i<dicLen; i++)
-            {
-                if( dicType[i]==itemType) 
-                    return i;
-            }
-
-            return -1;
-        }
-
-
-        /// <summary>
-        /// 아이템 종류에 해당하는 텝의 인덱스를 반환합니다.<br/>
-        /// ItemType.None이 전달되었다면 전체 탭 인덱스 (TabType.All)을 구합니다.<br/>
-        /// *** 아이템 종류에 해당하는 탭이없다면 예외가 발생합니다. ***
-        /// </summary>
-        /// <returns>아이템 종류에 해당하는 탭이 있다면 해당 탭의 인덱스를 반환, 없다면 -1을 반환</returns>
-        public int GetTabIndex(ItemType itemType)
-        {
-            return (int)ConvertItemTypeToTabType(itemType);            
-        }
-
 
 
 

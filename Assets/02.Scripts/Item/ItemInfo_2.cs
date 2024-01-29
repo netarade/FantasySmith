@@ -55,6 +55,11 @@ using UnityEngine.EventSystems;
 * 탭일치(옮긴 것 보여주기 위함) + 종류일치(해당아이템 보관가능 해야하기 때문)
 * 
 * 
+* 
+* 
+* 
+* 
+* 
 */
 
 
@@ -67,6 +72,9 @@ public partial class ItemInfo : MonoBehaviour, IPointerEnterHandler, IPointerExi
     /// </summary>
     public void OnPointerEnter( PointerEventData eventData )
     {
+        if(statusInteractive==null)
+            return;
+
         statusInteractive.OnItemPointerEnter(this);
     }
 
@@ -75,6 +83,9 @@ public partial class ItemInfo : MonoBehaviour, IPointerEnterHandler, IPointerExi
     /// </summary>
     public void OnPointerExit( PointerEventData eventData )
     {
+        if(statusInteractive==null)
+            return;
+
         statusInteractive.OnItemPointerExit();
     }
 

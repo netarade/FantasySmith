@@ -1,6 +1,7 @@
 using ItemData;
 using System;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using Unity.VisualScripting.FullSerializer;
 using UnityEngine;
 
@@ -586,6 +587,7 @@ namespace InventoryManagement
 
         
 
+
         /// <summary>
         /// 인벤토리에 해당 이름의 아이템의 중첩수량이 충분한지를 확인하는 메서드입니다.<br/>
         /// 인자로 아이템 이름과 수량이 필요합니다. (수량 미전달 시 기본 수량은 1개입니다.)<br/><br/>
@@ -662,19 +664,19 @@ namespace InventoryManagement
             // 인벤토리에 ItemInfo 리스트가 존재하지 않는 경우 false반환
             if( itemInfoList==null )
             {
-                Debug.Log( "ItemInfo 리스트가 없습니다." );
+                //Debug.Log( "ItemInfo 리스트가 없습니다." );
                 return false;
             }
             // ItemInfo 리스트가 존재하면서, 들어있는 오브젝트 수량이 충분하다면,
             else if( itemInfoList.Count-itemObjCount>=0 )
             {
-                Debug.Log( "수량이 충분합니다." );
+                //Debug.Log( "수량이 충분합니다." );
                 return true;
             }
             // 오브젝트 수량이 충분하지 않다면,
             else
             {
-                Debug.Log("수량이 충분하지않습다.");
+                //Debug.Log("수량이 충분하지않습다.");
                 return false;
             }
         }
@@ -803,7 +805,7 @@ namespace InventoryManagement
                 throw new Exception( "수량 전달인자는 1이상이어야 합니다." );
 
             // 남은 수량을 최초에 들어온 수량으로 설정
-            int remainCount = overlapCount;
+            int remainCount = overlapCount; //12개
 
             // 아이템 별 최대수량 참조
             int maxOverlapCount = GetItemMaxOverlapCount( itemName );
@@ -824,11 +826,11 @@ namespace InventoryManagement
                     ItemMisc itemMisc = (ItemMisc)itemInfo.Item;
 
                     // 해당 아이템을 최대수량으로 만들기 위한 수량이 얼마 남았는 지를 계산합니다.
-                    remainCount-=( maxOverlapCount-itemMisc.OverlapCount );
+                    remainCount-=( maxOverlapCount-itemMisc.OverlapCount ); // 현재3개. -> 7개 더 포함가능
 
                     // 남은 수량이 기존 아이템에 포함가능 하다면, 
                     // 오브젝트를 새로 생성할 필요 없으므로 더 이상 탐색을 중단하고 성공을 반환합니다.
-                    if(remainCount<=0)
+                    if(remainCount<=0) // 남은 수량 5개
                         return true;
                 }
             }
@@ -840,13 +842,12 @@ namespace InventoryManagement
 
 
             // 생성 할 오브젝트 갯수 설정 : 최종적으로 남은 수량에서 오브젝트 1개별 최대수량으로 나눈 몫 (나누어 떨어지는 경우)
-            int createCnt = remainCount / maxOverlapCount;
-            int remainder = remainCount % maxOverlapCount;
+            int createCnt = remainCount / maxOverlapCount;  // 5/10 => 0
+            int remainder = remainCount % maxOverlapCount;  // 5%10 => 5
 
             // 나누어 떨어지지 않아, 남는 소수점이 생길 때는 오브젝트가 하나 더 필요하므로 생성 갯수를 올립니다. 
             if(remainder>0)
                 createCnt++;
-
 
             // 남은 슬롯 갯수가 생성해야 할 오브젝트 갯수보다 많거나 같다면 생성가능 반환
             if( curRemainSlotCnt >= createCnt )

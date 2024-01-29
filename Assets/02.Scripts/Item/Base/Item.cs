@@ -105,6 +105,13 @@ using UnityEngine;
  * 이유는 월드 인벤토리에 아이템이 저장될 때 누구의 아이템인지 유저 정보도 있어야 하지만, 
  * 인벤토리의 경우 동일한 이름의 아이템이 만들어 질 때의 식별번호가 필요하기 때문(저장파일을 달리 하기 위해서)
  * 
+ * <v10.6 - 2024_0127_최원준>
+ * 1- Clone메서드에 virtual 키워드 추가하여 오버라이딩가능하게 변경.
+ * 이유는 Item의 하위 클래스 내부에 Stransform을 저장하고 있는 경우 참조값을 저장하기 때문에, 아이템이 Clone되어도 참조값을 공유하게 되어있음.
+ * 따라서 새로운 STransform의 Clone도 같이 교체해서 반환해줘야함.
+ * 
+ * 
+ * 
  */
 
 namespace ItemData
@@ -256,7 +263,7 @@ namespace ItemData
         /// 해당 아이템의 객체를 복사해서 반환해주는 메서드입니다.<br/>
         /// 기본 객체의 =연산은 참조전달이므로 하나의 인스턴스를 공유하게 되는데 이를 방지하여 새로운 인스턴스를 갖게 합니다.<br/>
         /// </summary>
-        public object Clone() { return this.MemberwiseClone(); }
+        public virtual object Clone() { return this.MemberwiseClone(); }
 
 
         /// <summary>

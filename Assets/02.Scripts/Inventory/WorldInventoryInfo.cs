@@ -76,7 +76,7 @@ public class WorldInventoryInfo : InventoryInfo
                 foreach( ItemInfo itemInfo in itemInfoList )
                 {
                     // 아이템의 STransform 정보를 불러와서 Transform에 동기화시켜줍니다.
-                    itemInfo.SerializedTr.Deserialize( itemInfo.ItemTr );
+                    itemInfo.SerializedTr.Deserialize( itemInfo.Item3dTr );
                 }
             }
         }
@@ -97,17 +97,20 @@ public class WorldInventoryInfo : InventoryInfo
             // 아이템 사전이 없거나 리스트가 존재하지 않는다면 다음 사전을 참조합니다.
             if(itemDic==null || itemDic.Count==0)   
                 continue;
-
+            
             // 인벤토리 사전에서 ItemInfo를 하나씩 꺼내어 가져옵니다.
             foreach( List<ItemInfo> itemInfoList in itemDic.Values )    
             {
                 foreach( ItemInfo itemInfo in itemInfoList )
-                {
+                {        
                     // 아이템의 STransform 정보를 불러와서 Transform을 반영하여 저장합니다.
-                    itemInfo.SerializedTr.Serialize( itemInfo.ItemTr );                   
+                    itemInfo.SerializedTr.Serialize( itemInfo.Item3dTr );  
                 }
             }
         }
+
+
+
     }
 
 

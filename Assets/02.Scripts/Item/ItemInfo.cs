@@ -330,62 +330,92 @@ using DataManagement;
  *6- 신규 메서드 MoveToEmptyList를 만들고, UpdatePositionInfo메서드의 기존 일부 코드를 MoveToSlot으로 만든 후
  *curActiveTab에 따라서 조건 분기하여 포지션 업데이트를 실행하도록 구현
  *
- *<v13.1 - 2024_0116_최원준>
- *1- 아이템이 현재 속해있는 탭을 반환하는 CurActiveTab 읽기전용 프로퍼티 추가
- *(다른 인벤토리에 슬롯 드랍시 현재 아이템이 어떤 탭에 속해있었는지 확인 한 다음, 
- *전송할 인벤토리의 탭이 일치하지 않을때 실패처리하지 않으면 아이템이 사라진것 처럼 보이게 되기 때문)
+ * <v13.1 - 2024_0116_최원준>
+ * 1- 아이템이 현재 속해있는 탭을 반환하는 CurActiveTab 읽기전용 프로퍼티 추가
+ * (다른 인벤토리에 슬롯 드랍시 현재 아이템이 어떤 탭에 속해있었는지 확인 한 다음, 
+ * 전송할 인벤토리의 탭이 일치하지 않을때 실패처리하지 않으면 아이템이 사라진것 처럼 보이게 되기 때문)
+ * 
+ * <v13.2 - 2024_0117_최원준>
+ * 1- UpdateCountTxt메서드를 UpdateTextInfo로 변경하였으며, 
+ * 일부 코드를 InitCountTxt메서드로 분리하여 OnItemCreated메서드에서 한번만 호출하도록 변경
+ * 
+ * 수량 변동 뿐만 아니라 상태창의 spec 텍스트까지 변경사항이 있다면 반영해야 하므로,
+ * ItemMisc뿐만 아니라 모든 아이템이 OnItemAdded될 때 호출하도록 변경
+ * (관련 변수들 ItemInfo_4.cs에 선언 및 활용)
+ * 
+ * 2- SlotIndex 프로퍼티명 SlotIndexEach로 변경
+ * 
+ * <v13.3 - 2024_0123_최원준>
+ * 1- 아이템의 콜라이더를 끄기 위한 itemCol변수 추가하여 OnItemCreated에서 생성될 때 itemTr을 통해 초기화하도록 설정
+ * 
+ * <v13.4 - 2024_0124_최원준>
+ * 1- playerTr을 ownerTr로 변경
+ * 
+ * 2- 아이템 소유주 정보를 나타내는 OwnerId를 추가
+ * 
+ * <v13.5 - 2024_0124_최원준>
+ * 1- OwnerId의 타입을 string에서 int형으로 변경 및 주석 수정
+ * 이유는 순번대로 id를 증가시켜 부여하기 위함
+ * 
+ * 2- OwnerTr 및 ItemTr 읽기전용 프로퍼티 추가 
  *
- *<v13.2 - 2024_0117_최원준>
- *1- UpdateCountTxt메서드를 UpdateTextInfo로 변경하였으며, 
- *일부 코드를 InitCountTxt메서드로 분리하여 OnItemCreated메서드에서 한번만 호출하도록 변경
- *
- *수량 변동 뿐만 아니라 상태창의 spec 텍스트까지 변경사항이 있다면 반영해야 하므로,
- *ItemMisc뿐만 아니라 모든 아이템이 OnItemAdded될 때 호출하도록 변경
- *(관련 변수들 ItemInfo_4.cs에 선언 및 활용)
- *
- *2- SlotIndex 프로퍼티명 SlotIndexEach로 변경
- *
- *<v13.3 - 2024_0123_최원준>
- *1- 아이템의 콜라이더를 끄기 위한 itemCol변수 추가하여 OnItemCreated에서 생성될 때 itemTr을 통해 초기화하도록 설정
- *
- *<v13.4 - 2024_0124_최원준>
- *1- playerTr을 ownerTr로 변경
- *
- *2- 아이템 소유주 정보를 나타내는 OwnerId를 추가
- *
- *<v13.5 - 2024_0124_최원준>
- *1- OwnerId의 타입을 string에서 int형으로 변경 및 주석 수정
- *이유는 순번대로 id를 증가시켜 부여하기 위함
- *
- *2- OwnerTr 및 ItemTr 읽기전용 프로퍼티 추가 
- *
- *<v13.6 - 2024_0125_최원준>
- *1- 읽기전용 프로퍼티 OwnerName과 worldOnwnerName을 추가하였음.
- *이유는 아이템이 저장될때 소유자명도 같이 저장해야 Id를 인식할 때 키값으로 접근이 가능하기 때문
- *
- *2- worldInventoryInfo를 추가하여, visualManager스크립트가 위치한 하위 컴포넌트를 참조하도록 하였음.
- *이는 ItemInfo_3.cs의 RigesterToWorldInventory메서드에서 사용하기 위함
- *
- *3- SwitchAppearAs2D메서드를 OnItemCreated에서 호출해주도록 함.
- *아이템을 생성하고 바로 사용하는 경우 DimensionShift를 사용하지 않았기 때문에 2D기능이 종료가 되지 않은 상태로 나가서 셀렉팅이 일어남.
- *
- *<v13.7 - 2024_0125_최원준>
- *1- 아이템이 3D상태일 때 캔버스그룹의 blockRaycasts를 코드로 false로 만들어도 적용되지 않는 문제가 있어서
- *(이는 3D상태일때도 캔버스그룹을 통해 레이캐스팅을 받거나 흘리는 기능이 있기 때문인것으로 보여지는데)
- *=> 이미지 컴포넌트의 레이캐스트 블록을 해제하고, Interactable속성을 비활성화 시키는 것으로 변경
- *
- *<v13.8 - 2024_0125_최원준>
- *1- OwnerId이외의 아이템 자체의 Id 프로퍼티 추가하였음.
- *이유는 월드 인벤토리에 아이템이 저장될 때 누구의 아이템인지 유저 정보도 있어야 하지만, 
- *인벤토리의 경우 동일한 이름의 아이템이 만들어 질 때의 식별번호가 필요하기 때문(저장파일을 달리 하기 위해서)
- *
- *<v14.0 - 2024_0126_최원준>
- *1- Id변수명을 ItemId로 변경
- *2- UpdateInventoryInfo에서 월드로 나갈때 ownerId를 0에서 -1로 초기화하는 것으로 변경
- *
- *
+ * <v13.6 - 2024_0125_최원준>
+ * 1- 읽기전용 프로퍼티 OwnerName과 worldOnwnerName을 추가하였음.
+ * 이유는 아이템이 저장될때 소유자명도 같이 저장해야 Id를 인식할 때 키값으로 접근이 가능하기 때문
+ * 
+ * 2- worldInventoryInfo를 추가하여, visualManager스크립트가 위치한 하위 컴포넌트를 참조하도록 하였음.
+ * 이는 ItemInfo_3.cs의 RigesterToWorldInventory메서드에서 사용하기 위함
+ * 
+ * 3- SwitchAppearAs2D메서드를 OnItemCreated에서 호출해주도록 함.
+ * 아이템을 생성하고 바로 사용하는 경우 DimensionShift를 사용하지 않았기 때문에 2D기능이 종료가 되지 않은 상태로 나가서 셀렉팅이 일어남.
+ * 
+ * <v13.7 - 2024_0125_최원준>
+ * 1- 아이템이 3D상태일 때 캔버스그룹의 blockRaycasts를 코드로 false로 만들어도 적용되지 않는 문제가 있어서
+ * (이는 3D상태일때도 캔버스그룹을 통해 레이캐스팅을 받거나 흘리는 기능이 있기 때문인것으로 보여지는데)
+ * => 이미지 컴포넌트의 레이캐스트 블록을 해제하고, Interactable속성을 비활성화 시키는 것으로 변경
+ * 
+ * <v13.8 - 2024_0125_최원준>
+ * 1- OwnerId이외의 아이템 자체의 Id 프로퍼티 추가하였음.
+ * 이유는 월드 인벤토리에 아이템이 저장될 때 누구의 아이템인지 유저 정보도 있어야 하지만, 
+ * 인벤토리의 경우 동일한 이름의 아이템이 만들어 질 때의 식별번호가 필요하기 때문(저장파일을 달리 하기 위해서)
+ * 
+ * <v14.0 - 2024_0126_최원준>
+ * 1- Id변수명을 ItemId로 변경
+ * 2- UpdateInventoryInfo에서 월드로 나갈때 ownerId를 0에서 -1로 초기화하는 것으로 변경
+ * 
+ * 
+ * <v14.1 - 2024_0126_최원준>
+ * 1- ItemTr 프로퍼티 명을 Item3dTr로 변경 
+ * (사용할 때 혼동하지 않기 위함)
+ * 
+ * <v14.2 - 2024_0126_최원준>
+ * 
+ * 1- TrApplyRange 열거형 옵션을 추가하여 월드 아이템 드랍할 때 Transform 인자 전달 시 
+ * 어떤 부분만 적용시킬 지 선택가능하게 하였음.
+ * 
+ * 2- OnItemWorldDrop메서드를 기본적으로 전달받은 Transform 인자의 위치값만 적용시키도록 하였으며,
+ * TrApplyRange을 인자로 전달받아 회전과 스케일값을 선택적으로 적용시킬 수 있게 구현. 주석도 수정
+ * 
+ * 
+ * 3- 아이템이 인벤토리창을 닫아도 키보드로 셀렉팅 일어나는 현상이 있어
+ * SwitchAppearAs2D메서드를 public 으로 설정하여 인벤토리 창을 닫을 때 
+ * 인벤토리가 호출하도록 하여 아이템 셀렉팅을 막음.
+ * 
+ * <v14.3 - 2024_0128_최원준>
+ * 1- 읽기전용 프로퍼티 StatusWindowInteractive를 추가하여 아이템제거 시 해당 상태창을 볼 수 있게 하였음.
+ * 이유는 소모 아이템 우클릭 시 제거되는 순간 PointerExit이벤트가 발생하지 않기 때문에 상태창이 남아있기 때문에 강제로 종료해줘야할 필요성이 있음  
+ * 
+ * <v14.4 - 2024_0128_최원준>
+ * 1- UpdatePositionInfo메서드 내부 MoveToSlot메서드에서 itemRectTr의 rotation값을 초기화하고 있던 부분을 localRotation을 초기화하도록 수정
+ * (아이템습득 시 2D 이미지가 회전해버리는 문제가 생겼음)
+ * 
  */
 
+/// <summary>
+/// 아이템 관련 전송 메서드에서 Transform 인자를 전달할 때 어떤 부분을 적용 시킬 지 결정할 수 있습니다.<br/>
+/// 위치값만 적용 시킬지, 위치값과 회전값을 동시에 적용시킬 지, 위치, 회전, 크기 모든 값을 적용시킬 지 결정할 수 있습니다.
+/// </summary>
+public enum TrApplyRange { Pos, Pos_Rot, Pos_Rot_Scale }
 
 /// <summary>
 /// 게임 상의 아이템 오브젝트는 이 클래스를 컴포넌트로 가져야합니다.<br/><br/>
@@ -465,10 +495,15 @@ public partial class ItemInfo : MonoBehaviour
 
 
     /// <summary>
-    /// 현재 아이템이 담긴 인벤토리 인터렉티브스크립트 참조값입니다.
+    /// 현재 아이템이 담긴 인벤토리 인터렉티브 스크립트 참조값을 반환합니다.
     /// </summary>
     public InventoryInteractive InventoryInteractive { get { return inventoryInteractive;} }
 
+
+    /// <summary>
+    /// 현재 아이템이 담긴 인벤토리의 상태창 인터렉티브 스크립트 참조값을 반환합니다.
+    /// </summary>
+    public StatusWindowInteractive StatusWindowInteractive { get { return statusInteractive;} }
 
 
     /// <summary>
@@ -517,7 +552,7 @@ public partial class ItemInfo : MonoBehaviour
     /// <summary>
     /// 아이템의 3D 오브젝트가 가지고 있는 Transform 컴포넌트 참조값을 반환합니다.
     /// </summary>
-    public Transform ItemTr { get { return itemTr; } }
+    public Transform Item3dTr { get { return itemTr; } }
 
     /// <summary>
     /// 아이템 고유의 식별번호입니다.<br/>
@@ -775,7 +810,7 @@ public partial class ItemInfo : MonoBehaviour
 
         // 위치와 회전값을 수정합니다.
         itemRectTr.localPosition = Vector3.zero;
-        itemRectTr.rotation = Quaternion.identity;
+        itemRectTr.localRotation = Quaternion.identity;
     }
 
 
@@ -874,7 +909,7 @@ public partial class ItemInfo : MonoBehaviour
     /// isWorldPositioned를 기반으로 최신화합니다.<br/>
     /// DimensionShift에서 내부 메서드로 사용되고 있습니다.
     /// </summary>
-    private void SwitchAppearAs2D(bool isWorldPositioned)
+    public void SwitchAppearAs2D(bool isWorldPositioned)
     {        
         itemCG.interactable = !isWorldPositioned;
         itemCG.alpha = isWorldPositioned ? 0f:1f;
@@ -926,11 +961,16 @@ public partial class ItemInfo : MonoBehaviour
 
     /// <summary>
     /// 아이템이 인벤토리에서 빠져나와 월드 상태로 전환되었을 때 드롭 할 위치를 설정해주기 위한 메서드입니다.<br/>
-    /// 인자로 전달받은 Transform의 위치와 회전값을 아이템 오브젝트에 입력합니다.<br/>
+    /// **첫 번째 전달인자 - Transform의 정보를 아이템 오브젝트에 입력합니다.<br/><br/>
+    /// 
     /// 인자를 미전달하면 지정해둔 드랍위치(플레이어)로 전송됩니다.(기본값: ItemInfo클래스의 playerDropTr)<br/><br/>
-    /// isSetParent를 true로 만들면 Transform 하위에 자식으로서 속하게 됩니다. (기본값: false)<br/><br/>
+    /// 
+    /// **두 번째 전달인자 - TransferType은 전달받은 Transform을 어디까지 적용시킬지 선택하는 옵션입니다.<br/>
+    /// (기본값: 위치 값만 적용, 옵션을 통해 회전 값, 크기 값을 적용시 킬 수 있습니다.)<br/><br/>
+    /// 
+    /// **세 번째 전달 인자 - isSetParent를 true로 만들면 Transform 하위에 자식으로서 속하게 됩니다. (기본값: false)<br/><br/>
     /// </summary>
-    public void OnItemWorldDrop(Transform dropPosTr=null, bool isSetParent=false)
+    public void OnItemWorldDrop(Transform dropPosTr=null, TrApplyRange transferType = TrApplyRange.Pos, bool isSetParent=false)
     {
         if( !IsWorldPositioned )
             inventoryInfo.RemoveItem(this);
@@ -941,11 +981,16 @@ public partial class ItemInfo : MonoBehaviour
         
         // 3D 오브젝트의 부모를 설정
         if(isSetParent)
-            itemTr.SetParent(dropPosTr);
-                
-        // 3D 오브젝트의 위치와 회전값 설정
+            itemTr.SetParent(dropPosTr);   
+        
+        // 3D 오브젝트의 위치와 회전값 설정 (TransferType에 따라서 Transform을 적용시킬 범위가 증가하게 됩니다.)         
         itemTr.position = dropPosTr.position;
-        itemTr.rotation = dropPosTr.rotation;
+                
+        if( transferType >= TrApplyRange.Pos_Rot )
+            itemTr.rotation = dropPosTr.rotation;
+
+        if( transferType >= TrApplyRange.Pos_Rot_Scale)
+            itemTr.localScale = dropPosTr.localScale;
     }
 
 

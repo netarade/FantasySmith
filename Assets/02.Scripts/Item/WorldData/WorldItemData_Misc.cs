@@ -46,27 +46,11 @@ public partial class WorldItem
                 MiscType.Basic, "The animal bones here seem much harder than stones.")
             },
             {
-                "Meat", new ItemMisc( ItemType.Misc, "0006", "Meat", new VisualReferenceIndex(6),
-                MiscType.Basic, "Cooking ingredients obtained by hunting animals.")
-            },
-            {
-                "GrilledMeat", new ItemMisc( ItemType.Misc, "0007", "GrilledMeat", new VisualReferenceIndex(7),
-                MiscType.Basic, "Meat cooked to be eaten.")
-            },
-            {
-                "Berry", new ItemMisc( ItemType.Misc, "0008", "Berry", new VisualReferenceIndex(8),
-                MiscType.Basic, "A basic source of nutrition obtained by gathering plants.")
-            },
-            {
-                "Mushroom", new ItemMisc( ItemType.Misc, "0009", "Mushroom", new VisualReferenceIndex(9),
-                MiscType.Basic, "It is an umbrella-like fungus that can be eaten.")
-            },
-            {
-                "Leather", new ItemMisc( ItemType.Misc, "0010", "Leather", new VisualReferenceIndex(10),
+                "Leather", new ItemMisc( ItemType.Misc, "0006", "Leather", new VisualReferenceIndex(6),
                 MiscType.Basic, "I think this can prevent dangerous rain.")
             },            
             {
-                "Rope", new ItemMisc( ItemType.Misc, "0011", "Rope", new VisualReferenceIndex(11),
+                "Rope", new ItemMisc( ItemType.Misc, "0007", "Rope", new VisualReferenceIndex(7),
                 MiscType.Basic, "It is a product made by weaving several threads.")
             },
         };

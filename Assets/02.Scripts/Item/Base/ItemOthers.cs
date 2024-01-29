@@ -1,6 +1,9 @@
 using DataManagement;
 using Newtonsoft.Json;
 using System;
+using Unity.Collections.LowLevel.Unsafe;
+using UnityEditor.Rendering;
+using UnityEngine;
 
 
 /*
@@ -34,7 +37,14 @@ using System;
  * 3- public 변수에 JsonPropert 애트리뷰트 삭제
  * 
  * 
+ * <v2.1 - 2024_0127_최원준>
+ * 1- ItemBuilding에 Clone메서드를 오버라이딩해서 구현하였음.
+ * 이유는 Item 내부에 Stransform을 저장하고 있는 경우 참조값을 저장하기 때문에, 아이템이 Clone되어도 참조값을 공유하게 되어있음.
+ * 따라서 새로운 STransform의 Clone도 같이 교체해서 반환해줘야함.
  *
+ * <v2.2 - 2024_0128_최원준>
+ * 1 - ItemStatus 내부에 speed 속성을 추가, 생성자 선택인자 옵션을 제거
+ * 
  * 
  */
 
@@ -94,6 +104,7 @@ namespace ItemData
         public BuildingType buildingType;   // 세부 종류 (재료, 장식용, 인벤토리)
         public STransform WorldTr;          // 아이템이 월드에 놓여지는 변환정보
 
+
         public ItemBuilding( ItemType mainType, string No, string name, VisualReferenceIndex visualRefIndex
             , BuildingType buildingType, int durability, string desc )
             : base(mainType, No, name, visualRefIndex, desc)
@@ -102,6 +113,20 @@ namespace ItemData
             Durability = durability;
             WorldTr = new STransform();
         }
+
+
+        /// <summary>
+        /// 건설 아이템의 클론 생성 시 호출되는 메서드입니다.<br/>
+        /// 멤버의 값을 복사해서 반환하며, 내부 클래스 참조값 또한 그대로 반환하지 않고 새로운 인스턴스를 만들어 참조값을 반환합니다.
+        /// </summary>
+        /// <returns></returns>
+        public override object Clone()
+        {
+            ItemBuilding itemBuilding = this.MemberwiseClone() as ItemBuilding;
+            itemBuilding.WorldTr = (STransform) WorldTr.Clone();    // 값을 복사해서 인스턴스를 만들고 새로운 참조값을 저장합니다.
+            return itemBuilding;
+        }
+
     }
 
 
@@ -154,14 +179,21 @@ namespace ItemData
         public float temparature;   
         
         /// <summary>
-        /// 체력, 허기, 갈증, 체온
+        /// 이동 속도
         /// </summary>
-        public ItemStatus(float hp, float hunger, float thirsty, float temparature=0f)
+        public float speed;
+
+
+        /// <summary>
+        /// 체력, 허기, 갈증, 체온, 스피드
+        /// </summary>
+        public ItemStatus(float hp, float hunger, float thirsty, float temparature=0f, float speed=0f)
         {
             this.hp = hp;
             this.hunger = hunger;
             this.thirsty = thirsty;
             this.temparature = temparature;
+            this.speed = speed;
         }
     }
 

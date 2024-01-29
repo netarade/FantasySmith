@@ -201,6 +201,22 @@ using WorldItemData;
  *(AddItemToDic, FillExistItemOverlapCount, RemoveItem(ItemInfo), RemoveItem(string), 
  *GetItemDic(ItemType), GetItemDic(string), GetItemInfoList )
  * 
+ * <v7.1 - 2024_0126_최원준>
+ * 1- 유틸리티 적인 성격의 메서드를 Invetory_4.cs로 이동
+ * (GetItemTypeIgnoreExists GetItemDic GetItemMaxOverlapCount GetItemInfoList)
+ * 
+ * 2- 아이템명에 해당하는 수량을 알려주는 메서드 HowManyCount를 작성
+ * (크래프팅에서 같은 종류의 아이템이 수량이 얼마인지 정확하게 알필요가 있음)
+ * 
+ * <v7.2 - 2024_0127_최원준>
+ * 1- ReduceItem의 ItemInfo를 직접 받는 오버로딩 메서드 구현
+ * 
+ * 2- RemoveItem ItemInfo를 받는 메서드에서 CalculateItemObjCount를 호출하지 않고 있던 점 수정
+ * 
+ * 
+ * <v7.3 - 2024_0128_최원준>
+ * 1- AddItemMisc메서드에서 GetCurRemainSlotCount로 조건 검사하고 있던 부분을 삭제하고 IsAbleToAddMisc으로 조건검사하도록 변경
+ * 잡화아이템의 경우 슬롯이 없어도 중첩될 수 있다면 들어갈 수 있어야 하므로
  * 
  */
 
@@ -376,7 +392,7 @@ namespace InventoryManagement
         private bool AddItemMisc(ItemInfo itemInfo, bool isLatestModify=false, int slotIndex=-1, bool isActiveTabAll=false)
         {
             // 아이템이 들어갈 공간이 없는 경우 실패를 반환합니다.
-            if( GetCurRemainSlotCount(itemInfo.Item.Type) == 0 )
+            if( !IsAbleToAddMisc(itemInfo.Name, itemInfo.OverlapCount) )
                 return false;
 
             // 아이템 정보를 전달하여 기존아이템에 채우기를 실행하고, 남은 수량을 반환받습니다.
@@ -501,9 +517,14 @@ namespace InventoryManagement
             // ItemInfo리스트에 직접 ItemInfo를 전달하여 목록에서 제거합니다.
             itemInfoList.Remove(itemInfo);
 
+            // 해당 아이템 종류의 현재 오브젝트의 갯수를 감소시킵니다.
+            CalculateItemObjCount(itemInfo.Type, -1);    
+
             // 목록에서 제거한 참조값을 다시 반환합니다. 
             return itemInfo;
         }
+
+
         
         /// <summary>
         /// 아이템의 이름을 인자로 받아서 해당 아이템을 검색하여 인벤토리의 딕셔너리 목록에서 제거해주는 메서드 입니다.<br/>
@@ -542,127 +563,78 @@ namespace InventoryManagement
 
 
 
-
-
-
-
-        
         /// <summary>
-        /// 아이템 이름을 기반으로 해당 아이템의 ItemType 값을 반환합니다<br/>
-        /// 아이템이 현재 인벤토리의 목록에 존재하지 않아도 ItemType 값을 얻을 수 있습니다.<br/><br/>
-        /// ** 해당하는 이름의 아이템이 월드 아이템 목록에 존재하지 않는 경우 예외 발생 **
+        /// 인자로 전달 한 이름에 해당 하는 아이템의 수량이 얼마인지를 알려줍니다.
         /// </summary>
-        /// <returns>이름에 해당하는 아이템 타입을 반환</returns>
-        public ItemType GetItemTypeIgnoreExists(string itemName)
-        {            
-            return createManager.GetWorldItemType(itemName);
-        }
-
-        
-        /// <summary>
-        /// 아이템의 이름을 기반으로 해당 아이템의 딕셔너리 참조값을 반환합니다<br/>
-        /// 아이템 이름에 해당하는 종류의 아이템 사전이 존재하지 않는다면 null을 반환합니다.<br/>
-        /// ** 해당하는 이름의 아이템이 월드 아이템 목록에 존재하지 않는 경우 예외 발생 **
-        /// </summary>
-        /// <returns>해당 아이템 종류의 사전을 반환</returns>
-        public Dictionary<string, List<ItemInfo>> GetItemDic(string itemName)
-        {            
-            ItemType itemType = createManager.GetWorldItemType(itemName);
-
-            return GetItemDic(itemType);
-        }
-
-
-        /// <summary>
-        /// 아이템의 타입을 기반으로 해당 아이템의 딕셔너리 참조값을 반환합니다<br/>
-        /// 해당 종류의 아이템 사전이 존재하지 않는다면 null을 반환합니다.<br/>
-        /// *** ItemType.None으로 전달 된 경우 예외를 던집니다 *** 
-        /// </summary>
-        /// <returns>해당 아이템 종류의 사전을 반환</returns>
-        public Dictionary<string, List<ItemInfo>> GetItemDic(ItemType itemType)
+        /// <returns>잡화 아이템의 경우에는 중첩 수량을, 비잡화 아이템의 경우에는 오브젝트 갯수를 반환</returns>
+        public int HowManyCount(string itemName)
         {
-            if(itemType == ItemType.None)
-                throw new Exception("정확한 종류의 아이템을 전달해야 합니다.");
+            ItemType itemType = GetItemTypeIgnoreExists(itemName);
 
-            int dicIdx = GetDicIndex(itemType);
+            List<ItemInfo> itemInfoList= GetItemInfoList(itemName);
 
-            if( dicIdx < 0 )
-                return null;
-            else
-                return itemDic[dicIdx];
-        }
-        
+                        
+            int totalCount = 0;
 
-        /// <summary>
-        /// 아이템 이름에 해당하는 ItemInfo 리스트 참조값을 반환합니다<br/>
-        /// 옵션을 통해 리스트가 없다면 새롭게 생성할 수 있습니다.<br/><br/>
-        /// *** 해당 아이템 이름이 월드사전에 매칭되지 않는 경우 예외가 발생 ***<br/>
-        /// *** 해당 아이템 이름의 종류에 해당하는 사전을 보관하고 있지 않다면 예외가 발생 ***
-        /// </summary>
-        /// <returns>
-        ///  1. 동일한 이름의 아이템이 하나라도 들어있다면 해당 ItemInfo 리스트를 반환합니다.<br/>
-        ///  2. 동일한 이름의 아이템이 하나라도 들어있지 않을 때 (새로 생성하기 옵션을 주지 않은 경우) null값을 반환합니다.(일반적 사용, IsExist를 대체가능)<br/>
-        ///  3. 동일한 이름의 아이템이 하나라도 들어있지 않을 때 (새로 생성하기 옵션을 준 경우) 새로운 ItemInfo 리스트를 반환합니다.(AddItem시 사용)
-        /// </returns>
-        public List<ItemInfo> GetItemInfoList(string itemName, bool isNewIfNotExist=false)
-        {
-            // 아이템 이름에 해당하는 사전 인덱스를 구합니다.
-            int dicIdx = GetDicIndex( GetItemTypeIgnoreExists(itemName) );
-
-            // 사전인덱스 값이 0이하라면 예외를 던집니다.
-            if(dicIdx<0)
-                throw new Exception("해당 아이템 이름에 해당하는 사전이 존재하지 않습니다.");
-
-            // 아이템이 하나라도 들어있다면 바로 해당 ItemInfo 리스트를 반환합니다.
-            if(itemDic[dicIdx].ContainsKey(itemName))
-                return itemDic[dicIdx][itemName];
-            
-            // 아이템이 들어있지 않을때, 새로 생성하기 옵션이 있는 경우
-            // ItemInfo 리스트를 새로 생성 및 등록하여 반환합니다.
-            else if(isNewIfNotExist)     
-            {                    
-                List<ItemInfo> itemInfoList = new List<ItemInfo>();  // ItemInfo 리스트를 새로 만듭니다.
-                itemDic[dicIdx].Add(itemName, itemInfoList);         // 인벤토리 사전에 ItemInfo 리스트를 집어넣습니다.
-                return itemInfoList;                                 // 생성된 ItemInfo 리스트 참조를 반환합니다.
+            // 잡화 아이템의 경우 중첩수량을 누적시킵니다.
+            if(itemType == ItemType.Misc)
+            {
+                foreach(ItemInfo itemInfo in itemInfoList)
+                    totalCount += itemInfo.OverlapCount;
             }
+            // 비잡화 아이템의 경우 오브젝트 숫자를 누적시킵니다. 
+            else
+                totalCount = itemInfoList.Count;
             
-            // 아이템이 들어있지 않을때, 새로 생성하기 옵션이 없는 경우 null을 반환합니다.
-            else                    
-                return null;           
-        }
-
-
-        /// <summary>
-        /// 아이템 이름을 입력하여 해당 아이템의 종류 enum을 int형으로 반환받습니다. (인벤토리에 존재하지 않아도 됩니다.) <br/>
-        /// *** 아이템이 월드 사전에 존재하지 않는다면 예외가 발생***
-        /// </summary>
-        /// <returns>해당 아이템의 ItemType의 int형 반환 값</returns>
-        public int GetItemTypeIndexIgnoreExists(string itemName)
-        {   
-            return (int)GetItemTypeIgnoreExists(itemName);
+            return totalCount;
         }
 
 
 
+
         /// <summary>
-        /// 해당 아이템의 이름을 인자로 넣어 아이템의 중첩 최대 갯수를 반환 받습니다.<br/>
-        /// 아이템 별로 동일한 최대 중첩 가능 갯수를 알기 위한 메서드입니다.<br/><br/>
-        /// 현재 IsAbleToAddMisc메서드에서 내부적으로 사용됩니다.<br/><br/>
-        /// *** 해당하는 이름의 아이템이 잡화아이템이 아니거나 없는 경우 예외가 발생합니다.<br/>
+        /// 아이템 참조값을 직접 전달하여 해당 아이템의 전달 수량만큼 감소시킵니다.<br/><br/>
+        /// *** 아이템 정보 전달이 되지 않았거나, 수량 인자 전달이 잘못된 경우 예외가 발생 ***<br/>
+        /// *** 잡화아이템이 아닌 경우 예외가 발생 ***
         /// </summary>
-        /// <param name="itemName"></param>
-        /// <returns>아이템의 최대 갯수를 반환합니다.</returns>
-        public int GetItemMaxOverlapCount(string itemName)
+        /// <returns>수량이 충분하지 않으면 false를, 수량이 충분하여 감소에 성공하면 true를 반환</returns>
+        public bool ReduceItem(ItemInfo itemInfo, int overlapCount)
         {
-            Dictionary<string, Item> worldDic = createManager.GetWorldDic(itemName);
-
-            ItemMisc itemMisc = worldDic[itemName] as ItemMisc;
+            if(itemInfo==null)
+                throw new Exception("아이템 정보가 전달되지 않았습니다.");
             
-            if(itemMisc==null)
-                throw new Exception("해당 아이템 이름이 잡화아이템이 아닙니다.");
+            if(overlapCount<=0)
+                throw new Exception("수량인자 전달이 잘못되었습니다.");
 
-            return itemMisc.MaxOverlapCount;
+
+            ItemMisc itemMisc = itemInfo.Item as ItemMisc;
+            
+            if(itemMisc == null)
+                throw new Exception( "비잡화 아이템의 경우 수량을 줄일 수 없습니다. RemoveItem메서드를 실행해주세요.");
+
+            // 아이템이 보유한 수량이 들어온 수량보다 적다면 실패를 반환합니다.
+            if( itemMisc.OverlapCount < overlapCount )
+                return false;
+            else
+                itemMisc.AccumulateOverlapCount(-overlapCount);
+
+            // 수량이 0이되면 파괴하고
+            if( itemMisc.OverlapCount==0 )
+            {
+                RemoveItem(itemInfo);                       // 인벤토리 목록에서 제거합니다.
+                GameObject.Destroy( itemInfo.gameObject );  // 최상위 오브젝트(2D오브젝트)를 제거합니다.
+                itemInfo.StatusWindowInteractive.OnItemPointerExit();   // 상태창을 종료시켜줍니다.
+            }
+            // 아니라면 수량정보를 업데이트 합니다.
+            else
+                itemInfo.UpdateTextInfo();
+
+            return true;
         }
+
+        
+        
+
 
 
 

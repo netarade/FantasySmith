@@ -86,6 +86,15 @@ using UnityEngine.UI;
  * 
  * 2- Start문에서 서버여부와 ownerId가 플레이어 인벤토리와 틀린지 검사해서 예외처리하는 부분 추가
  * 
+ * <v3.4 - 2024_0126_최원준>
+ * 1- SlotActivate 및 Deactivate시 itemInfo의 ItemCol을 현 스크립트에서 설정해주던 부분을
+ * ItemInfo의 OnItemEquip, OnItemUnequip메서드로 옮김
+ * 
+ * <v3.5 - 2024_0127_최원준>
+ * 1- SlotDeactivate메서드에서 AddItemToSlot메서드의 호출을 해당 아이템의 OnItemUnequip에서 호출하도록 맡김
+ * 이유는 이미지 스케일의 변형 문제가 있어서 호출 시점을 한번에 조절하기 위함.
+ * 
+ * 
  */
 
 
@@ -274,17 +283,14 @@ public class QuickSlot : InventoryInfo
         // 아이템을 장착할 계층 정보를 받아옵니다.
         Transform equipTr = GetEquipTr(slotItemInfo[slotIndex]);
 
-        // 아이템을 장착합니다.
+        // 장착할 계층 정보를 전달하여 해당 슬롯의 아이템을 장착합니다.
         slotItemInfo[slotIndex].OnItemEquip(equipTr);
-
-        // 아이템의 기본 콜라이더를 비활성화 합니다.
-        slotItemInfo[slotIndex].ItemCol.enabled = false;
-
+                        
         // 장착 슬롯넘버로 설정합니다.
         equipSlotIndex = slotIndex;
+                
 
 
-        
         // 더미 이미지를 설정합니다.
         dummyImg[slotIndex].sprite = slotItemInfo[slotIndex].innerSprite;
 
@@ -317,14 +323,11 @@ public class QuickSlot : InventoryInfo
         
         // 자리한 더미를 다시 빈리스트로 보냅니다
         dummyRectTr[equipSlotIndex].SetParent(emptyListTr, false);
+                
+        // 아이템의 장착을 해제합니다.
+        slotItemInfo[equipSlotIndex].OnItemUnequip( this, equipSlotIndex );
 
-        // 장착한 아이템을 지정 슬롯에 다시 추가합니다.
-        AddItemToSlot( slotItemInfo[equipSlotIndex], equipSlotIndex, interactive.IsActiveTabAll );
-                        
-        // 아이템의 기본 콜라이더를 활성화 합니다.
-        slotItemInfo[equipSlotIndex].ItemCol.enabled = true;
-
-        // 아이템 장착상태 해제
+        // 아이템 장착 상태를 해제
         isItemEquipped = false;
 
         return true;

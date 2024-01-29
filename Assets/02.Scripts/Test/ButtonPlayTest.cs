@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using InventoryManagement;
 using CreateManagement;
+using ItemData;
 
 
 /* [작업 사항]
@@ -37,21 +38,11 @@ public class ButtonPlayTest : MonoBehaviour
 
     public void btnCreateItem()
     {
-        //playerInventoryInfo.AddItem( "Mud", 1 );
-        //playerInventoryInfo.AddItem( "Thread", 1 );
-        //playerInventoryInfo.AddItem( "Vine", 1 );
-        //playerInventoryInfo.AddItem( "StoneAxe", 1 );
-        playerInventoryInfo.AddItem( "Food1", 3 );
-        playerInventoryInfo.AddItem( "흙", 5 );
-
-        if(playerInventoryInfo.IsItemEnough("Mud",2) )
-            Debug.Log($"Mud 2개 초과");
-        
-        //if(inventoryInfo.IsItemEnough("Thread",3) )
-        //    Debug.Log($"Thread 3개 초과");
-
-        //if(inventoryInfo.IsItemEnough("Vine",5) )
-        //    Debug.Log($"Vine 5개 초과");
+        playerInventoryInfo.AddItem( "Mud", 5 );
+        playerInventoryInfo.AddItem( "Thread", 1 );
+        playerInventoryInfo.AddItem( "Vine", 1 );
+        playerInventoryInfo.AddItem( "StoneAxe", 1 );
+        playerInventoryInfo.AddItem( "Food1", 1 );
 
     }
 
@@ -73,8 +64,20 @@ public class ButtonPlayTest : MonoBehaviour
     }
 
     public void CraftStart()
-    {        
-        createManager.CreateWorldInventoryItem(userInfo,"인벤토리").OnItemWorldDrop(playerInventoryInfo.baseDropTr);       
+    {      
+         ItemPair[] itemPairs = { 
+            new ItemPair( "Mud", 2 ), 
+            new ItemPair( "Thread", 3),
+            new ItemPair( "Vine", 5),
+            new ItemPair( "StoneAxe", 1),
+            };
+
+
+        if(playerInventoryInfo.IsItemEnough(itemPairs))
+        {
+            playerInventoryInfo.ReduceItem(itemPairs);
+        }
+ 
         
     }
 

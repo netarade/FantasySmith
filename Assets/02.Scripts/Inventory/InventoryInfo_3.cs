@@ -1,5 +1,6 @@
 using DataManagement;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -66,6 +67,15 @@ using UnityEngine.UI;
  * 이니셜라이저로 대체하는 것이고, 따로 등록하지 않아도 되기 때문
  * (나중에 로비 화면(로그인화면)이 생기면 진행할 예정)
  * 
+ * <v2.6 - 2024_0126_최원준>
+ * 1- SwitchInventoryAppear메서드 내부에 SwitchAllItemAppearAs2D메서드를 같이 호출하도록 설정
+ * 아이템이 인벤토리 창을 닫아도 셀렉팅이 일어나는 현상이 있어 인벤토리 창을 닫을 때 아이템의 기능도 같이 비활성화 하도록 설정
+ * 
+ * 
+ * <v2.7 - 2024_0128_최원준>
+ * 1- 애니메이션의 길이가 재생 된 이후에 인벤토리 창이 열리도록 하였음
+ * AllItemAppearAfterAnimation와 GetLongestAnimationLength메서드를 정의
+ * 
  */
 
 
@@ -73,17 +83,17 @@ using UnityEngine.UI;
 public partial class InventoryInfo : MonoBehaviour
 {
     // 플레이어와 상호작용하는 인벤토리쪽에서 참조하게 될 플레이어(서버) 인벤토리
-    protected InventoryInfo serverInfo = null;    
+    protected InventoryInfo serverInfo = null;
 
     // 플레이어(서버) 쪽에서 상호작용 시 참조하게 될 클라이언트 인벤토리
-    protected List<InventoryInfo> clientInfo = null;     
+    protected List<InventoryInfo> clientInfo = null;
 
     /// <summary>
     /// 해당 인벤토리가 다른 인벤토리와 상호작용 (연결) 상태라면 서버(플레이어) 인벤토리의 참조를 반환합니다.<br/>
     /// </summary>
-    public InventoryInfo ServerInfo {  get { return serverInfo; } }
+    public InventoryInfo ServerInfo { get { return serverInfo; } }
 
-    
+
     /// <summary>
     /// 해당 인벤토리가 서버 인벤토리라면, 연결 중인 클라이언트 인벤토리의 정보를 가지고 있으며 
     /// 이 리스트의 참조를 반환합니다.<br/>
@@ -103,7 +113,7 @@ public partial class InventoryInfo : MonoBehaviour
     /// </summary>
     public bool IsServer { get { return isServer; } }
 
-    
+
     protected bool isOpen;
 
     protected bool isConnect = false;
@@ -117,7 +127,7 @@ public partial class InventoryInfo : MonoBehaviour
     /// 현재 인벤토리가 다른 인벤토리와 연결되어있는지 여부를 반환합니다.
     /// </summary>
     public bool IsConnect { get { return isConnect; } }
-    
+
 
     [HideInInspector]
     public CanvasGroup inventoryCG;        // 인벤토리의 캔버스 그룹
@@ -127,7 +137,7 @@ public partial class InventoryInfo : MonoBehaviour
     /// </summary>
     public GraphicRaycaster gRaycaster { get { return inventoryTr.parent.GetComponent<GraphicRaycaster>(); } }
 
-    
+
     /// <summary>
     /// 인벤토리 창을 자동으로 열고닫는 메서드입니다.<br/>
     /// 플레이어 InputSystem에서의 I키를 누를 때 호출해야 합니다.<br/>
@@ -135,11 +145,11 @@ public partial class InventoryInfo : MonoBehaviour
     public void InventoryOpenSwitch()
     {
         // 다른 인벤토리와 연결된 상태라면 작동하지 않습니다.
-        if(isConnect)
+        if( isConnect )
             return;
-        
+
         SwitchInventoryAppear( !isOpen );   // 호출 시 마다 반대 상태로 넣어줍니다
-        isOpen = !isOpen;                   // 상태 변화를 반대로 기록합니다
+        isOpen=!isOpen;                     // 상태 변화를 반대로 기록합니다
     }
 
 
@@ -147,10 +157,10 @@ public partial class InventoryInfo : MonoBehaviour
     /// 인벤토리 창을 수동으로 열고 닫는 메서드입니다.<br/>
     /// connect, disconnect 상태에서의 호출에 사용합니다.
     /// </summary>
-    public void InitOpenState(bool isOpen)
-    {        
-        SwitchInventoryAppear(isOpen);  // 게임 시작 시 인벤토리 판넬을 꺼둔다.
-        this.isOpen = isOpen;           //초기에 인벤토리는 꺼진 상태
+    public void InitOpenState( bool isOpen )
+    {
+        SwitchInventoryAppear( isOpen );      // 인벤토리 판넬 가시성을 초기화합니다.
+        this.isOpen=isOpen;               // 인벤토리 Open 상태를 초기화합니다.
     }
 
 
@@ -159,8 +169,53 @@ public partial class InventoryInfo : MonoBehaviour
     /// </summary>
     protected void SwitchInventoryAppear( bool isOpen )
     {
-        inventoryCG.blocksRaycasts = isOpen;   // 그룹의 블록 레이캐스트를 조절해줍니다
-        inventoryCG.alpha = isOpen ? 1f : 0f;  // 그룹의 투명도를 조절해줍니다
+        inventoryCG.blocksRaycasts=isOpen;    // 그룹의 블록 레이캐스트를 조절해줍니다
+        inventoryCG.alpha=isOpen ? 1f : 0f;   // 그룹의 투명도를 조절해줍니다
+
+        StartCoroutine( AllItemAppearAfterAnimation(isOpen) );    // 인벤토리 창 오픈 시 애니메이션 재생
+    }
+
+    /// <summary>
+    /// isOpen상태에 따라 애니메이션 재생이 끝난 후 아이템의 모습을 스위칭 합니다.
+    /// </summary>
+    /// <returns></returns>
+    protected IEnumerator AllItemAppearAfterAnimation(bool isOpen)
+    {
+        // Open시 애니메이션 최대길이 만큼 쉬어준 후 인벤토리에 속한 모든 아이템의 2D 모습을 보여줍니다.
+        if( isOpen )
+        {
+            if( animations!=null )  // 애니메이션이 존재하는 경우
+            {
+                foreach( Animation animation in animations )
+                    animation.Play();
+
+                yield return animationWaitTime;
+            }
+
+            SwitchAllItemAppearAs2D( isOpen );       
+        }
+        // Close시에는 바로 아이템의 2D 모습을 종료합니다.
+        else            
+            SwitchAllItemAppearAs2D( isOpen ); 
+    }
+
+
+
+    /// <summary>
+    /// 애니메이션 클립의 가장 큰 길이를 구하는 메서드입니다.
+    /// </summary>
+    /// <returns>애니메이션 재생에 필요한 가장 큰 길이</returns>
+    protected float GetLongestAnimationLength( Animation[] animations )
+    {
+        float maxLength = 0f;
+        
+        foreach( Animation animation in animations )
+        {
+            if( animation.clip.length > maxLength )
+                maxLength = animation.clip.length;
+        }
+
+        return maxLength;
     }
 
 

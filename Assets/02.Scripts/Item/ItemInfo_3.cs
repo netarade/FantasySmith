@@ -3,6 +3,7 @@ using DataManagement;
 using ItemData;
 using System;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 /*
 * [작업 사항]
@@ -42,7 +43,20 @@ using UnityEngine;
 * 
 * 4- isRegistered 속성을 정의하여 월드인벤토리에 등록되었는지 여부를 기록하고, 해당 정보를 토대로 SetPrivateId를 추가호출 가능성 여부를 판단.
 * 
+* <v3.1 - 2024_0126_최원준>
+* 1- OnItemEquip메서드를 기본적으로 인자로 전달받은 Transform의 계층 하위에만 속하게 해주고 
+* 위치정보를 받아가지 않도록 하였음. 아이템에 내부적으로 저장되어있는 STransform을 참조하여 변환정보를 결정.
+* 
+* + 주석 보완
+* 
+* 2- OnItemEquip 메서드가 아이템이 원래 가지고 변환 정보를 기록하도록 STransform equipPrevTr 변수 추가
+* 
+* 3- OnItemUnEquip메서드 작성 - 다시 원래의 변환정보로 돌아가게 하는 기능
+* 
+* 4- 아이템을 장착할 때 하위 2d오브젝트의 스케일 값이 부모 3d스케일 값에 따라 변하므로 다시 원래대로 돌려주는 기능 추가
+* 
 */
+
 
 public partial class ItemInfo : MonoBehaviour
 {    
@@ -57,7 +71,7 @@ public partial class ItemInfo : MonoBehaviour
         ItemWeapon itemWeapon = item as ItemWeapon;
         ItemBuilding itemBuilding = item as ItemBuilding;
         ItemMisc itemMisc = item as ItemMisc;
-
+        
         // 무기와 건설재료아이템의 경우 내구도를 체크합니다.
         if( itemWeapon!=null )
         {
@@ -95,36 +109,121 @@ public partial class ItemInfo : MonoBehaviour
 
 
 
+    /// <summary>
+    /// ItemStatus구조체를 전달받아 해당 수치만큼 수량에 변화를 주는 메서드의 대리자
+    /// </summary>
+    public delegate void StatusChangeAction(ItemStatus status);
 
+    /// <summary>
+    /// 아이템의 종류가 ItemFood인 경우에 호출가능한 메서드입니다.<br/>
+    /// 아이템을 섭취하여 캐릭터의 스테이터스에 영향을 줍니다.<br/><br/>
+    /// </summary>
+    /// <returns>아이템 섭취에 성공하면 true를, 실패하면 false를 반환</returns>
+    public bool OnItemEat(StatusChangeAction StatusChange)
+    {        
+        ItemFood itemFood = item as ItemFood;
 
+        if( itemFood==null )
+            throw new Exception("아이템의 종류가 음식이 아닙니다.");
+        
+        if(StatusChange == null)
+            throw new Exception("스테이터스를 변경시키는 메서드가 전달되지 않았습니다.");
 
-    public void OnItemUse()
-    {
-            
+        // 수량감소에 성공하면 스테이터스 변화 메서드를 호출하고 true를 반환
+        if( inventoryInfo.ReduceItem( this, 1 ) )
+        {
+            StatusChange( StatusInfo );
+            return true;
+        }
+        // 수량감소에 실패하면 false를 반환
+        else
+            return false;
     }
 
 
 
-    public void OnItemDrink()
-    {
 
-    }
+
+
+    bool isEquip = false;                       // 아이템의 현재 장착여부
+    STransform equipPrevTr = new STransform();   // 아이템이 장착 이전에 가지고 있던 변환정보 
 
 
     /// <summary>
-    /// 장비 아이템을 장착합니다.<br/>
-    /// 인자로 전달된 Transform과 동일한 위치와 회전정보를 가지며, 계층하위 자식으로서 속하게 됩니다.<br/><br/>
+    /// 아이템을 장착할 때 호출해줘야 하는 메서드입니다.<br/>
+    /// 인자로 전달된 Transform의 계층하위 자식으로서 속하게 되며,<br/>
+    /// 아이템이 내부적으로 보유하고 있는 STransform 정보와 동기화 합니다.<br/><
     /// *** 장비 아이템이 아니라면 예외가 발생합니다. ***
     /// </summary>
-    /// <returns>해당 아이템의 ItemInfo 값을 다시 반환</returns>
-    public ItemInfo OnItemEquip(Transform equipTr)
+    public void OnItemEquip(Transform equipTr)
     {
         if( !(item is ItemEquip) )
             throw new Exception("아이템이 장착가능한 타입이 아닙니다.");
+        if( equipTr==null )
+            throw new Exception("장비 아이템을 장착할 계층정보를 전달해야 합니다.");
+        if( isEquip )
+            throw new Exception("이 아이템은 이미 장착 상태이므로 장착을 할 수 없습니다.");
 
-        OnItemWorldDrop(equipTr, true);
-        return this;
+        // 아이템이 계층정보가 변경되기 전의 절대 크기를 기록합니다.
+        Vector3 prevItem2dLossyScale = itemRectTr.lossyScale;
+
+        // 아이템의 계층정보가 변하기 전(2D상태에서) 원본 로컬 변환정보를 기록합니다.
+        equipPrevTr.Serialize(Item3dTr, true);        
+
+        // 월드에 아이템을 방출하고 equipTr의 계층에 종속시킵니다.
+        OnItemWorldDrop(equipTr, TrApplyRange.Pos, true);
+        
+        // 아이템이 기본적으로 가지고 있는 STransform 값을 Item3dTr의 로컬정보에 적용시켜줍니다.
+        SerializedTr.Deserialize(Item3dTr, true);
+                
+        // 2d스케일이 하위 자식상태에서 변동이 일어나므로 원래의 값으로 맞추어줍니다.
+        // 그렇지 않으면 다시 슬롯에 돌아갈 때 스케일이 변형된 상태가 되므로 이미지 사이즈가 변하게 될 것입니다
+        STransform.SetLossyScale(itemRectTr, prevItem2dLossyScale);
+
+        // 아이템의 기본 콜라이더를 비활성화 합니다.
+        ItemCol.enabled = false;
+
+        // 장착상태를 활성화합니다.
+        isEquip = true;
     }
+
+   
+
+
+
+
+
+
+    /// <summary>
+    /// 아이템 장착을 해제할 때 호출해줘야 하는 메서드입니다.<br/>
+    /// 장착 이전 아이템의 변환 정보로 값을 회귀합니다.<br/><br/>
+    /// </summary>
+    public void OnItemUnequip( QuickSlot quickSlot, int slotIndex )
+    {
+        if( !isEquip )
+            throw new Exception( "장착 상태가 아니므로 장착을 해제할 수 없습니다." );
+
+        if( quickSlot==null )
+            throw new Exception( "퀵슬롯 스크립트 정보가 없습니다." );
+        if( slotIndex<0 || slotIndex >= quickSlot.slotLen )
+            throw new Exception( "슬롯 인덱스 정보가 잘못되었습니다." );
+
+        
+        // 장착한 아이템을 지정 슬롯에 다시 추가합니다.
+        quickSlot.AddItemToSlot( this, slotIndex, quickSlot.interactive.IsActiveTabAll );
+                      
+        // 아이템이 보유하고 있는 이전 로컬 변환정보를 Item3DTr에 입력합니다.
+        equipPrevTr.Deserialize( Item3dTr, true );
+
+        // 아이템의 기본 콜라이더를 활성화 합니다.
+        ItemCol.enabled = true;
+
+        // 장착 상태를 비활성화 합니다.
+        isEquip = false;
+    }
+
+
+
 
 
     bool isRegisterdToWorld = false;    // 월드 인벤토리에 등록되었는지 여부

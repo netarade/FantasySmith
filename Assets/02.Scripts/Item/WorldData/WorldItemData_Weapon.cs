@@ -34,7 +34,8 @@ namespace WorldItemData
 public partial class WorldItem
 {
     private Dictionary<string, Item> InitDic_Weapon()
-    {        
+    {    
+
         return new Dictionary<string, Item>()
         {
             //키 값, (아이템 타입, 넘버링, 스트링 네임, 아이템 비주얼 그래픽 배열, 무기 타입, 공격력, 내구도, "아이템 설명") 

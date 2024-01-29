@@ -302,6 +302,9 @@ using CreateManagement;
  *<v11.2 - 2024_0128_최원준>
  *1- 애니메이션의 길이가 재생 된 이후에 인벤토리 창이 열리도록 Animation컴포넌트 배열과 WaitForSeconds 변수 추가
  *
+ *<v11.3 - 2024_0129_최원준>
+ *1 - 전체 슬롯 공유 여부를 반환하는 IsShareAll 프로퍼티 추가
+ *ItemInfo에서 참조하여 슬롯 인덱스 설정에 활용
  *
  */
 
@@ -340,7 +343,7 @@ public partial class InventoryInfo : MonoBehaviour
     
     [Header("기본 드랍위치 부모 지정 옵션")]
     public bool isBaseDropSetParent;            // 드롭장소에 부모 계층에 속할지 지정하는 옵션 (씬정리 용도 및 부모와 함께 움직이도록 하는 용도)
-    
+        
         
     protected Transform ownerTr;                // 인벤토리 소유자 위치 정보
     protected UserInfo ownerInfo;               // 인벤토리 소유자 정보
@@ -384,6 +387,12 @@ public partial class InventoryInfo : MonoBehaviour
     /// 저장 파일이름 예시 - Player0_InventoryInfo_
     /// </summary>
     public string SaveFileName { get { return OwnerName + OwnerId + "_" + ScriptName + "_"; } }             
+
+
+    /// <summary>
+    /// 현재 인벤토리의 전체 슬롯 공유 여부를 반환합니다.
+    /// </summary>
+    public bool IsShareAll { get { return initializer.isShareAll; } }
 
 
     protected virtual void Awake()
@@ -438,6 +447,7 @@ public partial class InventoryInfo : MonoBehaviour
         // 슬롯 생성 이후 모든 애니메이션 컴포넌트를 참조합니다.
         animations = GetComponentsInChildren<Animation>();  
         animationWaitTime = new WaitForSeconds(animationTime);  //애니메이션 최대 길이에 해당하는 인스턴스를 초기화합니다.
+
     }
 
 

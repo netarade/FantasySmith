@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using DataManagement;
 using ItemData;
 
 /*
@@ -7,6 +8,9 @@ using ItemData;
 * 
 * <v1.0 - 2024_0111_최원준>
 * 1- 퀘스트 아이템 클래스추가로 새로운 파일 생성
+* 
+* <v1.1 - 2024_0130_최원준>
+* 1- 퀘스트 아이템이 ItemEquip을 상속하면서 LeatherHood가 STransform관련 선택인자를 생성자에 입력
 * 
 */
 
@@ -20,7 +24,7 @@ public partial class WorldItem
         {            
             {
                 "LeatherHood", new ItemQuest( ItemType.Quest, "0000", "Leatherhood", new VisualReferenceIndex(0),
-                "Raincoat made of leather." )
+                "Raincoat made of leather.", EquipType.Helmet, STransform.GetSTransform(0) )
             },
             {
                 "MysteriousStone", new ItemQuest( ItemType.Quest, "0002", "MysteriousStone", new VisualReferenceIndex(2),

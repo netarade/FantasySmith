@@ -55,6 +55,9 @@ using UnityEngine.UIElements;
 * 
 * 4- 아이템을 장착할 때 하위 2d오브젝트의 스케일 값이 부모 3d스케일 값에 따라 변하므로 다시 원래대로 돌려주는 기능 추가
 * 
+* <v3.2 - 2024_0129_최원준>
+* 1- 아이템 장착시 리지드바디의 중력을 끄고, 장착 해제 시 중력을 다시 키도록 구현 (무기가 떨어지므로)
+* 
 */
 
 
@@ -182,6 +185,10 @@ public partial class ItemInfo : MonoBehaviour
 
         // 아이템의 기본 콜라이더를 비활성화 합니다.
         ItemCol.enabled = false;
+        
+        // 아이템의 중력을 해제합니다.
+        itemRb.useGravity = false;
+
 
         // 장착상태를 활성화합니다.
         isEquip = true;
@@ -217,6 +224,9 @@ public partial class ItemInfo : MonoBehaviour
 
         // 아이템의 기본 콜라이더를 활성화 합니다.
         ItemCol.enabled = true;
+
+        // 아이템의 중력을 활성화합니다.
+        itemRb.useGravity = true;
 
         // 장착 상태를 비활성화 합니다.
         isEquip = false;

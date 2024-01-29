@@ -98,9 +98,10 @@ namespace DataManagement
     {        
         /*** 개별 클래스 상태로 저장해야 하며, (아이템 클래스가 추가될 때 마다) 모든 타입의 딕셔너리 변수를 선언해야 합니다. ***/
         public List<ItemWeapon> weapList;
-        public List<ItemMisc> miscList;
         public List<ItemQuest> questList;
+        public List<ItemMisc> miscList;
         public List<ItemBuilding> buildingList;
+        public List<ItemFood> foodList;
 
         public int[] slotCountLimitTab;
 
@@ -142,9 +143,26 @@ namespace DataManagement
             Inventory inventory = new Inventory(initializer, createManager);
                       
             inventory.DeserializeItemListToDic<ItemWeapon>( this.weapList );
-            inventory.DeserializeItemListToDic<ItemMisc>( this.miscList );
             inventory.DeserializeItemListToDic<ItemQuest>( this.questList );
             inventory.DeserializeItemListToDic<ItemBuilding>( this.buildingList );
+
+
+            // foodList의 모든 아이템을 miscList에 저장
+            if( this.foodList!=null )
+            {
+                foreach( ItemFood itemFood in this.foodList )
+                {
+                    ItemMisc itemMisc = itemFood as ItemMisc; 
+                    if( itemMisc != null )
+                        this.miscList.Add( itemMisc );
+                }
+            }
+
+            // 합쳐진 miscList를 인벤토리의 잡화 딕셔너리에 저장
+            inventory.DeserializeItemListToDic<ItemMisc>( this.miscList );
+
+            
+
 
             for( int i = 0; i<inventory.tabLen; i++ )
                 inventory.slotCountLimitTab[i] = this.slotCountLimitTab[i];
@@ -162,11 +180,23 @@ namespace DataManagement
                 throw new Exception("인벤토리 참조값이 전달되지 않았습니다.");
 
             // SInventory에 최신 Inventory의 정보를 입력합니다.
-            this.weapList=inventory.SerializeDicToItemList<ItemWeapon>();
-            this.miscList=inventory.SerializeDicToItemList<ItemMisc>();
-            this.questList=inventory.SerializeDicToItemList<ItemQuest>();
+            this.weapList = inventory.SerializeDicToItemList<ItemWeapon>();
+            this.questList = inventory.SerializeDicToItemList<ItemQuest>();
             this.buildingList = inventory.SerializeDicToItemList<ItemBuilding>();
             
+            this.foodList = inventory.SerializeDicToItemList<ItemFood>();  // 저장 할 자식 리스트
+                                                                            
+
+            this.miscList = inventory.SerializeDicToItemList<ItemMisc>();  // 전체 리스트
+            
+            if( this.foodList!=null )
+            {
+                foreach( ItemFood itemFood in this.foodList )
+                    this.miscList.Remove( (ItemMisc)itemFood );
+            }
+
+
+
             for(int i=0; i<inventory.tabLen; i++)
                 this.slotCountLimitTab[i] = inventory.slotCountLimitTab[i];
         }

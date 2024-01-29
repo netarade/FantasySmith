@@ -281,7 +281,20 @@ using UnityEngine.Assertions.Must;
  * 
  * <v11.2 - 2024_0126_최원준>
  * 1- 유틸리티 적인 성격의 메서드를 Inventory_4.cs로 옮김 - (현 스크립트에는 초기화 관련 메서드를 모아둠) 
- * GetDicIndex
+ * 
+ * 
+ * <v11.3 - 2024_0129_최원준>
+ * 1- 이니셜라이저의 isShareAll(전체 슬롯 공유) 옵션에 따라서 인벤토리 동작을 수정
+ * 생성자 - 개별 탭 슬롯제한수를 마지막에 전체 탭 슬롯제한수와 일치시킴
+ * CalculateItemObjCount메서드 - 공유 옵션일 때 어떤 타입의 아이템이든 전체 탭카운팅만 증가
+ * GetCurRemainSlotCount메서드 - 공유 옵션일 때 어떤 타입의 아이템이든 전체 슬롯제한수를 기준으로 남은 슬롯수 반환
+ * 
+ * 2- ItemFood 세부타입 파일 세이브 로드를 위해
+ * TypeMatchingItemClassToItemType메서드에 ItemFood가 ItemType.Misc을 반환하도록 설정
+ * 
+ * 3- 중첩아이템의 경우 수량 소모로 인해 중첩이 가능한 상태이면, 세이브할 때 중첩하지 않고 저장해놨다가, 로드할 때 강제로 중첩되어 오브젝트가 사라진것 처럼 보이는 이슈가 있음.
+ * 이를 해결하기 위해 DeserializeItemListToDic메서드에서 AddItem시 잡화아이템이라도 중첩시키지 않고 슬롯의 위치에 바로 추가하도록 하였음. 
+ * 
  * 
  * 
  */
@@ -307,6 +320,7 @@ namespace InventoryManagement
 
         /*** 로드시에만 지정되는 속성들 ***/
         public TabType[] tabType;                               // 탭의 종류
+        public bool isShareAll;                                 // 전체탭 슬롯제한 수 공유여부
 
 
         /**** 로드 시에만 불러온 후 게임 중에 지속적으로 관리 및 참조해야 할 속성 ****/ 
@@ -428,12 +442,23 @@ namespace InventoryManagement
             int eachTabIdx = GetTabIndex(itemType);
             int allTabIdx = GetTabIndex(ItemType.None);
 
-            // 아이템 종류에 해당하는 탭 별 오브젝트 수를 증가시킵니다
-            tabItemObjCount[eachTabIdx] += inCount;
 
-            // 퀘스트 아이템이 아닌 경우에는 전체탭 카운트를 증가시킵니다
-            if(itemType != ItemType.Quest)
-                tabItemObjCount[allTabIdx] += inCount;
+            // 퀘스트 아이템의 경우 개별 오브젝트 갯수만 증가 시킨 후 종료합니다. (전체 갯수에 영향주지 않습니다)
+            if( itemType==ItemType.Quest )
+            {
+                tabItemObjCount[eachTabIdx]+=inCount;
+                return;
+            }
+            // 퀘스트 아이템이 아닌 경우
+            else
+            {
+                // 공유 옵션이 없는 경우에만 아이템 종류에 해당하는 탭 별 오브젝트 수를 증가시킵니다
+                if( !isShareAll )                        
+                    tabItemObjCount[eachTabIdx]+=inCount;
+                
+                // 전체탭 오브젝트 카운트를 증가시킵니다
+                tabItemObjCount[allTabIdx]+=inCount;
+            }
         }
 
 
@@ -484,7 +509,7 @@ namespace InventoryManagement
                 return slotCountLimitTab[(int)TabType.All];
             }
 
-            // 개별 탭 상태인 경우
+            // 개별 탭 상태인 경우                       
             return slotCountLimitTab[GetTabIndex(itemType)];
         }
 
@@ -501,8 +526,14 @@ namespace InventoryManagement
             if(itemType==ItemType.None )
                 throw new Exception("잘못된 유형의 아이템 종류입니다.");
 
-            // 아이템 종류에 해당하는 탭의 (최대 슬롯제한수-현재 오브젝트수)
-            return GetSlotCountLimitTab(itemType,false) - tabItemObjCount[GetTabIndex(itemType)];
+            // 전체 탭 공유 옵션인 경우 - 전체 슬롯 제한수 - 전체탭 오브젝트수
+            if( isShareAll )
+                return slotCountLimitTab[(int)TabType.All] - tabItemObjCount[(int)TabType.All];
+
+            // 전체 탭 공유 옵션이 아닌 경우 - 아이템 종류에 해당하는 탭의 (최대 슬롯제한수-현재 오브젝트수)
+            else                
+                return GetSlotCountLimitTab(itemType,false) - tabItemObjCount[GetTabIndex(itemType)];
+                
         }
 
 
@@ -518,23 +549,22 @@ namespace InventoryManagement
         /// <summary>
         /// 현재 인벤토리가 보관하고 있는 사전 중에서 원하는 종류의 아이템 인스턴스 리스트를 만들어 줍니다.<br/>
         /// 오브젝트를 제외한 아이템의 순수한 정보만 읽어들일 필요가 있을 때,<br/>
-        /// 게임 오브젝트 리스트를 직렬화 할 때, 씬을 넘어가기 전에 전달해야하는 용도로 사용합니다.
+        /// 게임 오브젝트 리스트를 직렬화 할 때, 씬을 넘어가기 전에 전달해야하는 용도로 사용합니다.<br/><br/>
         /// </summary>
-        /// <param name="itemType"> GameObject타입에서 Item타입으로 리스트화 할 사전목록의 종류를 정해주세요. Weapon, Misc등이 있습니다. </param>
+        /// <returns> Item의 하위 자식 클래스 T형식의 리스트를 만들어 반환합니다.</returns>
         public List<T> SerializeDicToItemList<T>() where T : Item
         {
-            // 새로운 T형식 아이템리스트를 생성합니다. (T형식은 Item을 상속하는 자식클래스입니다.)
+            // 새로운 T형식 아이템리스트를 생성합니다
             List<T> itemList = new List<T>();       
-
 
             // 현재 인벤토리에서 어떤 사전을 참조 할 것인지 T를 바탕으로 결정합니다.
             Dictionary<string, List<ItemInfo>> itemDic = null;
             ItemType itemType = ItemType.None;
-
-            // 들어온 아이템 클래스 T인자를 ItemType에 맞게 변환합니다.
+            
+            // 들어온 상위 부모 아이템 클래스 T인자를 ItemType에 맞게 변환합니다.
             itemType = TypeMatchingItemClassToItemType<T>();
 
-            // 변환한 itemType을 바탕으로 어떤 딕셔너리를 참조할 지 결정합니다.
+            // 변환한 상위부모의 itemType을 바탕으로 어떤 딕셔너리를 참조할 지 결정합니다.
             itemDic = GetItemDic(itemType);
 
             // 아이템 딕셔너리가 할당되어있지 않거나 갯수가 0이라면, null을 반환합니다.
@@ -542,18 +572,30 @@ namespace InventoryManagement
                 return null;
 
 
-            /*** 해당 사전의 아이템을 하나씩 불러와서 하위 클래스 형식(T형식) 으로 저장합니다. ***/
+            /*** 해당 사전의 아이템을 하나씩 불러와서 하위 클래스 형식으로 저장합니다. ***/
             // 해당 사전에서 ItemInfo 리스트를 하나씩 꺼내어
             foreach( List<ItemInfo> itemInfoList in itemDic.Values )    
             {
                 // Item 인스턴스를 하나씩 꺼내어 T형식으로 저장합니다.
                 foreach( ItemInfo itemInfo in itemInfoList )
-                    itemList.Add( (T)itemInfo.Item );            
+                {
+                    T item = itemInfo.Item as T;
+
+                    if( item != null )
+                        itemList.Add( item );
+                }
             }
 
             // Item의 하위 자식 타입으로 저장되어있는 itemList를 반환합니다.
             return itemList;
         }
+
+
+
+
+
+
+
 
 
         /// <summary>
@@ -572,6 +614,8 @@ namespace InventoryManagement
                 itemType = ItemType.Quest;
             else if( typeof(T)==typeof(ItemBuilding) )
                 itemType = ItemType.Building;
+            else if( typeof(T)==typeof(ItemFood))
+                itemType = ItemType.Misc;
             else
                 throw new Exception("아이템 클래스에 맞는 아이템 타입이 정의되어있지 않습니다.");
 
@@ -596,15 +640,18 @@ namespace InventoryManagement
 
 
             foreach(Item item in itemList) // 아이템 리스트에서 개념 아이템 정보를 하나씩 꺼내옵니다.
-            { 
+            {
+                ItemMisc itemMisc = item as ItemMisc;
+
                 // 월드에 오브젝트를 만들고 ItemInfo 참조값을 받습니다.
                 ItemInfo itemInfo = createManager.CreateWorldItem(item);
                                                
                 // 초기 활성탭에 따라 슬롯인덱스를 결정합니다.
                 int slotIndexTab = isInitializerIndexAll ? item.SlotIndexAll : item.SlotIndexEach;
 
-                // 인벤토리 내부에 슬롯을 지정하여 추가합니다.
-                AddItem(itemInfo, slotIndexTab, isInitializerIndexAll);
+                // 인벤토리 내부에 슬롯을 지정하여 추가합니다. (마지막 옵션으로 아이템이 중첩되지 않게 추가합니다.)
+                AddItem(itemInfo, slotIndexTab, isInitializerIndexAll, false);
+
             }
 
 
@@ -654,10 +701,10 @@ namespace InventoryManagement
 
 
 
-
             // 이니셜라이저에서 정의한 딕셔너리 타입을 참조하여 길이를 설정합니다.
             DicType[] dicTypes = initializer.dicTypes;
             int dicLen = dicTypes.Length;
+
 
             // 전체 배열 사용 전 할당합니다
             itemDic=new Dictionary<string, List<ItemInfo>>[dicLen];
@@ -673,7 +720,7 @@ namespace InventoryManagement
                 // 슬롯 제한수를 초기화합니다.
                 InitSlotCountLimitTab( dicType[i], dicTypes[i].slotLimit );
             }
-
+            
 
             // 활성화 탭타입의 길이가 0이 아닌 경우 탭타입이 전체로 선택되어있는지 검사
             if(initializer.showTabType.Length != 0)
@@ -683,6 +730,21 @@ namespace InventoryManagement
                 isInitializerIndexAll = true;
 
 
+
+
+            // 이니셜라이저에서 설정한 전체 탭 슬롯 공유여부를 초기화합니다.
+            isShareAll = initializer.isShareAll;
+             
+            // 탭 슬롯 제한수 공유가 활성화 되어있다면, 퀘스트 아이템을 제외한 모든 탭의 제한수를 전체 탭 제한수로 일치시킵니다.
+            if( isShareAll )
+            {                
+                for( int i = 0; i<tabLen; i++ )
+                {
+                    if( i==(int)TabType.All||i==(int)TabType.Quest )
+                        continue;
+                    slotCountLimitTab[i]=slotCountLimitTab[(int)TabType.All];
+                }
+            }
         }
 
 

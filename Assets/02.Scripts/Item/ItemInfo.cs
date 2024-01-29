@@ -409,6 +409,10 @@ using DataManagement;
  * 1- UpdatePositionInfo메서드 내부 MoveToSlot메서드에서 itemRectTr의 rotation값을 초기화하고 있던 부분을 localRotation을 초기화하도록 수정
  * (아이템습득 시 2D 이미지가 회전해버리는 문제가 생겼음)
  * 
+ * <v14.5 - 2024_0129_최원준>
+ * 1- 아이템의 Rigidbody itemRb 변수 및 프로퍼티 속성을 추가 및 OnItemCreated에서 초기화
+ * 이유는 장착 및 해제 시 중력을 OnOff할 필요성이 있으므로
+ * 
  */
 
 /// <summary>
@@ -445,6 +449,7 @@ public partial class ItemInfo : MonoBehaviour
     Transform itemTr;               // 자기자신 3D 트랜스폼 참조(초기 계층 - 하위 마지막 자식)
     CanvasGroup itemCG;             // 아이템의 캔버스 그룹 컴포넌트 (아이템이 월드로 나갔을 때 2D이벤트를 막기위한 용도) 
     Collider itemCol;               // 아이템의 3D오브젝트가 가지고 있는 기본 콜라이더
+    Rigidbody itemRb;               // 아이템의 3D오브젝트가 가지고 있는 리지드바디
 
     InventoryInfo worldInventoryInfo;   // 아이템을 3D상태로 보관할 수 있는 월드 인벤토리 정보
 
@@ -472,6 +477,7 @@ public partial class ItemInfo : MonoBehaviour
     /**** inveractive에서 변동일어 날 때마다 변동*****/
     bool isActiveTabAll;                // 현재 아이템이 담겨있는 인벤토리의 활성화 탭의 기준이 전체인지, 개별인지 여부
     TabType curActiveTab;               // 현재 아이템이 담겨있는 인벤토리의 활성화 탭 정보
+    
 
     
     /**** InventoryInfoChange 메서드 호출시 변동 ****/
@@ -517,10 +523,14 @@ public partial class ItemInfo : MonoBehaviour
     public TabType CurActiveTab { get { return curActiveTab;} }
 
     /// <summary>
-    /// 아이템이 기본적으로 3D 오브젝트의 최상위에 가지고 있는 콜라이더입니다.
+    /// 현재 아이템 3D 오브젝트의 최상위에 부착되어 있는 콜라이더입니다.
     /// </summary>
     public Collider ItemCol { get { return itemCol;} }
 
+    /// <summary>
+    /// 현재 아이템 3D 오브젝트의 최상위에 부착되어있는 리지드바디입니다.
+    /// </summary>
+    public Rigidbody ItemRb { get { return itemRb;} }
 
 
 
@@ -650,6 +660,9 @@ public partial class ItemInfo : MonoBehaviour
 
         // 3D오브젝트의 콜라이더 정보를 참조합니다.
         itemCol = itemTr.GetComponent<Collider>();      
+
+        // 3D 오브젝트의 리지드바디 정보를 참조합니다.
+        itemRb = itemTr.GetComponent<Rigidbody>();
         
         // 아이템의 중첩수량 텍스트를 초기화합니다.
         InitCountTxt();

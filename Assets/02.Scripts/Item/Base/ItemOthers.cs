@@ -45,6 +45,10 @@ using UnityEngine;
  * <v2.2 - 2024_0128_최원준>
  * 1 - ItemStatus 내부에 speed 속성을 추가, 생성자 선택인자 옵션을 제거
  * 
+ * <v2.3 - 2024_0130_최원준>
+ * 1- STransform 관련 변수를 ItemWeapon에서 ItemEquip클래스로 이전
+ * 
+ * 2- 퀘스트 아이템도 ItemEquip을 상속하도록 변경
  * 
  */
 
@@ -54,36 +58,68 @@ using UnityEngine;
 
 namespace ItemData
 {
-
-
-
-
     /// <summary>
-    /// 퀘스트 아이템 클래스 - 별도의 탭을 사용하기 때문에 ItemType의 대분류 기준에 속하며, Item을 상속합니다.<br/>
-    /// (특징 - 수량 표시하지 않음, 아이템 셀렉트 및 드랍이 불가능, 전체 탭에 표시되지 않음 )
+    /// 장착 타입 - 무기, 헬멧, 상의, 하의, 장갑, 없음
     /// </summary>
-    [Serializable]
-    public class ItemQuest : Item
-    {
-        public ItemQuest( ItemType mainType, string No, string name, VisualReferenceIndex visualRefIndex, string desc )
-            : base( mainType, No, name, visualRefIndex, desc ) 
-        { 
-            
-        }
-    }
+    public enum EquipType { Weapon, Helmet, Armor, Pants, Gloves, None }
 
     /// <summary>
     /// 장비 아이템 클래스 - 무기 방어구등 착용가능한 모든 클래스의 추상적 부모로서 상속만 가능합니다
     /// </summary>
     public abstract class ItemEquip : Item
     {
-        public ItemEquip( ItemType mainType, string No, string name, VisualReferenceIndex visualRefIndex, string desc )
+        
+        /// <summary>
+        /// 장착 지점에 관한 위치 정보
+        /// </summary>
+        public STransform EquipTr;       
+                
+        /// <summary>
+        /// 현재 장착 여부
+        /// </summary>
+        public bool isEquip;
+        
+        /// <summary>
+        /// 아이템이 장착 중인 슬롯위치
+        /// </summary>
+        public int EquipSlotIndex;
+
+        /// <summary>
+        /// 아이템의 장착 타입 - 무기, 헬멧, 상의, 하의, 장갑, 없음
+        /// </summary>
+        public EquipType EquipType;
+
+
+        public ItemEquip( ItemType mainType, string No, string name, VisualReferenceIndex visualRefIndex, string desc,
+            EquipType equipType, STransform equipTr )
             : base( mainType, No, name, visualRefIndex, desc ) 
         { 
-            
+            this.EquipTr = equipTr;
+            this.EquipType = equipType;
+            isEquip = false;
+            EquipSlotIndex = -1;
         }
 
     }
+
+
+    
+    /// <summary>
+    /// 퀘스트 아이템 클래스 - 별도의 탭을 사용하기 때문에 ItemType의 대분류 기준에 속하며, Item을 상속합니다.<br/>
+    /// (특징 - 수량 표시하지 않음, 아이템 셀렉트 및 드랍이 불가능, 전체 탭에 표시되지 않음 )
+    /// </summary>
+    [Serializable]
+    public class ItemQuest : ItemEquip
+    {
+        public ItemQuest( ItemType mainType, string No, string name, VisualReferenceIndex visualRefIndex, string desc,
+            EquipType equipType=EquipType.None, STransform equipTr=null )
+            : base( mainType, No, name, visualRefIndex, desc, equipType, equipTr )
+        { 
+
+        }
+    }
+
+
 
 
     /// <summary>

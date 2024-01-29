@@ -38,11 +38,7 @@ public class ButtonPlayTest : MonoBehaviour
 
     public void btnCreateItem()
     {
-        playerInventoryInfo.AddItem( "Mud", 5 );
-        playerInventoryInfo.AddItem( "Thread", 1 );
-        playerInventoryInfo.AddItem( "Vine", 1 );
-        playerInventoryInfo.AddItem( "StoneAxe", 1 );
-        playerInventoryInfo.AddItem( "Food1", 1 );
+        playerInventoryInfo.AddItem( "Water", 5 );
 
     }
 

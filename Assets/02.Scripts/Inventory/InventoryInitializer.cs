@@ -48,6 +48,8 @@ public class InventoryInitializer : MonoBehaviour
     [Header("중심 인벤토리 속성 - 동일 계층 다중 인벤토리가 있는 경우 하나만 체크")]
     public bool isServer = false;
 
+    [Header("전체탭 공유 옵션 - 퀘스트를 제외한 모든 종류의 슬롯 제한수가 공유됩니다.")]
+    public bool isShareAll = false;
 
     [Header("딕셔너리와 슬롯 제한수를 지정(같은 딕셔너리 불가)")]
     public DicType[] dicTypes;

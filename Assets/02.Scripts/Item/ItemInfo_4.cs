@@ -20,6 +20,14 @@ using UnityEngine;
 * <v1.3 - 2024_0125_최원준>
 * 1- 빌딩아이템 클래스 설계 변경(ItemMisc상속->Item상속)으로 인해 GetItemSpec메서드 내부 수정
 * 
+* <v1.4 - 2024_0126_최원준>
+* 1- SerializedTr프로퍼티 내부 ItemWeapon을 ItemEquip으로 변경
+* 이유는 퀘스트 아이템도 ItemEquip을 상속하도록 변경하였기 때문
+* 
+* 2- GetItemSpec메서드 string값 서바이벌 프로젝트에 맞게 영문화
+* 
+* 3- 아이템 착용관련 프로퍼티 IsEquip, EquipSlotIndex를 추가
+* 
 */
 public partial class ItemInfo : MonoBehaviour
 {
@@ -226,24 +234,26 @@ public partial class ItemInfo : MonoBehaviour
     
     /// <summary>
     /// 아이템에 저장된 STransform을 반환합니다.  (해당 아이템 : 무기, 건설)<br/><br/>
-    /// get - ItemWeapon 인경우 EquipTr을, ItemBuilding인 경우 WorldTr을, 이외의 타입은 null을 반환합니다.
+    /// get - ItemEquip을 상속하는 무기, 퀘스트 아이템인 경우 EquipTr을, ItemBuilding인 경우 WorldTr을, 이외의 타입은 null을 반환합니다.
     /// </summary>
     public STransform SerializedTr {  
         get 
         { 
-            ItemWeapon itemWeapon = item as ItemWeapon;
+            ItemEquip itemEquip = item as ItemEquip;
             ItemBuilding itemBuilding = item as ItemBuilding;
             
             if(itemBuilding!=null)
                 return itemBuilding.WorldTr;
 
-            else if(itemWeapon!=null)
-                return itemWeapon.EquipTr;
+            else if(itemEquip!=null)
+                return itemEquip.EquipTr;
 
             return null;
         } 
 
     }
+
+
 
     /// <summary>
     /// 아이템이 캐릭터에 영향을 주는 스테이터스 수치를 반환합니다.(해당 아이템 : 음식)<br/><br/>
@@ -264,13 +274,52 @@ public partial class ItemInfo : MonoBehaviour
     }
 
 
+    /// <summary>
+    /// 장비의 착용 상태를 반환합니다.<br/><br/>
+    /// 아이템이 현재 착용 중이라면 true를, 착용중이 아니거나 착용불가능한 아이템의 경우 false를 반환합니다.
+    /// </summary>
+    public bool IsEquip
+    {
+        get
+        {
+            ItemEquip itemEquip = item as ItemEquip;
+
+            if(itemEquip != null )
+                return itemEquip.isEquip;
+            else
+                return false;
+        }
+
+    }
+
+    /// <summary>
+    /// 장비가 착용 중인 슬롯의 인덱스를 반환합니다.<br/><br/>
+    /// 아이템이 현재 착용 중이라면 양의 정수를, 착용중이 아니거나 착용불가능한 아이템의 경우 -1을 반환합니다.
+    /// </summary>
+    public int EquipSlotIndex
+    {
+        get
+        {
+            ItemEquip itemEquip = item as ItemEquip;
+
+            if(itemEquip != null )
+                return itemEquip.EquipSlotIndex;
+            else
+                return -1;
+        }
+    }
+
+
+
+
+
 
 
 
 
 
     // 무기의 종류를 열거형 인덱스에 맞춰서 문자열로 변환하여 표시합니다 (WeaponType수정시 같이 수정해야 합니다.)
-    private readonly string[] weaponTypeString = { "검", "창", "도끼", "둔기", "활", "곡괭이", "기타", "없음" };
+    private readonly string[] weaponTypeString = { "Sword", "Spear", "Axe", "Blunt", "Bow", "Pickaxe", "Etc", "None" };
     
 
 
@@ -285,32 +334,40 @@ public partial class ItemInfo : MonoBehaviour
         
         if(itemWeapon!=null)
             return string.Format(
-            $"종류 : {weaponTypeString[(int)(itemWeapon.WeaponType)]}\n" +
-            $"공격력 : {itemWeapon.Power}\n" +
-            $"내구도 : {itemWeapon.Durability}"
+            $"Type : {weaponTypeString[(int)(itemWeapon.WeaponType)]}\n" +
+            $"Power : {itemWeapon.Power}\n" +
+            $"Durability : {itemWeapon.Durability}"
             );
 
         ItemQuest itemQuest = item as ItemQuest;
         if(itemQuest!=null)
             return string.Format(
-            $"종류 : 퀘스트\n"
+            $"Type : Quest\n"
             );
         
         ItemBuilding itemBuilding = item as ItemBuilding;  
         if(itemBuilding!=null)
             return string.Format(
-            $"종류 : 건설\n" +
-            $"내구도 : {itemBuilding.Durability}"
+            $"Type : Building\n" +
+            $"Durability : {itemBuilding.Durability}"
             );
 
 
         ItemMisc itemMisc = item as ItemMisc;
-        if(itemMisc!=null)
+        if( itemMisc!=null )
+        {
+            string strMiscType;
+            MiscType miscType = itemMisc.MiscType;
+            if( miscType == MiscType.Food)
+                strMiscType = "Food";
+            else
+                strMiscType = "Misc";
+
             return string.Format(
-            $"종류 : 잡화\n" +
-            $"수량 : {itemMisc.OverlapCount}"
-            );   
-        
+            $"Type : {strMiscType}\n"+
+            $"Count : {itemMisc.OverlapCount}"
+            );
+        }
         return null;
     }
 

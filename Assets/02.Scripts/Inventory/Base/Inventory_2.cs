@@ -218,6 +218,19 @@ using WorldItemData;
  * 1- AddItemMisc메서드에서 GetCurRemainSlotCount로 조건 검사하고 있던 부분을 삭제하고 IsAbleToAddMisc으로 조건검사하도록 변경
  * 잡화아이템의 경우 슬롯이 없어도 중첩될 수 있다면 들어갈 수 있어야 하므로
  * 
+ * 
+ * <v7.4 - 2024_0129_최원준>
+ * 1- 인벤토리의 isShareAll(전체 슬롯 공유) 옵션에 따라서 인덱스를 할당하도록 수정 
+ * SetItemSlotIndexDirect메서드 - 공유옵션일 때 (나머지 한쪽을 아무 인덱스로 잡지 않고,) 전체 슬롯인덱스와 개별슬롯 인덱스를 들어온 인자로 일치시킴
+ * SetItemSlotIndexIndirect메서드 - 공유옵션일 때 (전체탭 인덱스, 개별탭 인덱스 따로 2번 구하지 않고) 전체탭 인덱스 한번만 구하여 개별탭 인덱스와 일치시킴
+ * 
+ * 2- AddItem의 네번째 인자 옵션으로 IsAbleToOverlap 옵션을 기본적으로 true로 설정하였음.
+ * 이는 중첩아이템의 경우 수량 소모로 인해 중첩이 가능한 상태이면, 
+ * 세이브할 때 중첩하지 않고 저장해놨다가, 로드할 때 강제로 중첩되어 오브젝트가 사라진것 처럼 보이는 이슈가 있기 때문.
+ * 이를 해결하기 위해 DeserializeItemListToDic메서드에서 AddItem시 잡화아이템이라도 중첩시키지 않고 슬롯의 위치에 바로 추가하도록 하였음.
+ * 
+ * 
+ * 
  */
 
 namespace InventoryManagement
@@ -242,14 +255,32 @@ namespace InventoryManagement
 
             // 슬롯에 빈공간이 없을 때
             if( !IsRemainSlotIndirect(itemType) )     
-                throw new Exception("아이템이 들어갈 자리가 충분하지 않습니다. 확인하여 주세요.");    
-                          
-            // 개별 슬롯 인덱스 정보를 입력합니다.
-            item.SlotIndexEach = GetItemSlotIndexIndirect(itemType, false);
-            
-            // (퀘스트탭이 아닌 경우) 전체 슬롯 인덱스 정보를 입력합니다.
-            if(itemType!=ItemType.Quest)
-                item.SlotIndexAll = GetItemSlotIndexIndirect(itemType, true);
+                throw new Exception("아이템이 들어갈 자리가 충분하지 않습니다. 확인하여 주세요.");
+
+
+            // 전체 슬롯 공유 옵션이 활성화되어 있다면,
+            if( isShareAll )
+            {
+                // 퀘스트 아이템의 경우 개별 슬롯 인덱스만 할당합니다.
+                if( itemType==ItemType.Quest )
+                    item.SlotIndexEach=GetItemSlotIndexIndirect( itemType, false );
+                // 퀘스트 아이템이 아닌경우 전체 슬롯 인덱스를 할당한 다음, 개별 슬롯인덱스와 일치시킵니다.
+                else
+                {
+                    item.SlotIndexAll=GetItemSlotIndexIndirect( itemType, true );
+                    item.SlotIndexEach=item.SlotIndexAll;
+                }
+            }
+            // 전체 슬롯 공유 옵션이 비활성화되어 있다면,
+            else
+            {
+                // 개별 슬롯 인덱스 정보를 입력합니다.
+                item.SlotIndexEach=GetItemSlotIndexIndirect( itemType, false );
+
+                // (퀘스트탭이 아닌 경우) 전체 슬롯 인덱스 정보를 입력합니다.
+                if( itemType!=ItemType.Quest )
+                    item.SlotIndexAll=GetItemSlotIndexIndirect( itemType, true );
+            }
         }
         
 
@@ -272,19 +303,28 @@ namespace InventoryManagement
             if( !IsRemainSlotDirect(itemType, slotIndex, isActiveTabAll) )
                 throw new Exception("슬롯에 자리가 충분하지 않습니다.");
 
-            // 전체 탭이 활성화되어 있는 경우
-            if(isActiveTabAll)
-            {
-                item.SlotIndexAll = slotIndex;                                  // 전체 슬롯 인덱스를 직접 지정
-                item.SlotIndexEach = GetItemSlotIndexIndirect(itemType, false); // 개별 슬롯 인덱스를 가까운 아무곳 지정
+            // 전체 탭 공유 옵션이 활성화 되어 있는 경우
+            if( isShareAll )
+            {                
+                item.SlotIndexAll = slotIndex;      // 전체 슬롯 인덱스 및 개별 슬롯 인덱스를 인자로 일치시킵니다.
+                item.SlotIndexEach = slotIndex;
             }
-            // 개별 탭이 활성화되어 있는 경우
+            // 전체 탭 공유 옵션이 비활성화 되어있는 경우
             else
             {
-                item.SlotIndexAll = GetItemSlotIndexIndirect(itemType, true);   // 전체 슬롯 인덱스는 가까운 아무곳 지정
-                item.SlotIndexEach = slotIndex;                                 // 개별 슬롯 인덱스를 직접 지정
-            }            
-
+                // 전체 탭이 활성화되어 있는 경우
+                if( isActiveTabAll )
+                {
+                    item.SlotIndexAll=slotIndex;                                  // 전체 슬롯 인덱스를 직접 지정
+                    item.SlotIndexEach=GetItemSlotIndexIndirect( itemType, false ); // 개별 슬롯 인덱스를 가까운 아무곳 지정
+                }
+                // 개별 탭이 활성화되어 있는 경우
+                else
+                {
+                    item.SlotIndexAll=GetItemSlotIndexIndirect( itemType, true );   // 전체 슬롯 인덱스는 가까운 아무곳 지정
+                    item.SlotIndexEach=slotIndex;                                 // 개별 슬롯 인덱스를 직접 지정
+                }
+            }
         }
 
 
@@ -302,7 +342,7 @@ namespace InventoryManagement
         /// *** 인자로 들어온 컴포넌트 참조값이 없다면 예외를 발생시킵니다. ***<br/>
         /// </summary>
         /// <returns>아이템 추가 성공시 true를, 현재 인벤토리에 들어갈 공간이 부족하다면 false를 반환합니다</returns>
-        public bool AddItem(ItemInfo itemInfo, int slotIndex=-1, bool isActiveTabAll=false)
+        public bool AddItem(ItemInfo itemInfo, int slotIndex=-1, bool isActiveTabAll=false, bool isAbleToOverlap=true)
         {   
             if(itemInfo==null)
                 throw new Exception("아이템 스크립트가 존재하지 않는 오브젝트입니다. 확인하여 주세요.");
@@ -318,7 +358,10 @@ namespace InventoryManagement
                     throw new Exception("해당 아이템의 종류가 명확하지 않습니다. 확인하여 주세요.");
 
                 case ItemType.Misc:
-                    return AddItemMisc(itemInfo, false ,slotIndex, isActiveTabAll);   // 별도의 추가 메서드를 호출합니다.
+                    if(isAbleToOverlap)
+                        return AddItemMisc(itemInfo, false ,slotIndex, isActiveTabAll);   // 별도의 추가 메서드를 호출합니다.
+                    else
+                        return AddItemToDic(itemInfo, slotIndex, isActiveTabAll);
 
                 default:
                     return AddItemToDic(itemInfo, slotIndex, isActiveTabAll);           // 바로 딕셔너리에 추가합니다.

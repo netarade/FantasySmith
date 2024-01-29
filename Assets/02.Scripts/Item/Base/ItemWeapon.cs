@@ -71,6 +71,12 @@ using UnityEngine;
  * <v5.4 - 2024_0123_최원준>
  * 1- 장비 착용위치를 나타내고 저장하기 위한 STransform변수 equipTr을 선언 및 생성자에서 초기화
  * 
+ * <v5.5 - 2024_0130_최원준>
+ * 1- STransform 관련 변수를 ItemEquip클래스로 이동
+ * 퀘스트 아이템도 ItemEquip을 상속하도록 변경하였기 때문
+ * 
+ * 
+ * 
  */
 namespace ItemData
 {    
@@ -91,7 +97,6 @@ namespace ItemData
         [JsonProperty] protected WeaponType eWeaponType;   // 무기 소분류 타입 (검,창,활...)
         [JsonProperty] protected int iPower;               // 공격력
         [JsonProperty] protected int iDurability;          // 내구
-        [JsonProperty] protected STransform equipTr;       // 장비 착용위치
 
         /** 아이템 업그레이드 정보 **/
         [JsonProperty] protected float fPowerMult;         // 장비 기본 성능 (일반 무기-100, 제작무기-제작에따른 변화)
@@ -126,7 +131,6 @@ namespace ItemData
             }
         
         
-        [JsonIgnore] public STransform EquipTr { get { return equipTr; } }
         
 
         /// <summary>
@@ -134,19 +138,21 @@ namespace ItemData
         /// </summary>
         public ItemWeapon(
 
-            // 아이템 기본 정보 
+            // Item 정보 
             ItemType mainType, string No, string name, VisualReferenceIndex visualRefIndex, 
+            
+            // ItemEquip 정보
+            EquipType equipType, STransform equipTr,
 
             // 무기 고유 정보
-            WeaponType subType, STransform equipTr, int power, int durability, string desc
+            WeaponType subType, int power, int durability, string desc
             
-        ) : base( mainType, No, name, visualRefIndex, desc )
+        ) : base( mainType, No, name, visualRefIndex, desc, equipType, equipTr )
         {
             eWeaponType = subType;
             iPower = power;
             iDurability = durability;
-            fPowerMult = 1f;        
-            this.equipTr = equipTr;                       
+            fPowerMult = 1f;                             
         }
 
     }

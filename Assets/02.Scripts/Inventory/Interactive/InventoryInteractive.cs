@@ -223,6 +223,9 @@ using System;
 * 1- 버튼 종료 메서드에 인벤토리 연결을 종료하는 로직에서 PlayerInputs 관련 메서드의 호출을 추가 (통합프로젝트 전용 메서드)
 * 2- 버튼 종료 메서드에 인벤토리 연결을 종료하는 로직에서 CrateCtrl 관련 메서드의 호출을 추가 (통합프로젝트 전용 메서드)
 * 
+* <v9.5 - 2024_0130_최원준>
+* 1- GetTabTextName의 탭설명을 서바이벌 프로젝트에 맞게 한글에서 영어로 변경 
+* 
 */
 
 
@@ -393,13 +396,13 @@ public class InventoryInteractive : MonoBehaviour
         string name = "";
 
         if(tabType==TabType.All)
-            name = "전체";
+            name = "All";
         else if(tabType==TabType.Quest)
-            name = "퀘스트";
+            name = "Quest";
         else if(tabType == TabType.Misc)   
-            name = "잡화";
+            name = "Misc";
         else if(tabType==TabType.Equip)
-            name = "장비";
+            name = "Equip";
         else
             throw new Exception("탭 이름이 설정되지 않았습니다.");
 

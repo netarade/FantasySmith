@@ -79,9 +79,11 @@ public class PlayerInteractive : MonoBehaviour
                 if( itemInfo != null )
                 {
                     // 음식 아이템의 경우, 플레이어의 상태 변화메서드를 전달하여, 아이템 섭취메서드를 호출합니다.
-                    if(itemInfo.MiscType == MiscType.Food)      
-                        itemInfo.OnItemEat(PlayerStatusChange);     
-
+                    if( itemInfo.MiscType==MiscType.Food )
+                    {
+                        itemInfo.PrintDebugInfo();
+                        itemInfo.OnItemEat( PlayerStatusChange );
+                    }
                     break;
                 }
             }

@@ -55,7 +55,9 @@ using UnityEngine.EventSystems;
 * 탭일치(옮긴 것 보여주기 위함) + 종류일치(해당아이템 보관가능 해야하기 때문)
 * 
 * 
-* 
+* <v3.1 - 2024_0129_최원준>
+* 1- MoveSlotToSlotSameInventory 메서드 내부 인덱스의 결정을
+* InventoryInfo의 IsShareAll(전체 슬롯 공유)옵션에 따라 달라지도록 설정
 * 
 * 
 * 
@@ -152,34 +154,71 @@ public partial class ItemInfo : MonoBehaviour, IPointerEnterHandler, IPointerExi
     {
         int nextSlotIdx = nextSlotTr.GetSiblingIndex();     // 다음 슬롯의 인덱스 해당 슬롯의 자식넘버를 참조합니다.
         
+        // 슬롯이 비어있다면,
         if( nextSlotTr.childCount==0 )
         {
-            // 활성화 중인 탭에 따른 이 아이템의 슬롯 인덱스 정보를 수정합니다.
-            if(isActiveTabAll)
-                item.SlotIndexAll = nextSlotIdx;
-            else
+            // 전체 슬롯 공유 옵션이 활성화 되어있는 경우의 있덱스 설정
+            if( inventoryInfo.IsShareAll )
+            {
+                // (퀘스트 아이템을 제외하고) 전체 슬롯인덱스와 개별 슬롯 인덱스를 동일하게 맞춰줍니다.
+                if(item.Type != ItemType.Quest)
+                    item.SlotIndexAll = nextSlotIdx;
                 item.SlotIndexEach = nextSlotIdx;
+            }
+            // 전체 슬롯 공유 옵션이 비활성화 되어있는 경우의 있덱스 설정
+            else
+            {
+                // 활성화 중인 탭에 따른 이 아이템의 슬롯 인덱스 정보를 수정합니다.
+                if( isActiveTabAll )
+                    item.SlotIndexAll=nextSlotIdx;
+                else
+                    item.SlotIndexEach=nextSlotIdx;
+            }
+            
 
             // 해당 정보로 위치정보를 업데이트 합니다.
             UpdatePositionInfo();
         }
+        // 슬롯이 비어있지 않다면,
         else if(nextSlotTr.childCount==1)
         {             
             // 슬롯에 담겨있는 바꿀 아이템의 정보를 가져옵니다.
-            ItemInfo switchItemInfo = nextSlotTr.GetChild(0).GetComponent<ItemInfo>(); 
+            ItemInfo switchItemInfo = nextSlotTr.GetChild(0).GetComponent<ItemInfo>();
+
             
-            // 활성화 중인 탭에 따른 두 아이템의 인덱스 정보를 수정합니다.
-            if(isActiveTabAll)
-            {
-                switchItemInfo.SlotIndexAll = item.SlotIndexAll;  // 바꿀아이템의 인덱스를 이 아이템의 이전 슬롯의 인덱스로 넣어줍니다.      
-                item.SlotIndexAll = nextSlotIdx;                  // 이 아이템의 인덱스를 바뀔 슬롯의 위치로 수정합니다.
+            // 전체 슬롯 공유 옵션이 활성화 되어있는 경우의 있덱스 설정 
+            if( inventoryInfo.IsShareAll )
+            {                
+                // (퀘스트 아이템을 제외하고) 전체 슬롯인덱스와 개별 슬롯 인덱스를 동일하게 맞춰줍니다.
+                switchItemInfo.SlotIndexEach = item.SlotIndexEach;
+                item.SlotIndexEach = nextSlotIdx;
+
+                if( switchItemInfo.Type!=ItemType.Quest )
+                {
+                    switchItemInfo.SlotIndexAll=item.SlotIndexAll;
+                    item.SlotIndexAll=nextSlotIdx;
+                }
             }
+            // 전체 슬롯 공유 옵션이 비활성화 되어있는 경우의 있덱스 설정
             else
             {
-                switchItemInfo.SlotIndexEach = item.SlotIndexEach;          
-                item.SlotIndexEach = nextSlotIdx;
+                // 활성화 중인 탭에 따른 두 아이템의 인덱스 정보를 수정합니다.
+                if( isActiveTabAll )
+                {
+                    switchItemInfo.SlotIndexAll=item.SlotIndexAll;  // 바꿀아이템의 인덱스를 이 아이템의 이전 슬롯의 인덱스로 넣어줍니다.      
+                    item.SlotIndexAll=nextSlotIdx;                  // 이 아이템의 인덱스를 바뀔 슬롯의 위치로 수정합니다.
+                }
+                else
+                {
+                    switchItemInfo.SlotIndexEach=item.SlotIndexEach;
+                    item.SlotIndexEach=nextSlotIdx;
+                }
             }
-            
+
+
+
+
+
             switchItemInfo.UpdatePositionInfo();      // 바꿀 아이템의 위치 정보를 업데이트 합니다.
             UpdatePositionInfo();                     // 이 아이템의 위치 정보를 업데이트 합니다.
         }

@@ -272,15 +272,15 @@ namespace ItemData
         public void ItemDeubgInfo()
         {
             string debugStr = string.Format(
-            $"Type : {Type}" +
-            $"No : {No}" +
-            $"Name : {Name}" +
-            $"SlotIndexEach : {SlotIndexEach}" +
-            $"SlotIndexAll : {SlotIndexAll}" +
-            $"Desc : {sDesc}" +
-            $"OwnerId : {iOwnerId}" +
-            $"OwnerName : {iOwnerName}" +
-            $"ItemId : {iId}"
+            $"Type : {Type}\n" +
+            $"No : {No}\n" +
+            $"Name : {Name}\n" +
+            $"SlotIndexEach : {SlotIndexEach}\n" +
+            $"SlotIndexAll : {SlotIndexAll}\n" +
+            $"Desc : {sDesc}\n" +
+            $"OwnerId : {iOwnerId}\n" +
+            $"OwnerName : {iOwnerName}\n" +
+            $"ItemId : {iId}\n"
             );
 
             Debug.Log( debugStr );

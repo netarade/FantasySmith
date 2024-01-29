@@ -94,25 +94,12 @@ using UnityEngine.UI;
  * 1- SlotDeactivate메서드에서 AddItemToSlot메서드의 호출을 해당 아이템의 OnItemUnequip에서 호출하도록 맡김
  * 이유는 이미지 스케일의 변형 문제가 있어서 호출 시점을 한번에 조절하기 위함.
  * 
+ * <2024_0129_최원준>
+ * 1- 장착아이템 저장 시 사라지는 이슈가 있어서 OnApplicationQuit 오버라이딩하여 장착중인 아이템을 종료시 해제후 종료하도록 하였음.
  * 
  */
 
 
-[Serializable]
-public class EquipmentTransform
-{
-    [Header("2-도끼")]
-    public Transform axeTr;
-
-    [Header("3-곡괭이")]
-    public Transform pickaxTr;
-    
-    [Header("4-창")]
-    public Transform spearTr;
-        
-    [Header("5-활")]
-    public Transform bowTr;        
-}
 
 
 
@@ -131,6 +118,8 @@ public class QuickSlot : InventoryInfo
     RectTransform[] dummyRectTr;    // 더미용 오브젝트의 RectTransform
     Image[] dummyImg;               // 더미용 이미지
     ItemInfo[] slotItemInfo;        // 슬롯에 자리한 아이템의 정보
+
+
 
     /// <summary>
     /// 슬롯의 길이를 반환합니다.
@@ -228,6 +217,16 @@ public class QuickSlot : InventoryInfo
             }
         }
     }
+
+
+    
+    protected override void OnApplicationQuit()
+    { 
+        SlotDeactivate();               // 장착중인 아이템을 해제합니다.
+        base.OnApplicationQuit(); 
+    }
+
+
 
 
 
@@ -338,40 +337,7 @@ public class QuickSlot : InventoryInfo
 
 
 
-    public Transform GetEquipTr(ItemInfo itemInfo)
-    { 
-        if(itemInfo == null)
-            throw new Exception("아이템 정보가 전달되지 않았습니다.");
-
-        ItemEquip itemEquip = itemInfo.Item as ItemEquip;
-        if( itemEquip==null )
-            throw new Exception("착용 가능한 장비가 아닙니다.");
-
-
-        ItemType itemType = itemInfo.Item.Type;
-
-        if( itemType==ItemType.Weapon )
-        {
-            WeaponType weaponType = ( (ItemWeapon)itemInfo.Item ).WeaponType;
-            
-            switch(weaponType)
-            {
-                case WeaponType.Axe:
-                    return equipTr.axeTr;
-
-                case WeaponType.Pickax:
-                    return equipTr.pickaxTr;
-
-                case WeaponType.Spear:
-                    return equipTr.spearTr;
-
-                case WeaponType.Bow:
-                    return equipTr.bowTr;                    
-            }
-        }
-        throw new Exception("착용위치 정보가 맵핑되지 않았습니다.");
-    }
-
+    
 
 
 

@@ -229,7 +229,9 @@ using WorldItemData;
  * 세이브할 때 중첩하지 않고 저장해놨다가, 로드할 때 강제로 중첩되어 오브젝트가 사라진것 처럼 보이는 이슈가 있기 때문.
  * 이를 해결하기 위해 DeserializeItemListToDic메서드에서 AddItem시 잡화아이템이라도 중첩시키지 않고 슬롯의 위치에 바로 추가하도록 하였음.
  * 
- * 
+ * <v7.5 - 2024_0131_최원준>
+ * 1- AddItemDirectly메서드를 만들어 ItemInfo를 전달하면 해당 정보대로 사전에 바로 추가할 수 있게 하였음.
+ * 이는 로드 시 아이템을 해당 정보대로 그대로 추가해야 하기 때문
  * 
  */
 
@@ -402,7 +404,23 @@ namespace InventoryManagement
                 // 아이템 정보를 지정 슬롯 인덱스로 설정합니다.
                 SetItemSlotIndexDirect(itemInfo, slotIndex, isActiveTabAll);
             }
+                        
+            // 조건검사에 통과하였으므로 아이템을 사전에 바로 추가합니다.
+            AddItemDirectly(itemInfo);         
 
+            // 성공을 반환합니다.
+            return true;                                    
+        }
+
+
+        /// <summary>
+        /// 아이템을 사전에 어떠한 조건 검사도 하지 않고 바로 추가합니다.
+        /// </summary>
+        public void AddItemDirectly(ItemInfo itemInfo)
+        {            
+            // 아이템 이름과 종류를 참조합니다.
+            string itemName = itemInfo.Item.Name;
+            ItemType itemType = itemInfo.Item.Type;
 
             // 아이템 이름을 기반으로 해당 사전의 ItemInfo 리스트를 결정합니다. (존재하지 않는다면 새롭게 생성하여 반환합니다.)
             List<ItemInfo> itemInfoList = GetItemInfoList(itemName, true);
@@ -411,11 +429,12 @@ namespace InventoryManagement
             itemInfoList.Add(itemInfo);          
                   
             // 해당 아이템 종류의 현재 오브젝트의 갯수를 증가시킵니다.
-            CalculateItemObjCount(itemType, 1);          
-
-            // 성공을 반환합니다.
-            return true;                                    
+            CalculateItemObjCount(itemType, 1);
         }
+
+
+
+
 
         
 

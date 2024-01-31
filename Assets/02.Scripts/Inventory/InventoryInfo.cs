@@ -315,6 +315,10 @@ using UnityEngine.UI;
  *2- UpdateAllItemVisualInfo메서드에서 착용 중인 아이템의 3D표현하는 코드를 추가 (OnItemEquip메서드 호출)
  *
  *
+ *<v11.5 - 2024_0131_최원준>
+ *1- UpdateAllItemVisualInfo메서드에서
+ *현재 통합프로젝트 플레이어 상태메서드 미구현으로 인해 장착 하지 않고 장착 상태를 해제하도록 변경
+ *
  */
 
 
@@ -586,12 +590,16 @@ public partial class InventoryInfo : MonoBehaviour
             {
                 foreach( ItemInfo itemInfo in itemInfoList )
                 {
-                    // 현재 인벤토리 참조값을 전달하여 OnItemAdded메서드를 호출합니다
-                    itemInfo.OnItemAdded( this );    
+                    // (현재 통합프로젝트 플레이어 상태메서드 미구현으로 인해)장착 상태를 해제합니다.
+                    itemInfo.IsEquip = false;
 
-                    // 착용 중인 3D 아이템의 표현을 진행합니다.
-                    if(itemInfo.IsEquip)
-                        itemInfo.OnItemEquip(true);
+                    // 현재 인벤토리 참조값을 전달하여 OnItemAdded메서드를 호출합니다
+                    itemInfo.OnItemAdded( this );            
+
+                    // 착용 중인 3D 아이템의 표현을 진행합니다.        
+                    //if( itemInfo.IsEquip )
+                    //    itemInfo.OnItemEquip(true);
+                    
                 }
             }
         }

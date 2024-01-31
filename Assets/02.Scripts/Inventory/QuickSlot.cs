@@ -111,8 +111,6 @@ using UnityEngine.UI;
  * 1- 퀵슬롯에 겹쳐져 있는 배경아이콘 이미지 배열 backgroundIcon 변수를 추가하고,
  * 슬롯 갯수만큼 초기화 및 장착 및 해제시 이미지 OnOff스위칭이 이루어질 수 있도록 함. 로드시에도 변경  
  * 
- * 2- QuickSlotSlect메서드를 추가하여 2D Item의 Select가 이루어지는 순간 호출하여
- * 배경아이콘 이미지를 다시 보여지게끔 하였음.
  * 
  */
 
@@ -216,7 +214,7 @@ public class QuickSlot : InventoryInfo
             if( slotListTr.GetChild( i ).childCount>0 )
             {
                 isItemPlaced[i]=true;
-                backgroundIcon[i].enabled = false; // 슬롯에 아이템이 존재한다면, 배경아이콘 이미지를 비활성화합니다.
+                backgroundIcon[i].enabled = false; // 배경아이콘 이미지를 비활성화합니다.
                 slotItemInfo[i] = slotListTr.GetChild( i ).GetChild( 0 ).GetComponent<ItemInfo>();
 
                 if( slotItemInfo[i]==null )

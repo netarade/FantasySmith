@@ -295,7 +295,9 @@ using UnityEngine.Assertions.Must;
  * 3- 중첩아이템의 경우 수량 소모로 인해 중첩이 가능한 상태이면, 세이브할 때 중첩하지 않고 저장해놨다가, 로드할 때 강제로 중첩되어 오브젝트가 사라진것 처럼 보이는 이슈가 있음.
  * 이를 해결하기 위해 DeserializeItemListToDic메서드에서 AddItem시 잡화아이템이라도 중첩시키지 않고 슬롯의 위치에 바로 추가하도록 하였음. 
  * 
- * 
+ * <11.4 - 2024_0131_최원준>
+ * 1- 기존의 isInitializerIndexAll변수를 삭제하고, DeserializeItemListToDic메서드에서 AddItemDirectly메서드를 통해 어떠한 조건검사하지 않고 바로 추가하도록 하였음.
+ * 이는 슬롯인덱스가 바뀔 위험이 있기 때문
  * 
  */
 
@@ -354,10 +356,6 @@ namespace InventoryManagement
         CreateManager createManager;                // 월드 아이템 정보를 참조할 매니저 인스턴스
 
         List<ItemType> tabKindList = new List<ItemType>();  // 탭종류와 일치하는 아이템타입을 담는 리스트
-
-        bool isInitializerIndexAll;                 // 초기 이니셜라이저를 통해 받은 탭정보가 전체탭인지
-
-
 
         
 
@@ -641,17 +639,12 @@ namespace InventoryManagement
 
             foreach(Item item in itemList) // 아이템 리스트에서 개념 아이템 정보를 하나씩 꺼내옵니다.
             {
-                ItemMisc itemMisc = item as ItemMisc;
 
                 // 월드에 오브젝트를 만들고 ItemInfo 참조값을 받습니다.
                 ItemInfo itemInfo = createManager.CreateWorldItem(item);
-                                               
-                // 초기 활성탭에 따라 슬롯인덱스를 결정합니다.
-                int slotIndexTab = isInitializerIndexAll ? item.SlotIndexAll : item.SlotIndexEach;
 
-                // 인벤토리 내부에 슬롯을 지정하여 추가합니다. (마지막 옵션으로 아이템이 중첩되지 않게 추가합니다.)
-                AddItem(itemInfo, slotIndexTab, isInitializerIndexAll, false);
-
+                // 어떠한 조건검사도 하지 않고 사전에 바로 추가합니다.
+                AddItemDirectly(itemInfo);     
             }
 
 
@@ -721,16 +714,6 @@ namespace InventoryManagement
                 InitSlotCountLimitTab( dicType[i], dicTypes[i].slotLimit );
             }
             
-
-            // 활성화 탭타입의 길이가 0이 아닌 경우 탭타입이 전체로 선택되어있는지 검사
-            if(initializer.showTabType.Length != 0)
-                isInitializerIndexAll = initializer.showTabType[0]==TabType.All? true : false;
-            // 활성화 탭타입의 길이가 0인 경우 전체로 간주
-            else
-                isInitializerIndexAll = true;
-
-
-
 
             // 이니셜라이저에서 설정한 전체 탭 슬롯 공유여부를 초기화합니다.
             isShareAll = initializer.isShareAll;

@@ -42,12 +42,15 @@ public class PlayerInteractive : MonoBehaviour
     float playerHp = 100f;
     float playerHunger = 10f;
     float playerThirsty = 10f;
+
+    PlayerStatus playerStatus;
         
     void Start()
     {
         quickSlot = GetComponentInChildren<QuickSlot>();
         playerInventory = quickSlot.transform.parent.GetChild(0).GetComponent<InventoryInfo>();
         animator = GetComponent<Animator>();
+        playerStatus = GameObject.Find("Player").GetComponent<PlayerStatus>();  
     }
 
     public void PlayerStatusChange(ItemStatus itemStatus)
@@ -76,16 +79,70 @@ public class PlayerInteractive : MonoBehaviour
             foreach(RaycastResult result in resultList )
             {               
                 ItemInfo itemInfo = result.gameObject.GetComponent<ItemInfo>(); 
+                DummyInfo dummyInfo = result.gameObject.GetComponent<DummyInfo>();
+
                 if( itemInfo != null )
-                {
-                    // 음식 아이템의 경우, 플레이어의 상태 변화메서드를 전달하여, 아이템 섭취메서드를 호출합니다.
-                    if( itemInfo.MiscType==MiscType.Food )
+                {          
+                    // 장착 가능한 아이템의 경우
+                    if(itemInfo.EquipType!=EquipType.None )
+                    {
+                        // 미착용상태일 경우 장착을 실행하고 레이캐스팅을 끝냅니다.
+                        if( !itemInfo.IsEquip )
+                        {
+                            itemInfo.OnItemEquip();
+                            
+                            // 팀원 전용 상태 변화 코드 호출
+                            if( itemInfo.EquipType==EquipType.Helmet )
+                            {
+                                if( playerStatus!=null )
+                                    playerStatus.isHood=true;
+                            }
+
+                            break;  
+                        }
+                        // 착용상태일 경우 
+                        else
+                            throw new System.Exception("착용상태인 아이템이 UI상으로 검출되었습니다.");
+                    }
+                    // 음식 아이템의 경우, 플레이어의 상태 변화메서드를 전달하여, 아이템 섭취메서드를 호출하고 레이캐스팅을 끝냅니다.
+                    else if( itemInfo.MiscType==MiscType.Food )
                     {
                         itemInfo.PrintDebugInfo();
                         itemInfo.OnItemEat( PlayerStatusChange );
-                    }
-                    break;
+                        break;     
+                    }   
                 }
+
+
+
+                else if(dummyInfo!=null)
+                {
+                    // 더미 아이템이 참조하는 아이템이 장착상태인 경우 - 장착해제를 실행하고 레이캐스팅을 끝냅니다.
+                    if( dummyInfo.EquipItemInfo.IsEquip )     
+                    {
+                        dummyInfo.EquipItemInfo.OnItemUnequip();
+                                                
+                        // 팀원 전용 상태 변화 코드 호출
+                        if( dummyInfo.EquipItemInfo.EquipType==EquipType.Helmet )
+                        {
+                            if( playerStatus!=null )
+                                playerStatus.isHood=false;
+                        }
+
+                        break;      
+                    }
+                    // 장착 상태가 아닌 경우(다음 레이캐스팅을 찾습니다.)
+                    else
+                    {
+                        Debug.Log( "장착상태가 아닙니다." );
+                    }
+
+                }
+                else
+                    Debug.Log("어떠한 정보도 없습니다.");
+
+
+
             }
 
             Debug.Log($"현재 캐릭터 수치 HP:{playerHp} 배고픔:{playerHunger} 목마름:{playerThirsty}");

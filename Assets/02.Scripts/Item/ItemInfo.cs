@@ -413,6 +413,34 @@ using DataManagement;
  * 1- 아이템의 Rigidbody itemRb 변수 및 프로퍼티 속성을 추가 및 OnItemCreated에서 초기화
  * 이유는 장착 및 해제 시 중력을 OnOff할 필요성이 있으므로
  * 
+ * <v14.6 - 2024_0130_최원준>
+ * 1- OnItemWorldDrop의 매개변수명 transferType을 trApplyRange로 변경 
+ * 
+ * <v15.0 - 2024_0130_최원준>
+ * 1- OnItemWorldDrop 메서드에 네번째 인자 isRegister를 추가하여 드랍시 인벤토리 목록에서 제거하지 않도록 옵션을 줌
+ * (아이템 장착 시 쓸 수 있도록)
+ * 
+ * 2- DummyInfo 속성 추가, OnEnable초기화
+ * 
+ * 3- OnItemCreated메서드에서 DummyInfo의 Update문 호출 
+ * 
+ * 4- SwitchAppearAs2D메서드에서 더미이미지의 레이캐스팅 스위칭문장 추가
+ * 
+ * 5- UpdatePositionInfo메서드에서 IsEquip (착용)상태일 때 DummyInfo의 UpdatePositionInfo를 호출
+ * 
+ * 6- Item2dTr프로퍼티 추가
+ * 
+ * 7- EquipmentInfo변수를 추가하고 UpdateInventoryInfo에서 최신화
+ * (아이템의 장착지점을 가져오는 변수)
+ * 
+ * 8- 장착 행동시 호출해줄 대리자와 대리자 변수 EquipActionDelegate EquipAction 선언
+ * 
+ * 9- StatusInteractive프로퍼티 추가
+ * 
+ * <v15.1 - 2024_0130_최원준>
+ * 1- dummyInfo의 초기화를 OnItemCreated문으로 옮김
+ * 통합과정에서 아이템 장착시 플레이어 쪽에서 오브젝트를 껐다 키기때문에 ItemInfo의 OnEnable이 다시 시작되는데 참조값이 날라가는 문제발생
+ * 
  */
 
 /// <summary>
@@ -445,13 +473,16 @@ public partial class ItemInfo : MonoBehaviour
     public Sprite statusSprite;     // 아이템이 상태창에서 보여질 이미지 스프라이트 (상태창 스크립트에서 참조를 하게 됩니다.)
     Text countTxt;                  // 잡화 아이템의 수량을 반영할 텍스트
             
-    RectTransform itemRectTr;       // 자기자신 2D 트랜스폼 참조(초기 계층 - 상위 부모)
+    RectTransform itemRectTr;       // 자기자신 2D 트랜스폼 참조(초기 계층 - 상위 부모)    
     Transform itemTr;               // 자기자신 3D 트랜스폼 참조(초기 계층 - 하위 마지막 자식)
     CanvasGroup itemCG;             // 아이템의 캔버스 그룹 컴포넌트 (아이템이 월드로 나갔을 때 2D이벤트를 막기위한 용도) 
     Collider itemCol;               // 아이템의 3D오브젝트가 가지고 있는 기본 콜라이더
     Rigidbody itemRb;               // 아이템의 3D오브젝트가 가지고 있는 리지드바디
+    DummyInfo dummyInfo;            // 아이템을 장착할 때 대신 보여주기 위한 더미 정보
 
-    InventoryInfo worldInventoryInfo;   // 아이템을 3D상태로 보관할 수 있는 월드 인벤토리 정보
+    InventoryInfo worldInventoryInfo;   // 아이템을 3D상태로 보관할 수 있는 월드 인벤토리 정보    
+    InventoryInfo ownInventoryInfo;     // 아이템이 소유하고 있는 인벤토리 정보 (아이템형 인벤토리 - 보관함)
+    ItemSelect itemSelect;
 
     /*** 아이템 변동 정보 ***/
 
@@ -471,6 +502,8 @@ public partial class ItemInfo : MonoBehaviour
 
     Transform baseDropTr;               // 아이템이 떨어질 기본 드랍 위치
     bool isBaseDropSetParent;           // 기본 드랍위치에 부모설정 옵션이 걸려있는지 여부
+            
+    EquipmentInfo equipInfo;        // 장비를 장착할 트랜스폼 정보
 
 
     /**** InventoryInfoChange 메서드 호출시 변동 ****/
@@ -478,12 +511,13 @@ public partial class ItemInfo : MonoBehaviour
     bool isActiveTabAll;                // 현재 아이템이 담겨있는 인벤토리의 활성화 탭의 기준이 전체인지, 개별인지 여부
     TabType curActiveTab;               // 현재 아이템이 담겨있는 인벤토리의 활성화 탭 정보
     
+    delegate void EquipActionDelegate(bool isEquip);    // 아이템 장착 행동 시 호출 할 메서드 대리자
+    EquipActionDelegate EquipAction;                    // 아이템 장착 행동 시 호출 해줄 대리자 변수 
 
     
     /**** InventoryInfoChange 메서드 호출시 변동 ****/
     /**** OnItemSlotDrop 이벤트 호출 시 변동 ****/
     Transform prevDropSlotTr;    // 드랍이벤트가 발생할 때 이전의 드랍이벤트 호출자를 기억하기 위한 참조 변수 
-
 
 
     
@@ -498,6 +532,14 @@ public partial class ItemInfo : MonoBehaviour
     /// 현재 아이템이 담긴 인벤토리의 정보입니다.
     /// </summary>
     public InventoryInfo InventoryInfo { get {return inventoryInfo;} }
+
+    
+    /// <summary>
+    /// 아이템이 소유하고 있는 인벤토리 정보입니다.<br/>
+    /// 보관함과 같은 특별 한 종류의 아이템형 인벤토리가 해당 정보를 가지고 있습니다.<br/><br/>
+    /// 아이템형 인벤토리가 아니라면 null을 반환합니다.
+    /// </summary>
+    public InventoryInfo OwnInventoryInfo { get { return ownInventoryInfo; } }
 
 
     /// <summary>
@@ -564,6 +606,13 @@ public partial class ItemInfo : MonoBehaviour
     /// </summary>
     public Transform Item3dTr { get { return itemTr; } }
 
+    
+    /// <summary>
+    /// 아이템의 2D 오브젝트가 가지고 있는 RectTransform 컴포넌트 참조값을 반환합니다.
+    /// </summary>
+    public RectTransform Item2dTr { get { return itemRectTr; } }
+
+
     /// <summary>
     /// 아이템 고유의 식별번호입니다.<br/>
     /// 동일한 이름의 아이템에 식별번호가 필요한 경우 부여될 수 있습니다. (ex. 인벤토리 아이템)<br/>
@@ -586,6 +635,14 @@ public partial class ItemInfo : MonoBehaviour
     /// </summary>
     public int SlotIndexAll { get{return item.SlotIndexAll;} set{item.SlotIndexAll=value;} }
       
+
+    /// <summary>
+    /// 현재 활성화 탭에 따른 슬롯 인덱스를 반환합니다.
+    /// </summary>
+    public int SlotIndexTab { get { return isActiveTabAll? item.SlotIndexAll : item.SlotIndexEach; } }
+
+
+
     /// <summary>
     /// 아이템이 담겨있는 실제 정보를 직접 저장하거나 반환받습니다.<br/>
     /// 클론 한 Item 인스턴스를 저장하고, 저장 되어있는 인스턴스를 불러올 수 있습니다.<br/>
@@ -594,6 +651,16 @@ public partial class ItemInfo : MonoBehaviour
     
 
     
+    /// <summary>
+    /// 아이템의 장착 시 대신 보여 주기 위한 더미 정보입니다.
+    /// </summary>
+    public DummyInfo DummyInfo {  get { return dummyInfo; } }
+
+
+    /// <summary>
+    /// 아이템 셀렉트 상태를 변경할 수 있는 스크립트 참조값
+    /// </summary>
+    public ItemSelect ItemSelect { get {  return itemSelect; } }
 
 
 
@@ -612,6 +679,7 @@ public partial class ItemInfo : MonoBehaviour
         itemCG = GetComponent<CanvasGroup>();
         visualManager = GameObject.FindWithTag("GameController").GetComponent<VisualManager>();
         worldInventoryInfo = visualManager.GetComponentInChildren<InventoryInfo>();
+        itemSelect = GetComponent<ItemSelect>();
     }
 
 
@@ -663,7 +731,13 @@ public partial class ItemInfo : MonoBehaviour
 
         // 3D 오브젝트의 리지드바디 정보를 참조합니다.
         itemRb = itemTr.GetComponent<Rigidbody>();
+
+        // 보관함과 같은 아이템형 인벤토리는 아이템 자체적으로 인벤토리를 소유하게 됩니다.
+        ownInventoryInfo = itemTr.GetComponentInChildren<InventoryInfo>();
         
+        //더미 정보를 업데이트합니다.
+        dummyInfo = itemTr.GetComponentInChildren<DummyInfo>(); 
+
         // 아이템의 중첩수량 텍스트를 초기화합니다.
         InitCountTxt();
 
@@ -678,6 +752,9 @@ public partial class ItemInfo : MonoBehaviour
         
         // 2D 기능을 중단한 상태로 생성합니다.
         SwitchAppearAs2D(true);
+                
+        // 더미 이미지의 정보를 업데이트합니다.
+        dummyInfo.UpdateInfo(this);
     }
 
 
@@ -746,6 +823,16 @@ public partial class ItemInfo : MonoBehaviour
     /// </summary>
     public void UpdatePositionInfo()
     {
+        // 아이템이 착용상태라면,
+        if(IsEquip)
+        {            
+            // 더미 이미지의 포지션 업데이트를 진행합니다.
+            dummyInfo.UpdatePositionInfo();
+            Debug.Log("착용상태입니다.");
+            return;
+        }
+
+
         // 슬롯 리스트에 슬롯이 생성되어있지 않다면 하위로직을 실행하지 않습니다.
         if( slotListTr.childCount==0 )
         {
@@ -814,9 +901,9 @@ public partial class ItemInfo : MonoBehaviour
 
         // 현재 활성화 중인 탭을 기반으로 어떤 인덱스를 참조할지 설정합니다.
         int activeIndex = isActiveTabAll? item.SlotIndexAll : item.SlotIndexEach;
-        
+                
         // 아이템의 크기를 슬롯리스트의 cell크기와 동일하게 맞춥니다.(슬롯의 크기와 동일하게 맞춥니다.)
-        itemRectTr.sizeDelta = slotListTr.GetComponent<GridLayoutGroup>().cellSize;
+        itemRectTr.sizeDelta = inventoryInfo.CellSize;
 
         // 아이템의 부모를 해당 슬롯으로 설정합니다.
         itemRectTr.SetParent( slotListTr.GetChild(activeIndex) );  
@@ -824,6 +911,8 @@ public partial class ItemInfo : MonoBehaviour
         // 위치와 회전값을 수정합니다.
         itemRectTr.localPosition = Vector3.zero;
         itemRectTr.localRotation = Quaternion.identity;
+                
+        
     }
 
 
@@ -857,6 +946,9 @@ public partial class ItemInfo : MonoBehaviour
             ownerTr = null;                    // 아이템 소유자 초기화
             item.OwnerId = -1;                 // 아이템 소유자 식별 번호를 초기화합니다.
             item.OwnerName = worldOwnerName;   // 아이템 소유자 명을 월드로 변경합니다.
+
+            equipInfo = null;                  // 장착 정보 초기화
+            EquipAction = null;                // 장착 대리자 정보 초기화 
         }
         else // 다른 인벤토리로 전달된 경우
         {
@@ -881,6 +973,27 @@ public partial class ItemInfo : MonoBehaviour
             ownerTr = inventoryInfo.OwnerTr;                // 아이템 소유자를 인벤토리 소유자로 결정합니다.
             item.OwnerId = inventoryInfo.OwnerId;           // 아이템 소유자 식별번호를 내부 아이템에 저장합니다.
             item.OwnerName = inventoryInfo.OwnerName;       // 아이템 소유자명을 인벤토리 소유자명으로 변경합니다.
+                     
+            // 장착 가능한 아이템의 경우 인벤토리 소유자를 통해 장착정보를 받아옵니다.
+            if(item is ItemEquip)
+                equipInfo = inventoryInfo.OwnerTr.GetComponent<EquipmentInfo>();
+
+
+            // 협업 코드 - 장착 시 상태 변화 액션을 호출할 대리자 연결
+            if( EquipType==EquipType.Helmet )
+            {
+                PlayerStatus playerStatus = inventoryInfo.OwnerTr.GetComponent<PlayerStatus>();
+                
+                if(playerStatus!=null)
+                    EquipAction+=playerStatus.OnHoodEquip;
+            }
+            else if( EquipType==EquipType.Weapon )
+            {
+                //PlayerInputs playerInputs = inventoryInfo.OwnerTr.GetComponent<PlayerInputs>();
+
+                //if(playerInputs!=null)
+                //    EquipAction+=playerInputs.OnItemEquip;
+            }            
         }      
     }
 
@@ -927,6 +1040,10 @@ public partial class ItemInfo : MonoBehaviour
         itemCG.interactable = !isWorldPositioned;
         itemCG.alpha = isWorldPositioned ? 0f:1f;
         itemImage.raycastTarget = !isWorldPositioned;
+
+        // (착용 상태가 아닌 경우) 더미이미지의 기능도 중단합니다.   (착용상태인 경우 더미이미지가 메인이 되어야 하므로 중단하지 않습니다.)
+        if(!IsEquip)
+            dummyInfo.SwitchAppearAs2D(isWorldPositioned);
     }
            
     /// <summary>
@@ -967,7 +1084,7 @@ public partial class ItemInfo : MonoBehaviour
         // 아이템의 모습을 변경합니다
         SwitchAppearAs2D(isMoveToWorld);
     }
-     
+
 
 
 
@@ -978,16 +1095,29 @@ public partial class ItemInfo : MonoBehaviour
     /// 
     /// 인자를 미전달하면 지정해둔 드랍위치(플레이어)로 전송됩니다.(기본값: ItemInfo클래스의 playerDropTr)<br/><br/>
     /// 
-    /// **두 번째 전달인자 - TransferType은 전달받은 Transform을 어디까지 적용시킬지 선택하는 옵션입니다.<br/>
+    /// **두 번째 전달인자 - 열거형 trApplyRange는 전달받은 Transform을 어디까지 적용시킬지 선택하는 옵션입니다.<br/>
     /// (기본값: 위치 값만 적용, 옵션을 통해 회전 값, 크기 값을 적용시 킬 수 있습니다.)<br/><br/>
     /// 
     /// **세 번째 전달 인자 - isSetParent를 true로 만들면 Transform 하위에 자식으로서 속하게 됩니다. (기본값: false)<br/><br/>
+    /// 
+    /// **네 번째 전달 인자 - 인벤토리에 등록된 상태로 드랍시킵니다. (목록에서 제거하지 않습니다. 아이템 장착 등에 사용됩니다.) (기본값: false)
     /// </summary>
-    public void OnItemWorldDrop(Transform dropPosTr=null, TrApplyRange transferType = TrApplyRange.Pos, bool isSetParent=false)
+    public void OnItemWorldDrop( Transform dropPosTr = null, TrApplyRange trApplyRange = TrApplyRange.Pos, bool isSetParent = false, bool isRegister = false )
     {
-        if( !IsWorldPositioned )
-            inventoryInfo.RemoveItem(this);
-        
+        // 등록된 상태로 방출하는 경우
+        if( isRegister )
+        {
+            // 아이템 구조만 변경합니다.
+            DimensionShift( true );
+            isWorldPositioned=false;
+        }
+        // 등록을 해제하고 방출하는 경우
+        else if( !IsWorldPositioned&&!isRegister )
+        {
+            inventoryInfo.RemoveItem( this );             // 인벤토리에서 제거합니다.
+        }
+
+
         // 드롭 포지션이 직접 전달되지 않았다면,
         if(dropPosTr==null)
             dropPosTr = baseDropTr;
@@ -999,10 +1129,10 @@ public partial class ItemInfo : MonoBehaviour
         // 3D 오브젝트의 위치와 회전값 설정 (TransferType에 따라서 Transform을 적용시킬 범위가 증가하게 됩니다.)         
         itemTr.position = dropPosTr.position;
                 
-        if( transferType >= TrApplyRange.Pos_Rot )
+        if( trApplyRange >= TrApplyRange.Pos_Rot )
             itemTr.rotation = dropPosTr.rotation;
 
-        if( transferType >= TrApplyRange.Pos_Rot_Scale)
+        if( trApplyRange >= TrApplyRange.Pos_Rot_Scale)
             itemTr.localScale = dropPosTr.localScale;
     }
 

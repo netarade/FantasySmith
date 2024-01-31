@@ -39,6 +39,7 @@ public class ButtonPlayTest : MonoBehaviour
     public void btnCreateItem()
     {
         playerInventoryInfo.AddItem( "Water", 5 );
+        playerInventoryInfo.AddItem( "StoneAxe" );
 
     }
 

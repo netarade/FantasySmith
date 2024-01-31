@@ -277,7 +277,7 @@ public partial class ItemInfo : MonoBehaviour, IPointerEnterHandler, IPointerExi
                 nextInventoryInfo.AddItemToSlot( this, childIdxNext, isActiveTabAllNext );  
 
                 // 성공을 반환합니다.
-                return true;                        
+                return true;    
             }
         }
 

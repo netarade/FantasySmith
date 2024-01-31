@@ -106,6 +106,8 @@ using UnityEngine.UI;
  * <v7.5 - 2024_0126_최원준>
  * 1- 퀵슬롯 드롭에 실패한 경우 원위치로 돌려주는 코드 추가
  * 
+ * <v7.6 - 2024_0130_최원준>
+ * 1- InitOnSelect메서드에서 퀵슬롯에게 셀렉팅이 일어남을 알리는 OnQuickSlotSlect 메서드를 호출
  * 
  * 
  */
@@ -286,6 +288,13 @@ public class ItemSelect : MonoBehaviour
         
         // 아이템이 속한 인벤토리 정보를 새롭게 참조합니다. (변경가능성이 있으므로)
         inventoryInfo = itemInfo.InventoryInfo;
+
+
+        // 셀렉팅이 일어난 인벤토리가 퀵슬롯이라면 퀵슬롯에 셀렉팅 상태를 알립니다.
+        QuickSlot quickSlot = itemInfo.InventoryInfo as QuickSlot;
+        if(quickSlot != null )
+            quickSlot.OnQuickSlotSelect(itemInfo);
+
     }
 
 

@@ -50,6 +50,10 @@ using UnityEngine;
  * 
  * 2- 퀘스트 아이템도 ItemEquip을 상속하도록 변경
  * 
+ * <v2.4 - 2024_0130_최원준>
+ * 3- EquipTr을 EquipLocalTr로 변경
+ * 이유는 장착지점 계층부모를 기준으로 한 세부조정위치이기 때문 
+ * 
  */
 
 
@@ -70,9 +74,9 @@ namespace ItemData
     {
         
         /// <summary>
-        /// 장착 지점에 관한 위치 정보
+        /// 장착 지점에 관한 세부 위치 정보 (장착 지점을 부모로 했을 때의 세부 조정 정보)
         /// </summary>
-        public STransform EquipTr;       
+        public STransform EquipLocalTr;       
                 
         /// <summary>
         /// 현재 장착 여부
@@ -94,7 +98,7 @@ namespace ItemData
             EquipType equipType, STransform equipTr )
             : base( mainType, No, name, visualRefIndex, desc ) 
         { 
-            this.EquipTr = equipTr;
+            this.EquipLocalTr = equipTr;
             this.EquipType = equipType;
             isEquip = false;
             EquipSlotIndex = -1;

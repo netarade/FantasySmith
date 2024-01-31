@@ -94,8 +94,25 @@ using UnityEngine.UI;
  * 1- SlotDeactivate메서드에서 AddItemToSlot메서드의 호출을 해당 아이템의 OnItemUnequip에서 호출하도록 맡김
  * 이유는 이미지 스케일의 변형 문제가 있어서 호출 시점을 한번에 조절하기 위함.
  * 
- * <2024_0129_최원준>
+ * <v3.6 - 2024_0129_최원준>
  * 1- 장착아이템 저장 시 사라지는 이슈가 있어서 OnApplicationQuit 오버라이딩하여 장착중인 아이템을 종료시 해제후 종료하도록 하였음.
+ * 
+ * <v4.0 - 2024_0130_최원준>
+ * 1- OnApplicationQuit 오버라이딩 삭제
+ * ItemInfo에서 WorldDrop시 인벤토리에 등록된 상태로 방출할 수 있는 옵션을 만들어 두었기 때문에 따로 아이템 해제를 할 필요가 없음.
+ * 
+ * 2- 기존의 더미 이미지 관련 속성 및 관련 코드를 모두 삭제하였음. (더미 생성코드도 삭제)
+ * 이유는 각 아이템 마다 Item2D 오브젝트 하위에 더미 오브젝트를 가지도록 구조를 변경하였으며, ItemInfo에서 이를 관리할 수 있기 때문.
+ * 
+ * 3- SlotActivate 및 SlotDeactivate 메서드 간소화
+ * 해당 슬롯의 아이템의 OnItemEquip과 OnItemUnEquip메서드를 호출해주기만 하면됨.
+ * 
+ * <v4.1 - 2024_0130_최원준>
+ * 1- 퀵슬롯에 겹쳐져 있는 배경아이콘 이미지 배열 backgroundIcon 변수를 추가하고,
+ * 슬롯 갯수만큼 초기화 및 장착 및 해제시 이미지 OnOff스위칭이 이루어질 수 있도록 함. 로드시에도 변경  
+ * 
+ * 2- QuickSlotSlect메서드를 추가하여 2D Item의 Select가 이루어지는 순간 호출하여
+ * 배경아이콘 이미지를 다시 보여지게끔 하였음.
  * 
  */
 
@@ -110,15 +127,7 @@ public class QuickSlot : InventoryInfo
     [Header("슬롯별 고정 무기 종류")]
     [SerializeField] WeaponType[] equipWeaponType;  // 고정 무기 슬롯
 
-    
-    [Header("아이템을 장착할 위치정보")]
-    [SerializeField] EquipmentTransform equipTr;    // 장비를 장착할 트랜스폼 정보
-
-
-    RectTransform[] dummyRectTr;    // 더미용 오브젝트의 RectTransform
-    Image[] dummyImg;               // 더미용 이미지
     ItemInfo[] slotItemInfo;        // 슬롯에 자리한 아이템의 정보
-
 
 
     /// <summary>
@@ -144,6 +153,7 @@ public class QuickSlot : InventoryInfo
 
     InventoryInfo playerInventory;  // 퀵슬롯과 연결되어 서버가 되는 플레이어의 인벤토리
 
+    Image[] backgroundIcon;         // 퀵슬롯에 겹쳐져 있는 배경아이콘
 
 
 
@@ -158,53 +168,46 @@ public class QuickSlot : InventoryInfo
 
         if(isServer)
             throw new Exception("중심 인벤토리가 될 수 없습니다.");
+
     }
 
     protected override void Start()
     {
         base.Start();
-                
 
 
-        if( initializer.dicTypes.Length != 1 )
-            throw new Exception("하나의 종류 딕셔너리만 선택가능합니다.");
 
-        if( initializer.dicTypes[0].itemType != ItemType.Weapon )
-            throw new Exception("전용 퀵슬롯이 무기 종류가 아닙니다.");
-        
-        //if( equipWeaponType.Length != initializer.dicTypes.Length )
-        //    throw new Exception("인스펙터 창에서 고정 무기를 모두 지정하지 않았습니다.");
-        
-        
+        if( initializer.dicTypes.Length!=1 )
+            throw new Exception( "하나의 종류 딕셔너리만 선택가능합니다." );
+
+        if( initializer.dicTypes[0].itemType!=ItemType.Weapon )
+            throw new Exception( "전용 퀵슬롯이 무기 종류가 아닙니다." );
+
+
+
         // 슬롯 길이 설정 (딕셔너리의 슬롯제한 수)
-        slotLen = initializer.dicTypes[0].slotLimit;
+        slotLen=initializer.dicTypes[0].slotLimit;
 
-        // 설정한 길이만큼 배열을 생성합니다.
-        dummyRectTr = new RectTransform[slotLen];
-        dummyImg = new Image[slotLen];
-        isItemPlaced = new bool[slotLen];
-        slotItemInfo = new ItemInfo[slotLen];
+        // 배열 사용 전 초기화        
+        isItemPlaced=new bool[slotLen];
+        slotItemInfo=new ItemInfo[slotLen];
+        backgroundIcon = new Image[slotLen];
 
 
-        // 미리 만들어진 더미 하나의 Transform을 참조합니다.
-        dummyRectTr[0] = emptyListTr.GetChild(0).GetComponent<RectTransform>();
-
-        for( int i = 0; i<slotLen; i++ )
-        {
-            // 더미오브젝트를 복제하여 emptyList에 배치하고, 참조값을 저장합니다.
-            dummyRectTr[i] = Instantiate( dummyRectTr[0].gameObject, emptyListTr ).GetComponent<RectTransform>();            
-            dummyImg[i] = dummyRectTr[i].GetComponent<Image>();            
-        }       
+        for(int i=0; i<slotLen; i++)
+            backgroundIcon[i] = inventoryTr.parent.GetChild(3).GetChild(0).GetChild(i).GetComponent<Image>();
         
+
         // 아이템 착용 상태 초기화
-        isItemEquipped = false;
+        isItemEquipped=false;
 
         // 그래픽 레이캐스팅이 가능하도록 플레이어 인벤토리와 연동상태로 시작합니다.
-        playerInventory = inventoryTr.parent.GetComponentInChildren<InventoryInfo>();
-        this.RegisterInventoryLink(playerInventory);
+        playerInventory=inventoryTr.parent.GetComponentInChildren<InventoryInfo>();
+        this.RegisterInventoryLink( playerInventory );
 
         // 창을 항상 열어둡니다.
-        InitOpenState(true);
+        InitOpenState( true );
+
 
 
         // 아이템이 로드시 슬롯에 아이템이 존재하는지 확인
@@ -213,19 +216,30 @@ public class QuickSlot : InventoryInfo
             if( slotListTr.GetChild( i ).childCount>0 )
             {
                 isItemPlaced[i]=true;
-                slotItemInfo[i]=slotListTr.GetChild( i ).GetChild( 0 ).GetComponent<ItemInfo>();
+                backgroundIcon[i].enabled = false; // 슬롯에 아이템이 존재한다면, 배경아이콘 이미지를 비활성화합니다.
+                slotItemInfo[i] = slotListTr.GetChild( i ).GetChild( 0 ).GetComponent<ItemInfo>();
+
+                if( slotItemInfo[i]==null )
+                {
+                    slotItemInfo[i]=slotListTr.GetChild( i ).GetChild( 0 ).GetComponent<DummyInfo>().EquipItemInfo;
+
+                    // 더미 정보가 있는 경우 
+                    if( slotItemInfo[i]!=null )
+                    {
+                        isItemEquipped = true;      // 아이템을 착용 상태로 설정
+                        equipSlotIndex = i;         // 착용 아이템 슬롯 인덱스를 해당 인덱스로 설정
+                    }
+                }            
+
+
+
             }
         }
     }
 
 
-    
-    protected override void OnApplicationQuit()
-    { 
-        SlotDeactivate();               // 장착중인 아이템을 해제합니다.
-        base.OnApplicationQuit(); 
-    }
 
+  
 
 
 
@@ -279,27 +293,13 @@ public class QuickSlot : InventoryInfo
             SlotDeactivate();
         }
 
-        // 아이템을 장착할 계층 정보를 받아옵니다.
-        Transform equipTr = GetEquipTr(slotItemInfo[slotIndex]);
-
         // 장착할 계층 정보를 전달하여 해당 슬롯의 아이템을 장착합니다.
-        slotItemInfo[slotIndex].OnItemEquip(equipTr);
-                        
+        slotItemInfo[slotIndex].OnItemEquip();
+        
+
         // 장착 슬롯넘버로 설정합니다.
         equipSlotIndex = slotIndex;
                 
-
-
-        // 더미 이미지를 설정합니다.
-        dummyImg[slotIndex].sprite = slotItemInfo[slotIndex].innerSprite;
-
-        // 더미 오브젝트를 해당 슬롯으로 보냅니다.
-        dummyRectTr[slotIndex].SetParent( slotListTr.GetChild(slotIndex), false );
-
-        // 더미오브젝트의 크기를 슬롯리스트의 cell크기와 동일하게 맞춥니다.(슬롯의 크기와 동일하게 맞춥니다.)
-        dummyRectTr[slotIndex].sizeDelta = slotListTr.GetComponent<GridLayoutGroup>().cellSize;
-
-        
         // 아이템 장착상태 활성화
         isItemEquipped = true;
                 
@@ -320,11 +320,9 @@ public class QuickSlot : InventoryInfo
         if( !isItemEquipped )
             return false;
         
-        // 자리한 더미를 다시 빈리스트로 보냅니다
-        dummyRectTr[equipSlotIndex].SetParent(emptyListTr, false);
-                
         // 아이템의 장착을 해제합니다.
-        slotItemInfo[equipSlotIndex].OnItemUnequip( this, equipSlotIndex );
+        slotItemInfo[equipSlotIndex].OnItemUnequip();
+
 
         // 아이템 장착 상태를 해제
         isItemEquipped = false;
@@ -359,7 +357,9 @@ public class QuickSlot : InventoryInfo
         if(droppedItemInfo.WeaponType !=equipWeaponType[slotIndex] )
             return false;
 
-
+        
+        // 배경아이콘 이미지를 비활성화 합니다.
+        backgroundIcon[slotIndex].enabled = false;
 
         // 슬롯 자리상태 활성화
         isItemPlaced[slotIndex] = true;
@@ -370,6 +370,22 @@ public class QuickSlot : InventoryInfo
         // 성공을 반환합니다.
         return true;
     }
+
+
+    /// <summary>
+    /// 퀵 슬롯에서 아이템이 셀렉팅이 일어날 때 호출해줘야하는 메서드입니다.<br/>
+    /// 배경 아이콘을 다시 원상 복귀해주는 기능을 가지고 있습니다.<br/>
+    /// 아이템 정보를 전달해야 합니다.
+    /// </summary>
+    public void OnQuickSlotSelect(ItemInfo itemInfo)
+    {        
+        // 배경아이콘 이미지를 활성화 합니다.
+        backgroundIcon[itemInfo.SlotIndexTab].enabled = true;
+    }
+
+
+
+
 
     /// <summary>
     /// 더미 아이템이 셀렉트 될 때 더미 쪽에서 호출해줘야 할 메서드입니다.<br/>

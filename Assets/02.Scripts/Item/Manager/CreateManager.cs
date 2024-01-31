@@ -232,6 +232,9 @@ using DataManagement;
 * 2- 건설아이템의 ItemMisc에서 Item으로 상속관계 변경으로 인해
 * CreateWorldItem메서드 내부 빌딩아이템에 태그를 붙여주는 경우의 코드를 ItemType검사로 변경
 * 
+* <v13.0 - 2024_0130_최원준>
+* 1- GetNewId메서드 idData의 null검사문 추가
+* 
 */
 
 namespace CreateManagement
@@ -468,6 +471,10 @@ namespace CreateManagement
             if( item.Type != ItemType.Building)
                 itemObj3D.tag = itemTag;
 
+            // 퀘스트 아이템의 경우 아이템 셀렉팅을 막습니다.
+            if(item.Type == ItemType.Quest)
+                itemInfo.ItemSelect.enabled = false;
+
 
             // 프리팹의 모든 계층에 콜라이더가 달려있지 않아야 콜라이더를 임시로 붙여줍니다. 
             if(itemObj3D.GetComponentInChildren<Collider>() == null )
@@ -513,6 +520,9 @@ namespace CreateManagement
         /// <returns>새롭게 부여된 식별번호를 반환</returns>
         public int GetNewId(IdType idDicType, string keyRootName)
         {
+            if(idData==null)
+                throw new Exception("idData 세이브파일 인스턴스가 생성되지 않았습니다. (저장파일 오류이므로 삭제후 사용합니다.)");
+
             return idData.GetNewId(idDicType, keyRootName);
         }
 

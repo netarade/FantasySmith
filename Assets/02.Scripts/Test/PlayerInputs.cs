@@ -8,4 +8,9 @@ public class PlayerInputs : MonoBehaviour
     {
 
     }
+
+    public void OnItemEquip(bool isEquip)
+    {
+        Debug.Log("장착 액션 실행");
+    }
 }

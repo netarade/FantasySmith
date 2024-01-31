@@ -28,6 +28,12 @@ using UnityEngine;
 * 
 * 3- 아이템 착용관련 프로퍼티 IsEquip, EquipSlotIndex를 추가
 * 
+* <v1.5 - 2024_0130_최원준>
+* 1- IsEquip프로퍼티의 set기능 추가
+* 
+* 2- EquipType 프로퍼티 추가
+* 
+* 
 */
 public partial class ItemInfo : MonoBehaviour
 {
@@ -246,7 +252,7 @@ public partial class ItemInfo : MonoBehaviour
                 return itemBuilding.WorldTr;
 
             else if(itemEquip!=null)
-                return itemEquip.EquipTr;
+                return itemEquip.EquipLocalTr;
 
             return null;
         } 
@@ -276,7 +282,8 @@ public partial class ItemInfo : MonoBehaviour
 
     /// <summary>
     /// 장비의 착용 상태를 반환합니다.<br/><br/>
-    /// 아이템이 현재 착용 중이라면 true를, 착용중이 아니거나 착용불가능한 아이템의 경우 false를 반환합니다.
+    /// get - 아이템이 현재 착용 중이라면 true를, 착용중이 아니거나 착용불가능한 아이템의 경우 false를 반환합니다.<br/>
+    /// set - 아이템의 착용 상태를 수정합니다.
     /// </summary>
     public bool IsEquip
     {
@@ -290,7 +297,36 @@ public partial class ItemInfo : MonoBehaviour
                 return false;
         }
 
+        set
+        {
+            ItemEquip itemEquip = item as ItemEquip;
+            if( itemEquip != null )
+                itemEquip.isEquip = value;            
+        }
+
     }
+
+
+    /// <summary>
+    /// 해당 아이템의 장착 지점 종류 정보를 반환합니다.<br/><br/>
+    /// get - 장착 가능한 아이템의 경우 해당 EquipType을 반환, 장착 불가능한 아이템의 경우 EquipType.None을 반환합니다.
+    /// </summary>
+    public EquipType EquipType
+    {
+        get
+        {
+            ItemEquip itemEquip = item as ItemEquip;
+
+            if(itemEquip != null )
+                return itemEquip.EquipType;
+            else
+                return EquipType.None;
+        }
+    }
+
+
+
+
 
     /// <summary>
     /// 장비가 착용 중인 슬롯의 인덱스를 반환합니다.<br/><br/>

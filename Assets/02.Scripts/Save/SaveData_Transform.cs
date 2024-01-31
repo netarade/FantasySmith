@@ -1,4 +1,5 @@
 using CreateManagement;
+using ItemData;
 using System;
 using UnityEngine;
 
@@ -36,6 +37,9 @@ using UnityEngine;
  * (착용 지점에 전송하는 경우 부모는 착용 Transform에 위치시키지만 세부적인 조정을 로컬로 해야하는 경우가 있기 때문)
  * 
  * 2- 로컬정보를 저장할 때 부모 계층에 속해있지 않은 경우 (즉 자신이 최상위 부모인 경우 로컬 정보가 올바로 저장되지 않음)
+ * 
+ * <v3.1 - 2024_0130_최원준>
+ * 1- GetSTransform호출 인자로 IVCType을 추가하여 다른 IVC도 참조할 수 있도록 변경
  * 
  */
 
@@ -119,21 +123,24 @@ namespace DataManagement
         /// Transform의 로컬 정보를 전달받아 새로운 STransform을 반환합니다.(저장을 위한 자료형으로 사용되어 집니다.)<br/><br/>
         /// 로컬 정보를 저장할 때 기준 부모를 결정할 수 있습니다. (Transform 정보가 부모 계층 basisParentTr에 속해있지 않은 경우 사용합니다.)
         /// </summary>
-        public static STransform GetSTransform(int vcIndex, Transform basisParentTr=null)
+        public static STransform GetSTransform(IVCType ivcType, int vcIndex, Transform basisParentTr=null)
         {
-            ItemVisualCollection ivcWeapon = 
-                GameObject.FindWithTag("GameController").
-                transform.GetChild(0).GetChild(0).GetComponent<ItemVisualCollection>();
+            //들어온 인자를 바탕으로 참조할 인덱스를 설정합니다.
+            int ivcIdx = (int)ivcType;      
 
-            if (ivcWeapon == null)
+            ItemVisualCollection ivc = 
+                GameObject.FindWithTag("GameController").
+                transform.GetChild(0).GetChild(ivcIdx).GetComponent<ItemVisualCollection>();
+
+            if (ivc == null)
                 throw new Exception("ivc참조가 잡혀있지 않습니다.");
            
             // 인덱스가 배열의 접근범위를 초기환 경우 기본 STransform 반환
-            if(vcIndex >= ivcWeapon.vcArr.Length)
+            if(vcIndex >= ivc.vcArr.Length)
                 return new STransform();
                 
             // 인덱스가 배열의 접근범위 이내인 경우 VisualCollection의 Transform정보를 변환하여 STransform반환
-            return new STransform(ivcWeapon.vcArr[vcIndex].weaponTr, true, basisParentTr);
+            return new STransform(ivc.vcArr[vcIndex].equipLocalTr, true, basisParentTr);
         }   
 
 

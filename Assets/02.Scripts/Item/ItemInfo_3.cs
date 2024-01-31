@@ -58,6 +58,16 @@ using UnityEngine.UIElements;
 * <v3.2 - 2024_0129_최원준>
 * 1- 아이템 장착시 리지드바디의 중력을 끄고, 장착 해제 시 중력을 다시 키도록 구현 (무기가 떨어지므로)
 * 
+* <v3.3 - 2024_0130_최원준>
+* 1- 변수명 equipPrevTr을 prevEquipLocalTr로 변경
+* 
+* 2- OnItemEquip OnItemUnequip메서드 대폭 수정
+* a.매개변수명 equipTr을 equipParentTr로 변경
+* b.더미 정보를 업데이트 하는 코드 추가
+* c.반환 형식을 void에서 bool로 변경하여, 예외처리를 실패로 바꾸고, 실패에도 호출될 수 있도록 변경
+* d.장착 시 아이템에 연결된 장착액션 대리자를 호출하도록 하였음.
+* e.콜라이더와 리지드바디 null 검사문 추가
+* 
 */
 
 
@@ -147,10 +157,7 @@ public partial class ItemInfo : MonoBehaviour
 
 
 
-
-    bool isEquip = false;                       // 아이템의 현재 장착여부
-    STransform equipPrevTr = new STransform();   // 아이템이 장착 이전에 가지고 있던 변환정보 
-
+    STransform prevEquipLocalTr = new STransform();   // 아이템이 장착 이전에 가지고 있던 변환정보 
 
     /// <summary>
     /// 아이템을 장착할 때 호출해줘야 하는 메서드입니다.<br/>
@@ -158,41 +165,72 @@ public partial class ItemInfo : MonoBehaviour
     /// 아이템이 내부적으로 보유하고 있는 STransform 정보와 동기화 합니다.<br/><
     /// *** 장비 아이템이 아니라면 예외가 발생합니다. ***
     /// </summary>
-    public void OnItemEquip(Transform equipTr)
+    public bool OnItemEquip(bool isLoad=false)
     {
-        if( !(item is ItemEquip) )
-            throw new Exception("아이템이 장착가능한 타입이 아닙니다.");
-        if( equipTr==null )
-            throw new Exception("장비 아이템을 장착할 계층정보를 전달해야 합니다.");
-        if( isEquip )
-            throw new Exception("이 아이템은 이미 장착 상태이므로 장착을 할 수 없습니다.");
+        ItemEquip itemEquip = item as ItemEquip;
+
+        if( itemEquip==null )
+        {
+            Debug.Log( "아이템이 장착가능한 타입이 아닙니다." );
+            return false;
+        }
+
+         // 로드가 아닌 상태에서 장착중 인경우 
+        if( itemEquip.isEquip && !isLoad )
+        {
+            Debug.Log( "이 아이템은 이미 장착 상태이므로 장착을 할 수 없습니다." );
+            return false;
+        }
+
+
+        // 장착상태를 활성화합니다.
+        itemEquip.isEquip = true;
+
 
         // 아이템이 계층정보가 변경되기 전의 절대 크기를 기록합니다.
         Vector3 prevItem2dLossyScale = itemRectTr.lossyScale;
 
         // 아이템의 계층정보가 변하기 전(2D상태에서) 원본 로컬 변환정보를 기록합니다.
-        equipPrevTr.Serialize(Item3dTr, true);        
-
-        // 월드에 아이템을 방출하고 equipTr의 계층에 종속시킵니다.
-        OnItemWorldDrop(equipTr, TrApplyRange.Pos, true);
-        
-        // 아이템이 기본적으로 가지고 있는 STransform 값을 Item3dTr의 로컬정보에 적용시켜줍니다.
-        SerializedTr.Deserialize(Item3dTr, true);
+        prevEquipLocalTr.Serialize(Item3dTr, true);        
                 
+
+        // 장착 지점을 반환받습니다.
+        Transform equipParentTr = equipInfo.GetEquipParentTr(this);
+
+        // 인벤토리에 등록된 상태로 장착 지점에 아이템을 방출하고 계층에 종속시킵니다.
+        OnItemWorldDrop(equipParentTr, TrApplyRange.Pos, true, true);
+        
+        // 아이템의 장착 지점을 기준으로한 로컬 STransform 값을 Item3dTr의 로컬정보에 적용시켜줍니다.
+        itemEquip.EquipLocalTr.Deserialize(Item3dTr, true);
+        
+
         // 2d스케일이 하위 자식상태에서 변동이 일어나므로 원래의 값으로 맞추어줍니다.
         // 그렇지 않으면 다시 슬롯에 돌아갈 때 스케일이 변형된 상태가 되므로 이미지 사이즈가 변하게 될 것입니다
         STransform.SetLossyScale(itemRectTr, prevItem2dLossyScale);
-
+        
         // 아이템의 기본 콜라이더를 비활성화 합니다.
-        ItemCol.enabled = false;
+        if(itemCol!=null)
+            itemCol.enabled = false;
         
         // 아이템의 중력을 해제합니다.
-        itemRb.useGravity = false;
+        if(itemRb!=null)
+            itemRb.useGravity = false;
 
+        // 더미 이미지를 활성화합니다.
+        dummyInfo.DummyImg.enabled = true;
+        // 더미 오브젝트의 포지션을 업데이트합니다.
+        dummyInfo.UpdatePositionInfo();
 
-        // 장착상태를 활성화합니다.
-        isEquip = true;
+        // 장착 액션을 실행하여 연결되어있는 모든 메서드에 상태를 반영합니다.
+        if(EquipAction!=null)
+            EquipAction(true);
+
+        // 성공을 반환합니다.
+        return true;        
     }
+
+
+
 
    
 
@@ -205,32 +243,53 @@ public partial class ItemInfo : MonoBehaviour
     /// 아이템 장착을 해제할 때 호출해줘야 하는 메서드입니다.<br/>
     /// 장착 이전 아이템의 변환 정보로 값을 회귀합니다.<br/><br/>
     /// </summary>
-    public void OnItemUnequip( QuickSlot quickSlot, int slotIndex )
+    public bool OnItemUnequip()
     {
-        if( !isEquip )
-            throw new Exception( "장착 상태가 아니므로 장착을 해제할 수 없습니다." );
+        ItemEquip itemEquip = item as ItemEquip;
 
-        if( quickSlot==null )
-            throw new Exception( "퀵슬롯 스크립트 정보가 없습니다." );
-        if( slotIndex<0 || slotIndex >= quickSlot.slotLen )
-            throw new Exception( "슬롯 인덱스 정보가 잘못되었습니다." );
-
+        if( !itemEquip.isEquip )
+        {
+            Debug.Log( "장착 상태가 아니므로 장착을 해제할 수 없습니다." );
+            return false;
+        }
         
-        // 장착한 아이템을 지정 슬롯에 다시 추가합니다.
-        quickSlot.AddItemToSlot( this, slotIndex, quickSlot.interactive.IsActiveTabAll );
-                      
-        // 아이템이 보유하고 있는 이전 로컬 변환정보를 Item3DTr에 입력합니다.
-        equipPrevTr.Deserialize( Item3dTr, true );
 
-        // 아이템의 기본 콜라이더를 활성화 합니다.
-        ItemCol.enabled = true;
-
-        // 아이템의 중력을 활성화합니다.
-        itemRb.useGravity = true;
 
         // 장착 상태를 비활성화 합니다.
-        isEquip = false;
+        itemEquip.isEquip = false;
+                
+        // 장착한 아이템 구조를 2D상태로 변경합니다.
+        DimensionShift(false);
+
+        // 아이템의 2D 포지션을 업데이트합니다.
+        UpdatePositionInfo();
+
+        // 아이템이 보유하고 있던 이전 로컬 변환정보를 Item3DTr에 입력하여 원상복귀 시켜줍니다.
+        prevEquipLocalTr.Deserialize( Item3dTr, true );
+
+        // 아이템의 기본 콜라이더를 활성화 합니다.
+        if( itemCol!=null )
+            itemCol.enabled = true;
+
+        // 아이템의 중력을 활성화합니다.
+        if( itemRb!=null )
+            itemRb.useGravity = true;
+
+        // 더미 이미지를 비활성화 합니다.
+        dummyInfo.DummyImg.enabled = false;
+        // 더미오브젝트의 포지션을 업데이트합니다.
+        dummyInfo.UpdatePositionInfo();
+
+        // 장착 해제 액션을 실행하여 연결되어있는 모든 메서드에 상태를 반영합니다.
+        if(EquipAction!=null)
+            EquipAction(false);
+
+        // 성공을 반환합니다.
+        return true;
     }
+
+
+
 
 
 

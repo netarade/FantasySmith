@@ -5,6 +5,7 @@ using ItemData;
 using System;
 using System.Collections.Generic;
 using CreateManagement;
+using UnityEngine.UI;
 
 /*
  * [작업 사항]  
@@ -306,6 +307,14 @@ using CreateManagement;
  *1 - 전체 슬롯 공유 여부를 반환하는 IsShareAll 프로퍼티 추가
  *ItemInfo에서 참조하여 슬롯 인덱스 설정에 활용
  *
+ *
+ *<v11.4 - 2024_0130_최원준>
+ *1- GridLayoutGroup의 cellSize를 반환하는 cellSize변수와 프로퍼티를 추가
+ *DummyInfo 스크립트에서 참조하기 위함
+ *
+ *2- UpdateAllItemVisualInfo메서드에서 착용 중인 아이템의 3D표현하는 코드를 추가 (OnItemEquip메서드 호출)
+ *
+ *
  */
 
 
@@ -351,6 +360,16 @@ public partial class InventoryInfo : MonoBehaviour
     
     protected Animation[] animations;           // 인벤토리 오픈에 관련된 애니메이션
     protected WaitForSeconds animationWaitTime; // IEnumrator에서 사용할 애니메이션이 끝나는데 걸리는 시간
+        
+    protected Vector2 cellSize;                 // 더미 이미지의 크기를 맞출 사이즈
+
+    /// <summary>
+    /// 슬롯의 이미지 크기를 반환합니다.
+    /// </summary>
+    public Vector2 CellSize { get { return cellSize;}  }
+
+
+    
 
 
     /// <summary>
@@ -395,12 +414,20 @@ public partial class InventoryInfo : MonoBehaviour
     public bool IsShareAll { get { return initializer.isShareAll; } }
 
 
+    /// <summary>
+    /// 인벤토리 내부에 숨겨진 빈공간에 아이템을 담을 수 있는 리스트의 Transform 값을 반환
+    /// </summary>
+    public Transform EmptyListTr { get { return emptyListTr; } }
+
+
+
     protected virtual void Awake()
     {         
         inventoryTr = transform; 
         slotListTr = inventoryTr.GetChild(0).GetChild(0).GetChild(0);
         emptyListTr = inventoryTr.GetChild(0).GetChild(1);
                           
+        cellSize = slotListTr.GetComponent<GridLayoutGroup>().cellSize;
         interactive = GetComponent<InventoryInteractive>(); 
         initializer = GetComponent<InventoryInitializer>();     // 자신 오브젝트의 스크립트 참조
               
@@ -418,10 +445,11 @@ public partial class InventoryInfo : MonoBehaviour
         // 플레이어(서버)인벤토리가 체크되어있다면, 
         if( isServer )
         {
-            clientInfo = new List<InventoryInfo>(); // 클라이언트 인벤토리를 담을 수 있는 리스트를 할당합니다.
-            clientInfo.Add(this);                   // 연결 인벤토리 정보에 자신을 등록합니다.
-            serverInfo = this;                      // 자기자신을 서버로 등록합니다.
+            clientInfo = new List<InventoryInfo>();     // 클라이언트 인벤토리를 담을 수 있는 리스트를 할당합니다.
+            clientInfo.Add(this);                       // 연결 인벤토리 정보에 자신을 등록합니다.
+            serverInfo = this;                          // 자기자신을 서버로 등록합니다.
         }
+
 
 
         /*** 인벤토리 소유자 정보를 초기화 합니다. ***/
@@ -432,6 +460,8 @@ public partial class InventoryInfo : MonoBehaviour
         if(ownerInfo != null)
             ownerId = ownerInfo.UserId;                 // 유저Id가 인벤토리 소유자 식별번호가 됩니다. 
     }
+
+
 
     // dataManager와 createManager의 초기화가 이루어진 이후 로드해야함.
     protected virtual void Start()
@@ -447,8 +477,14 @@ public partial class InventoryInfo : MonoBehaviour
         // 슬롯 생성 이후 모든 애니메이션 컴포넌트를 참조합니다.
         animations = GetComponentsInChildren<Animation>();  
         animationWaitTime = new WaitForSeconds(animationTime);  //애니메이션 최대 길이에 해당하는 인스턴스를 초기화합니다.
-
     }
+
+
+
+
+
+
+
 
 
 
@@ -549,7 +585,14 @@ public partial class InventoryInfo : MonoBehaviour
             foreach( List<ItemInfo> itemInfoList in itemDic.Values )    
             {
                 foreach( ItemInfo itemInfo in itemInfoList )
-                    itemInfo.OnItemAdded( this );    // 현재 인벤토리 참조값을 전달하여 OnItemAdded메서드를 호출합니다
+                {
+                    // 현재 인벤토리 참조값을 전달하여 OnItemAdded메서드를 호출합니다
+                    itemInfo.OnItemAdded( this );    
+
+                    // 착용 중인 3D 아이템의 표현을 진행합니다.
+                    if(itemInfo.IsEquip)
+                        itemInfo.OnItemEquip(true);
+                }
             }
         }
     }
@@ -606,9 +649,7 @@ public partial class InventoryInfo : MonoBehaviour
             }
         }
     }
-
-
-
+       
 
 
 

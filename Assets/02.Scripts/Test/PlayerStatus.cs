@@ -4,15 +4,10 @@ using UnityEngine;
 
 public class PlayerStatus : MonoBehaviour
 {
-    // Start is called before the first frame update
-    void Start()
-    {
-        
-    }
+    public bool isHood;
 
-    // Update is called once per frame
-    void Update()
+    public void OnHoodEquip(bool isEquip)
     {
-        
+        isHood = isEquip;
     }
 }

@@ -77,8 +77,12 @@ using CreateManagement;
  * 1- 각인석의 Sprite이미지 참조값을 직접 찾아서 참조하는 방식에서
  * VisualManager를 통해 인덱스 넘버를 전달하여 참조값을 얻는 방식으로 구현
  * 
- * <v5.3 - 2024_01111_최원준>
+ * <v5.3 - 2024_0111_최원준>
  * 1- 서바이벌 장르에 맞게 아이템 클래스 구조 변경으로 인해 각인석관련 코드를 삭제 및 설명을 Desc로 대체
+ * 
+ * <v5.4 - 2024_0130_최원준>
+ * 1- OnItemPointer메서드에서 itemRectTr을 IsEquip상태에 따라서 더미의 RectTr으로 설정하거나, 아이템의 RectTr로 설정하도록 변경
+ * (아이템 장착시에는 더미이미지의 위치를 기준으로 판단해야 하므로)
  * 
  */
 
@@ -130,7 +134,7 @@ public class StatusWindowInteractive : MonoBehaviour
             return;
 
 
-        RectTransform itemRectTr = itemInfo.gameObject.GetComponent<RectTransform>();
+        RectTransform itemRectTr = itemInfo.IsEquip ? itemInfo.DummyInfo.DummyRectTr : itemInfo.Item2dTr;
         Item item = itemInfo.Item;
 
 

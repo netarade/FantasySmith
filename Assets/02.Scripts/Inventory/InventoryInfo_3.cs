@@ -76,6 +76,10 @@ using UnityEngine.UI;
  * 1- 애니메이션의 길이가 재생 된 이후에 인벤토리 창이 열리도록 하였음
  * AllItemAppearAfterAnimation와 GetLongestAnimationLength메서드를 정의
  * 
+ * <v2.8 - 2024_0131_최원준>
+ * 1- Disconnect메서드에서 상대와 자신의 인벤토리 정보를 파일로 저장하도록 구현 
+ * (보관함이 갓 생성되었을 때 파일로 저장이 안되는 문제가 있으므로)
+ * 
  */
 
 
@@ -280,7 +284,8 @@ public partial class InventoryInfo : MonoBehaviour
             return true;
         }
 
-        
+
+
         throw new Exception("서버-클라이언트 관계가 아닙니다. 서버끼리 연결할 수 없으며, 클라이언트끼리 연결 할 수 없습니다.");
     }
 
@@ -297,12 +302,18 @@ public partial class InventoryInfo : MonoBehaviour
     {
         if(!this.isConnect)
             throw new Exception("연결상태가 아닙니다.");
-        
+
+        // 자신의 인벤토리 데이터를 저장합니다.
+        SaveInvetoryData(); 
+
         // 자신이 서버라면,
-        if(this.isServer)
+        if (this.isServer)
         {   
             // 마지막으로 추가 된 클라이언트 정보를 참조하여 클라이언트로 설정합니다.
             InventoryInfo clientInfo = this.clientInfo[this.clientInfo.Count-1];
+
+            // 클라이언트의 인벤토리 데이터를 저장합니다.
+            clientInfo.SaveInvetoryData();  
 
             // 두 인벤토리 연결상태 비활성화 및 Close
             this.isConnect = false;
@@ -319,11 +330,15 @@ public partial class InventoryInfo : MonoBehaviour
         }
         // 자신이 클라이언트라면,
         else
-        {               
+        {
+            // 서버의 인벤토리 데이터를 저장합니다.
+            serverInfo.SaveInvetoryData();
+
             // 두 인벤토리 연결상태 비활성화 및 Close
             serverInfo.isConnect=false;
             serverInfo.InitOpenState(false);
                         
+            
             this.isConnect = false;
             this.InitOpenState(false);        
             

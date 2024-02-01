@@ -235,6 +235,14 @@ using DataManagement;
 * <v13.0 - 2024_0130_최원준>
 * 1- GetNewId메서드 idData의 null검사문 추가
 * 
+* <v13.1 - 2024_0131_최원준>
+* 1- Item인스턴스를 인자로 전달받아 호출하는 CreateWorldItem메서드의 마지막 부분에
+* 아이이템형 인벤토리의 ownerID를 업데이트하는 UpdateItemInventoryInfo메서드를 호출해주도록 하였음.
+* 이유는 InventoryInfo의 경우 저장파일을 따로 두지 않기 때문에 ownerID를 게임 시작할 때 수동으로 잡아줘야 해당 ID를 바탕으로 파일로드가 가능해짐.
+* 
+* 기존의 CreateWorldItem의 ItemInfo를 기반으로 호출하는 메서드에서는 새롭게 생성하기 때문에 ID를 할당후 수동 업데이트 해줬지만
+* Item을 기반으로 호출하는 메서드의 경우 이미 존재하는 아이템을 새롭게 생성하는 것이므로 해당 Item인스턴스에 저장된 ID를 수동으로 업데이트 해줄 필요가 있음.
+* 
 */
 
 namespace CreateManagement
@@ -474,8 +482,7 @@ namespace CreateManagement
             // 퀘스트 아이템의 경우 아이템 셀렉팅을 막습니다.
             if(item.Type == ItemType.Quest)
                 itemInfo.ItemSelect.enabled = false;
-
-
+                     
             // 프리팹의 모든 계층에 콜라이더가 달려있지 않아야 콜라이더를 임시로 붙여줍니다. 
             if(itemObj3D.GetComponentInChildren<Collider>() == null )
                 itemObj3D.AddComponent<BoxCollider>().isTrigger=false;
@@ -487,6 +494,26 @@ namespace CreateManagement
             // 아이템의 초기화를 진행합니다.
             itemInfo.OnItemCreated();
             
+
+
+
+            if(itemInfo.BuildingType == BuildingType.Inventory)
+            {
+                // 고유 ID가 할당되어 있는 경우
+                if( itemInfo.ItemId>=0 )
+                {
+                    // 아이템화 인벤토리의 인벤토리 정보를 참조합니다.
+                    InventoryInfo itemInventoryInfo = itemInfo.Item3dTr.GetComponentInChildren<InventoryInfo>();
+
+                    // itemInfo를 전달하여 소유자 정보를 업데이트 해줍니다.
+                    if( itemInventoryInfo!=null )
+                        itemInventoryInfo.UpdateItemInventoryInfo( itemInfo );
+                }
+            }
+
+
+
+
             // 컴포넌트 참조값 반환
             return itemInfo;
         }

@@ -26,28 +26,28 @@ public partial class WorldItem
         return new Dictionary<string, Item>()
         {            
             {
-                "LeatherHood", new ItemQuest( ItemType.Quest, "0000", "Leatherhood", new VisualReferenceIndex(0),
-                "Raincoat made of leather.", EquipType.Helmet, STransform.GetSTransform(IVCType.Quest, 0) )
+                "가죽 후드", new ItemQuest( ItemType.Quest, "0000", "가죽 후드", new VisualReferenceIndex(0),
+                "가죽으로 만든 비옷입니다. 이래보여도 성능이 매우 뛰어납니다.", EquipType.Helmet, STransform.GetSTransform(IVCType.Quest, 0) )
             },
             {
-                "MysteriousStone", new ItemQuest( ItemType.Quest, "0002", "MysteriousStone", new VisualReferenceIndex(2),
-                "A stone that doesn't fall to the ground." )
+                "신기한 돌", new ItemQuest( ItemType.Quest, "0001", "신기한 돌", new VisualReferenceIndex(1),
+                "땅에 떨어지지 않고 둥둥 떠 있는 돌입니다." )
             },
             {
-                "LeatherMap", new ItemQuest( ItemType.Quest, "0001", "LeatherMap", new VisualReferenceIndex(1),
-                "Map made of leather." )
+                "가죽 지도", new ItemQuest( ItemType.Quest, "0002", "가죽 지도", new VisualReferenceIndex(2),
+                "위치를 기록하기 위해 가죽으로 지도를 만들었습니다." )
             },
             {
-                "BrokenDevice", new ItemQuest( ItemType.Quest, "0004", "BrokenDevice", new VisualReferenceIndex(4),
-                "A compass that keeps spinning like it's broken." )
+                "부서진 장치", new ItemQuest( ItemType.Quest, "0003", "부서진 장치", new VisualReferenceIndex(3),
+                "탐사선이 추락할 때 떨어져 나간 통신장치 입니다. 지금은 고장나 작동하지 않습니다." )
             },
             {
-                "MonsterEye", new ItemQuest( ItemType.Quest, "0003", "MonsterEye", new VisualReferenceIndex(3),
-                "By-products obtained from hunting strange monsters" )
+                "괴물의 눈", new ItemQuest( ItemType.Quest, "0004", "괴물의 눈", new VisualReferenceIndex(4),
+                "길을 막고 있는 괴물을 처치하고 얻은 부산물. 이것을 얻는 순간 안개가 사라졌습니다." )
             },
             {
-                "Glider", new ItemQuest( ItemType.Quest, "0005", "Glider", new VisualReferenceIndex(5),
-                "I think I can escape from here if I use this." )
+                "글라이더", new ItemQuest( ItemType.Quest, "0005", "글라이더", new VisualReferenceIndex(5),
+                "이걸 쓰면 안전하게 이곳에서 탈출할 수 있을 것 같습니다. 제발." )
             },
         };        
     }

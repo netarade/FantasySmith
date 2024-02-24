@@ -1,8 +1,6 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using InventoryManagement;
-using CreateManagement;
-using ItemData;
 
 
 /* [ÀÛ¾÷ »çÇ×]
@@ -24,26 +22,20 @@ using ItemData;
 /// </summary>
 public class ButtonPlayTest : MonoBehaviour
 {
-    InventoryInfo playerInventoryInfo;
-    CreateManager createManager;
-    UserInfo userInfo;
-
+    InventoryInfo inventoryInfo;
     private void Start()
     {
-        playerInventoryInfo = GameObject.FindWithTag("Player").GetComponentInChildren<InventoryInfo>();
-        createManager = GameObject.FindWithTag("GameController").GetComponent<CreateManager>();
-        userInfo = GameObject.FindWithTag("Player").GetComponent<UserInfo>();
+        inventoryInfo=GameObject.FindWithTag("Player").GetComponentInChildren<InventoryInfo>();
     }
 
 
     public void btnCreateItem()
     {
-        playerInventoryInfo.AddItem( "Water", 5 );
-        playerInventoryInfo.AddItem( "StoneAxe" );
-
+        inventoryInfo.AddItem("°¡Á× ÈÄµå");
+        inventoryInfo.AddItem("µ¹ µµ³¢");
     }
 
-    public void btnNext()
+    public void BtnNext()
     {
         if(SceneManager.GetActiveScene().name=="InventoryTest")
             SceneManager.LoadScene("InventoryTest2");
@@ -51,7 +43,7 @@ public class ButtonPlayTest : MonoBehaviour
             SceneManager.LoadScene("InventoryTest");
     }
 
-    public void btnExit()
+    public void BtnExit()
     {
         #if UNITY_EDITOR
             UnityEditor.EditorApplication.isPlaying = false;
@@ -60,22 +52,10 @@ public class ButtonPlayTest : MonoBehaviour
         #endif
     }
 
-    public void CraftStart()
-    {      
-         ItemPair[] itemPairs = { 
-            new ItemPair( "Mud", 2 ), 
-            new ItemPair( "Thread", 3),
-            new ItemPair( "Vine", 5),
-            new ItemPair( "StoneAxe", 1),
-            };
-
-
-        if(playerInventoryInfo.IsItemEnough(itemPairs))
-        {
-            playerInventoryInfo.ReduceItem(itemPairs);
-        }
- 
-        
+    public void BtnCraftStart()
+    {                
+        inventoryInfo.AddItem("¹°", 3);
+        inventoryInfo.AddItem("ÁøÈë", 1);
     }
 
 

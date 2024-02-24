@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Data.Common;
 using UnityEngine;
 using UnityEngine.EventSystems; // 마우스 클릭, 드래그 드랍, 이벤트 관련 로직
 using UnityEngine.UI;
@@ -110,6 +111,91 @@ using UnityEngine.UI;
  * 1- InitOnSelect메서드에서 퀵슬롯에게 셀렉팅이 일어남을 알리는 OnQuickSlotSlect 메서드를 호출
  * 
  * 
+ * 
+ * <v8.0 - 2024_0209_최원준>
+ * 1- 주석에 몇가지 설명 누락된 부분있어서 주석에 추가
+ * a- v7.3에서 FinishSelecting 디폴트 매개변수 메서드를 추가 선언했다고 했는데 해당 스크립트에서 보이지 않음.
+ * b- itemCG의 레이캐스팅을 차단하는 이유는 아이템 드롭 하자마자 버튼 이벤트가 발생하여 다시 셀렉팅이 일어나기 때문 (중복셀렉트 방지)
+ * c- 스위칭 할 아이템의 inventoryCG를 차단하는 이유
+ * 
+ * 2- DropItemWithRaycast메서드 내부에 QuestCheck 및 Craft_UIManager 메서드 호출 코드 null검사 구문 추가
+ * 
+ * 3- interactive변수명을 interactiveBeforeDrop으로 변경
+ * 이유는 드롭 이전의 인벤토리의 interactive의 상태를 변경시키는데, 드롭이 성공한 후 인벤토리가 바뀌므로 상태를 되돌려 놓아야 함.
+ * 
+ * 4- InitOnSelect메서드 내부의 interactiveBeforeDrop의 참조값 잡는 부분을 새롭게 찾지 않고 itemInfo의 기존 참조값을 받도록 수정
+ * 
+ * <v8.1 - 2024_0216_최원준>
+ * 1- 변수명 isFirstSelectDelay을 bInstantFinishDelay로 변경, 메서드명 FirstSelectDelayTime을 InstantSelectFinishDelayTime로 변경
+ * 
+ * <v8.2 - 2024_0221_최원준>
+ * 1- 아이템의 재선택을 가능하게 만들어주는 isReselect변수를 추가하고, 
+ * ReselectUntilDeselect메서드 호출을 통해 외부에서 플래그를 활성화 시키면
+ * 드롭이 이루어지고 난 이후 Deselect가 마무리 될때 SelectDoneDelayTime 코루틴 호출 시 마지막에 다시 셀렉팅을 강제로 진행하게 해주었음
+ * 
+ * 2- DropItemWithRaycast메서드에서 레이캐스팅 결과를 foreach문으로 돌리면서 태그가 슬롯이 아닐때마다 UpdatePositionInfo를 호출하던 부분을 수정
+ * => 슬롯 태그가 하나라도 검출된다면 UpdatePositionInfo를 돌리지 말아야 함 (내부 메서드 호출로 인해 자체적으로 돌릴 것이므로) 
+ * 
+ * <8.3 - 2024_0222_최원준>
+ * 1- OnSelectFailCondition메서드에서 실패조건에 IsItemSelecting과 isMyItemSelecting을 && 조건으로 처리하던 점을 수정
+ * isMyItemSelecting조건 삭제
+ * => 이유는 자기 아이템 셀렉팅이 중요한 것이 아니라, 
+ * 인벤토리 전체에서 셀렉팅이 이루어지고 있다면 다른 아이템 셀렉팅을 못해야 하므로
+ * 
+ * (이슈)
+ * 아이템의 버튼이벤트가 발생하지 못하도록 레이캐스트블록만 차단하면 따로 아이템과 인벤토리 셀렉팅 상태를 관리할 필요가 없음.
+ * 
+ * 
+ * <v8.4 - 2024_0223_최원준>
+ * 1- 셀렉팅 속성관련 코드를 모두 제거하였음.
+ * 더 이상 셀렉팅 상태관리를 할 필요없이 itemCG의 blocksRaycasts만 해제하면 셀렉팅 할 수 없기 때문
+ * 
+ * a- OnSelectFailCondition및 OnUpdateSelectedFailCondition 메서드를 삭제
+ * b- 타 인벤토리 드롭시 상태전이 하는 코드를 제거
+ * c- isMyItemSelecting변수 및 interactiveBeforeDrop 참조변수 삭제
+ * 
+ * 2- IEnumerator를 모두 내부 메서드로 만들고, WaitForSeconds를 캐싱변수 처리
+ * 
+ * 3- SelectPreventTemporary메서드를 추가
+ * 아이템 스위칭 시 상대 아이템의 셀렉팅을 일시적으로 막을 수 있게 메서드화하였음
+ * 
+ *  
+ * 
+ * (이슈)
+ * 1- 아이템의 버튼 셀렉팅을 방지하고자 할 때
+ * itemCG의 blocksRaycasts 혹은 interactable 둘중 하나만 막아도 되지만,
+ * interactable은 버튼의 하이라이팅을 차단하는 효과를,
+ * blocksRaycasts는 이미지의 포인터 이벤트를 차단하는 효과를 추가적으로 가질 수 있음.
+ * => 따라서 SelectPreventTemporary메서드에서는 드롭시 상대 아이템의 포인터 이벤트를 그대로 살리기 위해
+ * interactable만 일시적으로 차단하고, 원본아이템의 경우는 블록레이캐스트 차단을 통해 포인터 이벤트를 셀렉팅하는 도중 막아주는것이 낫다고 판단
+ * 
+ * <v8.5 - 2024_0223_최원준>
+ * 
+ * 1- DropItemWithRaycast메서드에서 한번이라도 슬롯 검출이 되었다면 break문을 통해 빠져나가는 코드를 추가하였음.
+ * => (이슈) 동일 캔버스내에 있는 인벤토리가 등록되어있는 경우 (퀵슬롯) 동일 캔버스 레이캐스팅이 중복해서 일어나게 됨.
+ * 
+ * 2- SelectPreventTemporary메서드에서 상대 아이템 캔버스그룹의 interactable과 raycastsBlocks을 동시에 막도록 설정
+ * => (이슈) 동일한 아이템을 중첩시킬려고 할 때, 유니티 자체적인 특성으로 캔버스 그룹 속성 중 한쪽만 막으면 
+ * 상대 아이템 셀렉팅이 일어났다가 취소되는 현상이 생기는 것을 발견, 타 아이템은 셀렉팅이 일어나지 않음 
+ * 
+ * 3.
+ * (이슈) 동일 이름의 잡화 아이템을 빠르게 중첩 및 스왑하다보면 동시성 이슈가 발생해서,
+ * 상대 아이템의 셀렉팅을 캔버스 그룹을 통해 막는 코드를 넣더라도, 
+ * 중첩할 대상 아이템의 셀렉팅이 일어난 이후 자동으로 셀렉팅 종료를 유니티에서 실행하게되고, 
+ * 종료시 bInstantFinishDelay를 false로 넣더라도, 시작 상태의 코루틴이 돌아서 true 인상태로 존재하게 됨으로서,
+ * 다음 셀렉팅이 안되는 문제 발생
+ * => 종료 코루틴이 돌 때 bInstantFinishDelay를 false로 초기화 해놓는 코드를 추가해야 함.
+ * 
+ * 4- 슬롯 태그 검출 시 퀵슬롯인지 먼저 검사해서 OnQuickSlotDrop조건 검사후 OnItemSlotDrop을 실행하던 부분을 OnItemSlotDrop을 바로 실행하는 것으로 변경
+ * => 이유는 현스크립트에서 스왑시 자기 인벤토리의 아이템이 퀵슬롯인지를 검사할 수 없기 때문에
+ * OnItemSlotDrop내부에서 자체적으로 검사하는 것으로 변경
+ * 
+ * (이슈)
+ * 1- 퀵슬롯에서 아이템 스왑을 진행할 때, 상대 아이템의 셀렉팅을 막기전에 셀렉팅이 먼저 진행되는 경우가 생겨서
+ * 드롭실패시 원래 아이템은 자리 돌아가지만, 상대 무기가 셀렉팅되버리는 경우가 있음.
+ * => (해결완료) OnItemSlotDrop에서 SelectPreventTemporary메서드를 호출하지만, 조건 분기에 따라 실행하지 못하는 경우가 생겼기 떄문
+ * 
+ * 
  */
 
 
@@ -131,11 +217,16 @@ public class ItemSelect : MonoBehaviour
         
 
     protected InventoryInfo inventoryInfo;                // 아이템이 속한 인벤토리 참조 (동적으로 변경)
-    protected InventoryInteractive interactive;           // 전체 아이템 셀렉팅 여부 참조를 위한 인터렉티브 스크립트 참조
-    protected bool isMyItemSelecting = false;             // 현재 아이템이 선택 중인지 여부
-    protected bool isFirstSelectDelay = false;            // 처음 셀렉팅 후 딜레이 시간이 지났는지 여부
+    
+    protected bool bInstantFinishDelay = false;           // 처음 셀렉팅 후 딜레이 시간이 지났는지 여부
     protected Button itemSelectBtn;                       // 버튼의 셀렉트를 해제하기 위한 참조
     protected string strItemDropSpace = "ItemDropSpace";  // 아이템을 드롭할 수 있는 태그 설정(슬롯의 태그)
+
+    protected bool isReselect = false;                    // 아이템의 드롭이 이루어지고 난 이후 재선택을 가능하게 만드는 상태변수
+
+    WaitForSeconds selectDelayTime = new WaitForSeconds(0.1f); // 아이템 재셀렉팅 방지를 위한 딜레이 시간
+
+    bool isOnSelectDone = false;                          // OnSelect와 OnUpdateSelected의 호출순서 고정을 위한 상태변수
 
 
     // +++ 2024_0128_협업 코드 (신혜성)
@@ -159,31 +250,26 @@ public class ItemSelect : MonoBehaviour
 
     
 
-    // 셀렉트 진행 중의 처리
-    public virtual void OnUpdateSelected( BaseEventData eventData )
-    {        
-        if( OnUpdateSelectedFailCondition() )   // 실패조건이 성사되면 실행하지 않습니다.
-            return;
-        
-        MatchItemPositionWithCursor();          // 마우스 위치를 커서클릭 지점으로 맞춥니다.
-
-
-        // 이미 선택되어있는 상태에서 한번 더 선택을 못하도록 종료시킵니다.
-        if( Input.GetMouseButton( 0 ) && isFirstSelectDelay )
-            FinishSelecting(eventData);
-    }
-
     
 
     // 셀렉트 시작 시
     public virtual void OnSelect( BaseEventData eventData )
-    {        
-        if( OnSelectFailCondition() )   // 실패조건이 성사되면 실행하지 않습니다.
-            return;
-                
-        InitOnSelect();                 // 셀렉팅 실행 전 값의 초기화를 진행합니다.    
+    {                        
+        InitOnSelect();                 // 셀렉팅 실행 전 값의 초기화를 진행합니다.
     }
            
+
+
+    // 셀렉트 진행 중의 처리
+    public virtual void OnUpdateSelected( BaseEventData eventData )
+    {
+        MatchItemPositionWithCursor();          // 마우스 위치를 커서클릭 지점으로 맞춥니다.
+
+        // 이미 선택되어있는 상태에서 한번 더 선택을 못하도록 종료시킵니다. (셀렉팅이 이루어지고 있는 상태에서 마우스 클릭 감지 코드 검사문으로 인해 바로 셀렉팅이 종료되는 것을 방지합니다.)
+        if( Input.GetMouseButton( 0 ) && bInstantFinishDelay )
+            FinishSelecting(eventData);
+    }
+
     
 
     // 셀렉트 종료 시
@@ -204,18 +290,7 @@ public class ItemSelect : MonoBehaviour
 
 
 
-    /// <summary>
-    /// OnUpdateSelected 콜백 이벤트가 실행되지 않기 위한 조건을 반환합니다.
-    /// </summary>
-    /// <returns>실패조건이 충족되었다면 true, 실행해야 한다면 false를 반환</returns>
-    protected bool OnUpdateSelectedFailCondition()
-    {
-        // 내 아이템 선택상태가 아니라면 실행하지 않습니다. (아이템 1개만 실행합니다.)
-        if( !isMyItemSelecting )
-            return true;
-        else
-            return false;
-    }
+    
 
 
     /// <summary>
@@ -244,58 +319,50 @@ public class ItemSelect : MonoBehaviour
 
 
 
-    protected bool OnSelectFailCondition()
-    {
-        if( itemInfo==null )
-            Debug.Log( $"아이템 정보가 없습니다.\n본인:{gameObject.name} 부모:{transform.parent.name}" );
-        else if(itemInfo.InventoryInfo==null)
-            Debug.Log( $"인벤토리 정보가 없습니다.\n본인:{gameObject.name} 부모:{transform.parent.name}" );
-
-
-
-        // Select를 시작하면 현재 아이템의 인벤토리 정보를 최신화하여 가져옵니다. 
-        interactive = itemInfo.InventoryInfo.gameObject.GetComponent<InventoryInteractive>();
-
-        // 아이템 셀렉팅이 하나라도 활성화되어 있다면 다른 아이템의 셀렉팅을 완전히 차단합니다.
-        // 자신의 셀렉팅이 진행중이거나, 셀렉팅이 완료되지 않았다면 실행하지 않습니다.
-        if( interactive.IsItemSelecting && isMyItemSelecting )
-            return true;
-        else 
-            return false;
-    }
-
-
+    
+    /// <summary>
+    /// OnSelect에서 아이템과 관련 된 속성들을 초기화하기 위해 호출해주는 메서드입니다.
+    /// </summary>
     protected void InitOnSelect()
     {
-        interactive.IsItemSelecting=true;     // 전체 아이템에 적용하는 선택 상태를 활성화 합니다.
-        isMyItemSelecting=true;               // 내 아이템 선택 진행 상태를 활성화 합니다.
+        // 중복셀렉트 방지 활성화 (드롭 하자마자 셀렉트가 일어나지 않게 드롭 후 딜레이를 줘서 킵니다.)
+        itemCG.blocksRaycasts=false; 
 
-        // OnUpdateSelected 동시 호출을 방지하기 위해 딜레이를 줘서 상태변수를 활성화시킵니다.
-        StartCoroutine( FirstSelectDelayTime( 0.1f ) );
+        // 재선택 플래그를 비활성화 합니다.
+        isReselect = false;                            
+        
+        // 아이템이 속한 인벤토리 정보를 새롭게 참조합니다. (변경가능성이 있으므로)
+        inventoryInfo = itemInfo.InventoryInfo;
 
+        
+        prevParentSlotTr=itemRectTr.parent;                 // 이전 부모 위치 (슬롯리스트와 개별 슬롯)을 저장합니다.
+        selectingParentTr=inventoryInfo.transform.parent;   // 인벤토리의 부모 캔버스 참조
 
-        // 이전 부모 위치 (슬롯리스트와 개별 슬롯)을 저장합니다.
-        prevParentSlotTr=itemRectTr.parent;
-        selectingParentTr=interactive.gameObject.transform.parent; // 인벤토리의 부모 캔버스 참조
-
-        itemRectTr.SetParent( selectingParentTr );              // 부모를 일시적으로 인벤토리의 부모인 캔버스로 잡아서 이미지 우선순위를 높입니다.
-        itemCG.blocksRaycasts=false;                            // 드래그 이벤트 이외에는 받지 않습니다.
+        itemRectTr.SetParent( selectingParentTr );          // 부모를 일시적으로 인벤토리의 부모인 캔버스로 잡아서 이미지 우선순위를 높입니다.     
+        
 
         // 원점 이동 벡터를 구합니다.
         // (현재 인벤토리 원점 위치-마우스 이벤트가 발생한 위치 => 마우스 이벤트 위치에서 인벤토리 원점으로 이동할 수 있는 이동벡터)
         moveVecToCenter=itemRectTr.position-Input.mousePosition;
 
         
-        // 아이템이 속한 인벤토리 정보를 새롭게 참조합니다. (변경가능성이 있으므로)
-        inventoryInfo = itemInfo.InventoryInfo;
+               
 
 
-        // 셀렉팅이 일어난 인벤토리가 퀵슬롯이라면 퀵슬롯에 셀렉팅 상태를 알립니다.
-        QuickSlot quickSlot = itemInfo.InventoryInfo as QuickSlot;
-        if(quickSlot != null )
-            quickSlot.OnQuickSlotSelect(itemInfo);
 
+        // OnUpdateSelected 동시 호출을 방지하기 위해 딜레이를 줘서 상태변수를 활성화시킵니다.
+        StartCoroutine( InstantSelectFinishDelayTime() );
+
+        // 처음 셀렉트하기 위해 클릭할 때 바로 셀렉트 종료의 호출이 일어나는 것을 막기 위한 딜레이시간 내부 메서드
+        IEnumerator InstantSelectFinishDelayTime()
+        {
+            yield return selectDelayTime;
+            bInstantFinishDelay = true;
+        }
     }
+
+    
+
 
 
 
@@ -304,8 +371,8 @@ public class ItemSelect : MonoBehaviour
     /// </summary>
     protected void InitFirstOnDeselect()
     {
-        isMyItemSelecting=false;        // 내 아이템 선택 상태를 바로 비활성화합니다.
-        isFirstSelectDelay=false;       // 처음 클릭 상태를 비활성화 합니다.
+        bInstantFinishDelay=false;       // 처음 클릭 상태를 비활성화 합니다.
+        //Debug.Log( "transformID: " + transform.GetInstanceID() + "클릭상태 초기화 완료");
     }
 
     
@@ -314,10 +381,39 @@ public class ItemSelect : MonoBehaviour
     /// OnDeselect에서 중간 레이캐스팅이 끝난 후 호출해주고 있습니다.
     /// </summary>
     protected void InitLastOnDeselect()
-    {        
+    {
         // 아이템 셀렉팅 상태를 딜레이 시간을 줘서 비활성화시킵니다.
-        StartCoroutine( SelectDoneDelayTime( 0.15f ) );
+        StartCoroutine( SelectDoneDelayTime() );
+
+
+        // 아이템의 셀렉팅이 끝나고 난 이후 마지막으로 초기화해줘야 할 속성들을 모아놓은 메서드
+        IEnumerator SelectDoneDelayTime()
+        {
+            yield return selectDelayTime;
+        
+            // 인벤토리 변경 전 상태를 초기화합니다.
+            // 중복셀렉트 방지 해제(드롭 하자마자 셀렉트가 일어나지 않게 드롭 후 딜레이를 줘서 킵니다.)
+            itemCG.blocksRaycasts=true; 
+
+            bInstantFinishDelay = false;     // 처음 클릭 상태를 비활성화 합니다.
+
+
+            // 재선택 플래그가 활성화되어 있다면, 아이템의 셀렉팅을 처음부터 다시 시작합니다.
+            if( isReselect )
+            {
+                //Debug.Log( "transformID: " + transform.GetInstanceID() + "리셀렉팅합니다.");
+                EventSystem.current.SetSelectedGameObject( this.gameObject );
+            }
+
+        }
     }
+
+    
+    
+    
+
+
+
 
 
 
@@ -328,11 +424,14 @@ public class ItemSelect : MonoBehaviour
     protected void DropItemWithRaycast()
     {        
         // 인벤토리에 그래픽 레이케스팅을 요청하고 결과를 반환받습니다.
-        IReadOnlyList<RaycastResult> raycastResults = inventoryInfo.RaycastAllToConnectedInventory(true);
+        IReadOnlyList<RaycastResult> raycastResults = inventoryInfo.RaycastAllToConnectedInventory();
 
         // 레이캐스팅에 성공한 경우(검출한 오브젝트가 있는 경우)
         if( raycastResults.Count>0 )
         {
+            // 레이캐스팅 결과에 대한 슬롯 탐색여부를 초기화합니다.
+            bool isFoundSlot = false;
+
             // 모든 레이캐스팅 결과를 하나씩 열어봅니다.
             foreach( RaycastResult raycastResult in raycastResults )
             {
@@ -341,42 +440,22 @@ public class ItemSelect : MonoBehaviour
                 // 검출한 오브젝트의 태그가 슬롯이라면,
                 if( resultTr.tag==strItemDropSpace )
                 {
-                    // 슬롯의 계층 상위 부모 인벤토리가 퀵슬롯이라면 퀵슬롯 드롭메서드 또한 호출해줍니다.
-                    QuickSlot quickSlot = resultTr.parent.parent.parent.parent.GetComponent<QuickSlot>();
+                    // 슬롯 탐색 여부를 활성화합니다.
+                    isFoundSlot = true;
+                    
+                    // 아이템의 슬롯 드랍을 실행합니다.
+                    itemInfo.OnItemSlotDrop( resultTr );
+                    
 
-                    // 퀵슬롯이라면 퀵슬롯에 드롭이 가능한지 확인후 드롭을 진행합니다.
-                    if( quickSlot!=null )
-                    {
-                        if( quickSlot.OnQuickSlotDrop( itemInfo, resultTr ) )
-                        {
-                            itemInfo.OnItemSlotDrop( resultTr );
-
-                            // 타 인벤토리 전이 시 아이템 셀렉팅 상태가 끝나지 않았기 때문에
-                            // 최신 인벤토리 정보의 상태를 반영합니다.
-                            itemInfo.InventoryInteractive.IsItemSelecting = true;
-                            itemInfo.InventoryInfo.inventoryCG.blocksRaycasts = false;
-                        }
-                        // 퀵슬롯 드랍에 실패한 경우 원위치로 돌려줍니다.
-                        else                            
-                            itemInfo.UpdatePositionInfo();
-
-                    }
-                    // 퀵슬롯이 아닌 경우 바로 드롭을 진행합니다.
-                    else
-                    {
-                        itemInfo.OnItemSlotDrop( resultTr );
-                        
-                        // 타 인벤토리 전이 시 아이템 셀렉팅 상태가 끝나지 않았기 때문에
-                        // 최신 인벤토리 정보의 상태를 반영합니다.
-                        itemInfo.InventoryInteractive.IsItemSelecting = true;
-                        itemInfo.InventoryInfo.inventoryCG.blocksRaycasts = false;
-                    }
+                    // 슬롯을 한번이라도 만나면 반복문을 종료합니다.
+                    break;      
                 }
-                // 검출한 오브젝트의 태그가 슬롯이 아니라면, 다시 원위치로 돌려줍니다.
-                else
-                    itemInfo.UpdatePositionInfo();
             }
 
+            
+            // 검출한 오브젝트의 태그에 슬롯이 없다면(슬롯탐색 여부가 비활성화상태라면), 다시 원위치로 돌려줍니다.
+            if(!isFoundSlot)                
+                itemInfo.UpdatePositionInfo();
         }
         // 레이캐스팅의 검출이 없으면서, 부모의 이동이 발생하지 않았다면,(슬롯의 드랍에 실패했다면)
         else if( raycastResults.Count==0 && itemRectTr.parent==selectingParentTr )
@@ -393,8 +472,10 @@ public class ItemSelect : MonoBehaviour
 
 
                 // +++ 2024_0128_협업 코드 (신혜성)
-                check.WorldQuestCheck();          // 드랍된 아이템이 발생할 경우 퀘스트 체크 최신화
-                craft_UIManager.CheckTab();       // 드랍된 아이템이 발생할 경우 제작에 필요한 재료 목록을 최신화 
+                if(check!=null)
+                    check.WorldQuestCheck();          // 드랍된 아이템이 발생할 경우 퀘스트 체크 최신화
+                if(craft_UIManager != null)
+                    craft_UIManager.CheckTab();       // 드랍된 아이템이 발생할 경우 제작에 필요한 재료 목록을 최신화 
             }
         }
         else
@@ -408,46 +489,57 @@ public class ItemSelect : MonoBehaviour
 
 
 
-
-
-
-
-
-
-
-
+    
     /// <summary>
-    /// 처음 셀렉트하기 위해 클릭할 때 바로 셀렉트 종료의 호출이 일어나는 것을 막기 위한 딜레이 메서드
+    /// 아이템의 재선택을 강제로 활성화하는 메서드입니다.<br/>
+    /// 아이템의 Deselect가 완전히 끝나기 전까지 호출되면 마지막에 셀렉팅을 다시 시작해줍니다.
     /// </summary>
-    protected IEnumerator FirstSelectDelayTime(float time)
+    public void ReselectUntilDeselect()
     {
-        yield return new WaitForSeconds(time);
-        isFirstSelectDelay = true;
+        isReselect = true;
     }
 
-    /// <summary>
-    /// 셀렉팅이 끝났을 때 딜레이를 줘서 초기화 해줘야할 참조 값을 모아놓은 메서드
-    /// </summary>
-    protected IEnumerator SelectDoneDelayTime(float time)
-    {
-        yield return new WaitForSeconds(time);
-        
-        // 인벤토리 변경 전 상태를 초기화합니다.
-        interactive.IsItemSelecting = false;    
-        itemCG.blocksRaycasts = true;           // 드래그가 끝나면 다시 이벤트를 받게 합니다.
 
-        
-        // 새로 변경된 인벤토리의 상태를 초기화합니다.
-        if( !itemInfo.IsWorldPositioned )
+    /// <summary>
+    /// 아이템의 셀렉트를 일시적으로 방지해주기 위한 메서드입니다.<br/>
+    /// 아이템의 상호작용 속성을 일시적으로 비활성화 후 활성화 시켜줍니다.<br/><br/>
+    /// 아이템 스위칭 시 상대 아이템의 셀렉팅을 막기위한 용도로 사용됩니다.<br/>
+    /// </summary>
+    public void SelectPreventTemporary()
+    {
+        StartCoroutine( SelectPreventDelayTime() );
+
+
+        //아이템의 상호작용 속성을 일시적 해제 이후 딜레이 시간 이후 원상복구해주는 메서드
+        IEnumerator SelectPreventDelayTime()
         {
-            itemInfo.InventoryInteractive.IsItemSelecting=false;
-            itemInfo.InventoryInfo.inventoryCG.blocksRaycasts=true;
+            // itemCG의 (착용중인 아이템의 경우 더미의) 상호작용을 일시적으로 비활성화
+            if( itemInfo.IsEquip )
+            {
+                itemInfo.DummyInfo.DummyImg.raycastTarget = false;
+                itemInfo.DummyInfo.DummyBtn.interactable = false;
+            }
+            else
+            {
+                itemCG.blocksRaycasts=false;
+                itemCG.interactable=false;
+            }
+            yield return selectDelayTime;
+
+            
+            // itemCG의 (착용중인 아이템의 경우 더미의) 상호작용을 다시 활성화
+            if( itemInfo.IsEquip )
+            {
+                itemInfo.DummyInfo.DummyImg.raycastTarget = true;
+                itemInfo.DummyInfo.DummyBtn.interactable = true;
+            }
+            else
+            {
+                itemCG.blocksRaycasts = true;
+                itemCG.interactable = true;
+            }
         }
     }
-    
-
-
-    
 
 
 

@@ -181,6 +181,9 @@ using UnityEngine;
  * 2- SetOverlapCount메서드에서 removeList를 사용하지 않고 tempInfoList를 사용하던 로직 수정,
  * 메서드 시작 시 removeList를 초기화하는 코드 추가
  * 
+ * <v6.1 - 2024_0224_최원준>
+ * 1- IsRemainSlotIndirect 및 IsRemainSlotDirect메서드에서 인자로 들어온 아이템 종류에 해당하는 사전이 없는 경우 실패 조건 검사 추가
+ * 
  */
 
 
@@ -225,17 +228,22 @@ namespace InventoryManagement
         /// *** ItemType.None을 전달하면 예외를 던집니다. ***
         /// </summary>
         /// <param name="itemType"></param>
-        /// <returns></returns>
+        /// <returns>해당 아이템이 들어갈 아무 자리가 존재하면 true를, 존재하지 않는다면 false를 반환</returns>
         public bool IsRemainSlotIndirect( ItemType itemType )
         {
             // 전체 탭에 들어갈 자리가 있어도 특정 탭에 들어갈 자리가 없으면 안되기 때문
             if(itemType == ItemType.None)
                 throw new Exception("해당 종류의 인자를 전달할 수 없습니다.");
+            
+            // 인자로 전달된 아이템 종류에 해당하는 사전이 없다면 실패를 반환
+            if( GetItemDic(itemType) == null )
+                return false;
 
+            // 남은 슬롯 갯수가 0을 초과하면 성공을, 0이하라면 실패를 반환 
             if( GetCurRemainSlotCount(itemType)>0 )
                 return true;
-
-            return false;
+            else
+                return false;
         }
 
 
@@ -255,12 +263,15 @@ namespace InventoryManagement
                 throw new Exception("슬롯 인덱스가 정확하지 않습니다. 0이하가 전달되었습니다.");
             if(indexList==null)
                 throw new Exception("참조 리스트가 존재하지 않습니다.");  
+            
+            // 인자로 전달된 아이템 종류에 해당하는 사전이 없다면 실패를 반환
+            if( GetItemDic(itemType) == null )
+                return false;
 
             // 넣을 슬롯 인덱스가 제한수에 도달한 경우 자리가 없으므로 false를 반환
             if(slotIndex >= GetSlotCountLimitTab(itemType, isActiveTabAll))
                 return false;
-
-
+            
             // 인덱스 리스트를 전달하여, 해당하는 아이템 종류의 슬롯 인덱스 리스트를 구합니다.
             GetSlotIndexList( ref indexList, itemType, isActiveTabAll );
                         

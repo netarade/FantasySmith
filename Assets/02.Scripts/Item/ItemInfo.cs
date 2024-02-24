@@ -5,6 +5,7 @@ using System;
 using CreateManagement;
 using InventoryManagement;
 using DataManagement;
+using Unity.VisualScripting;
 
 /*
  * [작업 사항]
@@ -441,6 +442,50 @@ using DataManagement;
  * 1- dummyInfo의 초기화를 OnItemCreated문으로 옮김
  * 통합과정에서 아이템 장착시 플레이어 쪽에서 오브젝트를 껐다 키기때문에 ItemInfo의 OnEnable이 다시 시작되는데 참조값이 날라가는 문제발생
  * 
+ * <v15.2 - 2024_0214_최원준>
+ * 1- isBaseDropSetParent변수 및 UpdateInventoryInfo에서 초기화하는 코드를 삭제
+ * 이유는 아이템의 기본 드랍에 부모지정옵션이 필요없기 때문인데 부모 지정옵션을하여 드랍하면 유저가 움직일 때마다 아이템이 무조건 따라오기 때문
+ * 
+ * 2- EquipActionDelegate 및 EquipAction 변수 및 관련 코드를 삭제하였음.
+ * 원래 목적은 착용 아이템의 추가적인 기능을 호출해주기 위한 코드였는데, 
+ * 숨김 아이템 장착방식에서는 플레이어 스크립트 참조를 통한 관련메서드 호출로 이루어지기 때문에 아예 추가 기능을 연결해줄 필요가 없으며, 
+ * 전송 아이템 장착방식에서는 로드시에만 필요하기 때문에 굳이 계속 연결해서 가지고 있을 필요가 없고, 
+ * 로드할 때 장착상태이면 인벤토리쪽에서 메서드를 호출해주거나, 로드 방식의 장착 메서드 호출인 경우를 구분하여 그때만 플레이어쪽에서 참조해서 메서드호출로 대체하는게 효율적이기 때문 
+ * 
+ * <v15.3 - 2024_0215_최원준>
+ * 1- UpdatePositionInfo메서드에서 아이템의 IsEquip 상태일 때 더미정보의 업데이트 메서드를 호출해주고 종료하는 코드를 삭제
+ * 이유는 로드 및 탭선택 시 장착중인 아이템의 Item2dTr의 위치정보가 업데이트 되지 않기 때문
+ * 
+ * 아이템 셀렉팅이 일어날 때는 무조건 더미가 아니라 원본 Item2dTr이 일어나게끔 되어있으며, 
+ * 해당 Item2dTr을 드롭하는 순간 UpdatePositionInfo메서드를 호출하는 것이 맞기 때문
+ * (아이템 장착 상태일때, 더미를 대상으로 UpdatePositionInfo를 호출하지 않음. 반드시 장착을 해제하고 UpdatePositonInfo를 호출해야함)
+ * 
+ * 숨김 장착형 아이템은 IsEquip상태이더라도 Item2dTr의 위치정보가 Update되어야함.
+ * 퀵슬롯의 전송 장착형 아이템은 로드시에만 Item2dTr의 위치정보를 Update해놓고 IsEquip 상태의 아이템만 전송 장착 메서드를 호출해주면 되기 때문
+ * 
+ * 
+ * <v15.4 - 2024_0221_최원준>
+ * 1- SlotIndexTab 프로퍼티명 변경 SlotIndexActiveTab
+ * 2- SlotIndexInactiveTab프로퍼티를 추가
+ * 아이템 스위칭 시 비활성화 슬롯인덱스까지 이전시켜줘야하기 때문
+ * 
+ * 
+ * <v15.5 - 2024_0222_최원준>
+ * 1- SwitchAppearAs2D메서드의 매개변수명 isWorldPositioned를 isOperateAs2d로 변경 및 인자 전달도 반대로 수정
+ * (아이템의 3D상태 뿐만아니라 인벤토리 온오프에따라 수동으로 조절하는 경우가 있으므로)
+ * => OnItemCreated 및 DimensionShift의 내부 호출 시 인자 전달값도 반대로 조정
+ * 
+ * 
+ * 2- SwitchAppearAs2D메서드의 itemCG.interactable속성과 itemImage.raycastTarget을 건드리는 것을 삭제하고
+ * itemCG의 blockRaycasts 속성을 건드리는 것으로 변경
+ * 
+ * 3- SwitchAppearAs2D메서드에서 착용상태 아이템의 경우 원본아이템의 2d기능은 작동하지 않고 더미기능을 스위칭하도록 코드변경
+ * (이유는 인벤토리를 온오프할 때 퀵슬롯의 착용중인 더미이미지의 기능이 온오프되어야 하므로)
+ * 
+ * 4- 메서드명 SwitchAppearAs2D를 OperateSwitchAs2d로 변경, 선택인자로 투명도 조정가능여부를 추가
+ * 
+ * 
+ * 
  */
 
 /// <summary>
@@ -501,9 +546,8 @@ public partial class ItemInfo : MonoBehaviour
     Transform ownerTr;                  // 현재 아이템을 소유하고 있는 인벤토리 소유자 정보 참조
 
     Transform baseDropTr;               // 아이템이 떨어질 기본 드랍 위치
-    bool isBaseDropSetParent;           // 기본 드랍위치에 부모설정 옵션이 걸려있는지 여부
+    EquipmentInfo equipInfo;            // 유저의 장비아이템의 장착에 관한 정보를 보유하고 있는 스크립트 참조
             
-    EquipmentInfo equipInfo;        // 장비를 장착할 트랜스폼 정보
 
 
     /**** InventoryInfoChange 메서드 호출시 변동 ****/
@@ -511,9 +555,6 @@ public partial class ItemInfo : MonoBehaviour
     bool isActiveTabAll;                // 현재 아이템이 담겨있는 인벤토리의 활성화 탭의 기준이 전체인지, 개별인지 여부
     TabType curActiveTab;               // 현재 아이템이 담겨있는 인벤토리의 활성화 탭 정보
     
-    delegate void EquipActionDelegate(bool isEquip);    // 아이템 장착 행동 시 호출 할 메서드 대리자
-    EquipActionDelegate EquipAction;                    // 아이템 장착 행동 시 호출 해줄 대리자 변수 
-
     
     /**** InventoryInfoChange 메서드 호출시 변동 ****/
     /**** OnItemSlotDrop 이벤트 호출 시 변동 ****/
@@ -637,9 +678,14 @@ public partial class ItemInfo : MonoBehaviour
       
 
     /// <summary>
-    /// 현재 활성화 탭에 따른 슬롯 인덱스를 반환합니다.
+    /// 현재 인벤토리의 활성화 탭의 슬롯 인덱스를 반환합니다.
     /// </summary>
-    public int SlotIndexTab { get { return isActiveTabAll? item.SlotIndexAll : item.SlotIndexEach; } }
+    public int SlotIndexActiveTab { get { return isActiveTabAll? item.SlotIndexAll : item.SlotIndexEach; } }
+
+    /// <summary>
+    /// 현재 인벤토리의 비활성화 탭의 슬롯 인덱스를 반환합니다.
+    /// </summary>
+    public int SlotIndexInactiveTab { get { return isActiveTabAll? item.SlotIndexEach : item.SlotIndexAll; } }
 
 
 
@@ -661,6 +707,7 @@ public partial class ItemInfo : MonoBehaviour
     /// 아이템 셀렉트 상태를 변경할 수 있는 스크립트 참조값
     /// </summary>
     public ItemSelect ItemSelect { get {  return itemSelect; } }
+
 
 
 
@@ -751,10 +798,10 @@ public partial class ItemInfo : MonoBehaviour
         UpdateInventoryInfo(null);
         
         // 2D 기능을 중단한 상태로 생성합니다.
-        SwitchAppearAs2D(true);
+        OperateSwitchAs2d(false);
                 
-        // 더미 이미지의 정보를 업데이트합니다.
-        dummyInfo.UpdateInfo(this);
+        // 더미 정보에 아이템 정보를 입력합니다.
+        dummyInfo.InitItemInfo(this);
     }
 
 
@@ -823,16 +870,6 @@ public partial class ItemInfo : MonoBehaviour
     /// </summary>
     public void UpdatePositionInfo()
     {
-        // 아이템이 착용상태라면,
-        if(IsEquip)
-        {            
-            // 더미 이미지의 포지션 업데이트를 진행합니다.
-            dummyInfo.UpdatePositionInfo();
-            Debug.Log("착용상태입니다.");
-            return;
-        }
-
-
         // 슬롯 리스트에 슬롯이 생성되어있지 않다면 하위로직을 실행하지 않습니다.
         if( slotListTr.childCount==0 )
         {
@@ -948,7 +985,6 @@ public partial class ItemInfo : MonoBehaviour
             item.OwnerName = worldOwnerName;   // 아이템 소유자 명을 월드로 변경합니다.
 
             equipInfo = null;                  // 장착 정보 초기화
-            EquipAction = null;                // 장착 대리자 정보 초기화 
         }
         else // 다른 인벤토리로 전달된 경우
         {
@@ -964,8 +1000,7 @@ public partial class ItemInfo : MonoBehaviour
             slotListTr = inventoryTr.GetChild(0).GetChild(0).GetChild(0);
             emptyListTr = inventoryTr.GetChild(0).GetChild(1);
                                          
-            baseDropTr = inventoryInfo.baseDropTr;                      // 기본 드랍위치와 부모설정을 인벤토리로부터 참조
-            isBaseDropSetParent = inventoryInfo.isBaseDropSetParent;      
+            baseDropTr = inventoryInfo.baseDropTr;                      // 기본 드랍위치와 부모설정을 인벤토리로부터 참조              
             prevDropSlotTr = slotListTr.GetChild(item.SlotIndexEach);   // 이전 드롭이벤트 호출자를 현재 들어있는 슬롯으로 최신화                                  
 
             UpdateActiveTabInfo();                                      // 액티브 탭 정보를 최신화합니다.   
@@ -977,23 +1012,6 @@ public partial class ItemInfo : MonoBehaviour
             // 장착 가능한 아이템의 경우 인벤토리 소유자를 통해 장착정보를 받아옵니다.
             if(item is ItemEquip)
                 equipInfo = inventoryInfo.OwnerTr.GetComponent<EquipmentInfo>();
-
-
-            // 협업 코드 - 장착 시 상태 변화 액션을 호출할 대리자 연결
-            if( EquipType==EquipType.Helmet )
-            {
-                PlayerStatus playerStatus = inventoryInfo.OwnerTr.GetComponent<PlayerStatus>();
-                
-                if(playerStatus!=null)
-                    EquipAction+=playerStatus.OnHoodEquip;
-            }
-            else if( EquipType==EquipType.Weapon )
-            {
-                //PlayerInputs playerInputs = inventoryInfo.OwnerTr.GetComponent<PlayerInputs>();
-
-                //if(playerInputs!=null)
-                //    EquipAction+=playerInputs.OnItemEquip;
-            }            
         }      
     }
 
@@ -1032,18 +1050,17 @@ public partial class ItemInfo : MonoBehaviour
 
     /// <summary>
     /// 아이템의 2D 모습을 중단하거나 다시 활성화시키는 메서드입니다.<br/>
-    /// isWorldPositioned를 기반으로 최신화합니다.<br/>
-    /// DimensionShift에서 내부 메서드로 사용되고 있습니다.
+    /// 아이템의 그래픽 레이캐스팅 수용여부와 상호작용 여부 및 투명도를 조절합니다.<br/>
+    /// 2D기능 작동 여부를 전달해야 하며, 선택 옵션으로 투명도 조정여부를 설정할 수 있습니다. (기본값: 투명도 조정)
     /// </summary>
-    public void SwitchAppearAs2D(bool isWorldPositioned)
-    {        
-        itemCG.interactable = !isWorldPositioned;
-        itemCG.alpha = isWorldPositioned ? 0f:1f;
-        itemImage.raycastTarget = !isWorldPositioned;
+    public void OperateSwitchAs2d(bool isOperateAs2d, bool isModifyAlpha=true)
+    {
+        itemCG.interactable=isOperateAs2d;
+        itemCG.blocksRaycasts=isOperateAs2d;
 
-        // (착용 상태가 아닌 경우) 더미이미지의 기능도 중단합니다.   (착용상태인 경우 더미이미지가 메인이 되어야 하므로 중단하지 않습니다.)
-        if(!IsEquip)
-            dummyInfo.SwitchAppearAs2D(isWorldPositioned);
+        // 투명도 조정여부가 설정되어있다면 투명도를 조절합니다.
+        if(isModifyAlpha)
+            itemCG.alpha=isOperateAs2d ? 1f : 0f;
     }
            
     /// <summary>
@@ -1081,8 +1098,8 @@ public partial class ItemInfo : MonoBehaviour
         // 계층구조를 변경합니다.
         ChangeHierarchy(isMoveToWorld);
 
-        // 아이템의 모습을 변경합니다
-        SwitchAppearAs2D(isMoveToWorld);
+        // 아이템의 기능을 변경합니다
+        OperateSwitchAs2d(!isMoveToWorld);
     }
 
 

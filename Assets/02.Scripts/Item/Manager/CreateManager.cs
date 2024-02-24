@@ -243,6 +243,10 @@ using DataManagement;
 * 기존의 CreateWorldItem의 ItemInfo를 기반으로 호출하는 메서드에서는 새롭게 생성하기 때문에 ID를 할당후 수동 업데이트 해줬지만
 * Item을 기반으로 호출하는 메서드의 경우 이미 존재하는 아이템을 새롭게 생성하는 것이므로 해당 Item인스턴스에 저장된 ID를 수동으로 업데이트 해줄 필요가 있음.
 * 
+* <v13.2 - 2024_0213_최원준>
+* 1- IdData의 세이브 로드 코드를 메서드화 하여, 슬롯을 인자로 받아 세이브,로드하도록 변경
+* (기존 OnApplicationQuit에서 세이브하던 코드를 삭제 및 UI이벤트핸들러 연결로 변경, OnDestroy에서 세이브코드 해제, PlayerPrefs에서 로드슬롯번호를 받아오도록 변경)
+* 
 */
 
 namespace CreateManagement
@@ -269,10 +273,10 @@ namespace CreateManagement
 
         InventoryInfo worldInventoryInfo;       // 아이템을 3D 상태로 보관하는 월드 인벤토리
 
-        string saveFileName;                    // 세이브 파일명
+        readonly string saveFileName = "WorldInventory_IdData_"; // 세이브 파일명
 
 
-        public void Awake()
+        private void Awake()
         {
             // 리소스 폴더에서 원본 프리팹 가져오기
             itemPrefab2D=Resources.Load<GameObject>( "Item2D" );
@@ -288,17 +292,43 @@ namespace CreateManagement
             visualManager = GetComponent<VisualManager>();
             dataManager = GetComponent<DataManager>();
             worldInventoryInfo = GetComponentInChildren<InventoryInfo>();   // 게임매니저 하위에 존재
-                        
-            saveFileName = "WorldInventory_IdData_";
-                       
-            dataManager.FileSettings(saveFileName);     // 저장 파일 이름 설정
-            idData = dataManager.LoadData<IdData>();    // 파일을 로드하여 인스턴스 참조
+                  
+            
+
+            // 로드할 슬롯번호 - SlotNo 키값이 존재하지 않는다면(새 게임이라면) 0을, 존재한다면(기존 게임이라면) 해당 키값을 받아서 설정합니다.
+            int loadSlotNo = 0;    
+            if(PlayerPrefs.HasKey("SlotNo"))
+                loadSlotNo = PlayerPrefs.GetInt("SlotNo");
+
+            LoadFile(loadSlotNo);                      // 로드할 슬롯번호를 인자로 전달하여 파일을 로드합니다,.
+
+            SaveLoadManager.OnSaveData += SaveFile;    // 세이브파일 메서드를 UI 이벤트 핸들러와 연결합니다.
+
+        }
+        
+        
+        /// <summary>
+        /// 파일로 저장된 IdData 인스턴스를 로드하여 게임 중에 사용 할 IdData 인스턴스에 입력합니다.
+        /// </summary>
+        public void LoadFile(int slotNo)
+        {
+            dataManager.FileSettings(saveFileName, slotNo);     // 저장 파일 이름 설정
+            idData = dataManager.LoadData<IdData>();            // 파일을 로드하여 인스턴스 참조
         }
 
-        private void OnApplicationQuit()
+        /// <summary>
+        /// 게임 중에 사용한 IdData 인스턴스를 세이브합니다.
+        /// </summary>
+        public void SaveFile(int slotNo)
         {
-            dataManager.FileSettings(saveFileName);      // 저장 파일 이름 설정
-            dataManager.SaveData<IdData>( idData );      // 인스턴스를 파일로 세이브
+            dataManager.FileSettings(saveFileName, slotNo);     // 저장 파일 이름 설정
+            dataManager.SaveData<IdData>( idData );             // 사용 중인 IdData 인스턴스를 파일로 세이브
+        }
+
+
+        private void OnDestroy()
+        {
+            SaveLoadManager.OnSaveData -= SaveFile;    // 씬 전환 시 이벤트 핸들러에 연결된 세이브 메서드를 제거합니다.          
         }
 
 

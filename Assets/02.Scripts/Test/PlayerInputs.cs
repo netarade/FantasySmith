@@ -13,4 +13,6 @@ public class PlayerInputs : MonoBehaviour
     {
         Debug.Log("장착 액션 실행");
     }
+
+
 }

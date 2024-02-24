@@ -22,36 +22,36 @@ public partial class WorldItem
         return new Dictionary<string, Item>()
         {           
             {
-                "Mud", new ItemMisc( ItemType.Misc, "0000", "Mud", new VisualReferenceIndex(0),
-                MiscType.Basic, "Soil mixed with water.")
+                "진흙", new ItemMisc( ItemType.Misc, "0000", "진흙", new VisualReferenceIndex(0),
+                MiscType.Basic, "물과 흙을 섞은 것으로 건축자재로 사용할 수 있을 것 같습니다.")
             },
             {
-                "Thread", new ItemMisc( ItemType.Misc, "0001", "Thread", new VisualReferenceIndex(1),
-                MiscType.Basic, "Materials can be bundled")
+                "실", new ItemMisc( ItemType.Misc, "0001", "실", new VisualReferenceIndex(1),
+                MiscType.Basic, "이것으로 무엇인가 묶을 수 있어 보입니다.")
             },
             {
-                "Vine", new ItemMisc( ItemType.Misc, "0002", "Vine", new VisualReferenceIndex(2),
-                MiscType.Basic, "A primitive material that can be used to weave materials.")
+                "덩쿨", new ItemMisc( ItemType.Misc, "0002", "덩쿨", new VisualReferenceIndex(2),
+                MiscType.Basic, "무언가를 묶을 수 있는 가장 원시적인 재료.")
             },
             {
-                "Stone", new ItemMisc( ItemType.Misc, "0003", "Stone", new VisualReferenceIndex(3),
-                MiscType.Basic, "The most primitive material you can pick up from the ground.")
+                "돌", new ItemMisc( ItemType.Misc, "0003", "돌", new VisualReferenceIndex(3),
+                MiscType.Basic, "바닥에 아무렇게나 널부러져 있는 흔한 돌입니다.")
             },
             {
-                "Log", new ItemMisc( ItemType.Misc, "0004", "Log", new VisualReferenceIndex(4),
-                MiscType.Basic, "Tree trimmed for use.")
+                "통나무", new ItemMisc( ItemType.Misc, "0004", "통나무", new VisualReferenceIndex(4),
+                MiscType.Basic, "이것으로 무엇이든 만들 수 있을 것 같습니다.")
             },
             {
-                "Bone", new ItemMisc( ItemType.Misc, "0005", "Bone", new VisualReferenceIndex(5),
-                MiscType.Basic, "The animal bones here seem much harder than stones.")
+                "뼈", new ItemMisc( ItemType.Misc, "0005", "뼈", new VisualReferenceIndex(5),
+                MiscType.Basic, "이곳의 동물뼈 강도는 금속에도 버금가리라 생각됩니다.")
             },
             {
-                "Leather", new ItemMisc( ItemType.Misc, "0006", "Leather", new VisualReferenceIndex(6),
-                MiscType.Basic, "I think this can prevent dangerous rain.")
+                "가죽", new ItemMisc( ItemType.Misc, "0006", "가죽", new VisualReferenceIndex(6),
+                MiscType.Basic, "가죽에는 이곳에서 살아갈 수 있는 많은 비밀이 숨겨져 있을 겁니다.")
             },            
             {
-                "Rope", new ItemMisc( ItemType.Misc, "0007", "Rope", new VisualReferenceIndex(7),
-                MiscType.Basic, "It is a product made by weaving several threads.")
+                "끈", new ItemMisc( ItemType.Misc, "0007", "끈", new VisualReferenceIndex(7),
+                MiscType.Basic, "여러가닥의 실을 엮어 만든 질긴 끈입니다.")
             },
         };
 

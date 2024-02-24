@@ -226,6 +226,15 @@ using System;
 * <v9.5 - 2024_0130_최원준>
 * 1- GetTabTextName의 탭설명을 서바이벌 프로젝트에 맞게 한글에서 영어로 변경 
 * 
+* 
+* <v9.6 - 2024_0224_최원준>
+* 1- IsItemSelecting 프로퍼티를 삭제
+* 더 이상 스크립트의 셀렉팅 상태를 관리하지 않고 
+* 셀렉팅 시 아이템의 캔버스그룹을 통해 상호작용 자체를 막는 방식으로 해결가능하기 때문
+* (상태 관리 방식은 아이템의 타 인벤토리 전이 및 파괴 시 원래 인벤토리의 상태를 관리하기 힘들어짐)
+* 
+* 
+* 
 */
 
 
@@ -261,12 +270,6 @@ public class InventoryInteractive : MonoBehaviour
 
 
 
-    /// <summary>
-    /// 아이템이 선택중인지 여부를 반환하거나 설정합니다.<br/>
-    /// 아이템이 1개라도 선택중이라면 다른 아이템은 선택할 수 없습니다.<br/>
-    /// ItemDrag에서 정보를 받고 수정합니다.
-    /// </summary>
-    public bool IsItemSelecting {get; set;} = false;
 
 
     /// <summary>
@@ -297,7 +300,7 @@ public class InventoryInteractive : MonoBehaviour
             throw new Exception("초기화를 진행할 수 없는 호출자입니다. 확인하여 주세요.");
 
         inventoryInfo = caller;                                        // Info 클래스 참조 등록
-        inventory = inventoryInfo.inventory;                           // 내부 인벤토리 정보 참조 등록
+        inventory = inventoryInfo.Inventory;                           // 내부 인벤토리 정보 참조 등록
         
         slotListTr = inventoryTr.GetChild(0).GetChild(0).GetChild(0);  // 뷰포트-컨텐트-전체 슬롯리스트
         slotPrefab = slotListTr.GetChild(0).gameObject;                // 슬롯 리스트 하위에 미리 1개가 추가되어 있음
@@ -324,7 +327,7 @@ public class InventoryInteractive : MonoBehaviour
 
         // 플레이어 인벤토리 정보(전체 탭 슬롯 칸수)를 참조하여 슬롯을 동적으로 생성
         // 현재 인벤토리에 슬롯이 한 개 들어있으므로 하나를 감하고 생성
-        for( int i = 0; i<caller.inventory.slotCountLimitTab[allTabIdx]-1; i++ )
+        for( int i = 0; i<caller.Inventory.slotCountLimitTab[allTabIdx]-1; i++ )
             Instantiate( slotPrefab, slotListTr );
     }
 
@@ -396,13 +399,13 @@ public class InventoryInteractive : MonoBehaviour
         string name = "";
 
         if(tabType==TabType.All)
-            name = "All";
+            name = "기본";
         else if(tabType==TabType.Quest)
-            name = "Quest";
+            name = "퀘스트";
         else if(tabType == TabType.Misc)   
-            name = "Misc";
+            name = "기타";
         else if(tabType==TabType.Equip)
-            name = "Equip";
+            name = "장비";
         else
             throw new Exception("탭 이름이 설정되지 않았습니다.");
 
@@ -430,65 +433,37 @@ public class InventoryInteractive : MonoBehaviour
 
         return name;
     }
+            
+
+    /// <summary>
+    /// X버튼을 눌러 인벤토리를 닫을 때 호출해주는 메서드입니다.<br/>
+    /// 다른 인벤토리와 연결 상태라면 연결을 해제하고 모든 인벤토리 창을 닫으며,<br/>
+    /// 연결 상태가 아니라면 자신의 인벤토리 창만 닫습니다.
+    /// </summary>
+    public void BtnInventoryClose()
+    {
+    if (inventoryInfo.IsConnect)
+    {
+
+        PlayerInputs playerInputs = inventoryInfo.ServerInfo.OwnerTr.GetComponent<PlayerInputs>();
+
+        // +++ (협업코드_이요엘) 유저 인벤토리 상태 변경
+        if (playerInputs != null)
+            playerInputs.OnInventoryConnect(false);
+
+        inventoryInfo.DisconnectInventory();
+                        
+        // +++ (협업코드_송호경) 보관함 애니메이션 닫기
+        CrateCtrl crateCtrl = inventoryInfo.OwnerTr.GetComponent<CrateCtrl>();
+
+        if (crateCtrl != null)
+            crateCtrl.AnimateCrateClose();
 
 
-
-
-
-
-
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-     
-
-     /// <summary>
-     /// X버튼을 눌러 인벤토리를 닫을 때 호출해주는 메서드입니다.<br/>
-     /// 다른 인벤토리와 연결 상태라면 연결을 해제하고 모든 인벤토리 창을 닫으며,<br/>
-     /// 연결 상태가 아니라면 자신의 인벤토리 창만 닫습니다.
-     /// </summary>
-     public void BtnInventoryClose()
-     {
-         if( inventoryInfo.IsConnect )
-         {
-             PlayerInputs playerInputs = inventoryInfo.ServerInfo.OwnerTr.GetComponent<PlayerInputs>();
-    
-             if( playerInputs!=null )
-                 playerInputs.OnInventoryConnect( false );
-    
-             inventoryInfo.DisconnectInventory();
-    
-             CrateCtrl crateCtrl = inventoryInfo.OwnerTr.GetComponent<CrateCtrl>();
-             
-             if( crateCtrl!=null )
-                 crateCtrl.AnimateCrateClose();
-         }
-         else
-             inventoryInfo.InitOpenState( false );  
-     }
-
-
-
-
+    }
+    else
+        inventoryInfo.InitOpenState(false);  
+    }
 
 
 
@@ -596,7 +571,6 @@ public class InventoryInteractive : MonoBehaviour
             inventoryInfo.UpdateDicItemPosition( tabKindList[i] );  
     }
 
-    
 
 
 

@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using CreateManagement;
 using UnityEngine.UI;
+using Unity.VisualScripting;
 
 /*
  * [작업 사항]  
@@ -319,6 +320,69 @@ using UnityEngine.UI;
  *1- UpdateAllItemVisualInfo메서드에서
  *현재 통합프로젝트 플레이어 상태메서드 미구현으로 인해 장착 하지 않고 장착 상태를 해제하도록 변경
  *
+ *<v11.6 - 2024_0210_최원준>
+ *1- 기존의 inventory, interactive, initializer를 읽기전용 프로퍼티로 변경하고 대문자로 만든 후, protected 내부 변수를 소문자로 새롭게 만들었음 
+ *
+ *2- SaveInvetoryData, LoadInvetoryData를 virtual키워드를 넣어 상속 시 오버라이딩 가능하게 하고,
+ *int slotNo를 인자로 받는 메서드로 변경하여 강제로 슬롯 번호를 입력받게 하였음.
+ *
+ *3- InitOpenState메서드의 호출을 인벤토리 로드 이후로 설정 (Awake에서 Start로 변경)
+ *이유는 내부적으로 할당된 변수를 사용하여 null레퍼런스가 잡히기 때문인데 이는 인벤토리 내부 모든 아이템의 2D 상태를 비활성화하기 때문
+ *
+ *4- loadSlotNo를 SaveLoadManager에서 설정한 PlayerPrefs의 SlotNo 키값을 받아와서 설정하도록 변경
+ *
+ *5- OnApplicationQuit에 존재하는 세이브 코드를 삭제하고 SaveLoadManager의 이벤트 핸들러와 연결하여 호출하도록 변경
+ *
+ *6- OnDestroy에서 이벤트 연결한 세이브 코드를 연결 해제하도록 설정
+ *이유는 게임 진행 화면에서 로드할 때 같은 씬이 로드되더라도 기존 오브젝트는 파괴되고 새로운 오브젝트가 생성되기 때문에
+ *static Event에 기존 오브젝트의 코드가 연결된 상태가 되기 때문
+ *
+ *<v11.6 - 2024_0216_최원준>
+ *1- UpdateAllItemVisualInfo메서드에서 장착 상태를 강제로 해제하는 코드를 삭제하고, 착용 중인 아이템의 EquipSwitch 메서드를 호출하도록 변경
+ *(장착 관련 메서드를 통합하면서 IsEquip상태이기만 하면 해당 메서드를 호출해주면 로드될 수 있도록 변경하였음.
+ *아이템 쪽에서 장착 상태를 유지하면서 유저 관련 상태를 강제로 적용 해줄 수 있도록 하였음.) 
+ *
+ *
+ * <v11.7- 2024_0218_최원준>
+ * 1- IsAbleToAddAnotherInventoryItem 신규 메서드 추가 - ItemInfo를 인자로 받아 다른 인벤토리에서의 슬롯 이동가능여부를 판단하는 메서드
+ * 해당 아이템을 담을 사전존재 여부와 가시성이 보장되지 않는 경우(둘 다 개별 탭이 활성화된 상태이지만 개별탭이 일치하지 않는 경우)
+ * 를 검사해주는 코드를 추가하였음
+ * 
+ * <v11.8 - 2024_0220_최원준>
+ * 1- IsAbleToAddAnotherInventoryItem메서드의 가시성 실패 조건추가
+ * 한쪽이 전체탭인 경우에, 전체탭->개별탭으로의 이동 시 
+ * 아이템이 옮길 인벤토리의 개별탭에 맞지 않는 종류의 아이템이라면, 가시성이 보장되지 않으므로 실패해야 함
+ * (개별탭->전체탭은 가시성이 보장되므로 반드시 허용)
+ * (이는 보통 창고 또는 제작대인벤토리에서->유저인벤토리로의 이동 시 해당되는 경우)
+ *  
+ * <v11.9 - 2024_0222_최원준>
+ * 1- SwitchAllItemAppearAs2D메서드의 매개변수명 isEnable2D를 isOperateAs2D로 변경
+ * 
+ * 2- SwitchAllItemAppearAs2D메서드의 선택인자로 투명도 조정여부를 추가
+ * 
+ * 3- 메서드명 SwitchAllItemAppearAs2D를 AllItemOperateSwitchAs2d로 변경
+ * 
+ * 4- AllItemOperateSwitchAs2d메서드 내부에 전송장착형 아이템의 경우 더미정보의 OperateSwitchAs2d메서드를 호출하도록 분기코드 작성
+ *
+ * <v12.0 - 2024_0223_최원준>
+ * 1- SlotListTr읽기전용 프로퍼티를 추가
+ * 아이템 셀렉팅할 때 일시적으로 본래 슬롯을 벗어나기 때문에 인덱스를 가지고 슬롯에 접근하기 위함
+ * 
+ * 2-메서드명 IsAbleToAddAnotherInventoryItem -> IsAbleToSlotDrop으로 변경
+ *
+ * <v12.1 - 2024_0224_최원준>
+ * 1- GetSlotItemInfo 신규메서드 추가
+ * 인벤토리 내부의 슬롯에 담긴 아이템 정보를 반환하는데, 
+ * 상속 스크립트(퀵슬롯)의 경우 오버라이딩 되어 더미가 아닌 실제 아이템 정보를 반환할 수 있도록 virtual로 선언
+ *
+ * 2- IsAbleToSlotDrop메서드를 virtual로 구현하여 자식 스크립트(퀵슬롯)등에서 추가로 조건 검사를 통과시켜 합친 조건을 반환받을 수 있도록 구현
+ * => 이유는 슬롯 드롭시 조건검사를 시행하는데 인벤토리 상속 스크립트가 추가될 때마다 
+ * 다른 인벤토리인지 여부에 따라서 조건 검사를 계속해서 추가해야 하기 때문에 이를 간편하게 하나로 통합하기 위함.
+ *
+ * 3- 인벤토리가 퀵슬롯인지 형변환하지 않고 빠르게 확인하고 참조값을 받을 수 있도록,
+ * isQuickSlot내부 변수 및 IsQuickSlot, ThisQuickSlot 프로퍼티를 추가
+ *
+ *
  */
 
 
@@ -329,24 +393,16 @@ using UnityEngine.UI;
 /// </summary>
 public partial class InventoryInfo : MonoBehaviour
 {
-    /// <summary>
-    /// 플레이어가 보유하고 있는 아이템을 보관하는 인벤토리와 관련된 정보를 가지고 있는 클래스입니다.<br/>
-    /// 인벤토리에 아이템을 생성하고 제거하거나 현재 아이템의 검색 기능 등을 가지고 있습니다.<br/>
-    /// 딕셔너리 내부에 게임 오브젝트를 보유하고 있으므로 씬 전환이나 세이브 로드 시에 반드시 Item 형식의 List로의 Convert가 필요합니다.
-    /// </summary>
-    [HideInInspector]
-    public Inventory inventory;
 
+    protected Inventory inventory;                // 내부에 보관하고 있는 인벤토리 데이터
 
     protected Transform inventoryTr;              // 자신의 트랜스폼 캐싱
     protected Transform slotListTr;               // 현재 인벤토리가 관리하는 슬롯 리스트의 Transform 정보입니다.
     protected Transform emptyListTr;              // 현재 인벤토리가 관리하는 빈 리스트의 Transform 정보입니다.
 
-    [HideInInspector]
     public InventoryInitializer initializer;      // 사용자가 정의한 방식으로 인벤토리의 초기화를 진행하기 위한 참조
-
-    [HideInInspector]
     public InventoryInteractive interactive;      // 자신의 인터렉티브 스크립트를 참조하여 활성화 탭정보를 받아오기 위한 변수 선언
+        
     
     protected DataManager dataManager;            // 저장과 로드 관련 메서드를 호출 할 스크립트 참조
     protected CreateManager createManager;        // 아이템 생성을 요청하고 반환받을 스크립트 참조
@@ -366,14 +422,31 @@ public partial class InventoryInfo : MonoBehaviour
     protected WaitForSeconds animationWaitTime; // IEnumrator에서 사용할 애니메이션이 끝나는데 걸리는 시간
         
     protected Vector2 cellSize;                 // 더미 이미지의 크기를 맞출 사이즈
+    protected bool isQuickSlot;                 // 인벤토리가 퀵슬롯인지 확인할 수 있는 상태변수 
+
+
+    /// <summary>
+    /// 이 스크립트가 내부적으로 보관하고 있는 인벤토리 데이터를 읽기전용 참조값으로 반환합니다.
+    /// </summary>
+    public Inventory Inventory { get { return inventory; } }
+    /// <summary> 
+    /// 인벤토리 초기화 전용 스크립트의 읽기전용 참조 값 입니다
+    /// </summary>
+    public InventoryInitializer Initializer { get { return initializer; } }
+    
+    /// <summary>
+    /// 인벤토리 인터렉티브 스크립트의 읽기전용 참조값 입니다.
+    /// </summary>
+    public InventoryInteractive Interactive { get { return interactive; } }  
+
+
+    
 
     /// <summary>
     /// 슬롯의 이미지 크기를 반환합니다.
     /// </summary>
     public Vector2 CellSize { get { return cellSize;}  }
 
-
-    
 
 
     /// <summary>
@@ -419,15 +492,34 @@ public partial class InventoryInfo : MonoBehaviour
 
 
     /// <summary>
-    /// 인벤토리 내부에 숨겨진 빈공간에 아이템을 담을 수 있는 리스트의 Transform 값을 반환
+    /// 인벤토리 내부에 숨겨진 빈공간에 아이템을 담을 수 있는 리스트의 Transform 참조 값을 반환
     /// </summary>
     public Transform EmptyListTr { get { return emptyListTr; } }
+
+    /// <summary>
+    /// 인벤토리 내부 슬롯을 보관하는 리스트의 Transform 참조 값을 반환
+    /// </summary>
+    public Transform SlotListTr {  get { return slotListTr; } }
+
+
+
+
+    /// <summary>
+    /// 현재 인벤토리가 퀵슬롯인지 여부를 반환합니다.
+    /// </summary>
+    public bool IsQuickSlot { get { return isQuickSlot; } }
+
+    /// <summary>
+    /// 현재 인벤토리가 퀵슬롯이라면 해당 참조값을 반환합니다.
+    /// </summary>
+    public QuickSlot ThisQuickSlot { get { return this as QuickSlot; } }
 
 
 
     protected virtual void Awake()
     {         
         inventoryTr = transform; 
+        isQuickSlot = this is QuickSlot;
         slotListTr = inventoryTr.GetChild(0).GetChild(0).GetChild(0);
         emptyListTr = inventoryTr.GetChild(0).GetChild(1);
                           
@@ -439,12 +531,12 @@ public partial class InventoryInfo : MonoBehaviour
         dataManager = gameController.GetComponent<DataManager>();           // 게임컨트롤러 태그가 있는 오브젝트의 컴포넌트 참조
         createManager = gameController.GetComponent<CreateManager>();       // 데이터 매니저와 동일한 오브젝트의 컴포넌트 참조
                
+        SaveLoadManager.OnSaveData += SaveInventoryData;    // 인벤토리 세이브 메서드를 UI 이벤트 핸들러와 연결합니다.
 
 
         /*** Inventory_3.cs 관련 변수 ***/
         isServer = initializer.isServer;            // 서버 인벤토리 여부를 결정합니다.
         inventoryCG = GetComponent<CanvasGroup>();  // 인벤토리의 캔버스그룹을 참조합니다
-        InitOpenState(false);                       // 인벤토리의 오픈상태를 꺼짐으로 만듭니다
 
         // 플레이어(서버)인벤토리가 체크되어있다면, 
         if( isServer )
@@ -455,7 +547,6 @@ public partial class InventoryInfo : MonoBehaviour
         }
 
 
-
         /*** 인벤토리 소유자 정보를 초기화 합니다. ***/
         ownerTr = inventoryTr.parent.parent.parent;     // 계층 최상위 부모가 인벤토리 소유자가 됩니다.           
         ownerInfo = ownerTr.GetComponent<UserInfo>();   // 소유자 정보는 유저정보 스크립트를 참조합니다.
@@ -463,6 +554,7 @@ public partial class InventoryInfo : MonoBehaviour
         // 인벤토리 소유자가 UserInfo가 있는 경우
         if(ownerInfo != null)
             ownerId = ownerInfo.UserId;                 // 유저Id가 인벤토리 소유자 식별번호가 됩니다. 
+
     }
 
 
@@ -474,41 +566,44 @@ public partial class InventoryInfo : MonoBehaviour
         float animationTime = GetLongestAnimationLength( GetComponentsInChildren<Animation>() );
 
         /** 호출 순서 고정: 로드 -> 인터렉티브스크립트 초기화 및 슬롯생성요청 -> 아이템표현 ***/
-        LoadInventoryData();            // 저장된 플레이어 데이터를 불러옵니다. 
-        interactive.Initialize(this);   // 인터렉티브 스크립트 초기화를 진행합니다.
-        UpdateAllItemVisualInfo();      // 슬롯에 모든 아이템의 시각화를 진행합니다.
+                 
+        // 로드할 슬롯번호 - SlotNo 키값이 존재하지 않는다면(새 게임이라면) 0을, 존재한다면(기존 게임이라면) 해당 키값을 받아서 설정합니다.
+        int loadSlotNo = 0;    
+        if(PlayerPrefs.HasKey("SlotNo"))
+            loadSlotNo = PlayerPrefs.GetInt("SlotNo");        
+        
+        LoadInventoryData(loadSlotNo);              // 저장된 플레이어 데이터를 불러옵니다. 
+        interactive.Initialize(this);               // 인터렉티브 스크립트 초기화를 진행합니다.
+        UpdateAllItemVisualInfo();                  // 슬롯에 모든 아이템의 시각화를 진행합니다.
 
         // 슬롯 생성 이후 모든 애니메이션 컴포넌트를 참조합니다.
         animations = GetComponentsInChildren<Animation>();  
         animationWaitTime = new WaitForSeconds(animationTime);  //애니메이션 최대 길이에 해당하는 인스턴스를 초기화합니다.
+                
+        InitOpenState(false);                       // 인벤토리의 오픈상태를 꺼짐으로 만듭니다          
     }
 
 
 
-
-
-
-
-
-
-
-
-    /// <summary>
-    /// 게임 종료시 저장합니다.
-    /// </summary>
-    protected virtual void OnApplicationQuit()
+    protected virtual void OnDestroy()
     {
-        SaveInvetoryData();         // 플레이어 데이터 저장                    
+        SaveLoadManager.OnSaveData -= SaveInventoryData;    // 씬 전환 시 이벤트 핸들러에 연결된 세이브 메서드를 제거합니다. 
     }
+
+
+
+
+
+
 
 
     /// <summary>
     /// 인벤토리 관련 데이터를 불러옵니다
     /// </summary>
-    protected void LoadInventoryData()
+    protected virtual void LoadInventoryData(int slotNo)
     {      
         // 로드 할 파일명을 설정합니다
-        dataManager.FileSettings(SaveFileName); 
+        dataManager.FileSettings(SaveFileName, slotNo); 
 
         // 파일에서 로드한 데이터한 변수에 저장합니다.
         InventorySaveData loadData = dataManager.LoadInventoryData(initializer);              
@@ -522,10 +617,10 @@ public partial class InventoryInfo : MonoBehaviour
     /// <summary>
     /// 인벤토리 관련 데이터를 저장합니다 
     /// </summary>
-    protected void SaveInvetoryData()
+    protected virtual void SaveInventoryData(int slotNo)
     {        
         // 세이브 할 파일명을 설정합니다
-        dataManager.FileSettings(SaveFileName);   
+        dataManager.FileSettings(SaveFileName, slotNo);   
 
         // 메서드 호출 시점에 다른 스크립트에서 save했을 수도 있으므로 새롭게 생성하지 않고 기존 데이터 최신화합니다
         InventorySaveData saveData = dataManager.LoadInventoryData(initializer);
@@ -590,15 +685,12 @@ public partial class InventoryInfo : MonoBehaviour
             {
                 foreach( ItemInfo itemInfo in itemInfoList )
                 {
-                    // (현재 통합프로젝트 플레이어 상태메서드 미구현으로 인해)장착 상태를 해제합니다.
-                    itemInfo.IsEquip = false;
-
                     // 현재 인벤토리 참조값을 전달하여 OnItemAdded메서드를 호출합니다
                     itemInfo.OnItemAdded( this );            
 
-                    // 착용 중인 3D 아이템의 표현을 진행합니다.        
-                    //if( itemInfo.IsEquip )
-                    //    itemInfo.OnItemEquip(true);
+                    // 착용 중인 3D 아이템의 표현을 위해 장착 상태를 유지하며 강제로 장착해줍니다.    
+                    if( itemInfo.IsEquip )
+                        itemInfo.EquipSwitch(true, true);
                     
                 }
             }
@@ -633,33 +725,132 @@ public partial class InventoryInfo : MonoBehaviour
 
 
     /// <summary>
-    /// 모든 아이템의 2D 기능을 중단하거나 재활성화 합니다.<br/>
-    /// 아이템 Interactable 속성과 이미지 투명도를 조절합니다.<br/><br/>
-    /// 인자로 2D 기능을 활성화 시킬 지 여부를 전달해야 합니다.
+    /// 모든 아이템의 2D 기능 작동을 중단하거나 활성화 합니다.<br/>
+    /// 인벤토리 내부 각 개별 아이템의 OperateSwitchAs2d메서드를 호출하여<br/>
+    /// 레이캐스트 블록 및 상호작용 속성과 투명도를 조절합니다.<br/><br/>
+    /// 인자로 2D 기능 작동 여부를 전달해야 하며, 선택 옵션으로 투명도 조정 여부를 결정할 수 있습니다. (기본값: 투명도 조정)
     /// </summary>
-    public void SwitchAllItemAppearAs2D(bool isEnable2D)
+    public void AllItemOperateSwitchAs2d(bool isOperateAs2D, bool isModifyAlpha=true)
     {   
         Dictionary<string, List<ItemInfo>> itemDic;                     // 참조할 아이템 사전을 선언합니다.
-            
-        for(int i=0; i<inventory.dicLen; i++)                           // 인벤토리 사전의 갯수만큼 반복합니다.
+
+        
+        for( int i = 0; i<inventory.dicLen; i++ )                           // 인벤토리 사전의 갯수만큼 반복합니다.
         {
-            itemDic =inventory.GetItemDic( inventory.dicType[i] );      // 아이템 종류에 따른 인벤토리의 사전을 할당받습니다.
-                          
+            itemDic=inventory.GetItemDic( inventory.dicType[i] );      // 아이템 종류에 따른 인벤토리의 사전을 할당받습니다.
+
             // 아이템 사전이 없거나 리스트가 존재하지 않는다면 다음 사전을 참조합니다.
-            if(itemDic==null || itemDic.Count==0)   
+            if( itemDic==null||itemDic.Count==0 )
                 continue;
 
             // 인벤토리 사전에서 ItemInfo를 하나씩 꺼내어 가져옵니다.
-            foreach( List<ItemInfo> itemInfoList in itemDic.Values )    
+            foreach( List<ItemInfo> itemInfoList in itemDic.Values )
             {
                 foreach( ItemInfo itemInfo in itemInfoList )
-                    itemInfo.SwitchAppearAs2D(!isEnable2D);
+                {
+                    // 전송장착형 아이템이 장착중인경우는 더미기능을 스위칭합니다.
+                    if(itemInfo.EquipType == EquipType.Weapon && itemInfo.IsEquip)
+                        itemInfo.DummyInfo.OperateSwitchAs2d(isOperateAs2D);
+
+                    // 그외 아이템의 경우는 원본아이템의 기능을 스위칭합니다.
+                    else
+                        itemInfo.OperateSwitchAs2d( isOperateAs2D, isModifyAlpha );
+                }
             }
         }
+        
     }
        
 
 
+
+
+    
+    /// <summary>
+    /// (다른 인벤토리에 존재하는) 아이템을 현재 인벤토리로 슬롯 드롭 가능한 지 여부를 반환합니다.<br/>
+    /// 인자로 (다른 인벤토리에 존재하는) 아이템 정보와 현재 인벤토리의 활성 슬롯을 전달해야 합니다.<br/><br/>
+    /// 
+    /// *** 동일 인벤토리로의 드랍은 반드시 성공합니다. (중첩, 스왑이 가능하므로) ***<br/><br/>
+    /// 
+    /// *** 다른 인벤토리로의 드랍 성공 여부 판단 기준은 다음과 같습니다. ***<br/>
+    /// 1.사전에 추가될 수 있는지(해당 사전이 존재하는 지)<br/><br/>
+    /// 2.탭에 따른 가시성을 보장해줄 수 있는지(아이템을 옮겼을 때 옮긴 모습을 보여줄 수 있는지)<br/>
+    /// a- 전체탭->전체탭인 경우<br/>
+    /// b- 개별탭->전체탭인 경우<br/>
+    /// c- 전체탭->개별탭인 경우에는 추가할 아이템이 개별탭에 해당하는 아이템 종류인 경우에만<br/>
+    /// d- 개별탭->개별탭인 경우에는 개별탭이 서로 일치할 때만<br/><br/>
+    /// 
+    /// *** 상속 스크립트에서 슬롯 드롭 시 조건이 필요하다면 오버라이딩해서 조건을 추가할 수 있습니다. ***
+    /// </summary>
+    /// <returns>해당 아이템의 슬롯 드롭이 가능하다면 true를, 불가능하다면 false를 반환</returns>
+    public virtual bool IsAbleToSlotDrop( ItemInfo dropItemInfo, Transform dropSlotTr )
+    {
+        if(dropItemInfo==null)
+            throw new Exception("아이템 정보가 전달되지 않았습니다.");
+
+        /*** 전달한 아이템의 인벤토리 정보가 존재하지 않는 경우 ***/
+        if(dropItemInfo.InventoryInfo == null)
+            throw new Exception("슬롯 간 드롭되는 상황이 아닙니다. 아이템 추가를 이용해야 합니다.");
+
+        /*** 전달한 아이템의 인벤토리 정보가 자기자신인 경우 ***/
+        if( dropItemInfo.InventoryInfo == this)
+            return true;                            // 같은 인벤토리 드롭은 조건 검사하지 않고 바로 성공을 반환합니다. 
+
+        
+
+        /*** 전달한 아이템의 인벤토리 정보가 다른 인벤토리인 경우 ***/
+
+
+        // 인자로 들어온 아이템의 종류에 해당하는 사전인덱스가 있는지를 검사합니다.(사전 존재여부 검사)
+        if( inventory.GetDicIndex( dropItemInfo.Type )!=-1 )
+        {
+            /*** 가시성이 보장되지 않는 경우 실패처리합니다. ***/
+            // 둘 다 개별 탭이 활성화 되어 있는 경우
+            if( !dropItemInfo.InventoryInteractive.IsActiveTabAll && !this.interactive.IsActiveTabAll )
+            {
+                // 개별 탭이 완전히 일치하지 않는경우
+                if( dropItemInfo.InventoryInteractive.CurActiveTab != this.interactive.CurActiveTab )
+                    return false;
+            }
+
+            // 둘 중 하나라도 전체 탭인 경우 - 현재 인벤토리가 개별탭인경우 (전체탭->개별탭인경우)
+            else if( !this.interactive.IsActiveTabAll )
+            {
+                // 아이템의 종류가 옮길 인벤토리의 활성탭에 맞지 않으면 실패처리 합니다.
+                if( Inventory.ConvertItemTypeToTabType(dropItemInfo.Type) != this.interactive.CurActiveTab )
+                    return false;
+            }
+            
+
+
+            /*** 가시성이 보장되는 경우 성공처리 합니다. ***/
+            // a.전체탭->전체탭인 경우
+            // b.개별탭->전체탭인 경우
+            // c.전체탭->개별탭인 경우 - 추가할 아이템이 개별탭에 맞는 아이템인 경우
+            // d.개별탭->개별탭인 경우 - 개별 탭이 완전히 일치하는 경우
+            return true;
+        }
+        // 사전 인덱스가 없다면 (아이템 종류에 해당하는 사전이 존재하지 않는다면)
+        else
+            return false;        
+    }
+
+
+    /// <summary>
+    /// 특정 슬롯에 담긴 아이템 정보를 반환합니다.<br/>
+    /// 상속 스크립트의 경우 오버라이딩 될 수 있습니다.
+    /// </summary>
+    /// <returns>슬롯에 담긴 아이템이 있는 경우 해당 아이템 참조값을, 없는 경우 null을 반환</returns>
+    public virtual ItemInfo GetSlotItemInfo(Transform slotTr)
+    {
+        if(slotTr==null)
+            throw new Exception("슬롯의 Transform 참조 값이 전달 되지 않았습니다.");
+
+        if(slotTr.childCount!=0)
+            return slotTr.GetChild(0).GetComponent<ItemInfo>();
+        else
+            return null;
+    }
 
 
 

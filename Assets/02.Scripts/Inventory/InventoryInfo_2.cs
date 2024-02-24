@@ -81,6 +81,27 @@ using UnityEngine.UI;
  * <v4.1 - 2024_0127_최원준>
  * 1- ReduceItem의 ItemInfo를 직접 받는 오버로딩 메서드 구현
  * 
+ * <v4.2 - 2024_0220_최원준>
+ * 1- AddItemMisc, AddItemToSlot메서드에 isAbleToOverlap옵션을 추가하여 잡화아이템이더라도 겹치지 않고 오브젝트를 그대로 추가할 수 있도록 하였음
+ * 
+ * 2- AddItemMisc의 반환형을 void에서 bool로 설정하여 인자로 넣은 아이템의 파괴상태 여부를 반환하도록 설정
+ * 
+ * 3- IsSlotEmpty, AddItemToSlot, AddItemMisc, AddItemBasic메서드의 기존에 전체탭 상태변수를 인자로 받던 것을 삭제하고, 활성 슬롯 인덱스만 전달받도록 설정
+ * 이유는 전체탭인덱스는 인벤토리에서 자체적으로 인터렉티브 스크립트 참조를 통해 판단할 수 있기 때문
+ * 
+ * 4- AddItemToSlot메서드의 활성 슬롯인덱스와 비활성 슬롯인덱스 모두를 인자로 전달받는 오버로딩 메서드 추가
+ * 기존 메서드는 활성슬롯인덱스만 받아서 나머지 비활성슬롯 인덱스는 가까운 인덱스를 간접할당받았지만,
+ * 특정 슬롯에 추가할 때 (스위칭하는 아이템이 자리했던 인덱스 모두를 이어받아야 하는 경우) 나머지 비활성슬롯 인덱스 또한 지정해야 하는 경우가 생기기 때문
+ * 
+ * 5- IsSlotEmpty의 활성화 슬롯의 Transform을 인자로 전달받는 오버로딩 메서드 추가
+ * 아이템 드롭이 이뤄질 때 해당 활성 슬롯의 Transform을 바로 전달하여 추가할 수 있을 지 판단하기 위함
+ * 
+ * <v4.3 - 2024_0221_최원준>
+ * 1- RemoveItem의 isDestroy옵션을 삭제하고 isUnregister로 대체
+ * 아이템을 제거와 동시에 파괴하는 경우가 잘 쓰이지 않고, 연달아서 호출하여 대체가능하기 때문이며,
+ * isUnregister옵션은 2D상태 그대로 목록에서 제거하여 타인벤토리 이동시 DimensionShift를 발생시키지 않기 위함.
+ * (아이템셀렉팅 스크립트에서 아이템의 캔버스그룹을 조절하는데 간섭이 일어나기 때문)
+ * 
  */
 
 public partial class InventoryInfo : MonoBehaviour
@@ -204,15 +225,23 @@ public partial class InventoryInfo : MonoBehaviour
 
     /// <summary>
     /// 해당 아이템이 현재 탭의 특정 슬롯에 들어갈 수 있을 지 여부를 반환합니다.<br/>
-    /// 아이템 정보와 슬롯의 지정 인덱스, 전체 탭 여부를 인자로 받습니다.
+    /// 아이템 정보와 활성화 슬롯의 인덱스를 전달해야 합니다.
     /// </summary>
     /// <returns>슬롯에 빈자리가 없는 경우 false를, 빈자리가 있는 경우 true를 반환</returns>
-    public bool IsSlotEmpty(ItemInfo itemInfo, int slotIndex, bool isActiveTabAll)
+    public bool IsSlotEmpty(ItemInfo itemInfo, int activeSlotIndex)
     {
-        return inventory.IsRemainSlotDirect(itemInfo.Item.Type, slotIndex, isActiveTabAll);         
+        return inventory.IsRemainSlotDirect(itemInfo.Item.Type, activeSlotIndex, interactive.IsActiveTabAll);         
     }
 
-
+    /// <summary>
+    /// 해당 아이템이 현재 탭의 특정 슬롯에 들어갈 수 있을 지 여부를 반환합니다.<br/>
+    /// 아이템 정보와 활성화 슬롯의 Transform 참조값을 전달해야 합니다.
+    /// </summary>
+    /// <returns>슬롯에 빈자리가 없는 경우 false를, 빈자리가 있는 경우 true를 반환</returns>
+    public bool IsSlotEmpty(ItemInfo itemInfo, Transform activeSlotTr)
+    {
+        return inventory.IsRemainSlotDirect(itemInfo.Item.Type, activeSlotTr.GetSiblingIndex(), interactive.IsActiveTabAll);
+    }
 
 
 
@@ -273,11 +302,11 @@ public partial class InventoryInfo : MonoBehaviour
 
     /// <summary>
     /// 해당 이름의 아이템을 인벤토리의 목록에서 제거후에 목록에서 제거한 아이템의 ItemInfo 참조값을 반환합니다.<br/>
-    /// 제거 후 바로 파괴하려면 두번 째 인자를 true로 설정합니다. (기본적으로 파괴되지 않습니다.)<br/><br/>
-    /// 제거 한 아이템은 자동으로 World의 InventoryInfo클래스의 playerDropTr로 지정해둔 곳에 떨어트려줍니다.<br/><br/>
+    /// 기본적으로 아이템을 3D상태로 만들어 참조값 반환을 하지만,<br/>
+    /// 선택 인자로 isUnregister 옵션을 활성화시키면 2D 상태 그대로 반환합니다. (타 인벤토리로의 추가 시 활용합니다) <br/><br/>
     /// *** 인벤토리에 해당 이름의 아이템이 없으면 예외를 발생시킵니다. ***<br/>
     /// </summary>
-    public ItemInfo RemoveItem(string itemName, bool isDestroy=false)
+    public ItemInfo RemoveItem(string itemName, bool isUnregister=false)
     {
         // 인벤토리 목록에서 제거하고 반환 할 참조값을 저장합니다.
         ItemInfo itemInfo = inventory.RemoveItem(itemName);   
@@ -285,15 +314,9 @@ public partial class InventoryInfo : MonoBehaviour
         if( itemInfo==null )
             throw new Exception( "해당 이름의 아이템이 존재하지 않습니다." );       
         
-        // 파괴 옵션이 걸려있다면, 아이템을 파괴하고 null을 반환합니다.
-        else if( isDestroy )
-        {
-            Destroy( itemInfo.gameObject );       
-            return null;
-        }
-        
-        // 아이템을 3D상태로 전환합니다.
-        itemInfo.DimensionShift(true);
+        // 등록해제 옵션이 걸려있지 않다면,
+        if( !isUnregister )       
+            itemInfo.DimensionShift(true);  // 아이템을 3D상태로 전환합니다.
 
         // 인벤토리 정보를 제거합니다.
         itemInfo.UpdateInventoryInfo(null);
@@ -305,11 +328,11 @@ public partial class InventoryInfo : MonoBehaviour
     /// <summary>
     /// 해당 아이템을 인벤토리의 목록에서 직접 제거합니다.<br/>
     /// 제거후에 목록에서 제거한 아이템의 ItemInfo 참조값을 반환하여 다른 메서드를 호출할 수 있습니다.<br/><br/>
-    /// 제거 후 바로 파괴하려면 두번 째 인자를 true로 설정합니다. (기본적으로 파괴되지 않습니다.)<br/><br/>
-    /// 제거 한 아이템은 자동으로 World의 InventoryInfo클래스의 playerDropTr로 지정해둔 곳에 떨어트려줍니다.<br/><br/>
+    /// 기본적으로 아이템을 3D상태로 만들어 참조값 반환을 하지만,<br/>
+    /// 선택 인자로 isUnregister 옵션을 활성화시키면 2D 상태 그대로 반환합니다. (타 인벤토리로의 추가 시 활용합니다) <br/><br/>
     /// *** 인자가 전달되지 않거나, 인벤토리에 해당 이름의 아이템이 없으면 예외가 발생합니다. ***<br/>
     /// </summary>
-    public ItemInfo RemoveItem(ItemInfo itemInfo, bool isDestroy=false)
+    public ItemInfo RemoveItem(ItemInfo itemInfo, bool isUnregister=false)
     {
         if(itemInfo==null)
             throw new Exception("아이템 정보가 전달되지 않았습니다.");
@@ -317,8 +340,9 @@ public partial class InventoryInfo : MonoBehaviour
         if( inventory.RemoveItem(itemInfo) == null )
             throw new Exception("해당 인벤토리에 아이템 정보가 존재하지 않습니다.");
                     
-        // 아이템을 3D상태로 전환합니다.
-        itemInfo.DimensionShift(true);
+        // 등록해제 옵션이 걸려있지 않다면,
+        if( !isUnregister )       
+            itemInfo.DimensionShift(true);  // 아이템을 3D상태로 전환합니다.
 
         // 인벤토리 정보를 제거합니다.
         itemInfo.UpdateInventoryInfo(null);  
@@ -417,15 +441,15 @@ public partial class InventoryInfo : MonoBehaviour
     /// <summary>
     /// 일반 아이템(비잡화 아이템)의 경우에 아이템 추가 시 해야할 로직을 모아놓은 메서드입니다.<br/>
     /// 아이템 추가 후 해당 아이템의 정보를 오브젝트에 반영합니다.<br/>
-    /// 선택인자를 전달하여 특정 슬롯에 추가할 지 여부를 선택할 수 있습니다. 현재 탭상태가 필요합니다.<br/>
+    /// 활성화 슬롯인덱스 선택인자를 전달하여 특정 슬롯에 추가할 지 여부를 선택할 수 있습니다. (기본값: 가까운 인덱스 할당)<br/>
     /// </summary>
-    protected void AddItemBasic(ItemInfo itemInfo, int slotIndex=-1, bool isActiveTabAll=false)
+    protected void AddItemBasic(ItemInfo itemInfo, int activeSlotIndex=-1)
     {
         if( itemInfo.Item.Type == ItemType.Misc )
             throw new Exception("일반 아이템이 아닙니다. 잡화 아이템 전용 메서드를 호출해야합니다.");
 
-        inventory.AddItem( itemInfo, slotIndex, isActiveTabAll );  // 아이템을 내부 인벤토리에 추가합니다.
-        itemInfo.OnItemAdded(this);                                // 아이템에 최신 정보를 반영합니다.
+        inventory.AddItem( itemInfo, activeSlotIndex, interactive.IsActiveTabAll ); // 아이템을 내부 인벤토리에 추가합니다.
+        itemInfo.OnItemAdded(this);                                                 // 아이템에 최신 정보를 반영합니다.
     }
 
 
@@ -433,9 +457,11 @@ public partial class InventoryInfo : MonoBehaviour
     /// 잡화 아이템의 경우 아이템 추가 시 해야 할 로직을 모아놓은 메서드입니다.<br/>
     /// 전후수량을 비교하여 수량 변동이 생겼다면 동일한 이름의 잡화아이템의 텍스트를 모두 업데이트하고, 
     /// 해당 아이템의 정보를 오브젝트에 반영합니다.<br/>
-    /// 선택인자를 전달하여 특정 슬롯에 추가할 지 여부를 선택할 수 있습니다. 현재 탭상태가 필요합니다.<br/>
+    /// 활성화 슬롯인덱스 선택인자를 전달하여 특정 슬롯에 직접 추가할 지 여부를 선택할 수 있습니다. (기본값: 가까운 인덱스 할당)<br/>
+    /// 잡화 아이템의 경우 동일 이름의 아이템에 겹치지 않고 추가할 수 있는 옵션이 따로 존재합니다. (기본값: 겹쳐서 추가)
     /// </summary>
-    protected void AddItemMisc(ItemInfo itemInfo, int slotIndex=-1, bool isActiveTabAll=false)
+    /// <returns>아이템이 중첩되어 파괴되었다면 true를, 파괴되지 않았다면 false를 반환합니다.</returns>
+    protected bool AddItemMisc(ItemInfo itemInfo, int activeSlotIndex=-1, bool isAbleToOverlap=true)
     {
         if( itemInfo.Item.Type != ItemType.Misc )
             throw new Exception("해당 아이템이 잡화아이템이 아닙니다.");
@@ -446,7 +472,7 @@ public partial class InventoryInfo : MonoBehaviour
         int beforeOverlapCount = itemMisc.OverlapCount;
 
         // 아이템을 내부 인벤토리에 추가합니다.
-        inventory.AddItem( itemInfo, slotIndex, isActiveTabAll );
+        inventory.AddItem( itemInfo, activeSlotIndex, interactive.IsActiveTabAll, isAbleToOverlap );
 
         // 추가 이후의 수량계산
         int afterOverlapCount = itemMisc.OverlapCount;
@@ -455,9 +481,15 @@ public partial class InventoryInfo : MonoBehaviour
         if( beforeOverlapCount!=afterOverlapCount )
             UpdateTextInfoSameItemName( itemMisc.Name );
 
-        // 아이템 수량이 변동이 없거나, 남은 상태라면, 아이템에 최신 정보를 반영합니다. 
-        if( afterOverlapCount!=0 )                              
-            itemInfo.OnItemAdded( this );
+        // 아이템 수량이 (변동이 없거나, 변동이 있어도) 남은 상태라면, 
+        if( afterOverlapCount!=0 )
+        {            
+            itemInfo.OnItemAdded( this );   // 아이템에 최신 정보를 반영합니다. 
+            return false;                   // 아이템의 생존을 반환합니다.
+        }
+        // 아이템 수량이 0이라면,
+        else
+            return true;                    // 아이템의 파괴를 반환합니다.
     }
      
 
@@ -481,50 +513,96 @@ public partial class InventoryInfo : MonoBehaviour
 
 
     /// <summary>
-    /// 인벤토리의 목록에 기존의 아이템을 *특정 슬롯*에 추가합니다.<br/>
+    /// 인벤토리의 목록에 기존의 아이템을 *활성화 슬롯*에 추가합니다.<br/>
+    /// 아이템 정보와 활성화 슬롯의 Transform 참조값을 전달해야 합니다.<br/>
+    /// 잡화 아이템의 경우 옵션으로 겹쳐서 추가할지 여부를 선택할 수 있습니다. (기본값: 겹치지 않고 추가)<br/><br/>
     /// *** 인자로 들어온 컴포넌트 참조값이 null이거나, 슬롯 인덱스가 잘못되었다면 예외를 발생시킵니다. ***<br/>
     /// </summary>
     /// <returns>오브젝트가 생성 될 빈 공간이 부족하다면 false를, 아이템 생성 성공 시 true를 반환</returns>
-    public bool AddItemToSlot(ItemInfo itemInfo, Transform slotTr, bool isActiveTabAll)
+    public bool AddItemToSlot(ItemInfo itemInfo, Transform activeSlotTr, bool isAbleToOverlap=false)
     {
-        if( itemInfo==null || slotTr==null )
+        if( itemInfo==null || activeSlotTr==null )
             throw new Exception( "전달 받은 참조 값이 존재하지 않습니다." );
                         
-        return AddItemToSlot(itemInfo, slotTr.GetSiblingIndex(), isActiveTabAll);
+        return AddItemToSlot(itemInfo, activeSlotTr.GetSiblingIndex(), isAbleToOverlap);
     }
 
 
 
     /// <summary>
-    /// 인벤토리의 목록에 기존의 아이템을 *특정 슬롯*에 추가합니다.<br/>
+    /// 인벤토리의 목록에 기존의 아이템을 *활성화 슬롯*에 추가합니다.<br/>
+    /// 아이템 정보와 활성화 슬롯 인덱스를 전달해야 합니다.<br/>
+    /// 잡화 아이템의 경우 옵션으로 겹쳐서 추가할지 여부를 선택할 수 있습니다. (기본값: 겹치지 않고 추가)<br/><br/>
     /// *** 인자로 들어온 컴포넌트 참조값이 null이거나, 슬롯 인덱스가 잘못되었다면 예외를 발생시킵니다. ***<br/>
     /// </summary>
     /// <returns>오브젝트가 생성 될 빈 공간이 부족하다면 false를, 아이템 생성 성공 시 true를 반환</returns>
-    public bool AddItemToSlot(ItemInfo itemInfo, int slotIndex, bool isActiveTabAll)
+    public bool AddItemToSlot(ItemInfo itemInfo, int activeSlotIndex, bool isAbleToOverlap=false)
     {
         if( itemInfo==null )
             throw new Exception( "전달 받은 아이템 참조 값이 존재하지 않습니다." );
 
         // 해당 슬롯에 자리가 없다면, 실패를 반환
-        if( !IsSlotEmpty(itemInfo, slotIndex, isActiveTabAll) )
+        if( !IsSlotEmpty(itemInfo, activeSlotIndex) )
             return false;
         
-        if(itemInfo.Item.Type is ItemType.Misc )
-            AddItemMisc(itemInfo, slotIndex, isActiveTabAll);
+        // 아이템 종류가 잡화아이템인지 확인
+        if(itemInfo.Item.Type == ItemType.Misc )
+            AddItemMisc(itemInfo, activeSlotIndex, isAbleToOverlap);
         else
-            AddItemBasic(itemInfo, slotIndex, isActiveTabAll);
+            AddItemBasic(itemInfo, activeSlotIndex);
+
+        
 
         return true;
     }
 
 
-    //public ItemInfo GetItemInfo(string itemName, bool isLatest=true)
-    //{
+    /// <summary>
+    /// 인벤토리의 목록에 기존의 아이템을 *다른 아이템이 사용하던 특정 슬롯에 그대로* 추가합니다.<br/>
+    /// 아이템 정보와 활성화 슬롯 인덱스와 비활성화 슬롯 인덱스를 전달해야 합니다.<br/>
+    /// 잡화 아이템의 경우 옵션으로 겹쳐서 추가할지 여부를 선택할 수 있습니다. (기본값: 겹치지 않고 추가)<br/><br/>
+    /// *** 인자로 들어온 컴포넌트 참조값이 null이거나, 슬롯 인덱스가 잘못되었다면 예외를 발생시킵니다. ***<br/>
+    /// </summary>
+    /// <returns>오브젝트가 생성 될 빈 공간이 부족하다면 false를, 아이템 생성 성공 시 true를 반환</returns>
+    public bool AddItemToSlot(ItemInfo itemInfo, int activeSlotIndex, int inactiveSlotIndex, bool isAbleToOverlap=false)
+    {
+        if( itemInfo==null )
+            throw new Exception( "전달 받은 아이템 참조 값이 존재하지 않습니다." );
 
-    //}
+        // 해당 슬롯에 자리가 없다면, 실패를 반환
+        if( !IsSlotEmpty(itemInfo, activeSlotIndex) )
+            return false;
+
+        // 아이템 종류가 잡화아이템인지 확인
+        if( itemInfo.Item.Type == ItemType.Misc )
+        {
+            // 중첩상태를 반영하여 잡화아이템의 추가를 진행하고 파괴되었다면,오브젝트가 남아있지 않으므로 바로 성공을 반환
+            if( AddItemMisc( itemInfo, activeSlotIndex, isAbleToOverlap ) )
+                return true;
+        }
+        else
+            AddItemBasic( itemInfo, activeSlotIndex );
+
+        // 오브젝트가 남아있는 경우 나머지 슬롯 인덱스를 설정합니다.
+        if(interactive.IsActiveTabAll)
+            itemInfo.SlotIndexEach = inactiveSlotIndex;
+        else
+            itemInfo.SlotIndexAll = inactiveSlotIndex;
+
+        // 아이템 추가가 완료되었으므로 성공을 반환합니다.
+        return true;
+    }
 
 
-    
+
+
+
+
+
+
+
+
+        
     /// <summary>
     /// 인자로 전달 한 이름에 해당 하는 아이템의 수량이 얼마인지를 알려줍니다.
     /// </summary>

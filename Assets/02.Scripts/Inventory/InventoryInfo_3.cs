@@ -80,6 +80,34 @@ using UnityEngine.UI;
  * 1- Disconnect메서드에서 상대와 자신의 인벤토리 정보를 파일로 저장하도록 구현 
  * (보관함이 갓 생성되었을 때 파일로 저장이 안되는 문제가 있으므로)
  * 
+ * <v2.9 - 2024_0210_최원준>
+ * 1- DisconnectInventory메서드 내부에서 자신과 상대 인벤토리를 저장하는 코드를 0번 슬롯(오토 세이브 슬롯)만 저장하도록 변경
+ * 이유는 지정 슬롯에 사용자가 저장하는 것이 아니라 데이터를 임시적으로 저장하기 위한 방편이므로
+ * 
+ * <v3.0 - 2024_0213_최원준>
+ * 1- DisconnectInventory메서드 내부에서 자신과 상대 인벤토리를 저장하는 코드를 주석처리 
+ * (통합프로젝트의 다른 팀원 스크립트에서는 오토세이브 기능을 구현하지 않기 때문에 일관성을 주기 위해)
+ * 
+ * <v3.1 - 2024_0222_최원준>
+ * 1- SwitchInventoryAppear메서드에서 inventoryCG의 Interactable속성을 OnOff하도록 설정
+ * => 캐릭터가 달리거나 할때 키보드를 누르게 되는데 계속해서 인벤토리의 아이템과 상호작용하게 되므로 해당 속성을 해제해야하는 것을 발견
+ * 
+ * 2- SwitchInventoryAppear 메서드명을 InventoryAppearSwitch로 변경
+ * 
+ * 3- AllItemAppearAfterAnimation메서드 내부에 다중인벤토리의 경우 연결된 모든 인벤토리의 아이템의 2D기능 스위칭 메서드를 호출해주도록 하였음
+ * => 이유는 퀵슬롯같이 열려있는 연결인벤토리의 경우 유저가 인벤토리 창을 닫을 때 (마우스 락걸린상태에서) 상호작용이 따로 일어나서는 안되기 때문
+ * 
+ * 4- InitOpenState메서드를 InventoryAppearSwitch를 재사용하지 않고 직접 할당하는 형태로 변경
+ * 이유는 InventoryAppearSwitch 내부적으로 연결된 모든 인벤토리의 기능을 건드리기 때문에
+ * 퀵슬롯 등의 상속 스크립트에서 호출 시 중복호출의 위험성이 크기 때문
+ * 
+ * 5- 메서드명 InventoryAppearSwitch를 InventoryOperateSwitch로 변경
+ * 
+ * 6- ConnectInventory 및 DisconnectInventory 내부의 InitOpenState메서드 사용을 InventoryOperateSwitch메서드 호출로 변경
+ * 이유는 InitOpenState메서드가 인벤토리 캔버스그룹만 건드리기 때문에 
+ * 인벤토리 창을 닫은 상태에서는 아이템의 캔버스그룹의 투명도를 건드렸기 때문에 InitOpenState로는 복구를 시켜줄 수 없기 때문에
+ * 아이템이 실제 존재해도 InitOpenState메서드를 호출하게되면 인벤토리만 보이고 인벤토리는 보이지 않게 됨.
+ * 
  */
 
 
@@ -142,6 +170,22 @@ public partial class InventoryInfo : MonoBehaviour
     public GraphicRaycaster gRaycaster { get { return inventoryTr.parent.GetComponent<GraphicRaycaster>(); } }
 
 
+
+    
+    /// <summary>
+    /// 인벤토리 창을 수동으로 열고 닫는 메서드입니다.<br/>
+    /// 자기 자신 인벤토리의 상태만 반영하며, 애니메이션을 따로 호출하지 않습니다.<br/>
+    /// connect, disconnect 상태에서의 호출에 사용합니다.
+    /// </summary>
+    public void InitOpenState( bool isOpen )
+    {
+        inventoryCG.blocksRaycasts=isOpen;    // 그룹의 블록 레이캐스트를 조절해줍니다
+        inventoryCG.interactable=isOpen;      // 그룹의 상호작용을 조절합니다.
+        inventoryCG.alpha=isOpen ? 1f : 0f;   // 그룹의 투명도를 조절해줍니다
+        this.isOpen=isOpen;               // 인벤토리 Open 상태를 초기화합니다.
+    }
+
+
     /// <summary>
     /// 인벤토리 창을 자동으로 열고닫는 메서드입니다.<br/>
     /// 플레이어 InputSystem에서의 I키를 누를 때 호출해야 합니다.<br/>
@@ -152,40 +196,34 @@ public partial class InventoryInfo : MonoBehaviour
         if( isConnect )
             return;
 
-        SwitchInventoryAppear( !isOpen );   // 호출 시 마다 반대 상태로 넣어줍니다
+        InventoryOperateSwitch( !isOpen );   // 호출 시 마다 반대 상태로 넣어줍니다
         isOpen=!isOpen;                     // 상태 변화를 반대로 기록합니다
     }
 
 
     /// <summary>
-    /// 인벤토리 창을 수동으로 열고 닫는 메서드입니다.<br/>
-    /// connect, disconnect 상태에서의 호출에 사용합니다.
+    /// 인벤토리의 창을 수동으로 열고 닫습니다.<br/>
+    /// 인벤토리의 가시성과 기능을 스위칭하기 위해 
+    /// 그래픽 레이캐스팅, 상호작용, 투명도를 조절하며, 애니메이션을 작동시킵니다.
     /// </summary>
-    public void InitOpenState( bool isOpen )
-    {
-        SwitchInventoryAppear( isOpen );      // 인벤토리 판넬 가시성을 초기화합니다.
-        this.isOpen=isOpen;               // 인벤토리 Open 상태를 초기화합니다.
-    }
-
-
-    /// <summary>
-    /// 인벤토리의 모든 이미지와 텍스트를 꺼줍니다.
-    /// </summary>
-    protected void SwitchInventoryAppear( bool isOpen )
+    protected void InventoryOperateSwitch( bool isOpen )
     {
         inventoryCG.blocksRaycasts=isOpen;    // 그룹의 블록 레이캐스트를 조절해줍니다
+        inventoryCG.interactable=isOpen;      // 그룹의 상호작용을 조절합니다.
         inventoryCG.alpha=isOpen ? 1f : 0f;   // 그룹의 투명도를 조절해줍니다
 
         StartCoroutine( AllItemAppearAfterAnimation(isOpen) );    // 인벤토리 창 오픈 시 애니메이션 재생
     }
 
     /// <summary>
-    /// isOpen상태에 따라 애니메이션 재생이 끝난 후 아이템의 모습을 스위칭 합니다.
+    /// isOpen상태에 따라 애니메이션 재생이 끝난 후<br/> 
+    /// 자신의 인벤토리의 내부 아이템의 2D 모습과 기능을 스위칭 하며, <br/>
+    /// 연결되어 있는 열린 인벤토리의 기능만 스위칭합니다.<br/>
     /// </summary>
     /// <returns></returns>
     protected IEnumerator AllItemAppearAfterAnimation(bool isOpen)
     {
-        // Open시 애니메이션 최대길이 만큼 쉬어준 후 인벤토리에 속한 모든 아이템의 2D 모습을 보여줍니다.
+        // 인벤토리 창을 킬 때 애니메이션 최대길이 만큼 쉬어준 후 다중 인벤토리에 속한 모든 아이템의 2D 기능 작동을 스위칭합니다.
         if( isOpen )
         {
             if( animations!=null )  // 애니메이션이 존재하는 경우
@@ -194,13 +232,41 @@ public partial class InventoryInfo : MonoBehaviour
                     animation.Play();
 
                 yield return animationWaitTime;
-            }
-
-            SwitchAllItemAppearAs2D( isOpen );       
+                
+                AllItemOperateSwitchWithLinkedOpenInventory(isOpen); 
+            }     
         }
-        // Close시에는 바로 아이템의 2D 모습을 종료합니다.
-        else            
-            SwitchAllItemAppearAs2D( isOpen ); 
+        // 인벤토리 창을 끌 때는 애니메이션을 작동시키지 않고 바로 종료합니다.
+        else
+            AllItemOperateSwitchWithLinkedOpenInventory(isOpen);
+        
+
+
+
+
+
+
+        // 연결되어 있는 인벤토리 중에서 열려있는 상태의 인벤토리의 아이템 2D 기능 스위칭을 동시에 실행합니다.
+        void AllItemOperateSwitchWithLinkedOpenInventory(bool isOpen)
+        {
+            // 다중 인벤토리에 연결된 인벤토리가 있는 경우는 연결된 모든 인벤토리의 모든 아이템 2d기능 스위칭을 실행합니다.
+            if( isServer&&clientInfo!=null )
+            {
+                foreach( InventoryInfo inventoryInfo in clientInfo )
+                {
+                    // 중심 인벤토리의 경우는 아이템의 투명도를 건드리며 기능을 스위칭합니다.
+                    if( inventoryInfo.isServer )
+                        inventoryInfo.AllItemOperateSwitchAs2d( isOpen, true );
+
+                    // 중심 인벤토리가 아니며, 연결된 인벤토리가 열려있는 경우 아이템의 투명도를 건드리지 않고 기능만 스위칭합니다.
+                    else if( inventoryInfo.isOpen )
+                        inventoryInfo.AllItemOperateSwitchAs2d( isOpen, false );
+                }
+            }
+            // 중심 인벤토리가 아니거나, 연결정보가 없는 경우는 자신 인벤토리의 모든 아이템 2d기능 스위칭만 실행합니다.
+            else
+                AllItemOperateSwitchAs2d( isOpen, true );
+        }
     }
 
 
@@ -252,10 +318,10 @@ public partial class InventoryInfo : MonoBehaviour
         {
             // 두 인벤토리 연결상태 활성화 및 Open
             this.isConnect=true;
-            this.InitOpenState(true);
+            this.InventoryOperateSwitch(true);
 
             otherInfo.isConnect = true;
-            otherInfo.InitOpenState(true);
+            otherInfo.InventoryOperateSwitch(true);
 
             // 자신의 클라이언트 정보에 상대를 추가합니다.
             this.clientInfo.Add(otherInfo);  
@@ -270,10 +336,10 @@ public partial class InventoryInfo : MonoBehaviour
         {
             // 두 인벤토리 연결상태 활성화 및 Open
             this.isConnect = true;
-            this.InitOpenState(true);
+            this.InventoryOperateSwitch(true);
 
             otherInfo.isConnect = true;
-            otherInfo.InitOpenState(true);
+            otherInfo.InventoryOperateSwitch(true);
 
             // 상대의 클라이언트 정보에 자신을 추가합니다.
             otherInfo.clientInfo.Add(this);  
@@ -304,7 +370,7 @@ public partial class InventoryInfo : MonoBehaviour
             throw new Exception("연결상태가 아닙니다.");
 
         // 자신의 인벤토리 데이터를 저장합니다.
-        SaveInvetoryData(); 
+        //SaveInventoryData(0); 
 
         // 자신이 서버라면,
         if (this.isServer)
@@ -313,14 +379,14 @@ public partial class InventoryInfo : MonoBehaviour
             InventoryInfo clientInfo = this.clientInfo[this.clientInfo.Count-1];
 
             // 클라이언트의 인벤토리 데이터를 저장합니다.
-            clientInfo.SaveInvetoryData();  
+            //clientInfo.SaveInventoryData(0);  
 
             // 두 인벤토리 연결상태 비활성화 및 Close
             this.isConnect = false;
-            this.InitOpenState(false);
+            this.InventoryOperateSwitch(false);
             
             clientInfo.isConnect=false;
-            clientInfo.InitOpenState(false);
+            clientInfo.InventoryOperateSwitch(false);
 
             // 자신의 클라이언트 정보에서 상대를 삭제
             this.clientInfo.Remove(clientInfo);  
@@ -332,15 +398,15 @@ public partial class InventoryInfo : MonoBehaviour
         else
         {
             // 서버의 인벤토리 데이터를 저장합니다.
-            serverInfo.SaveInvetoryData();
+            //serverInfo.SaveInventoryData(0);
 
             // 두 인벤토리 연결상태 비활성화 및 Close
             serverInfo.isConnect=false;
-            serverInfo.InitOpenState(false);
+            serverInfo.InventoryOperateSwitch(false);
                         
             
             this.isConnect = false;
-            this.InitOpenState(false);        
+            this.InventoryOperateSwitch(false);        
             
             // 상대의 클라이언트 정보에서 자신을 삭제
             serverInfo.clientInfo.Remove(this); 
@@ -372,7 +438,7 @@ public partial class InventoryInfo : MonoBehaviour
         // 자신이 클라이언트이고 상대가 서버라면
         else if( !this.isServer && otherInfo.isServer )
         {
-            this.isConnect = true;              // 클라이언트쪽만 연결상태로 만듭니다.
+            this.isConnect = true;          // 클라이언트쪽만 연결상태로 만듭니다.
             this.serverInfo = otherInfo;    // 자신의 서버정보에 인자로 들어온 인벤토리를 등록합니다.
             otherInfo.clientInfo.Add(this); // 인자로 들어온 인벤토리의 클라이언트 정보에 자신을 등록합니다.
         }
@@ -404,7 +470,7 @@ public partial class InventoryInfo : MonoBehaviour
             if(!isConnect)
                 throw new Exception("인벤토리가 서버와 연결되어 있지 않습니다.");
 
-            return serverInfo.RaycastAllToConnectedInventory();
+            return serverInfo.RaycastAllToConnectedInventory(isPrintDebugInfo);
         }
 
 
@@ -418,8 +484,8 @@ public partial class InventoryInfo : MonoBehaviour
         for( int i = 0; i<clientInfo.Count; i++ )
             clientInfo[i].gRaycaster.Raycast( pEventData, raycastResults );
 
-        if(isPrintDebugInfo)
-            PrintGRayCastDebugInfo(raycastResults);
+        if( isPrintDebugInfo )
+            PrintGRayCastDebugInfo( raycastResults );
 
         return raycastResults;
     }
@@ -432,9 +498,11 @@ public partial class InventoryInfo : MonoBehaviour
         string objNames = "";
 
         for( int i = 0; i<raycastResults.Count; i++ )
-            objNames+=raycastResults[i].gameObject.name+" ";
+            objNames+=raycastResults[i].gameObject.name+"\n";
 
-        print( "[검출된 오브젝트 이름]\n" + objNames );
+        print( "[검출된 오브젝트 이름]\n" + objNames 
+            + "\n연결 인벤토리 갯수: " + clientInfo.Count
+            + "\n-------------------\n"  );
     }
 
 

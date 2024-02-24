@@ -33,6 +33,8 @@ using UnityEngine;
 * 
 * 2- EquipType 프로퍼티 추가
 * 
+* <v1.6 - 2024_0224_최원준>
+* 1- weaponTypeString 무기 문자열 한글화
 * 
 */
 public partial class ItemInfo : MonoBehaviour
@@ -186,7 +188,7 @@ public partial class ItemInfo : MonoBehaviour
 
     /// <summary>
     /// 잡화 아이템의 중첩 수량입니다. (해당 아이템 : 잡화)<br/><br/>
-    /// get - 아이템 종류가 맞으면 중첩수량을 반환하며, 틀리면 음의 정수(-1)를 반환합니다.<br/><br/>
+    /// get - 아이템 종류가 잡화이라면 중첩수량을 반환하며, 비잡화 아이템이라면 음의 정수(-1)를 반환합니다.<br/><br/>
     /// 
     /// set - 중첩수량 수치를 수정할 수 있으며, 아이템 종류가 맞지 않는 경우 예외가 발생합니다.<br/>
     /// 최대수량에 도달하면 더 이상 증가되지 않으며, 최소수량(0)에 도달한 경우 파괴됩니다.
@@ -355,7 +357,7 @@ public partial class ItemInfo : MonoBehaviour
 
 
     // 무기의 종류를 열거형 인덱스에 맞춰서 문자열로 변환하여 표시합니다 (WeaponType수정시 같이 수정해야 합니다.)
-    private readonly string[] weaponTypeString = { "Sword", "Spear", "Axe", "Blunt", "Bow", "Pickaxe", "Etc", "None" };
+    private readonly string[] weaponTypeString = { "검", "창", "도끼", "둔기", "활", "곡괭이", "기타", "없음" };
     
 
 
@@ -370,22 +372,22 @@ public partial class ItemInfo : MonoBehaviour
         
         if(itemWeapon!=null)
             return string.Format(
-            $"Type : {weaponTypeString[(int)(itemWeapon.WeaponType)]}\n" +
-            $"Power : {itemWeapon.Power}\n" +
-            $"Durability : {itemWeapon.Durability}"
+            $"종류 : {weaponTypeString[(int)(itemWeapon.WeaponType)]}\n" +
+            $"공격력 : {itemWeapon.Power}\n" +
+            $"내구도 : {itemWeapon.Durability}"
             );
 
         ItemQuest itemQuest = item as ItemQuest;
         if(itemQuest!=null)
             return string.Format(
-            $"Type : Quest\n"
+            $"종류 : 퀘스트 아이템\n"
             );
         
         ItemBuilding itemBuilding = item as ItemBuilding;  
         if(itemBuilding!=null)
             return string.Format(
-            $"Type : Building\n" +
-            $"Durability : {itemBuilding.Durability}"
+            $"종류 : 설치물\n" +
+            $"내구도 : {itemBuilding.Durability}"
             );
 
 
@@ -395,13 +397,13 @@ public partial class ItemInfo : MonoBehaviour
             string strMiscType;
             MiscType miscType = itemMisc.MiscType;
             if( miscType == MiscType.Food)
-                strMiscType = "Food";
+                strMiscType = "음식";
             else
-                strMiscType = "Misc";
+                strMiscType = "기타";
 
             return string.Format(
-            $"Type : {strMiscType}\n"+
-            $"Count : {itemMisc.OverlapCount}"
+            $"종류 : {strMiscType}\n"+
+            $"수량 : {itemMisc.OverlapCount}"
             );
         }
         return null;

@@ -26,6 +26,12 @@ public class EquipmentInfo : MonoBehaviour
 {
 
     [SerializeField] EquipmentTransform equipTr;
+    PlayerStatus playerStatus;
+
+    private void Awake()
+    {
+        playerStatus = GetComponent<PlayerStatus>();
+    }
 
 
     public Transform GetEquipParentTr(ItemInfo itemInfo)
@@ -60,21 +66,25 @@ public class EquipmentInfo : MonoBehaviour
                     return equipTr.bowTr;                    
             }
         }
-        // 방어구인 경우 EquipType을 기준으로 장착지점 반환
-        else
-        {
-            switch(itemEquip.EquipType)
-            {
-                case EquipType.Helmet:
-                    return equipTr.helmetTr;
-
-                default:
-                    throw new Exception("해당 부위의 장착지점이 매핑되지 않았습니다.");
-            }
-        }
 
         throw new Exception("착용위치 정보가 맵핑되지 않았습니다.");
     }
+
+
+    /// <summary>
+    /// 퀘스트 아이템 - 후드를 착용 및 해제를 하는 메서드입니다.
+    /// </summary>
+    public void EquipHoodSwitch(bool isEquip)
+    {
+        for(int i=0; i<equipTr.hoodTr.Length; i++)
+        {
+            equipTr.hoodTr[i].gameObject.SetActive(isEquip);
+        }
+
+        playerStatus.OnHoodEquip(isEquip);
+    }
+
+
 
 
 
@@ -103,6 +113,6 @@ public class EquipmentTransform
     [Header("5-활")]
     public Transform bowTr;
 
-    [Header("헬멧")]
-    public Transform helmetTr;
+    [Header("후드-퀘스트용")]
+    public Transform[] hoodTr;
 }

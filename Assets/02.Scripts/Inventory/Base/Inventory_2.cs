@@ -233,6 +233,24 @@ using WorldItemData;
  * 1- AddItemDirectly메서드를 만들어 ItemInfo를 전달하면 해당 정보대로 사전에 바로 추가할 수 있게 하였음.
  * 이는 로드 시 아이템을 해당 정보대로 그대로 추가해야 하기 때문
  * 
+ * 
+ * <v7.6 - 2024_0220_최원준>
+ * 1- SetItemSlotIndexIndirect메서드의 기존 코드가 퀘스트 아이템이 아닌경우에만 전체슬롯인덱스를 추가로 넣는형태로 되어 있었는데,
+ * 코드 분기로 인한 생각의 오류가 발생할 위험성이 있어서 퀘스트 아이템인 경우와 퀘스트 아이템이 아닌 경우로 정확하게 구분하여 
+ * 코드가 중복되더라도 개별 슬롯인덱스와 전체 슬롯 인덱스를 퀘스트 아이템 분기에 따라 명확하게 지정해주도록 구현 하였음.
+ * 
+ * 2- SetItemSlotIndexDirect메서드에서 퀘스트 아이템에 따른 분기 코드가 아예 없었는데 SetItemSlotIndexIndirect를 참조하여 새롭게 분기하여 구현
+ * (퀘스트 아이템의 경우 활성탭에 따라서 슬롯 인덱스를 무시하고 간접 할당하는 경우가 생김
+ * 이는 직접슬롯인덱스 방식으로 퀘스트 아이템 추가가 들어오더라도, 활성탭이 퀘스트전용탭이 아니기 때문에 생기는 문제)
+ * 
+ * 
+ * <v7.7 - 2024_0221_최원준>
+ * 1- FillExistItemOverlapCount메서드 내부의 FillCountInLoopByOrder메서드에서
+ * 아이템을 채우고 난 후 채운 수량만큼 AccumulateOverlapCount호출을 통해 감소 시켜야 하는데 증가 시키고 있던 부분 수정
+ * (beforeCount-afterCount를 넣어서 호출해주고 있던 부분을 afterCount-beforeCount로 수정)
+ * => 실제 테스트 해보면 잡화아이템 3개를 생성시킬때, 기존 9개에 최대치인 10개로 채워주고 나머지 수량이 2개가 되어야 하지만 4개로 된채로 인벤토리에 들어옴
+ * 
+ * 
  */
 
 namespace InventoryManagement
@@ -263,12 +281,16 @@ namespace InventoryManagement
             // 전체 슬롯 공유 옵션이 활성화되어 있다면,
             if( isShareAll )
             {
-                // 퀘스트 아이템의 경우 개별 슬롯 인덱스만 할당합니다.
+                // 퀘스트 아이템의 경우 
                 if( itemType==ItemType.Quest )
-                    item.SlotIndexEach=GetItemSlotIndexIndirect( itemType, false );
-                // 퀘스트 아이템이 아닌경우 전체 슬롯 인덱스를 할당한 다음, 개별 슬롯인덱스와 일치시킵니다.
+                {
+                    // 개별 슬롯 인덱스만 간접 할당합니니다.
+                    item.SlotIndexEach=GetItemSlotIndexIndirect( itemType, false ); 
+                }
+                // 퀘스트 아이템이 아닌경우 
                 else
                 {
+                    // 전체 슬롯 인덱스를 간접 할당한 다음, 개별 슬롯인덱스와 일치시킵니다.
                     item.SlotIndexAll=GetItemSlotIndexIndirect( itemType, true );
                     item.SlotIndexEach=item.SlotIndexAll;
                 }
@@ -276,12 +298,19 @@ namespace InventoryManagement
             // 전체 슬롯 공유 옵션이 비활성화되어 있다면,
             else
             {
-                // 개별 슬롯 인덱스 정보를 입력합니다.
-                item.SlotIndexEach=GetItemSlotIndexIndirect( itemType, false );
-
-                // (퀘스트탭이 아닌 경우) 전체 슬롯 인덱스 정보를 입력합니다.
-                if( itemType!=ItemType.Quest )
-                    item.SlotIndexAll=GetItemSlotIndexIndirect( itemType, true );
+                // 퀘스트 아이템인 경우
+                if( itemType==ItemType.Quest )
+                {                    
+                    // 개별 슬롯 인덱스만 간접 할당합니다.
+                    item.SlotIndexEach=GetItemSlotIndexIndirect( itemType, false ); 
+                }
+                // 퀘스트 아이템이 아닌 경우
+                else
+                {
+                    // 개별 슬롯 인덱스와 전체 인덱스를 모두 간접 할당합니다.
+                    item.SlotIndexEach=GetItemSlotIndexIndirect( itemType, false ); 
+                    item.SlotIndexAll=GetItemSlotIndexIndirect( itemType, true );   
+                }
             }
         }
         
@@ -307,24 +336,63 @@ namespace InventoryManagement
 
             // 전체 탭 공유 옵션이 활성화 되어 있는 경우
             if( isShareAll )
-            {                
-                item.SlotIndexAll = slotIndex;      // 전체 슬롯 인덱스 및 개별 슬롯 인덱스를 인자로 일치시킵니다.
-                item.SlotIndexEach = slotIndex;
+            {
+                // 퀘스트 아이템이라면
+                if( itemType==ItemType.Quest )
+                {
+                    // 전체 탭인 경우에는 (슬롯인덱스 인자를 무시하고) 간접할당하고, 
+                    if(isActiveTabAll)
+                        item.SlotIndexEach=GetItemSlotIndexIndirect( itemType, false );
+
+                    // 개별 탭인 경우에만 직접 지정
+                    else
+                        item.SlotIndexEach=slotIndex;
+                }
+
+                // 퀘스트 아이템이 아니라면
+                else
+                {
+                    // 전체 슬롯 인덱스 및 개별 슬롯 인덱스를 직접 지정하고 일치시킵니다.
+                    item.SlotIndexAll=slotIndex;
+                    item.SlotIndexEach=slotIndex;
+                }
             }
+
             // 전체 탭 공유 옵션이 비활성화 되어있는 경우
             else
             {
                 // 전체 탭이 활성화되어 있는 경우
                 if( isActiveTabAll )
                 {
-                    item.SlotIndexAll=slotIndex;                                  // 전체 슬롯 인덱스를 직접 지정
-                    item.SlotIndexEach=GetItemSlotIndexIndirect( itemType, false ); // 개별 슬롯 인덱스를 가까운 아무곳 지정
+                    // 퀘스트 아이템인 경우
+                    if( itemType==ItemType.Quest )
+                    {
+                        // 개별 슬롯 인덱스만 (슬롯인덱스 인자를 무시하고) 간접 할당합니다.
+                        item.SlotIndexEach=GetItemSlotIndexIndirect( itemType, false );
+                    }
+                    else
+                    {
+                        // 전체 슬롯 인덱스를 직접 지정하고, 개별 슬롯 인덱스를 간접 할당합니다.
+                        item.SlotIndexAll=slotIndex;
+                        item.SlotIndexEach=GetItemSlotIndexIndirect( itemType, false );
+                    }
                 }
                 // 개별 탭이 활성화되어 있는 경우
                 else
                 {
-                    item.SlotIndexAll=GetItemSlotIndexIndirect( itemType, true );   // 전체 슬롯 인덱스는 가까운 아무곳 지정
-                    item.SlotIndexEach=slotIndex;                                 // 개별 슬롯 인덱스를 직접 지정
+                    // 퀘스트 아이템인 경우
+                    if( itemType==ItemType.Quest )
+                    {
+                        // 개별탭 인덱스만 직접 지정합니다.
+                        item.SlotIndexEach=slotIndex;
+                    }
+                    // 퀘스트 아이템이 아닌 경우
+                    else
+                    {                        
+                        // 전체탭 인덱스는 간접 할당하고, 개별탭 인덱스를 직접 지정합니다.
+                        item.SlotIndexAll=GetItemSlotIndexIndirect( itemType, true );
+                        item.SlotIndexEach=slotIndex;
+                    }
                 }
             }
         }
@@ -537,7 +605,7 @@ namespace InventoryManagement
                 afterCount = oldItemMisc.AccumulateOverlapCount(beforeCount);
 
                 // 줄어든 수량만큼 신규아이템의 수량을 감소시켜 줍니다.
-                newItemMisc.AccumulateOverlapCount(beforeCount-afterCount);
+                newItemMisc.AccumulateOverlapCount(afterCount-beforeCount);
                     
                 // 다음 반복문에 사용하기 위하여 현재수량과 일치시켜 줍니다. 
                 beforeCount = afterCount;

@@ -1260,17 +1260,17 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   vcArr:
-  - itemDesc: 00Mud
+  - itemDesc: "00\uC9C4\uD759"
     innerSprite: {fileID: 21300000, guid: 185f140eaa10c154ca431e97de7868df, type: 3}
     statusSprite: {fileID: 21300000, guid: 185f140eaa10c154ca431e97de7868df, type: 3}
     outerPrefab: {fileID: 116581284}
     equipLocalTr: {fileID: 0}
-  - itemDesc: 01Thread
+  - itemDesc: "01\uC2E4"
     innerSprite: {fileID: 21300000, guid: 65b246c1c0c0ac1479dd188550da07a0, type: 3}
     statusSprite: {fileID: 21300000, guid: 65b246c1c0c0ac1479dd188550da07a0, type: 3}
     outerPrefab: {fileID: 116581284}
     equipLocalTr: {fileID: 0}
-  - itemDesc: 02Stone
+  - itemDesc: "02\uB369\uCFE8"
     innerSprite: {fileID: 21300000, guid: df55465231c3fdf4dbd2f9482bb13e79, type: 3}
     statusSprite: {fileID: 21300000, guid: df55465231c3fdf4dbd2f9482bb13e79, type: 3}
     outerPrefab: {fileID: 116581284}
@@ -2470,7 +2470,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 10357010}
         m_TargetAssemblyTypeName: ButtonPlayTest, Assembly-CSharp
-        m_MethodName: btnNext
+        m_MethodName: BtnNext
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -3632,18 +3632,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c0051bd3f4006f243ab3b0216559a979, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  inventory:
-    dicType: 
-    slotCountLimitTab: 
-    tabType: 
-    isShareAll: 0
-    tabItemObjCount: 
   initializer: {fileID: 0}
   interactive: {fileID: 0}
   baseDropTr: {fileID: 0}
   isBaseDropSetParent: 0
   inventoryCG: {fileID: 0}
-  saveInterval: 10
 --- !u!1 &326283087
 GameObject:
   m_ObjectHideFlags: 0
@@ -5620,17 +5613,57 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   vcArr:
-  - itemDesc: "00\uBCBD"
+  - itemDesc: "00\uB098\uBB34\uBCBD"
     innerSprite: {fileID: 0}
     statusSprite: {fileID: 0}
     outerPrefab: {fileID: 116581284}
     equipLocalTr: {fileID: 0}
-  - itemDesc: "01\uC6B8\uD0C0\uB9AC"
+  - itemDesc: "01\uB098\uBB34\uBC14\uB2E5"
     innerSprite: {fileID: 0}
     statusSprite: {fileID: 0}
     outerPrefab: {fileID: 530715253}
     equipLocalTr: {fileID: 0}
-  - itemDesc: "02\uC778\uBCA4\uD1A0\uB9AC"
+  - itemDesc: "02\uBB38"
+    innerSprite: {fileID: 0}
+    statusSprite: {fileID: 0}
+    outerPrefab: {fileID: 116581284}
+    equipLocalTr: {fileID: 0}
+  - itemDesc: 03
+    innerSprite: {fileID: 0}
+    statusSprite: {fileID: 0}
+    outerPrefab: {fileID: 116581284}
+    equipLocalTr: {fileID: 0}
+  - itemDesc: 04
+    innerSprite: {fileID: 0}
+    statusSprite: {fileID: 0}
+    outerPrefab: {fileID: 116581284}
+    equipLocalTr: {fileID: 0}
+  - itemDesc: 05
+    innerSprite: {fileID: 0}
+    statusSprite: {fileID: 0}
+    outerPrefab: {fileID: 116581284}
+    equipLocalTr: {fileID: 0}
+  - itemDesc: 06
+    innerSprite: {fileID: 0}
+    statusSprite: {fileID: 0}
+    outerPrefab: {fileID: 116581284}
+    equipLocalTr: {fileID: 0}
+  - itemDesc: 07
+    innerSprite: {fileID: 0}
+    statusSprite: {fileID: 0}
+    outerPrefab: {fileID: 116581284}
+    equipLocalTr: {fileID: 0}
+  - itemDesc: 08
+    innerSprite: {fileID: 0}
+    statusSprite: {fileID: 0}
+    outerPrefab: {fileID: 116581284}
+    equipLocalTr: {fileID: 0}
+  - itemDesc: 09
+    innerSprite: {fileID: 0}
+    statusSprite: {fileID: 0}
+    outerPrefab: {fileID: 116581284}
+    equipLocalTr: {fileID: 0}
+  - itemDesc: "10\uBCF4\uAD00\uD568"
     innerSprite: {fileID: 0}
     statusSprite: {fileID: 0}
     outerPrefab: {fileID: 2179255938766547654, guid: 17c0edaac21443c40bad3ac959c2f4c4, type: 3}
@@ -6758,12 +6791,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 37176f5ae2d3ff24780636ba37f2442b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  inventory:
-    dicType: 
-    slotCountLimitTab: 
-    tabType: 
-    isShareAll: 0
-    tabItemObjCount: 
   initializer: {fileID: 0}
   interactive: {fileID: 0}
   baseDropTr: {fileID: 0}
@@ -12443,17 +12470,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bd63a2a2725a2fa458782e4eec5e6a93, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  vcArr:
-  - itemDesc: "00\uD759"
-    innerSprite: {fileID: 21300000, guid: 5d0c7b9914087414698722d97f6e08f1, type: 3}
-    statusSprite: {fileID: 21300000, guid: 5d0c7b9914087414698722d97f6e08f1, type: 3}
-    outerPrefab: {fileID: 116581284}
-    equipLocalTr: {fileID: 0}
-  - itemDesc: "01\uB098\uBB34"
-    innerSprite: {fileID: 21300000, guid: f394b428b0ff38449b68bf9a323ad32a, type: 3}
-    statusSprite: {fileID: 21300000, guid: f394b428b0ff38449b68bf9a323ad32a, type: 3}
-    outerPrefab: {fileID: 1892516572}
-    equipLocalTr: {fileID: 0}
+  vcArr: []
 --- !u!1 &1361012357
 GameObject:
   m_ObjectHideFlags: 0
@@ -12616,7 +12633,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 10357010}
         m_TargetAssemblyTypeName: ButtonPlayTest, Assembly-CSharp
-        m_MethodName: btnExit
+        m_MethodName: BtnExit
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -13069,12 +13086,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   vcArr:
-  - itemDesc: 00StoneAxe
+  - itemDesc: "00\uB3CC \uB3C4\uB07C"
     innerSprite: {fileID: 21300000, guid: a4910fbe75cd4b14c82d45526ae4f58f, type: 3}
     statusSprite: {fileID: 21300000, guid: a4910fbe75cd4b14c82d45526ae4f58f, type: 3}
     outerPrefab: {fileID: 706623660}
     equipLocalTr: {fileID: 0}
-  - itemDesc: 01StonePickaxe
+  - itemDesc: "01\uB3CC \uACE1\uAD2D\uC774"
     innerSprite: {fileID: 21300000, guid: a4910fbe75cd4b14c82d45526ae4f58f, type: 3}
     statusSprite: {fileID: 21300000, guid: a4910fbe75cd4b14c82d45526ae4f58f, type: 3}
     outerPrefab: {fileID: 1441331410966627}
@@ -13566,7 +13583,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   vcArr:
-  - itemDesc: "00\uD0A4"
+  - itemDesc: "00\uAC00\uC8FD \uD6C4\uB4DC"
     innerSprite: {fileID: 21300000, guid: 5d0c7b9914087414698722d97f6e08f1, type: 3}
     statusSprite: {fileID: 21300000, guid: 5d0c7b9914087414698722d97f6e08f1, type: 3}
     outerPrefab: {fileID: 116581284}
@@ -17798,7 +17815,17 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   vcArr:
-  - itemDesc: 00Food1
+  - itemDesc: "00\uBB3C"
+    innerSprite: {fileID: 21300000, guid: 5b0427c3fff2a4c4cadd6ef98bb87591, type: 3}
+    statusSprite: {fileID: 21300000, guid: 5b0427c3fff2a4c4cadd6ef98bb87591, type: 3}
+    outerPrefab: {fileID: 116581284}
+    equipLocalTr: {fileID: 0}
+  - itemDesc: "01\uC0B0\uB538\uAE30"
+    innerSprite: {fileID: 21300000, guid: 5b0427c3fff2a4c4cadd6ef98bb87591, type: 3}
+    statusSprite: {fileID: 21300000, guid: 5b0427c3fff2a4c4cadd6ef98bb87591, type: 3}
+    outerPrefab: {fileID: 116581284}
+    equipLocalTr: {fileID: 0}
+  - itemDesc: "02\uBC84\uC12F"
     innerSprite: {fileID: 21300000, guid: 5b0427c3fff2a4c4cadd6ef98bb87591, type: 3}
     statusSprite: {fileID: 21300000, guid: 5b0427c3fff2a4c4cadd6ef98bb87591, type: 3}
     outerPrefab: {fileID: 116581284}
@@ -18268,7 +18295,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 10357010}
         m_TargetAssemblyTypeName: ButtonPlayTest, Assembly-CSharp
-        m_MethodName: CraftStart
+        m_MethodName: BtnCraftStart
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -21631,12 +21658,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0c201a006a6b1b44fa0b6adf770475b2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  inventory:
-    dicType: 000000000100000002000000
-    slotCountLimitTab: 
-    tabType: 
-    isShareAll: 0
-    tabItemObjCount: 
   initializer: {fileID: 0}
   interactive: {fileID: 0}
   baseDropTr: {fileID: 2015239700}
@@ -23141,7 +23162,7 @@ MonoBehaviour:
     pickaxTr: {fileID: 1090315290}
     spearTr: {fileID: 1090315290}
     bowTr: {fileID: 1090315290}
-    helmetTr: {fileID: 23064542}
+    hoodTr: []
 --- !u!114 &6982812148037006329
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -24654,7 +24675,7 @@ MonoBehaviour:
     slotLimit: 5
   - itemType: 2
     slotLimit: 10
-  showTabType: 
+  showTabType: 0000000001000000
 --- !u!1 &7469504202797843704
 GameObject:
   m_ObjectHideFlags: 0

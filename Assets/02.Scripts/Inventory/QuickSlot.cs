@@ -112,6 +112,53 @@ using UnityEngine.UI;
  * 슬롯 갯수만큼 초기화 및 장착 및 해제시 이미지 OnOff스위칭이 이루어질 수 있도록 함. 로드시에도 변경  
  * 
  * 
+ * <v4.2 - 2024_0214_최원준>
+ * 1- SlotActivate 및 SlotDeactivate메서드 내부에 OnItemEquip과 OnItemUnequip메서드를 호출하는 코드를 EquipSwitch메서드 호출로 변경
+ * (아이템이 상태를 저장하고 있기 때문에 특별히 구분하여 호출할 필요가 없기 때문에 하나의 메서드로 통합)
+ * 
+ * <v4.3 - 2024_0214_최원준>
+ * 1- OnDummySelected메서드 제거
+ * 더미 아이템이 셀렉팅될때는 더미 아이템 셀렉트 스크립트에서 장착해제만 호출해주고, 원본 아이템 셀렉팅을 잡아주면 되기 때문
+ * 
+ * 2- OnQuickSlotSelect메서드 내부에 isItemPlaced와 slotItemInfo참조값을 초기화하는 부분 추가
+ * 
+ * <v4.4 - 2024_0216_최원준>
+ * 1- SlotDeactivate메서드에 선택인자로 isForceEquip옵션을 주어서 강제로 장착해제하여 슬롯 해제를 할 수 있게 하였음
+ * (=> 슬롯 작동 해제기능에는 아이템 장착을 강제 해제하는 기능이 추가로 있어야 하기 때문) 
+ * 
+ * 2- OnQuickSlotSelect메서드 내부에 착용 중인 아이템을 셀렉팅했다면, 강제로 착용을 해제할 수 있게 
+ * SlotDeactivate에서 SlotDeactivate(true) 메서드를 호출 하는코드로 변경
+ * 
+ * 3- OnQuickSlotDrop메서드 내부에서 아이템이 착용 중이라면 강제로 착용을 해제할 수 있게 
+ * SlotDeactivate에서 SlotDeactivate(true)메서드를 호출 하는코드로 변경
+ * 
+ * <v4.5 - 2024_0222_최원준>
+ * 1- InitOpenState 호출 위치를 Start의 마지막으로 변경
+ * 
+ * 2- 퀵슬롯 로드시 모든 아이템의 투명도는 건드리지 않고 2d기능만 차단한 상태로 시작하기 위해
+ * InitOpenState 호출 이후 AllItemOperateSwitchAs2d메서드 실행구문을 추가
+ * 
+ * <v4.6 - 2024_0223_최원준>
+ * 1- OnQuickSlotDrop메서드에서 아이템이 슬롯에 자리한 경우 실패조건 이전에 셀렉팅을 방지해주는 코드를 추가하였음.
+ * 이유는 퀵슬롯의 경우 ItemSelect스크립트에서 SlotDrop
+ * 
+ * 2- IsAbleToQuickSlotDrop메서드를 신규로 작성하여 OnQuickSlotDrop의 조건검사코드를 모두 옮기고,
+ * OnQuickSlotDrop에는 정보 초기화 코드만 놔두는 형식으로 변경
+ * => 이유는 퀵슬롯 조건검사와 정보초기화가 동시에 실행되면 조건검사가 실패했을 때 정보를 복구해줘야하기 때문이며,
+ * 기존에는 드롭시 실패를 하지 않았기 때문에 동시에 해도 상관없었지만, 스왑 구현 후 스왑조건도 추가로 검사 후 
+ * 드랍을 실행하지 못하기 때문에 따로 분리해야 함.
+ * 
+ * <v4.7 - 2024_0224_최원준>
+ * 1- GetSlotItemInfo 신규 메서드 작성
+ * 슬롯에 자리한 아이템의 정보를 반환할 수 있게 하였음
+ * 이유는 다른 스크립트에서 특정 퀵슬롯의 
+ * 
+ * 2- IsAbleToQuickSlotDrop 단일 메서드를 IsAbleToSlotDrop 오버라이딩 메서드로 변경하여 
+ * 부모의 슬롯 드롭 조건을 먼저 실행하고, 추가로 퀵슬롯의 슬롯 드롭조건도 포함해서 반환할 수 있도록 구현
+ * => 이유는 슬롯 드롭시 조건검사를 시행하는데 인벤토리 상속 스크립트가 추가될 때마다 
+ * 다른 인벤토리인지 여부에 따라서 조건 검사를 계속해서 추가해야 하기 때문에 이를 간편하게 하나로 통합하기 위함.
+ * 
+ * 
  */
 
 
@@ -202,11 +249,7 @@ public class QuickSlot : InventoryInfo
         // 그래픽 레이캐스팅이 가능하도록 플레이어 인벤토리와 연동상태로 시작합니다.
         playerInventory=inventoryTr.parent.GetComponentInChildren<InventoryInfo>();
         this.RegisterInventoryLink( playerInventory );
-
-        // 창을 항상 열어둡니다.
-        InitOpenState( true );
-
-
+                
 
         // 아이템이 로드시 슬롯에 아이템이 존재하는지 확인
         for( int i = 0; i<slotLen; i++ )
@@ -233,6 +276,14 @@ public class QuickSlot : InventoryInfo
 
             }
         }
+
+
+
+        // 창을 항상 열어둡니다.
+        InitOpenState( true );
+
+        // 아이템의 2d 기능을 차단한 상태로 시작합니다.
+        AllItemOperateSwitchAs2d(false, false);
     }
 
 
@@ -292,7 +343,7 @@ public class QuickSlot : InventoryInfo
         }
 
         // 장착할 계층 정보를 전달하여 해당 슬롯의 아이템을 장착합니다.
-        slotItemInfo[slotIndex].OnItemEquip();
+        slotItemInfo[slotIndex].EquipSwitch();
         
 
         // 장착 슬롯넘버로 설정합니다.
@@ -309,65 +360,90 @@ public class QuickSlot : InventoryInfo
     /// <summary>
     /// 슬롯을 작동해제할 때 호출해줘야할 메서드입니다.<br/>
     /// 슬롯에 보여지고 있던 더미 이미지를 빈리스트로 보낸 후,
-    /// 착용되어있던 장비를 해제하여 슬롯에 놓아주는 역할을 합니다.<br/>
+    /// 착용되어있던 장비를 해제하여 슬롯에 놓아주는 역할을 합니다.<br/><br/>
+    /// 선택인자로 강제 장착 옵션을 활성화 시키면 아이템을 강제로 장착 해제하여 유저 상태를 수정합니다. (기본 값: false)
     /// </summary>
     /// <returns>아이템 착용 해제 성공 시 true, 실패 시 false를 반환</returns>
-    private bool SlotDeactivate()
+    private bool SlotDeactivate(bool isForceEquip=false)
     {
         // 아이템이 장착중이지 않은 상태라면 실행하지 않습니다.
         if( !isItemEquipped )
             return false;
-        
-        // 아이템의 장착을 해제합니다.
-        slotItemInfo[equipSlotIndex].OnItemUnequip();
+                
+        // 강제 장착여부에 따라서 아이템의 장착을 해제합니다.
+        slotItemInfo[equipSlotIndex].EquipSwitch(isForceEquip,false);
 
-
-        // 아이템 장착 상태를 해제
-        isItemEquipped = false;
+        isItemEquipped = false;                     // 아이템 장착 상태를 해제합니다.
+        equipSlotIndex = -1;                        // 착용 슬롯 인덱스를 초기화합니다.
 
         return true;
     }
-
 
 
 
 
 
     
+    /// <summary>
+    /// 인자로 전달 한 아이템의 현재 퀵슬롯으로 드롭 가능한 지 여부를 반환합니다.<br/>
+    /// 부모 인벤토리의 슬롯 드롭 조건에 추가해서 상속 스크립트인 퀵슬롯의 드롭조건을 검사하고 결과를 반환합니다.<br/>
+    /// 드롭할 아이템 정보와 드롭할 슬롯의 Transform 참조 값을 전달해야 합니다.<br/>
+    /// </summary>
+    /// <returns>퀵슬롯에 드롭이 가능하면 true를, 불가능하면 false를 반환</returns>
+    public override bool IsAbleToSlotDrop( ItemInfo dropItemInfo, Transform dropSlotTr )
+    {
+        // 부모 조건을 실행하고 반환받습니다.
+        bool bBaseCondition = base.IsAbleToSlotDrop(dropItemInfo, dropSlotTr);
+
+        // 자식 조건을 설정합니다. (기본값: 통과)
+        bool bQuickSlotCondition = true;
+
+        // 드롭 할 슬롯의 인덱스를 읽어들입니다.
+        int slotIndex = dropSlotTr.GetSiblingIndex();
+
+        // 드롭 할 슬롯에 아이템이 이미 자리한 상태라면, 해당 아이템의 셀렉트방지를 일시적으로 실행합니다
+        if( isItemPlaced[slotIndex] )
+            slotItemInfo[slotIndex].ItemSelect.SelectPreventTemporary();
+
+        // 슬롯의 인덱스가 고정무기 배열의 마지막 인덱스를 초과한다면 실패조건으로 처리합니다.
+        if(slotIndex >= equipWeaponType.Length)
+            bQuickSlotCondition = false;
+
+        // 드롭할 아이템의 무기타입이 일치하지 않으면 실패조건으로 처리합니다.
+        if(dropItemInfo.WeaponType !=equipWeaponType[slotIndex] )
+            bQuickSlotCondition = false;
+
+        // 부모와 자식 조건 모두를 만족하는 지 여부를 반환합니다. 
+        return (bBaseCondition && bQuickSlotCondition);
+    }
 
 
 
     /// <summary>
-    /// 슬롯 드롭이벤트가 일어날 때 드롭을 발생시키는 쪽에서 추가적으로 호출해줘야 할 메서드이며, 
-    /// 드롭 가능여부를 반환합니다.<br/>
-    /// 드롭이 일어나는 아이템과 슬롯의 정보를 전달해야 합니다.
+    /// 슬롯 드롭이벤트가 일어나는 순간 퀵슬롯에 드롭할 아이템에 대한 정보를 최신화해주기 위한 메서드입니다.<br/>
+    /// 드롭할 아이템 정보와 드롭할 슬롯의 Transform 참조 값을 전달해야 합니다.<br/>
+    /// *** 조건 검사를 따로 시행하지 않습니다. IsAbleToQuickSlotDrop를 통해 검사조건을 통과한 상태에서 사용해야 합니다. ***
     /// </summary>
-    /// <returns>퀵슬롯에 드롭이 가능하면 true를, 불가능하면 false를 반환</returns>
-    public bool OnQuickSlotDrop( ItemInfo droppedItemInfo, Transform slotTr )
+    public void OnQuickSlotDrop( ItemInfo dropItemInfo, Transform dropSlotTr )
     {
-        int slotIndex = slotTr.GetSiblingIndex();
-                
-        // 슬롯의 인덱스가 고정무기 배열의 마지막 인덱스를 초과한다면 실패조건을 반환합니다.
-        if(slotIndex >= equipWeaponType.Length)
-            return false;
+        // 드롭 할 슬롯의 인덱스를 읽어들입니다.
+        int slotIndex = dropSlotTr.GetSiblingIndex();
 
-        // 드롭할 아이템의 무기타입이 일치하지 않으면 실패조건을 반환합니다.
-        if(droppedItemInfo.WeaponType !=equipWeaponType[slotIndex] )
-            return false;
+        // 아이템이 장착 중인 슬롯이라면 장착 아이템을 강제로 해제합니다.
+        if(equipSlotIndex==slotIndex)
+            SlotDeactivate(true);
 
-        
-        // 배경아이콘 이미지를 비활성화 합니다.
-        backgroundIcon[slotIndex].enabled = false;
-
-        // 슬롯 자리상태 활성화
-        isItemPlaced[slotIndex] = true;
-
-        // 슬롯 아이템 정보 활성화
-        slotItemInfo[slotIndex] = droppedItemInfo;
-
-        // 성공을 반환합니다.
-        return true;
+        backgroundIcon[slotIndex].enabled = false;   // 배경아이콘 이미지를 비활성화 합니다.
+        isItemPlaced[slotIndex] = true;              // 아이템 자리 상태를 활성화합니다.
+        slotItemInfo[slotIndex] = dropItemInfo;      // 슬롯 아이템 정보를 설정합니다.
     }
+
+
+
+
+
+
+
 
 
     /// <summary>
@@ -376,33 +452,40 @@ public class QuickSlot : InventoryInfo
     /// 아이템 정보를 전달해야 합니다.
     /// </summary>
     public void OnQuickSlotSelect(ItemInfo itemInfo)
-    {        
-        // 배경아이콘 이미지를 활성화 합니다.
-        backgroundIcon[itemInfo.SlotIndexTab].enabled = true;
+    {   
+        int slotIdxTab = itemInfo.SlotIndexActiveTab;     // 아이템 정보를 참조하여 슬롯 인덱스를 확인합니다.
+
+        if( equipSlotIndex==slotIdxTab )            // 착용 중인 아이템을 셀렉팅했다면, 강제로 착용을 해제합니다.
+            SlotDeactivate(true);
+
+        backgroundIcon[slotIdxTab].enabled = true;  // 배경아이콘 이미지를 활성화 합니다.
+        isItemPlaced[slotIdxTab] = false;           // 아이템 자리 상태를 해제합니다.
+        slotItemInfo[slotIdxTab] = null;            // 슬롯 아이템 정보를 초기화합니다.
     }
-
-
-
 
 
     /// <summary>
-    /// 더미 아이템이 셀렉트 될 때 더미 쪽에서 호출해줘야 할 메서드입니다.<br/>
-    /// 드롭이 일어나는 슬롯정보를 전달해줘야 합니다.
+    /// 퀵슬롯에 자리하고 있는 슬롯 인덱스에 해당하는 아이템 정보를 반환합니다.<br/>
+    /// 장착 중인 아이템 여부와 상관없이 ItemInfo 참조 값을 그대로 반환합니다.
     /// </summary>
-    public void OnDummySelected(Transform slotTr)
-    {       
+    /// <returns>해당 슬롯에 아이템이 존재한다면 아이템 정보를 반환, 존재하지 않는다면 null 반환</returns>
+    public override ItemInfo GetSlotItemInfo(Transform slotTr)
+    {
+        // 슬롯의 자식 인덱스를 슬롯 인덱스로 설정합니다.
         int slotIndex = slotTr.GetSiblingIndex();
 
-        // 아이템이 장착중이지 않거나, 장착슬롯의No가 일치하지 않으면 종료합니다.
-        if( !isItemEquipped || equipSlotIndex!=slotIndex )
-            throw new Exception("더미를 선택할 수 없는 상태입니다.");
+        // 슬롯의 인덱스가 고정무기 배열의 마지막 인덱스를 초과한다면 실패조건을 반환합니다.
+        if(slotIndex >= equipWeaponType.Length)
+            return null;
+        
+        // 슬롯에 아이템이 자리하지 않았다면 실패조건을 반환합니다.
+        if( !isItemPlaced[slotIndex] )
+            return null;
 
-        // 아이템 장착을 해제합니다.
-        SlotDeactivate();
-
-        // 슬롯아이템 정보 해제
-        slotItemInfo[slotIndex] = null;
+        // 해당 슬롯 자리의 아이템 정보를 반환합니다.
+        return slotItemInfo[slotIndex];
     }
+
 
 
 

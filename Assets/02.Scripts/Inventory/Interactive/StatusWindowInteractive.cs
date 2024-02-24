@@ -84,6 +84,11 @@ using CreateManagement;
  * 1- OnItemPointer메서드에서 itemRectTr을 IsEquip상태에 따라서 더미의 RectTr으로 설정하거나, 아이템의 RectTr로 설정하도록 변경
  * (아이템 장착시에는 더미이미지의 위치를 기준으로 판단해야 하므로)
  * 
+ * <v5.5 - 2024_0223_최원준>
+ * 1- OnItemPointerEnter메서드에서 InventoryInteractive의 IsItemSlecting 상태 변수에 따라서 상태창을 막는 조건을 삭제
+ * 이유는 아이템의 셀렉트가 일어나게 되면 itemCG의 레이캐스팅 수신 차단되기 때문
+ * 
+ * 
  */
 
 
@@ -129,11 +134,6 @@ public class StatusWindowInteractive : MonoBehaviour
         if(itemInfo == null)
             throw new Exception("해당 아이템의 정보가 전달되지 않았습니다. 확인하여 주세요.");
         
-        // 아이템이 셀렉팅 상태라면 보여주지 않습니다.
-        if( inventoryInteractive.IsItemSelecting )
-            return;
-
-
         RectTransform itemRectTr = itemInfo.IsEquip ? itemInfo.DummyInfo.DummyRectTr : itemInfo.Item2dTr;
         Item item = itemInfo.Item;
 
